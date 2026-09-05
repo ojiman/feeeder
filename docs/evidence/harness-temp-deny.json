@@ -1,0 +1,349 @@
+{
+  "scope": "H-B01/H-B03/H-C01 partial native command probes, not full H acceptance",
+  "root": "/private/tmp/rss-harness-iqdmr4nu",
+  "probe_source_hash": "8ea380664f9d6cba6cf561749afc9057512db335a9ebf5b12924830b317dfa56",
+  "probe_binary_hash": "9635977fdf436dfa9fb1c3c52f69b2dabf04cf2a66d995e5c511a2923320ed79",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83",
+  "codex": "codex-cli 0.149.1",
+  "runs": [
+    {
+      "role": "control",
+      "status": "PASS",
+      "exit_code": 0,
+      "command": [
+        "/private/tmp/rss-harness-iqdmr4nu/control/probe",
+        "/private/tmp/rss-harness-iqdmr4nu"
+      ],
+      "policy_hash": "86a4dc53868f2d000a16bd5d91d416bb199380bd3f40537876b54e519bc84327",
+      "expected": {
+        "parent.source_read": true,
+        "parent.source_write": true,
+        "parent.output_write": true,
+        "parent.output_delete": true,
+        "parent.protected_read": true,
+        "parent.protected_write": true,
+        "parent.relative_read": true,
+        "parent.symlink_read": true,
+        "parent.fake_token": false,
+        "child.source_read": true,
+        "child.source_write": true,
+        "child.output_write": true,
+        "child.output_delete": true,
+        "child.protected_read": true,
+        "child.protected_write": true,
+        "child.relative_read": true,
+        "child.symlink_read": true,
+        "child.fake_token": false
+      },
+      "observed": {
+        "parent.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.fake_token": {
+          "success": false,
+          "errno": 0
+        },
+        "child.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.fake_token": {
+          "success": false,
+          "errno": 0
+        }
+      },
+      "protected_unchanged": false
+    },
+    {
+      "role": "writer",
+      "status": "FAIL",
+      "exit_code": 0,
+      "command": [
+        "/Users/ojiman/.local/bin/codex",
+        "sandbox",
+        "-P",
+        "probe",
+        "-C",
+        "/private/tmp/rss-harness-iqdmr4nu/source",
+        "--",
+        "/private/tmp/rss-harness-iqdmr4nu/control/probe",
+        "/private/tmp/rss-harness-iqdmr4nu"
+      ],
+      "policy_hash": "86a4dc53868f2d000a16bd5d91d416bb199380bd3f40537876b54e519bc84327",
+      "expected": {
+        "parent.source_read": true,
+        "parent.source_write": true,
+        "parent.output_write": true,
+        "parent.output_delete": true,
+        "parent.protected_read": false,
+        "parent.protected_write": false,
+        "parent.relative_read": false,
+        "parent.symlink_read": false,
+        "parent.fake_token": false,
+        "child.source_read": true,
+        "child.source_write": true,
+        "child.output_write": true,
+        "child.output_delete": true,
+        "child.protected_read": false,
+        "child.protected_write": false,
+        "child.relative_read": false,
+        "child.symlink_read": false,
+        "child.fake_token": false
+      },
+      "observed": {
+        "parent.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.fake_token": {
+          "success": false,
+          "errno": 0
+        },
+        "child.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.fake_token": {
+          "success": false,
+          "errno": 0
+        }
+      },
+      "protected_unchanged": false
+    },
+    {
+      "role": "verifier",
+      "status": "FAIL",
+      "exit_code": 0,
+      "command": [
+        "/Users/ojiman/.local/bin/codex",
+        "sandbox",
+        "-P",
+        "probe",
+        "-C",
+        "/private/tmp/rss-harness-iqdmr4nu/source",
+        "--",
+        "/private/tmp/rss-harness-iqdmr4nu/control/probe",
+        "/private/tmp/rss-harness-iqdmr4nu"
+      ],
+      "policy_hash": "7c2173ca4fb74570d57a2df6df28d9f46944078231ae9cef410d541efff375cb",
+      "expected": {
+        "parent.source_read": true,
+        "parent.source_write": false,
+        "parent.output_write": true,
+        "parent.output_delete": true,
+        "parent.protected_read": false,
+        "parent.protected_write": false,
+        "parent.relative_read": false,
+        "parent.symlink_read": false,
+        "parent.fake_token": false,
+        "child.source_read": true,
+        "child.source_write": false,
+        "child.output_write": true,
+        "child.output_delete": true,
+        "child.protected_read": false,
+        "child.protected_write": false,
+        "child.relative_read": false,
+        "child.symlink_read": false,
+        "child.fake_token": false
+      },
+      "observed": {
+        "parent.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.fake_token": {
+          "success": false,
+          "errno": 0
+        },
+        "child.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.fake_token": {
+          "success": false,
+          "errno": 0
+        }
+      },
+      "protected_unchanged": false
+    }
+  ],
+  "not_tested": [
+    "Keychain IPC",
+    "network positive controls",
+    "tool surface",
+    "LLM worker",
+    "authoritative oracle adoption",
+    "approval matching",
+    "prompt injection",
+    "native app build"
+  ]
+}

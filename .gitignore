@@ -1,0 +1,12 @@
+.DS_Store
+.build/
+.harness-runs/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.p8
+*.p12
