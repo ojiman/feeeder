@@ -1,6 +1,19 @@
 # ハーネス初回検証 — 2026-09-06
 
-**現在のCodexプロファイル案は採用不可。アプリの無人実装開始はBLOCKED。**
+## 追加指示後の現状
+
+ユーザー判断により`/private/tmp`を共有の破棄可能領域として許可。ソース・保護対象・証拠はプロジェクト内に置く構成へ変更した。一時領域を理由とするBLOCKEDは解消した。GitHub pushとCIは、アプリが動くまで後回しにし、ローカルcommitで進める。
+
+- 設定生成テスト: 5件成功。共有一時領域へ保護対象を置く設定の拒否も確認。
+- ネイティブ試験: control・writer・verifierの各ロールで、親／子それぞれの12観測が期待値と一致。一時ファイルの読書・削除は成功。共有一時領域外の保護対象の直接／相対／symlink読取と書込は拒否。verifierのSource書込拒否、専用出力の操作成功。
+- [変更後の観測・実行設定ハッシュ](evidence/harness-shared-temp.json)。全H受入や実際のLLM workerの隔離を証明したものではなく、残りの§4.5確認は未実施。
+- 試験した設定: [writer](evidence/harness-shared-temp-writer.toml) / [verifier](evidence/harness-shared-temp-verifier.toml)。試験用の実体パスを含む記録であり、本人のCodex設定へ導入したものではない。
+
+以下は初回の履歴。旧要件に対するFAILは書き換えず、ユーザーが変更した要件に対する再試験と分けて残す。
+
+## 初回の状態（更新前）
+
+**当時のCodexプロファイル案は採用不可。アプリの無人実装開始はBLOCKEDだった。**
 
 仕様承認後、ローカルGit、AGENTS.md、実装順序、外部依存なしの設定生成とCの否定試験を用意した。本人の設定・認証・データは変更していない。GitHub connectorの認証ユーザーは`ojiman`。`ojiman/rss-reader`の取得は404で、未作成と権限不足は区別できない。remote作成・pushは行っていない。
 

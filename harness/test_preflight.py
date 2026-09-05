@@ -23,16 +23,22 @@ class PreparationTests(unittest.TestCase):
         self.assertEqual(policy["filesystem"][str(root / "output")], "write")
         self.assertFalse(policy["network"]["enabled"])
         self.assertEqual(policy["filesystem"][":root"], "deny")
-        self.assertEqual(policy["filesystem"][":slash_tmp"], "deny")
+        self.assertEqual(policy["filesystem"][":slash_tmp"], "write")
+        self.assertEqual(policy["filesystem"]["/private/tmp"], "write")
         self.assertNotIn("extends", policy)
 
-    def test_writer_can_write_only_its_source_and_output(self):
+    def test_writer_can_write_source_output_and_shared_temporary_area(self):
         import tomllib
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             policy = tomllib.loads(profile_text(root, "writer"))["permissions"]["probe"]
         writable = {key for key, value in policy["filesystem"].items() if value == "write"}
-        self.assertEqual(writable, {str(root / "source"), str(root / "output")})
+        self.assertEqual(writable, {str(root / "source"), str(root / "output"), ":slash_tmp", "/private/tmp"})
+
+    def test_protected_role_roots_cannot_live_in_shared_temporary_area(self):
+        for root in (Path("/private/tmp/worker"), Path("/tmp/worker")):
+            with self.subTest(root=root), self.assertRaises(ValueError):
+                profile_text(root, "writer")
 
     def test_unknown_role_is_rejected(self):
         with self.assertRaises(ValueError):

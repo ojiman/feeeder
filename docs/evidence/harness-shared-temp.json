@@ -1,0 +1,444 @@
+{
+  "scope": "H-B01/H-B03/H-C01 partial native command probes, not full H acceptance",
+  "root": "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_",
+  "probe_source_hash": "ba6be91537426ccaf4101b35a2fbea0873f93b44692816bf9540cf97aaef0d13",
+  "probe_binary_hash": "9fc9b0bc26137878ddfc73052f2709f1fbc084ae89abc3d8b4446ce952fdce5b",
+  "shared_temp": "/private/tmp/rss-disposable-_f6u5rdd",
+  "harness_hash": "caec28aa0167f0be393d4cf66f89f1e4c92239aed0270c6d26b61f2b61bccd9f",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83",
+  "codex": "codex-cli 0.149.1",
+  "runs": [
+    {
+      "role": "control",
+      "status": "PASS",
+      "exit_code": 0,
+      "command": [
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_/control/probe",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_",
+        "/private/tmp/rss-disposable-_f6u5rdd"
+      ],
+      "policy_hash": "936e223fca4c02236dd85f93dd9d0184819037504d178eb0998de1f91322260b",
+      "expected": {
+        "parent.source_read": true,
+        "parent.source_write": true,
+        "parent.output_write": true,
+        "parent.output_delete": true,
+        "parent.temp_read": true,
+        "parent.temp_write": true,
+        "parent.temp_delete": true,
+        "parent.protected_read": true,
+        "parent.protected_write": true,
+        "parent.relative_read": true,
+        "parent.symlink_read": true,
+        "parent.fake_token": false,
+        "child.source_read": true,
+        "child.source_write": true,
+        "child.output_write": true,
+        "child.output_delete": true,
+        "child.temp_read": true,
+        "child.temp_write": true,
+        "child.temp_delete": true,
+        "child.protected_read": true,
+        "child.protected_write": true,
+        "child.relative_read": true,
+        "child.symlink_read": true,
+        "child.fake_token": false
+      },
+      "observed": {
+        "parent.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.fake_token": {
+          "success": false,
+          "errno": 0
+        },
+        "child.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.relative_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.symlink_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.fake_token": {
+          "success": false,
+          "errno": 0
+        }
+      },
+      "protected_unchanged": false
+    },
+    {
+      "role": "writer",
+      "status": "PASS",
+      "exit_code": 0,
+      "command": [
+        "/Users/ojiman/.local/bin/codex",
+        "sandbox",
+        "-P",
+        "probe",
+        "-C",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_/source",
+        "--",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_/control/probe",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_",
+        "/private/tmp/rss-disposable-_f6u5rdd"
+      ],
+      "policy_hash": "936e223fca4c02236dd85f93dd9d0184819037504d178eb0998de1f91322260b",
+      "expected": {
+        "parent.source_read": true,
+        "parent.source_write": true,
+        "parent.output_write": true,
+        "parent.output_delete": true,
+        "parent.temp_read": true,
+        "parent.temp_write": true,
+        "parent.temp_delete": true,
+        "parent.protected_read": false,
+        "parent.protected_write": false,
+        "parent.relative_read": false,
+        "parent.symlink_read": false,
+        "parent.fake_token": false,
+        "child.source_read": true,
+        "child.source_write": true,
+        "child.output_write": true,
+        "child.output_delete": true,
+        "child.temp_read": true,
+        "child.temp_write": true,
+        "child.temp_delete": true,
+        "child.protected_read": false,
+        "child.protected_write": false,
+        "child.relative_read": false,
+        "child.symlink_read": false,
+        "child.fake_token": false
+      },
+      "observed": {
+        "parent.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_read": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.protected_write": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.relative_read": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.symlink_read": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.temp_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.fake_token": {
+          "success": false,
+          "errno": 0
+        },
+        "child.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.source_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_read": {
+          "success": false,
+          "errno": 1
+        },
+        "child.protected_write": {
+          "success": false,
+          "errno": 1
+        },
+        "child.relative_read": {
+          "success": false,
+          "errno": 1
+        },
+        "child.symlink_read": {
+          "success": false,
+          "errno": 1
+        },
+        "child.temp_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.fake_token": {
+          "success": false,
+          "errno": 0
+        }
+      },
+      "protected_unchanged": true
+    },
+    {
+      "role": "verifier",
+      "status": "PASS",
+      "exit_code": 0,
+      "command": [
+        "/Users/ojiman/.local/bin/codex",
+        "sandbox",
+        "-P",
+        "probe",
+        "-C",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_/source",
+        "--",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_/control/probe",
+        "/Users/ojiman/rss-reader/.harness-runs/shared-temp-native/rss-harness-imuezk2_",
+        "/private/tmp/rss-disposable-_f6u5rdd"
+      ],
+      "policy_hash": "45e305d6d08f19b69b01f8467637de8b627190c4523511255f89b66b46202657",
+      "expected": {
+        "parent.source_read": true,
+        "parent.source_write": false,
+        "parent.output_write": true,
+        "parent.output_delete": true,
+        "parent.temp_read": true,
+        "parent.temp_write": true,
+        "parent.temp_delete": true,
+        "parent.protected_read": false,
+        "parent.protected_write": false,
+        "parent.relative_read": false,
+        "parent.symlink_read": false,
+        "parent.fake_token": false,
+        "child.source_read": true,
+        "child.source_write": false,
+        "child.output_write": true,
+        "child.output_delete": true,
+        "child.temp_read": true,
+        "child.temp_write": true,
+        "child.temp_delete": true,
+        "child.protected_read": false,
+        "child.protected_write": false,
+        "child.relative_read": false,
+        "child.symlink_read": false,
+        "child.fake_token": false
+      },
+      "observed": {
+        "parent.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.source_write": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.protected_read": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.protected_write": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.relative_read": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.symlink_read": {
+          "success": false,
+          "errno": 1
+        },
+        "parent.temp_read": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_write": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.temp_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "parent.fake_token": {
+          "success": false,
+          "errno": 0
+        },
+        "child.source_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.source_write": {
+          "success": false,
+          "errno": 1
+        },
+        "child.output_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.output_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.protected_read": {
+          "success": false,
+          "errno": 1
+        },
+        "child.protected_write": {
+          "success": false,
+          "errno": 1
+        },
+        "child.relative_read": {
+          "success": false,
+          "errno": 1
+        },
+        "child.symlink_read": {
+          "success": false,
+          "errno": 1
+        },
+        "child.temp_read": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_write": {
+          "success": true,
+          "errno": 0
+        },
+        "child.temp_delete": {
+          "success": true,
+          "errno": 0
+        },
+        "child.fake_token": {
+          "success": false,
+          "errno": 0
+        }
+      },
+      "protected_unchanged": true
+    }
+  ],
+  "not_tested": [
+    "Keychain IPC",
+    "network positive controls",
+    "tool surface",
+    "LLM worker",
+    "authoritative oracle adoption",
+    "approval matching",
+    "prompt injection",
+    "native app build"
+  ]
+}

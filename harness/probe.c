@@ -23,8 +23,8 @@ static void access_probe(const char *role, const char *name, const char *path, i
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) return 2;
-    const char *role = argc > 2 ? "child" : "parent";
+    if (argc < 3) return 2;
+    const char *role = argc > 3 ? "child" : "parent";
     const char *root = argv[1];
     char path[PATH_MAX];
 #define CHECK(name, suffix, writing) do { \
@@ -41,13 +41,20 @@ int main(int argc, char **argv) {
     CHECK("protected_write", "protected/canary", 1);
     access_probe(role, "relative_read", "../protected/canary", 0);
     CHECK("symlink_read", "source/link", 0);
+    snprintf(path, sizeof(path), "%s/input", argv[2]);
+    access_probe(role, "temp_read", path, 0);
+    snprintf(path, sizeof(path), "%s/generated", argv[2]);
+    access_probe(role, "temp_write", path, 1);
+    errno = 0;
+    deleted = unlink(path) == 0;
+    printf("%s.temp_delete %d %d\n", role, deleted, deleted ? 0 : errno);
     printf("%s.fake_token %d 0\n", role, getenv("RSS_FAKE_TOKEN") != NULL);
     fflush(stdout);
-    if (argc == 2) {
+    if (argc == 3) {
         pid_t child = fork();
         if (child < 0) return 3;
         if (child == 0) {
-            execl(argv[0], argv[0], root, "child", (char *)NULL);
+            execl(argv[0], argv[0], root, argv[2], "child", (char *)NULL);
             _exit(4);
         }
         int status;

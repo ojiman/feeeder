@@ -22,11 +22,14 @@ def clean_environment(root):
 def profile_text(root, role):
     if role not in {"writer", "verifier"}:
         raise ValueError("unknown role")
+    root = root.resolve()
+    if root.is_relative_to(Path("/private/tmp")):
+        raise ValueError("Source and protected policy must be outside shared /private/tmp")
     # JSON strings are valid TOML basic strings for these POSIX paths.
     entries = {
         ":root": "deny",
-        ":slash_tmp": "deny",
-        "/private/tmp": "deny",
+        ":slash_tmp": "write",
+        "/private/tmp": "write",
         ":minimal": "read",
         str(root / "source"): "write" if role == "writer" else "read",
         str(root / "output"): "write",
@@ -45,14 +48,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--codex", default=shutil.which("codex"))
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--temporary-location", action="store_true",
-                        help="Reproduce the observed /private/tmp boundary failure with fake files")
     args = parser.parse_args()
     if not args.codex:
         parser.error("codex executable required")
     destination = args.output.resolve()
+    if destination.is_relative_to(Path("/private/tmp")):
+        parser.error("output contains protected evidence and must be outside shared /private/tmp")
     destination.mkdir(parents=True, exist_ok=False)
-    root = Path(tempfile.mkdtemp(prefix="rss-harness-", dir="/private/tmp" if args.temporary_location else destination)).resolve()
+    root = Path(tempfile.mkdtemp(prefix="rss-harness-", dir=destination)).resolve()
+    shared_temp = Path(tempfile.mkdtemp(prefix="rss-disposable-", dir="/private/tmp")).resolve()
+    (shared_temp / "input").write_text("synthetic disposable input\n")
     for name in ("source", "output/home", "output/tmp", "control/codex-home", "protected"):
         (root / name).mkdir(parents=True, exist_ok=True)
     probe_source = Path(__file__).with_name("probe.c").resolve()
@@ -72,6 +77,7 @@ def main():
     report = {
         "scope": "H-B01/H-B03/H-C01 partial native command probes, not full H acceptance",
         "root": str(root), "probe_source_hash": source_hash, "probe_binary_hash": digest(binary),
+        "shared_temp": str(shared_temp), "harness_hash": digest(Path(__file__)),
         "os": subprocess.check_output(["/usr/bin/sw_vers"], text=True).strip(),
         "codex": subprocess.check_output([args.codex, "--version"], text=True).strip(),
         "runs": [],
@@ -85,7 +91,7 @@ def main():
             config = profile_text(root, "writer" if role == "control" else role)
             (root / "control/codex-home/config.toml").write_text(config)
             (destination / f"{role}.toml").write_text(config)
-            command = [str(binary), str(root)]
+            command = [str(binary), str(root), str(shared_temp)]
             if role != "control":
                 command = [args.codex, "sandbox", "-P", "probe", "-C", str(root / "source"), "--", *command]
             result = subprocess.run(command, env=clean_environment(root), cwd=root / "source",
@@ -102,6 +108,7 @@ def main():
                 expected.update({f"{prefix}.{name}": value for name, value in {
                     "source_read": True, "source_write": role != "verifier",
                     "output_write": True, "output_delete": True,
+                    "temp_read": True, "temp_write": True, "temp_delete": True,
                     "protected_read": role == "control", "protected_write": role == "control",
                     "relative_read": role == "control", "symlink_read": role == "control",
                     "fake_token": False,
