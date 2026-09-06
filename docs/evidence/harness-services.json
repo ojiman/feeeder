@@ -1,0 +1,265 @@
+{
+  "scope": "H-B02 partial: C socket calls and exec child, loopback and Unix only",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83",
+  "codex": "codex-cli 0.149.1",
+  "harness_hash": "a59fd0e530e595f0fdc46cfa2ba41a145c00b3ba3e8afcde78b3fcfb9cc9cf34",
+  "profile_generator_hash": "caec28aa0167f0be393d4cf66f89f1e4c92239aed0270c6d26b61f2b61bccd9f",
+  "probe_hash": "ab4e4fd4a5bb4206ee52773ac23155060e0cfb77aef94bb45ee3d6e42d5af107",
+  "binary_hash": "7dcca7da80962af6578b95454a7e6e6087c1af220881805ec98157d41c01766b",
+  "runs": [
+    {
+      "role": "control",
+      "command": [
+        "/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/control/probe",
+        "60418",
+        "/private/tmp/rss-net-bnf0rz4s/listener"
+      ],
+      "exit_code": 0,
+      "policy_hash": "7382c356bad157b87dca6a21b3a63bcbe0aa6a15b1ea2711399fc0832b738c5d",
+      "policy": "default_permissions = \"probe\"\n[permissions.probe.filesystem]\n\":root\" = \"deny\"\n\":slash_tmp\" = \"write\"\n\"/private/tmp\" = \"write\"\n\":minimal\" = \"read\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/source\" = \"write\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/output\" = \"write\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/control/probe\" = \"read\"\n[permissions.probe.network]\nenabled = false\n",
+      "observed": [
+        {
+          "role": "parent",
+          "transport": "loopback",
+          "connect": true,
+          "sent": true,
+          "errno": 0
+        },
+        {
+          "role": "parent",
+          "transport": "unix",
+          "connect": true,
+          "sent": true,
+          "errno": 0
+        },
+        {
+          "role": "parent",
+          "service": "com.apple.SecurityServer",
+          "lookup_status": 0
+        },
+        {
+          "role": "parent",
+          "service": "com.apple.pasteboard.1",
+          "lookup_status": 0
+        },
+        {
+          "role": "child",
+          "transport": "loopback",
+          "connect": true,
+          "sent": true,
+          "errno": 0
+        },
+        {
+          "role": "child",
+          "transport": "unix",
+          "connect": true,
+          "sent": true,
+          "errno": 0
+        },
+        {
+          "role": "child",
+          "service": "com.apple.SecurityServer",
+          "lookup_status": 0
+        },
+        {
+          "role": "child",
+          "service": "com.apple.pasteboard.1",
+          "lookup_status": 0
+        }
+      ],
+      "received": {
+        "loopback": {
+          "connections": 2,
+          "bytes": 2
+        },
+        "unix": {
+          "connections": 2,
+          "bytes": 2
+        }
+      },
+      "network_status": {
+        "loopback": "PASS",
+        "unix": "PASS"
+      }
+    },
+    {
+      "role": "writer",
+      "command": [
+        "/Users/ojiman/.local/bin/codex",
+        "sandbox",
+        "-P",
+        "probe",
+        "-C",
+        "/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/source",
+        "--",
+        "/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/control/probe",
+        "60418",
+        "/private/tmp/rss-net-bnf0rz4s/listener"
+      ],
+      "exit_code": 0,
+      "policy_hash": "7382c356bad157b87dca6a21b3a63bcbe0aa6a15b1ea2711399fc0832b738c5d",
+      "policy": "default_permissions = \"probe\"\n[permissions.probe.filesystem]\n\":root\" = \"deny\"\n\":slash_tmp\" = \"write\"\n\"/private/tmp\" = \"write\"\n\":minimal\" = \"read\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/source\" = \"write\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/output\" = \"write\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/control/probe\" = \"read\"\n[permissions.probe.network]\nenabled = false\n",
+      "observed": [
+        {
+          "role": "parent",
+          "transport": "loopback",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "parent",
+          "transport": "unix",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "parent",
+          "service": "com.apple.SecurityServer",
+          "lookup_status": 1100
+        },
+        {
+          "role": "parent",
+          "service": "com.apple.pasteboard.1",
+          "lookup_status": 1100
+        },
+        {
+          "role": "child",
+          "transport": "loopback",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "child",
+          "transport": "unix",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "child",
+          "service": "com.apple.SecurityServer",
+          "lookup_status": 1100
+        },
+        {
+          "role": "child",
+          "service": "com.apple.pasteboard.1",
+          "lookup_status": 1100
+        }
+      ],
+      "received": {
+        "loopback": {
+          "connections": 0,
+          "bytes": 0
+        },
+        "unix": {
+          "connections": 0,
+          "bytes": 0
+        }
+      },
+      "network_status": {
+        "loopback": "PASS",
+        "unix": "PASS"
+      }
+    },
+    {
+      "role": "verifier",
+      "command": [
+        "/Users/ojiman/.local/bin/codex",
+        "sandbox",
+        "-P",
+        "probe",
+        "-C",
+        "/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/source",
+        "--",
+        "/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/control/probe",
+        "60418",
+        "/private/tmp/rss-net-bnf0rz4s/listener"
+      ],
+      "exit_code": 0,
+      "policy_hash": "ff5c585bfe0ed3928352fd0268498e96dd75b65c64b3e85ed9511ffe3ce1e8e8",
+      "policy": "default_permissions = \"probe\"\n[permissions.probe.filesystem]\n\":root\" = \"deny\"\n\":slash_tmp\" = \"write\"\n\"/private/tmp\" = \"write\"\n\":minimal\" = \"read\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/source\" = \"read\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/output\" = \"write\"\n\"/Users/ojiman/rss-reader/.harness-runs/services-native-corrected/run/control/probe\" = \"read\"\n[permissions.probe.network]\nenabled = false\n",
+      "observed": [
+        {
+          "role": "parent",
+          "transport": "loopback",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "parent",
+          "transport": "unix",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "parent",
+          "service": "com.apple.SecurityServer",
+          "lookup_status": 1100
+        },
+        {
+          "role": "parent",
+          "service": "com.apple.pasteboard.1",
+          "lookup_status": 1100
+        },
+        {
+          "role": "child",
+          "transport": "loopback",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "child",
+          "transport": "unix",
+          "connect": false,
+          "sent": false,
+          "errno": 1
+        },
+        {
+          "role": "child",
+          "service": "com.apple.SecurityServer",
+          "lookup_status": 1100
+        },
+        {
+          "role": "child",
+          "service": "com.apple.pasteboard.1",
+          "lookup_status": 1100
+        }
+      ],
+      "received": {
+        "loopback": {
+          "connections": 0,
+          "bytes": 0
+        },
+        "unix": {
+          "connections": 0,
+          "bytes": 0
+        }
+      },
+      "network_status": {
+        "loopback": "PASS",
+        "unix": "PASS"
+      }
+    }
+  ],
+  "mach_lookup_limit": "Service-port lookup only. No Keychain item or clipboard data accessed. Not H-C02 acceptance.",
+  "not_tested": [
+    "External/LAN/IPv6/DNS",
+    "curl/Python/build script paths",
+    "Keychain canary values",
+    "Actual LLM tool inventory",
+    "Native app build"
+  ],
+  "endpoints": {
+    "loopback": [
+      "127.0.0.1",
+      60418
+    ],
+    "unix": "/private/tmp/rss-net-bnf0rz4s/listener"
+  }
+}

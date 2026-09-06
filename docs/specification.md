@@ -227,6 +227,8 @@ AIはOpenAI Responses API、初期モデルgpt-5.6-terra/low。モデルID変更
 
 2026-09-06時点: ローカルGit、AGENTS.md、実装順序、ハーネスの設定生成とネイティブ否定試験を作成。ユーザーが共有一時領域の利用を認めた変更後のファイル境界試験は成功し、一時領域を理由とするBLOCKEDは解消。詳細は[harness検証結果](harness-initial-results.md)。全Hシナリオは未完走で、§4.5の残りの事前確認は必要。機能FはすべてNOT_RUN。前日の抽出予備実験を受入PASSへ転記しない。本人のOS設定、Codex設定、認証情報には変更していない。
 
+同日の次の検証: loopback／Unix socketとMachサービス照会の部分試験は成功。専用ダミーKeychainの作成・削除を伴う試験で、ユーザーから既存`login`へのダイアログが報告されたため、Keychainの自動試験を停止した。ダミーKeychainは削除済み。H-C02はBLOCKED。[通信・OSサービス検証記録](harness-service-results.md)を参照。既存のKeychain項目の内容は調査していない。
+
 ## 6. 根拠
 
 機能と数値は会話内の2026-09-05計画を基準とする。ハーネスの権限・境界・試験値は本アプリ向けの設計提案であり、現在の有効設定を記述したものではない。

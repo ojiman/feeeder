@@ -25,3 +25,9 @@ User-approved revision on 2026-09-06: `/private/tmp` is a shared writable dispos
 The revised native experiment passed on Codex 0.149.1 for control, writer and verifier including their child processes. This resolves the previous temporary-area blocker, not the remaining H tests. See `docs/harness-initial-results.md`. Original placement failures remain in `docs/evidence`; reproduce the original code with commit `e95919b` in a separate checkout, not by treating them as current failures.
 
 Still required before autonomous app workers: verify actual worker tool inventory and effective policy, controlled network receivers, Keychain CLI/framework canaries, rule evaluation, immutable oracle adoption, approval matching, adversarial worker tests and independent role reviews. These probes do not stand in for those tests. No live API credential is needed for these preflight checks.
+
+## Service probes
+
+`python3 harness/service_preflight.py --output .harness-runs/services-recheck` checks C/exec-child loopback and Unix sockets against positive-control receivers, plus Mach service lookup without reading any service data. Launching receivers and applying the child sandbox requires a normal terminal or explicit execution approval. This is a partial H-B02 check, not full harness acceptance.
+
+**Do not run the Keychain experiment.** It triggered an unexpected prompt for the user's `login` Keychain. Its CLI entry point is disabled; successful program output did not establish unattended acceptance. The dedicated fixtures were removed. See `docs/harness-service-results.md` before any further credential-boundary work.
