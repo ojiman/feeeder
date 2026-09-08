@@ -205,6 +205,8 @@ AIはOpenAI Responses API、初期モデルgpt-5.6-terra/low。モデルID変更
 
 ### 4.5. 機能受入と同じ重みでの扱い
 
+2026-09-06の追加承認: [読書機能を先に作る進め方](proposed-reader-first.md)を採用。対話セッションの親による、合成記事・外部通信なし・Keychainなしの初版実装とローカルcommitは、以下の全H受入に先行できる。未確認HをPASSへ変更せず、無人worker運用と公開の前提は維持する。
+
 各証拠に`id, status, input_hash, policy_hash, environment_id, role, command_or_action, expected, observed, exit_code, evidence_path, executor`を記録する。environment_idはOS、Codex、Xcodeの版と実行プロファイルを特定する。人の判断には対象ハッシュ・理由・承認した具体的操作を加える。実装者の作業コピー内にある結果ファイルだけを信用せず、検証の起動側が自分の出力領域へ保存する。
 
 機械判定は、必要ID集合の欠落が0、状態が全てPASS、対象hashが一致、期待したexit code／差分／受信件数が一致すること。人が内容を判断した項目については、その判断の存在と対象一致を検査するもので、判断の正しさを証明するものではない。代表経路の否定試験は、あらゆる未知の迂回が不可能なことの証明ではない。

@@ -1,6 +1,7 @@
 # RSS Reader development
 
 - Follow `docs/specification.md`. The user approved implementation on 2026-09-06.
+- The user adopted `docs/proposed-reader-first.md`: the coordinator may now implement and locally commit the offline reader in this interactive session before full harness acceptance. Autonomous workers remain gated. Do not resume the disabled Keychain experiment.
 - Start with harness preparation. Do not run autonomous application workers until the preflight requirements in §4.5 are accepted. Coordinator may prepare and test the harness using only fake data.
 - This file describes behavior; it does not enforce isolation. Project-local policy proposals are not automatically authoritative.
 - Work offline with synthetic fixtures. Do not read personal data, credentials, login profiles, Keychain secrets, or other projects.
