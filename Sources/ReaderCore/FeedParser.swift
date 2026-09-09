@@ -1,0 +1,214 @@
+import Foundation
+
+public struct ParsedFeed: Sendable {
+    public let title: String
+    public let sourceURL: URL
+    public let entries: [ParsedEntry]
+    public let skippedEntries: Int
+}
+
+public struct ParsedEntry: Sendable {
+    public let sourceID: String
+    public let title: String
+    public let url: URL?
+    public let summary: String
+    public let body: String
+    public let publishedAt: Date?
+}
+
+public enum FeedImportError: LocalizedError {
+    case invalidURL, invalidXML, unsupported, tooLarge, entities, missingTitle
+    public var errorDescription: String? {
+        switch self {
+        case .invalidURL: "ユーザー名・パスワードを含まないHTTP(S)のURLを指定してください。"
+        case .invalidXML: "XMLを解析できませんでした。完全なフィードXMLを貼り付けてください。"
+        case .unsupported: "RSS 1.0・RSS 2.0・Atomのフィードではありません。"
+        case .tooLarge: "XMLは2MB以内、階層は64段以内、記事は5,000件以内にしてください。"
+        case .entities: "DTDや独自エンティティを含むXMLは取り込めません。"
+        case .missingTitle: "購読名を入力してください。"
+        }
+    }
+}
+
+public enum ArticleURL {
+    public static func validated(_ value: String, relativeTo base: URL? = nil) -> URL? {
+        guard let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines), relativeTo: base)?.absoluteURL,
+              var parts = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              ["http", "https"].contains(parts.scheme?.lowercased() ?? ""),
+              let host = parts.host, !host.isEmpty, parts.user == nil, parts.password == nil else { return nil }
+        parts.scheme = parts.scheme?.lowercased(); parts.host = host.lowercased()
+        parts.fragment = nil
+        return parts.url
+    }
+}
+
+public enum FeedParser {
+    public static func parse(_ data: Data, sourceURL: URL) throws -> ParsedFeed {
+        guard data.count <= 2 * 1024 * 1024 else { throw FeedImportError.tooLarge }
+        guard let source = ArticleURL.validated(sourceURL.absoluteString) else { throw FeedImportError.invalidURL }
+        // Strip NULs only for declaration detection, including UTF-16/32 input. Never resolve a DTD.
+        let declarationScan = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\0", with: "")
+        guard !declarationScan.contains("<!DOCTYPE"), !declarationScan.contains("<!ENTITY") else { throw FeedImportError.entities }
+        let reader = FeedXMLReader(source: source)
+        let parser = XMLParser(data: data)
+        parser.shouldProcessNamespaces = true
+        parser.shouldReportNamespacePrefixes = true
+        parser.shouldResolveExternalEntities = false
+        parser.externalEntityResolvingPolicy = .never
+        parser.delegate = reader
+        guard parser.parse(), reader.failure == nil else { throw reader.failure ?? FeedImportError.invalidXML }
+        guard reader.format != nil, reader.sawContainer else { throw FeedImportError.unsupported }
+        return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? "フィード") : reader.title,
+                          sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped)
+    }
+}
+
+private final class FeedXMLReader: NSObject, XMLParserDelegate {
+    static let atom = "http://www.w3.org/2005/Atom"
+    static let rss1 = "http://purl.org/rss/1.0/"
+    static let dc = "http://purl.org/dc/elements/1.1/"
+    static let content = "http://purl.org/rss/1.0/modules/content/"
+    struct Node {
+        let name: String
+        let namespace: String
+        let base: URL
+        let attributes: [String: String]
+        var text = ""
+    }
+    var stack: [Node] = []
+    var format: String?
+    var sawContainer = false
+    var title = ""
+    var entries: [ParsedEntry] = []
+    var skipped = 0
+    var failure: FeedImportError?
+    let source: URL
+    var entryDepth: Int?
+    var values: [String: String] = [:]
+    var entryURL: URL?
+    var entryBase: URL?
+    var namespaces: [String: [String]] = [:]
+    init(source: URL) { self.source = source }
+
+    func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String]) {
+        let ns = namespaceURI ?? ""
+        let inherited = stack.last?.base ?? source
+        let base = attributes["xml:base"].flatMap { ArticleURL.validated($0, relativeTo: inherited) } ?? inherited
+        stack.append(Node(name: name, namespace: ns, base: base, attributes: attributes))
+        if stack.count > 64 { failure = .tooLarge; parser.abortParsing(); return }
+        if stack.count == 1 {
+            if name == "rss" && ns.isEmpty { format = "rss" }
+            else if name == "RDF" && ns == "http://www.w3.org/1999/02/22-rdf-syntax-ns#" { format = "rdf" }
+            else if name == "feed" && ns == Self.atom { format = "atom"; sawContainer = true }
+        }
+        if name == "channel", stack.count == 2, standard(ns) { sawContainer = true }
+        let isEntry = (format == "atom" && name == "entry" && ns == Self.atom && stack.count == 2)
+            || (format == "rss" && name == "item" && ns.isEmpty && stack.count == 3 && stack[1].name == "channel")
+            || (format == "rdf" && name == "item" && ns == Self.rss1 && stack.count == 2)
+        if isEntry {
+            entryDepth = stack.count; values = [:]; entryURL = nil; entryBase = base
+            values["id"] = attributes.first { key, _ in
+                let parts = key.split(separator: ":", maxSplits: 1)
+                return parts.count == 2 && parts[1] == "about" && namespaces[String(parts[0])]?.last == "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+            }?.value
+        }
+        if let depth = entryDepth, stack.count == depth + 1, format == "atom", ns == Self.atom, name == "link",
+           [nil, "alternate"].contains(attributes["rel"]), entryURL == nil, let href = attributes["href"] {
+            entryURL = ArticleURL.validated(href, relativeTo: base)
+        }
+    }
+    private func standard(_ ns: String) -> Bool {
+        switch format { case "atom": ns == Self.atom; case "rdf": ns == Self.rss1; case "rss": ns.isEmpty; default: false }
+    }
+    func parser(_ parser: XMLParser, didStartMappingPrefix prefix: String, toURI namespaceURI: String) {
+        namespaces[prefix, default: []].append(namespaceURI)
+    }
+    func parser(_ parser: XMLParser, didEndMappingPrefix prefix: String) { _ = namespaces[prefix]?.popLast() }
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        if !stack.isEmpty { stack[stack.count - 1].text += string }
+    }
+    func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
+        if let text = String(data: CDATABlock, encoding: .utf8) { self.parser(parser, foundCharacters: text) }
+    }
+    func parser(_ parser: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
+        guard let node = stack.last else { return }
+        let text = node.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let depth = entryDepth {
+            if stack.count == depth + 1 {
+                if standard(node.namespace) {
+                    switch name {
+                    case "title": values["title"] = node.attributes["type"] == "html" ? PlainFeedText.convert(text) : text
+                    case "guid", "id": values["id"] = text
+                    case "description", "summary":
+                        values["summary"] = text
+                        if format == "atom" && node.attributes["type"] != "html" { values["summaryPlain"] = "true" }
+                    case "content":
+                        values["body"] = text
+                        if format == "atom" && node.attributes["type"] != "html" { values["bodyPlain"] = "true" }
+                    case "pubDate", "published": values["date"] = text
+                    case "updated": values["updated"] = text
+                    case "link": if format != "atom" { entryURL = ArticleURL.validated(text, relativeTo: node.base) }
+                    default: break
+                    }
+                } else if node.namespace == Self.content && name == "encoded" { values["body"] = text }
+                else if node.namespace == Self.dc && name == "date" { values["date"] = text }
+            } else if stack.count == depth {
+                finishEntry()
+                entryDepth = nil
+                if entries.count + skipped > 5_000 { failure = .tooLarge; parser.abortParsing() }
+            }
+        } else if name == "title", standard(node.namespace),
+                  (format == "atom" && stack.count == 2) || (stack.count == 3 && stack[1].name == "channel") {
+            title = node.attributes["type"] == "html" ? PlainFeedText.convert(text) : text
+        }
+        stack.removeLast()
+        if !stack.isEmpty {
+            stack[stack.count - 1].text += node.text
+            if ["p", "div", "br", "pre", "li"].contains(name) { stack[stack.count - 1].text += "\n" }
+        }
+    }
+    private func finishEntry() {
+        if entryURL == nil, let guid = values["id"] { entryURL = ArticleURL.validated(guid) }
+        guard let identity = values["id"].flatMap({ $0.isEmpty ? nil : $0 }) ?? entryURL?.absoluteString else { skipped += 1; return }
+        let summary = values["summaryPlain"] == "true" ? (values["summary"] ?? "") : PlainFeedText.convert(values["summary"] ?? "")
+        let body = values["body"].map { values["bodyPlain"] == "true" ? $0 : PlainFeedText.convert($0) } ?? summary
+        entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? "無題", url: entryURL,
+                                   summary: summary, body: body,
+                                   publishedAt: Self.date(values["date"] ?? values["updated"] ?? "")))
+    }
+    static func date(_ string: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        if let date = iso.date(from: string) { return date }
+        iso.formatOptions.insert(.withFractionalSeconds)
+        if let date = iso.date(from: string) { return date }
+        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        for format in ["EEE, dd MMM yyyy HH:mm:ss Z", "dd MMM yyyy HH:mm:ss Z", "EEE, dd MMM yyyy HH:mm Z"] {
+            formatter.dateFormat = format
+            if let date = formatter.date(from: string) { return date }
+        }
+        return nil
+    }
+    func parser(_ parser: XMLParser, foundInternalEntityDeclarationWithName name: String, value: String?) { failure = .entities; parser.abortParsing() }
+    func parser(_ parser: XMLParser, foundExternalEntityDeclarationWithName name: String, publicID: String?, systemID: String?) { failure = .entities; parser.abortParsing() }
+    func parser(_ parser: XMLParser, resolveExternalEntityName name: String, systemID: String?) -> Data? { nil }
+}
+
+// Display as SwiftUI Text, never execute feed HTML or load its resources.
+enum PlainFeedText {
+    static func convert(_ html: String) -> String {
+        var text = html.replacingOccurrences(of: "(?is)<(script|style)\\b[^>]*>.*?</\\1\\s*>", with: "", options: .regularExpression)
+        text = text.replacingOccurrences(of: "(?i)<br\\s*/?>|</(?:p|div|li|pre|h[1-6])\\s*>", with: "\n", options: .regularExpression)
+        text = text.replacingOccurrences(of: "<[^>]*>", with: "", options: .regularExpression)
+        let entities = ["&lt;": "<", "&gt;": ">", "&quot;": "\"", "&apos;": "'", "&nbsp;": " "]
+        for (entity, value) in entities { text = text.replacingOccurrences(of: entity, with: value) }
+        if let regex = try? NSRegularExpression(pattern: "&#(x[0-9a-fA-F]+|[0-9]+);") {
+            for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).reversed() {
+                guard let range = Range(match.range(at: 1), in: text), let whole = Range(match.range, in: text) else { continue }
+                let value = String(text[range]); let number = value.hasPrefix("x") ? UInt32(value.dropFirst(), radix: 16) : UInt32(value)
+                if let number, let scalar = UnicodeScalar(number) { text.replaceSubrange(whole, with: String(scalar)) }
+            }
+        }
+        return text.replacingOccurrences(of: "&amp;", with: "&").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}

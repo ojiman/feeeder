@@ -12,6 +12,12 @@ struct ReaderView: View {
     @State private var selection: UUID?
     @State private var saveError: String?
     @State private var articleText = ""
+    @State private var addingSubscription = false
+    @State private var editingFeed: Feed?
+    @State private var removingFeed: Feed?
+    @State private var originalPage = OriginalPageState()
+    @State private var restoreListFocus = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
     private var selectedArticle: Article? { store.articles.first { $0.id == selection } }
@@ -21,7 +27,7 @@ struct ReaderView: View {
             case .all: true
             case .unread: !article.isRead || article.id == selection
             case .liked: store.like(for: article) != nil
-            case .feed(let id): article.feedID == id
+            case .feed(let id): store.isArticle(article, in: id)
             }
         }
     }
@@ -40,12 +46,22 @@ struct ReaderView: View {
         } content: {
             articleList.navigationSplitViewColumnWidth(min: 280, ideal: 345, max: 470)
         } detail: {
-            detail.frame(minWidth: 360)
+            ZStack(alignment: .trailing) {
+                detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
+                if let url = originalPage.url {
+                    OriginalPageView(url: url, onClose: closeOriginal)
+                        .id(url).transition(.move(edge: .trailing))
+                }
+            }.clipped().frame(minWidth: 360)
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 930, minHeight: 600)
         .tint(.orange)
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button { addingSubscription = true } label: { Image(systemName: "plus") }
+                    .help("XMLから購読を追加").accessibilityLabel("購読を追加")
+            }
             ToolbarItemGroup(placement: .primaryAction) {
                 if let article = selectedArticle {
                     Button { perform { try store.setRead(article, !article.isRead) } } label: {
@@ -59,6 +75,12 @@ struct ReaderView: View {
                     }
                     .help("Likeを切り替える (s)")
                     .accessibilityLabel(store.like(for: article) == nil ? "Likeする" : "Likeを解除")
+                    Button(action: openExternal) { Image(systemName: "arrow.up.right.square") }
+                        .help("元ページをブラウザで開く (b)").accessibilityLabel("ブラウザで開く")
+                        .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
+                    Button(action: openOriginal) { Image(systemName: "globe") }
+                        .help("元ページをアプリ内で開く (v)").accessibilityLabel("アプリ内で開く")
+                        .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
                     Divider()
                 }
                 Menu {
@@ -73,6 +95,7 @@ struct ReaderView: View {
             }
         }
         .onChange(of: selection) { _, id in
+            originalPage.close()
             if let article = store.articles.first(where: { $0.id == id }) {
                 articleText = store.body(for: article) ?? "本文を読み込めませんでした。"
                 perform { try store.setRead(article, true) }
@@ -80,13 +103,29 @@ struct ReaderView: View {
         }
         .onChange(of: scope) { _, _ in selection = nil; listFocused = true }
         .onKeyPress("s") {
-            guard selectedArticle != nil else { return .ignored }
+            guard shortcutsEnabled, selectedArticle != nil else { return .ignored }
             toggleSelectedLike(); return .handled
         }
         .onKeyPress("m") {
-            guard let article = selectedArticle else { return .ignored }
+            guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled
         }
+        .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
+        .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
+        .onExitCommand { if originalPage.url != nil { closeOriginal() } }
+        .sheet(isPresented: $addingSubscription) {
+            SubscriptionSheet(store: store) { scope = .feed($0) }
+        }
+        .sheet(item: $editingFeed) { feed in
+            SubscriptionSheet(store: store, feed: feed) { _ in }
+        }
+        .confirmationDialog("購読を解除しますか？", isPresented: Binding(get: { removingFeed != nil }, set: { if !$0 { removingFeed = nil } })) {
+            Button("購読を解除", role: .destructive) {
+                guard let feed = removingFeed else { return }
+                perform { try store.unsubscribe(feed); if scope == .feed(feed.id) { scope = .all } }
+                removingFeed = nil
+            }
+        } message: { Text("記事・本文・Likeはライブラリに残ります。") }
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
@@ -99,11 +138,12 @@ struct ReaderView: View {
                 sidebarRow("未読", symbol: "circle.dotted", count: store.articles.filter { !$0.isRead }.count).tag(LibraryScope.unread)
                 sidebarRow("Likeした記事", symbol: "heart", count: store.likes.count).tag(LibraryScope.liked)
             }
-            Section("購読元 · サンプル") {
-                ForEach(store.feeds) { feed in
-                    sidebarRow(feed.title, symbol: feed.symbol,
-                        count: store.articles.filter { $0.feedID == feed.id && !$0.isRead }.count)
-                        .tag(LibraryScope.feed(feed.id))
+            Section("購読元") {
+                ForEach(store.feeds.filter { $0.folder.isEmpty }) { feed in subscriptionRow(feed) }
+                ForEach(Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), id: \.self) { folder in
+                    DisclosureGroup(folder) {
+                        ForEach(store.feeds.filter { $0.folder == folder }) { feed in subscriptionRow(feed) }
+                    }
                 }
             }
         }
@@ -111,13 +151,23 @@ struct ReaderView: View {
         .navigationTitle("RSS Reader")
         .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 6) {
-                Label("ローカルプレビュー", systemImage: "sparkle").font(.caption.weight(.medium))
-                Text("合成記事で読書体験を試せます。\nRSS登録・AI要約は今後追加します。")
+                Label("ローカルライブラリ", systemImage: "books.vertical").font(.caption.weight(.medium))
+                Text("＋からフィードXMLを取り込み。\n自動取得・AI要約は準備中です。")
                     .font(.caption2).foregroundStyle(.secondary).lineSpacing(3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
         }
+    }
+
+    private func subscriptionRow(_ feed: Feed) -> some View {
+        sidebarRow(feed.title, symbol: feed.symbol,
+                   count: store.articles.filter { store.isArticle($0, in: feed.id) && !$0.isRead }.count)
+            .tag(LibraryScope.feed(feed.id))
+            .contextMenu {
+                Button("購読名・フォルダを編集") { editingFeed = feed }
+                Button("購読を解除…", role: .destructive) { removingFeed = feed }
+            }
     }
 
     private func sidebarRow(_ title: String, symbol: String, count: Int) -> some View {
@@ -138,7 +188,7 @@ struct ReaderView: View {
                             .lineLimit(1)
                         Spacer(minLength: 2)
                         if store.like(for: article) != nil { Image(systemName: "heart.fill").foregroundStyle(.orange) }
-                        Text(article.publishedAt, format: .dateTime.month().day())
+                        if article.publishedAt != .distantPast { Text(article.publishedAt, format: .dateTime.month().day()) }
                     }.font(.caption2).foregroundStyle(.secondary)
                     Text(article.title).font(.system(size: 14, weight: article.isRead ? .medium : .semibold))
                         .lineLimit(2).lineSpacing(2)
@@ -161,10 +211,10 @@ struct ReaderView: View {
                     description: Text(scope == .liked ? "記事のハート、または s キーでlikeできます。" : "ほかの一覧を選んでください。"))
             }
         }
-        .onKeyPress("j") { move(1); return .handled }
-        .onKeyPress("k") { move(-1); return .handled }
+        .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
+        .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 14) { Text("j / k  移動"); Text("m  既読"); Text("s  like") }
+            HStack(spacing: 10) { Text("j/k 移動"); Text("m 既読"); Text("s like"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
         }
@@ -177,23 +227,22 @@ struct ReaderView: View {
                     HStack {
                         Text(article.publisher.uppercased()).tracking(1.3)
                         Spacer()
-                        Text("合成記事").padding(.horizontal, 8).padding(.vertical, 4)
+                        Text(article.identityKey == nil ? "合成記事" : "フィード本文").padding(.horizontal, 8).padding(.vertical, 4)
                             .background(.quaternary, in: Capsule())
                     }.font(.caption2.weight(.medium)).foregroundStyle(.secondary)
                     Text(article.title).font(.system(size: 30, weight: .bold))
                         .lineSpacing(7).fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 8) {
-                        Text(article.publishedAt, format: .dateTime.year().month().day())
-                        Text("·")
-                        Text("約2分で読めます")
+                        if article.publishedAt == .distantPast { Text("公開日時不明") }
+                        else { Text(article.publishedAt, format: .dateTime.year().month().day()) }
                     }.font(.caption).foregroundStyle(.secondary)
                     Divider()
-                    Text(articleText)
+                    Text(articleText.isEmpty ? "フィードに本文が含まれていません。元ページから確認できます。" : articleText)
                         .font(.system(size: 16)).lineSpacing(8).textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Divider().padding(.top, 10)
                     HStack {
-                        Label("サンプルの記事 · 外部通信なし", systemImage: "doc.text")
+                        Label(article.identityKey == nil ? "サンプルの記事" : "フィード提供分 · 全文取得は未実装", systemImage: "doc.text")
                         Spacer()
                         if let like = store.like(for: article) {
                             Label(like.likedAt.formatted(date: .abbreviated, time: .shortened), systemImage: "heart.fill")
@@ -215,6 +264,21 @@ struct ReaderView: View {
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(nsColor: .textBackgroundColor))
         }
+    }
+
+    private var shortcutsEnabled: Bool { !addingSubscription && editingFeed == nil && originalPage.url == nil }
+    private func openExternal() {
+        guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
+        if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
+    }
+    private func openOriginal() {
+        guard let article = selectedArticle, let url = article.originalURL else { return }
+        restoreListFocus = listFocused
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { _ = originalPage.open(articleID: article.id, url: url) }
+    }
+    private func closeOriginal() {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { originalPage.close() }
+        listFocused = restoreListFocus
     }
 
     private func move(_ offset: Int) {
