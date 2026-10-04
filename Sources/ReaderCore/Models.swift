@@ -20,12 +20,14 @@ import SwiftData
     public var summary: String
     public var publisher: String
     public var publishedAt: Date
+    public var firstReceivedAt: Date
+    public var firstReadAt: Date?
     public var isRead: Bool
     public var originalURL: String?
     public var identityKey: String?
-    public init(feedID: UUID, title: String, summary: String, publisher: String, publishedAt: Date) {
+    public init(feedID: UUID, title: String, summary: String, publisher: String, publishedAt: Date, receivedAt: Date = .now) {
         id = UUID(); self.feedID = feedID; self.title = title; self.summary = summary
-        self.publisher = publisher; self.publishedAt = publishedAt; isRead = false
+        self.publisher = publisher; self.publishedAt = publishedAt; firstReceivedAt = receivedAt; isRead = false
     }
 }
 
@@ -43,14 +45,8 @@ import SwiftData
 @Model public final class ContentSnapshot {
     @Attribute(.unique) public var articleID: UUID
     public var text: String
-    public init(articleID: UUID, text: String) { self.articleID = articleID; self.text = text }
-}
-
-@Model public final class SavedLike {
-    @Attribute(.unique) public var articleID: UUID
-    public var publisher: String
-    public var likedAt: Date
-    public init(article: Article, likedAt: Date) {
-        articleID = article.id; publisher = article.publisher; self.likedAt = likedAt
+    public var coverageRaw: String
+    public init(articleID: UUID, text: String, coverage: ContentCoverage = .feedProvided) {
+        self.articleID = articleID; self.text = text; coverageRaw = coverage.rawValue
     }
 }

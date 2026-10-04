@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 enum DemoLibrary {
-    @MainActor static func insert(into context: ModelContext) {
+    @MainActor static func insert(into context: ModelContext, at receivedAt: Date) {
         let feeds = [Feed(title: "開発ノート", symbol: "terminal"),
                      Feed(title: "テクノロジー", symbol: "cpu"),
                      Feed(title: "週末の読み物", symbol: "leaf")]
@@ -13,9 +13,9 @@ enum DemoLibrary {
 
             このアプリは、自分で選んだ情報源をひとつの場所に集め、落ち着いて読み進めるための小さな読書室です。左側で購読元を選び、真ん中で記事を探し、右側で本文を読みます。
 
-            気になった記事には、ハートを。
+            読んだ記事から、振り返りを。
 
-            記事の上にあるハート、または s キーでlikeできます。likeした時刻は端末に保存され、アプリを閉じても残ります。「あとでもう一度考えたい」という小さな印として使ってみてください。
+            本文を表示した最初の日時を記録します。週ノートで、その週に読んだ内容を自分の言葉で振り返ります。
 
             キーボードで、流れるように。
 
@@ -39,12 +39,12 @@ enum DemoLibrary {
 
             読んだ記事の一節が、ふと景色と重なることがあります。すぐに役に立たなくても、どこかに残っている。それも読むことの楽しさです。
 
-            likeの一覧は、そんな記憶の入口になるかもしれません。あとで読み返したい記事を、気軽に保存してみてください。
+            週ノートは、そんな記憶の入口になります。思い出したことを、自分の言葉で残してみてください。
 
             これは動作確認用の合成記事です。
             """),
             (0, "小さく作って、毎日触ってみる。", "最初から全部を揃えず、読む・選ぶ・保存するという一連の動きを確かめます。", """
-            まずはアプリを開く。記事をひとつ選ぶ。気に入ったらlikeして、閉じる。もう一度開いたときに、その印が残っている。
+            まずはアプリを開く。記事をひとつ選ぶ。本文を読んで、閉じる。もう一度開いたときにも、最初に読んだ日時が残っている。
 
             目立たない一連の動きですが、毎日使う道具には、この当たり前が大切です。今回の初版はそこから始めています。
 
@@ -64,7 +64,7 @@ enum DemoLibrary {
             (2, "余白のある一覧。", "文字の大きさ、行間、選択の手触り。記事を読む前の時間にも目を向けます。", """
             記事の一覧は、見出しを眺めながら次に読むものを決める場所です。少しの概要と出典があると、自分の関心との接点を探しやすくなります。
 
-            未読の小さな点、保存したハート、読み終わった記事の落ち着いた表示。必要な情報が自然に目に入ることを目指します。
+            未読の小さな点、読み終わった記事の落ち着いた表示。必要な情報が自然に目に入ることを目指します。
 
             ライトとダーク、両方の見え方を比べてみてください。設定は次回起動時にも引き継がれます。
 
@@ -75,8 +75,9 @@ enum DemoLibrary {
         for (index, entry) in entries.enumerated() {
             let article = Article(feedID: feeds[entry.0].id, title: entry.1, summary: entry.2,
                                   publisher: ["dev.example", "tech.example", "weekend.example"][entry.0],
-                                  publishedAt: reference.addingTimeInterval(Double(-index * 3600)))
+                                  publishedAt: reference.addingTimeInterval(Double(-index * 3600)), receivedAt: receivedAt)
             context.insert(article)
+            context.insert(FeedMembership(feedID: article.feedID, articleID: article.id, sourceID: article.id.uuidString))
             context.insert(ContentSnapshot(articleID: article.id, text: entry.3))
         }
     }

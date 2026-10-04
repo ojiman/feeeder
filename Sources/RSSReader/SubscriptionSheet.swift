@@ -98,7 +98,7 @@ private enum FeedExample: String, CaseIterable {
             """
             <rss version="2.0"><channel><title>読書ラボ · RSS 2.0</title>
             <item><guid>demo-1</guid><title>XMLから、記事が届く。</title><link>https://reader-demo.example/posts/1</link>
-            <pubDate>Wed, 09 Sep 2026 10:00:00 +0900</pubDate><description><![CDATA[<p>これは合成記事です。XMLを読み込み、購読を整理できるようになりました。</p><p>Likeと既読は再取り込みでも保持されます。同じURLの記事は別フィードから届いても共有します。</p>]]></description></item>
+            <pubDate>Wed, 09 Sep 2026 10:00:00 +0900</pubDate><description><![CDATA[<p>これは合成記事です。XMLを読み込み、購読を整理できるようになりました。</p><p>既読日時は再取り込みでも保持されます。同じURLの記事は別フィードから届いても共有します。</p>]]></description></item>
             </channel></rss>
             """
         case .rdf:

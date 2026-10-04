@@ -2,7 +2,7 @@ import SwiftUI
 import ReaderCore
 
 private enum LibraryScope: Hashable {
-    case all, unread, liked, feed(UUID)
+    case all, unread, feed(UUID)
 }
 
 struct ReaderView: View {
@@ -11,7 +11,7 @@ struct ReaderView: View {
     @State private var scope: LibraryScope? = .all
     @State private var selection: UUID?
     @State private var saveError: String?
-    @State private var articleText = ""
+    @State private var displayedContent: ArticleContent?
     @State private var addingSubscription = false
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
@@ -26,7 +26,6 @@ struct ReaderView: View {
             switch scope ?? .all {
             case .all: true
             case .unread: !article.isRead || article.id == selection
-            case .liked: store.like(for: article) != nil
             case .feed(let id): store.isArticle(article, in: id)
             }
         }
@@ -35,7 +34,6 @@ struct ReaderView: View {
         switch scope ?? .all {
         case .all: "すべての記事"
         case .unread: "未読"
-        case .liked: "Likeした記事"
         case .feed(let id): store.feeds.first { $0.id == id }?.title ?? "記事"
         }
     }
@@ -69,12 +67,6 @@ struct ReaderView: View {
                     }
                     .help("既読・未読を切り替える (m)")
                     .accessibilityLabel(article.isRead ? "未読にする" : "既読にする")
-                    Button(action: toggleSelectedLike) {
-                        Image(systemName: store.like(for: article) == nil ? "heart" : "heart.fill")
-                            .foregroundStyle(store.like(for: article) == nil ? Color.secondary : Color.orange)
-                    }
-                    .help("Likeを切り替える (s)")
-                    .accessibilityLabel(store.like(for: article) == nil ? "Likeする" : "Likeを解除")
                     Button(action: openExternal) { Image(systemName: "arrow.up.right.square") }
                         .help("元ページをブラウザで開く (b)").accessibilityLabel("ブラウザで開く")
                         .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
@@ -97,15 +89,10 @@ struct ReaderView: View {
         .onChange(of: selection) { _, id in
             originalPage.close()
             if let article = store.articles.first(where: { $0.id == id }) {
-                articleText = store.body(for: article) ?? "本文を読み込めませんでした。"
-                perform { try store.setRead(article, true) }
-            } else { articleText = "" }
+                perform { displayedContent = try store.content(articleID: article.id, at: .now) }
+            } else { displayedContent = nil }
         }
         .onChange(of: scope) { _, _ in selection = nil; listFocused = true }
-        .onKeyPress("s") {
-            guard shortcutsEnabled, selectedArticle != nil else { return .ignored }
-            toggleSelectedLike(); return .handled
-        }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled
@@ -125,7 +112,7 @@ struct ReaderView: View {
                 perform { try store.unsubscribe(feed); if scope == .feed(feed.id) { scope = .all } }
                 removingFeed = nil
             }
-        } message: { Text("記事・本文・Likeはライブラリに残ります。") }
+        } message: { Text("記事・本文はライブラリに残ります。") }
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
@@ -136,7 +123,6 @@ struct ReaderView: View {
             Section("ライブラリ") {
                 sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
                 sidebarRow("未読", symbol: "circle.dotted", count: store.articles.filter { !$0.isRead }.count).tag(LibraryScope.unread)
-                sidebarRow("Likeした記事", symbol: "heart", count: store.likes.count).tag(LibraryScope.liked)
             }
             Section("購読元") {
                 ForEach(store.feeds.filter { $0.folder.isEmpty }) { feed in subscriptionRow(feed) }
@@ -187,7 +173,6 @@ struct ReaderView: View {
                         Text(store.feeds.first { $0.id == article.feedID }?.title ?? article.publisher)
                             .lineLimit(1)
                         Spacer(minLength: 2)
-                        if store.like(for: article) != nil { Image(systemName: "heart.fill").foregroundStyle(.orange) }
                         if article.publishedAt != .distantPast { Text(article.publishedAt, format: .dateTime.month().day()) }
                     }.font(.caption2).foregroundStyle(.secondary)
                     Text(article.title).font(.system(size: 14, weight: article.isRead ? .medium : .semibold))
@@ -206,15 +191,14 @@ struct ReaderView: View {
         .navigationSubtitle("\(visibleArticles.count)件の記事")
         .overlay {
             if visibleArticles.isEmpty {
-                ContentUnavailableView(scope == .liked ? "気になる記事を保存" : "記事はありません",
-                    systemImage: scope == .liked ? "heart" : "tray",
-                    description: Text(scope == .liked ? "記事のハート、または s キーでlikeできます。" : "ほかの一覧を選んでください。"))
+                ContentUnavailableView("記事はありません", systemImage: "tray",
+                    description: Text("購読を追加するか、ほかの一覧を選んでください。"))
             }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) { Text("j/k 移動"); Text("m 既読"); Text("s like"); Text("b/v 原文") }
+            HStack(spacing: 10) { Text("j/k 移動"); Text("m 既読"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
         }
@@ -227,7 +211,7 @@ struct ReaderView: View {
                     HStack {
                         Text(article.publisher.uppercased()).tracking(1.3)
                         Spacer()
-                        Text(article.identityKey == nil ? "合成記事" : "フィード本文").padding(.horizontal, 8).padding(.vertical, 4)
+                        Text(displayedContent?.articleID == article.id ? displayedContent!.coverage.label : "本文なし").padding(.horizontal, 8).padding(.vertical, 4)
                             .background(.quaternary, in: Capsule())
                     }.font(.caption2.weight(.medium)).foregroundStyle(.secondary)
                     Text(article.title).font(.system(size: 30, weight: .bold))
@@ -237,16 +221,23 @@ struct ReaderView: View {
                         else { Text(article.publishedAt, format: .dateTime.year().month().day()) }
                     }.font(.caption).foregroundStyle(.secondary)
                     Divider()
-                    Text(articleText.isEmpty ? "フィードに本文が含まれていません。元ページから確認できます。" : articleText)
-                        .font(.system(size: 16)).lineSpacing(8).textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let content = displayedContent, content.articleID == article.id {
+                        Text(content.text)
+                            .font(.system(size: 16)).lineSpacing(8).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .onAppear {
+                                guard selection == content.articleID else { return }
+                                perform { try store.markDisplayed(articleID: content.articleID, at: .now) }
+                            }
+                    } else {
+                        Text("本文を利用できません。元ページから確認できます。")
+                            .foregroundStyle(.secondary)
+                    }
                     Divider().padding(.top, 10)
                     HStack {
                         Label(article.identityKey == nil ? "サンプルの記事" : "フィード提供分 · 全文取得は未実装", systemImage: "doc.text")
                         Spacer()
-                        if let like = store.like(for: article) {
-                            Label(like.likedAt.formatted(date: .abbreviated, time: .shortened), systemImage: "heart.fill")
-                        }
+
                     }.font(.caption2).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: 670)
@@ -283,13 +274,6 @@ struct ReaderView: View {
 
     private func move(_ offset: Int) {
         selection = ReaderNavigation.move(selection, by: offset, in: visibleArticles.map(\.id))
-    }
-    private func toggleSelectedLike() {
-        guard let article = selectedArticle else { return }
-        perform {
-            try store.toggleLike(article)
-            if scope == .liked && store.like(for: article) == nil { selection = nil }
-        }
     }
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { saveError = error.localizedDescription }

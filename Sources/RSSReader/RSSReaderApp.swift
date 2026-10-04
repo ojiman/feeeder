@@ -14,10 +14,10 @@ struct RSSReaderApp: App {
             if let index = args.firstIndex(of: "--data-directory"), args.indices.contains(index + 1) {
                 directory = URL(fileURLWithPath: args[index + 1], isDirectory: true)
             } else {
-                directory = URL.applicationSupportDirectory.appending(path: "RSSReader-Development", directoryHint: .isDirectory)
+                directory = URL.applicationSupportDirectory.appending(path: "Feeeder", directoryHint: .isDirectory)
             }
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            _store = State(initialValue: try ReaderStore(url: directory.appending(path: "Reader.store")))
+            _store = State(initialValue: try ReaderStore(url: directory.appending(path: "Reader.store"), seedDemo: args.contains("--seed-demo")))
         } catch {
             _startupError = State(initialValue: error.localizedDescription)
         }
