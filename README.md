@@ -26,7 +26,7 @@ bash scripts/build-app.sh
 
 合成サンプルの `.example` URLには実在ページがありません。サンプルでは取り込み・整理・重複防止を試してください。RSS 2.0とRSS 1.0のサンプルは同じ記事URLを共有し、両方を追加しても記事数は1件だけ増えます。
 
-保存先はアプリ専用のApplication Support内 `RSSReader-Development/Reader.store` です。検証時は `--data-directory <path>` で別の保存先を指定できます。
+保存先はアプリ専用のApplication Support内 `RSSReader-Development/Reader.store` です。検証時は `--data-directory <path>` で別の保存先を指定できます。V1では専用保存先 `Application Support/Feeeder/Reader.store` の空ライブラリから開始し、プロトタイプのデータを引き継ぎません。
 
 フィードの自動取得・本文抽出・AI要約は未実装です。「フィード本文」は提供された範囲であり、全文取得済みを意味しません。ページ閲覧はこの開発段階では非永続セッションで、ログイン状態を保持しません。Keychainアクセスは行いません。
 
