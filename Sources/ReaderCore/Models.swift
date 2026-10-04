@@ -22,6 +22,7 @@ import SwiftData
     public var publishedAt: Date
     public var firstReceivedAt: Date
     public var firstReadAt: Date?
+    public var contentDeletedAt: Date?
     public var isRead: Bool
     public var originalURL: String?
     public var identityKey: String?

@@ -5,6 +5,10 @@ import SwiftData
 @Observable @MainActor public final class ReaderStore {
     public private(set) var articles: [Article] = []
     public private(set) var feeds: [Feed] = []
+    public private(set) var contentRevision = 0
+    public private(set) var settings: ReaderSettings?
+    public var retentionDays: Int { settings?.retentionDays ?? 30 }
+    @ObservationIgnored public var onContentPolicyChanged: (@MainActor () -> Void)?
     public private(set) var weeks: [WeeklyPeriod] = []
     public private(set) var notes: [WeeklyNote] = []
     public private(set) var noteSources: [NoteSource] = []
@@ -13,14 +17,23 @@ import SwiftData
     @ObservationIgnored private let container: ModelContainer
     @ObservationIgnored let context: ModelContext
 
-    public init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self])
+    public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
+        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
         let configuration = ModelConfiguration("Reader", schema: schema, url: url, cloudKitDatabase: .none)
-        container = try ModelContainer(for: schema, configurations: [configuration])
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+        try self.init(container: container, seedDemo: seedDemo, now: now)
+    }
+
+    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now) throws {
+        self.container = container
         context = ModelContext(container)
         context.autosaveEnabled = false
+        if try context.fetchCount(FetchDescriptor<ReaderSettings>()) == 0 {
+            context.insert(ReaderSettings()); try context.save()
+        }
         if seedDemo { try seedIfEmpty(now: now) }
         else { try reload() }
+        try purgeExpired(at: now)
     }
 
     public func seedIfEmpty(now: Date = .now) throws {
@@ -32,6 +45,8 @@ import SwiftData
     }
 
     func reload() throws {
+        contentRevision += 1
+        settings = try context.fetch(FetchDescriptor<ReaderSettings>()).first
         articles = try context.fetch(FetchDescriptor<Article>(sortBy: [SortDescriptor(\.publishedAt, order: .reverse)]))
         feeds = try context.fetch(FetchDescriptor<Feed>(sortBy: [SortDescriptor(\.title)]))
         weeks = try context.fetch(FetchDescriptor<WeeklyPeriod>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
@@ -52,6 +67,7 @@ import SwiftData
         feed.sourceURL = parsed.sourceURL.absoluteString
         if !feed.customTitle { feed.title = parsed.title }
         do {
+            var contentRemoved = false
             var allArticles = articles
             var allMemberships = memberships
             for entry in parsed.entries {
@@ -66,14 +82,16 @@ import SwiftData
                     article.originalURL = url.absoluteString
                 } else if article.identityKey == nil { article.identityKey = identity }
                 article.title = entry.title
-                article.summary = entry.summary
+                let available = isContentAvailable(article, at: receivedAt)
+                if available { article.summary = entry.summary }
+                else { contentRemoved = try removeContent(articleIDs: [article.id], at: receivedAt) || contentRemoved }
                 if let date = entry.publishedAt { article.publishedAt = date }
                 // A second feed must not overwrite a saved article with a shorter excerpt.
                 let id = article.id
-                if let snapshot = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })).first {
+                if available, let snapshot = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })).first {
                     if !entry.body.isEmpty &&
                         (article.feedID == feed.id || entry.body.count > snapshot.text.count) { snapshot.text = entry.body }
-                } else { context.insert(ContentSnapshot(articleID: id, text: entry.body)) }
+                } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body)) }
                 if !allMemberships.contains(where: { $0.feedID == feed.id && $0.articleID == id }) {
                     let membership = FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID)
                     context.insert(membership); allMemberships.append(membership)
@@ -81,6 +99,7 @@ import SwiftData
             }
             try save()
             try reload()
+            if contentRemoved { onContentPolicyChanged?() }
             return feed
         } catch { context.rollback(); try? reload(); throw error }
     }
@@ -99,10 +118,8 @@ import SwiftData
         try save(); try reload()
     }
 
-    public func body(for article: Article) -> String? {
-        let id = article.id
-        let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })
-        return try? context.fetch(request).first?.text
+    public func body(for article: Article, at: Date = .now) -> String? {
+        try? content(articleID: article.id, at: at)?.text
     }
 
     public func setRead(_ article: Article, _ value: Bool) throws {
@@ -112,7 +129,7 @@ import SwiftData
     }
 
     public func content(articleID: UUID, at: Date) throws -> ArticleContent? {
-        guard let article = articles.first(where: { $0.id == articleID }) else { return nil }
+        guard let article = articles.first(where: { $0.id == articleID }), isContentAvailable(article, at: at) else { return nil }
         let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
         let snapshot = try context.fetch(request).first
         let body = snapshot?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

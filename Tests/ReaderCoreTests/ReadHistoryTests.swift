@@ -21,7 +21,7 @@ struct TestLibrary {
 
     @Test func selectionAndContentLookupDoNotMarkRead() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url)
+        let store = try ReaderStore(url: library.url, now: displayed)
         _ = try store.importFeed(parsed(), receivedAt: received)
         let article = try #require(store.articles.first)
         _ = ReaderNavigation.move(nil, by: 1, in: store.articles.map(\.id))
@@ -32,7 +32,7 @@ struct TestLibrary {
 
     @Test func firstDisplayIsRecordedOnce() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url)
+        let store = try ReaderStore(url: library.url, now: displayed)
         _ = try store.importFeed(parsed(), receivedAt: received)
         let article = try #require(store.articles.first)
         try store.markDisplayed(articleID: article.id, at: displayed)
@@ -46,7 +46,7 @@ struct TestLibrary {
 
     @Test func unavailableContentDoesNotMarkRead() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url)
+        let store = try ReaderStore(url: library.url, now: displayed)
         let xml = "<rss><channel><title>Empty</title><item><guid>empty</guid><title>Empty article</title></item></channel></rss>"
         _ = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://feed.example/empty")!), receivedAt: received)
         let article = try #require(store.articles.first)
@@ -58,13 +58,13 @@ struct TestLibrary {
     @Test func readHistorySurvivesReopen() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let id = try autoreleasepool {
-            let store = try ReaderStore(url: library.url)
+            let store = try ReaderStore(url: library.url, now: displayed)
             _ = try store.importFeed(parsed(), receivedAt: received)
             let article = try #require(store.articles.first)
             try store.markDisplayed(articleID: article.id, at: displayed)
             return article.id
         }
-        let reopened = try ReaderStore(url: library.url)
+        let reopened = try ReaderStore(url: library.url, now: displayed)
         let article = try #require(reopened.articles.first)
         #expect(article.id == id && article.firstReadAt == displayed && article.firstReceivedAt == received)
         #expect(reopened.feeds.count == 1 && reopened.memberships.count == 1)
@@ -74,10 +74,10 @@ struct TestLibrary {
     @Test func emptyLibraryRemainsEmptyAfterReopen() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         try autoreleasepool {
-            let store = try ReaderStore(url: library.url)
+            let store = try ReaderStore(url: library.url, now: displayed)
             #expect(store.articles.isEmpty && store.feeds.isEmpty)
         }
-        let reopened = try ReaderStore(url: library.url)
+        let reopened = try ReaderStore(url: library.url, now: displayed)
         #expect(reopened.articles.isEmpty && reopened.feeds.isEmpty)
     }
 
@@ -85,7 +85,7 @@ struct TestLibrary {
         let library = try TestLibrary(); defer { library.cleanup() }
         let invalid = Data("not a database — synthetic".utf8)
         try invalid.write(to: library.url)
-        #expect(throws: (any Error).self) { _ = try ReaderStore(url: library.url) }
+        #expect(throws: (any Error).self) { _ = try ReaderStore(url: library.url, now: displayed) }
         #expect(try Data(contentsOf: library.url) == invalid)
     }
 }

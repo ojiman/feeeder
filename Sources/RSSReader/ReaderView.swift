@@ -21,6 +21,10 @@ struct ReaderView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
+    private var selectedExpiry: Date? {
+        guard let article = selectedArticle, article.contentDeletedAt == nil else { return nil }
+        return RetentionPolicy(days: store.retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
+    }
     private var selectedArticle: Article? { store.articles.first { $0.id == selection } }
     private var visibleArticles: [Article] {
         store.articles.filter { article in
@@ -101,6 +105,18 @@ struct ReaderView: View {
                 .help("外観を切り替える")
                 .accessibilityLabel("外観")
             }
+        }
+        .task(id: selectedExpiry) {
+            guard let expiry = selectedExpiry else { return }
+            do {
+                if expiry > .now { try await Task.sleep(for: .seconds(expiry.timeIntervalSinceNow)) }
+                try Task.checkCancellation()
+                perform { try store.purgeExpired(at: .now) }
+            } catch { /* Selection changes cancel the old article's deadline. */ }
+        }
+        .onChange(of: store.contentRevision) { _, _ in
+            guard let id = selection else { return }
+            perform { displayedContent = try store.content(articleID: id, at: .now) }
         }
         .onChange(of: selection) { _, id in
             originalPage.close()
@@ -237,7 +253,7 @@ struct ReaderView: View {
                         else { Text(article.publishedAt, format: .dateTime.year().month().day()) }
                     }.font(.caption).foregroundStyle(.secondary)
                     Divider()
-                    if let content = displayedContent, content.articleID == article.id {
+                    if let content = displayedContent, content.articleID == article.id, let expiry = selectedExpiry, expiry > .now {
                         Text(content.text)
                             .font(.system(size: 16)).lineSpacing(8).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)

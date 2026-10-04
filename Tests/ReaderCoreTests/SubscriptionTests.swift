@@ -9,19 +9,19 @@ import Testing
         defer { try? FileManager.default.removeItem(at: directory) }
         let storeURL = directory.appending(path: "Reader.store")
         let id: UUID = try autoreleasepool {
-            let store = try ReaderStore(url: storeURL)
+            let store = try ReaderStore(url: storeURL, now: Date(timeIntervalSince1970: 123))
             let first = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://feed.example/a")!)
-            let feed = try store.importFeed(first)
+            let feed = try store.importFeed(first, receivedAt: Date(timeIntervalSince1970: 123))
             let article = try #require(store.articles.first { $0.originalURL != nil })
             let articleID = article.id
             try store.markDisplayed(articleID: article.id, at: Date(timeIntervalSince1970: 123))
             try store.updateSubscription(feed, title: "自分の名前", folder: "Engineering")
-            _ = try store.importFeed(first)
+            _ = try store.importFeed(first, receivedAt: Date(timeIntervalSince1970: 123))
             #expect(store.articles.count == 1)
             #expect(store.feeds.count == 1)
             #expect(feed.title == "自分の名前")
             let second = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://aggregator.example/rss")!)
-            let other = try store.importFeed(second)
+            let other = try store.importFeed(second, receivedAt: Date(timeIntervalSince1970: 123))
             #expect(store.articles.count == 1)
             #expect(store.isArticle(article, in: feed.id))
             #expect(store.isArticle(article, in: other.id))
@@ -32,10 +32,10 @@ import Testing
             try store.unsubscribe(other)
             #expect(store.articles.contains { $0.id == articleID })
             #expect(article.firstReadAt == Date(timeIntervalSince1970: 123))
-            #expect(store.body(for: article)?.contains("本文 & 補足") == true)
+            #expect(store.body(for: article, at: Date(timeIntervalSince1970: 123))?.contains("本文 & 補足") == true)
             return articleID
         }
-        let reopened = try ReaderStore(url: storeURL)
+        let reopened = try ReaderStore(url: storeURL, now: Date(timeIntervalSince1970: 123))
         let article = try #require(reopened.articles.first { $0.id == id })
         #expect(article.firstReadAt == Date(timeIntervalSince1970: 123))
         #expect(reopened.feeds.isEmpty)
