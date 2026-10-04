@@ -1,5 +1,7 @@
 # 通信・OSサービスの検証 — 2026-09-06
 
+> これは当時の部分試験と停止判断の記録であり、現行V1のハーネス合格証拠ではない。Keychain試験は通常accountで再実行しない。現行の条件は [Architecture](architecture.md) を参照する。
+
 通信の部分試験は成功。Keychain試験は、ユーザーから予期しない **`security wants to use the "login" keychain`** ダイアログが報告されたため停止した。Keychainの自動試験経路はBLOCKEDであり、本体の無人実装開始条件を満たしたとは扱わない。
 
 ## 確認できたこと

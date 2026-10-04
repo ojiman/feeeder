@@ -1,5 +1,7 @@
 # Offline feed import and original-page navigation
 
+> Historical prototype plan. Current V1 requirements and engineering design are in [PRD](../../specification.md) and [Architecture](../../architecture.md). The F-series scope and Like behavior below are not V1 instructions.
+
 Approved scope: specification F-01/F-03/F-04, reader-first amendment, user request to continue. Coordinator executes inline; autonomous workers stay gated.
 
 1. Add synthetic tests for RSS2/content namespace, RDF/DC, Atom alternate links/xml:base, malformed XML and entity rejection. Implement a bounded XMLParser delegate returning value types; no URL fetching.

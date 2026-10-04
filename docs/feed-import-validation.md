@@ -1,5 +1,7 @@
 # フィード取り込み開発版の検証（2026-09-09）
 
+> これは当時の試作品の検証記録であり、V1の受入結果ではない。現行の受入条件は [PRD](specification.md) と [Architecture](architecture.md) を参照する。
+
 対象: `docs/superpowers/plans/2026-09-09-feed-reader.md`。親による対話実装。実サイトへの通信・Keychain・subagent起動はなし。
 
 ## テスト先行の記録
