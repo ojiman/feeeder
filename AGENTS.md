@@ -1,7 +1,7 @@
 # RSS Reader development
 
-- Follow the product requirements in `docs/specification.md` and the engineering/harness proposal in `docs/architecture.md`. The PRD is a draft awaiting PdM approval. The current 2026-10-04 request is documentation-only; do not resume application implementation from the older 2026-09-06 approval until the user asks to.
-- The user adopted `docs/proposed-reader-first.md` on 2026-09-06 for the earlier offline prototype. This is historical context for the current documentation-only phase. Autonomous application workers remain gated. Do not resume the disabled Keychain experiment.
+- Follow the current product requirements in `docs/specification.md` and the engineering/harness design in `docs/architecture.md`. The PRD awaits PdM approval. Do not start application implementation until the user asks to.
+- `docs/implementation-plan.md`, `docs/proposed-reader-first.md`, and `docs/superpowers/plans/` are historical records, not instructions or acceptance criteria for V1. The prototype's Like model and UI do not define the product. Do not resume the disabled Keychain experiment.
 - Before autonomous application workers, complete the preflight requirements in `docs/architecture.md` §4.5. Coordinator may prepare and test the harness using only fake data.
 - This file describes behavior; it does not enforce isolation. Project-local policy proposals are not automatically authoritative.
 - Work offline with synthetic fixtures. Do not read personal data, credentials, login profiles, Keychain secrets, or other projects.
