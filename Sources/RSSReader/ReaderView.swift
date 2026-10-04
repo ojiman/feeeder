@@ -7,6 +7,7 @@ private enum LibraryScope: Hashable {
 
 struct ReaderView: View {
     @Bindable var store: ReaderStore
+    @Bindable var refresh: FeedRefreshController
     @Binding var appearance: String
     @State private var priorReaderScope: LibraryScope? = .all
     @State private var scope: LibraryScope? = .all
@@ -78,9 +79,13 @@ struct ReaderView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button { addingSubscription = true } label: { Image(systemName: "plus") }
-                    .help("XMLから購読を追加").accessibilityLabel("購読を追加")
+                    .help("URLから購読を追加").accessibilityLabel("購読を追加")
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                Button { Task { await refresh.refresh() } } label: {
+                    if refresh.refreshing { ProgressView().controlSize(.small) }
+                    else { Image(systemName: "arrow.clockwise") }
+                }.disabled(refresh.refreshing).help("購読を更新").accessibilityLabel("購読を更新")
                 if let article = selectedArticle {
                     Button { perform { try store.setRead(article, !article.isRead) } } label: {
                         Image(systemName: article.isRead ? "envelope.open" : "envelope.badge")
@@ -170,7 +175,7 @@ struct ReaderView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 6) {
                 Label("ローカルライブラリ", systemImage: "books.vertical").font(.caption.weight(.medium))
-                Text("＋からフィードXMLを取り込み。\n自動取得・AI要約は準備中です。")
+                Text("＋からURLで購読。\n30分ごとに記事を更新します。")
                     .font(.caption2).foregroundStyle(.secondary).lineSpacing(3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -179,10 +184,17 @@ struct ReaderView: View {
     }
 
     private func subscriptionRow(_ feed: Feed) -> some View {
-        sidebarRow(feed.title, symbol: feed.symbol,
-                   count: store.articles.filter { store.isArticle($0, in: feed.id) && !$0.isRead }.count)
+        HStack {
+            sidebarRow(feed.title, symbol: feed.symbol,
+                       count: store.articles.filter { store.isArticle($0, in: feed.id) && !$0.isRead }.count)
+            if let error = refresh.errors[feed.id] {
+                Image(systemName: "exclamationmark.circle").foregroundStyle(.secondary).help(error)
+                    .accessibilityLabel("更新失敗: " + error)
+            }
+        }
             .tag(LibraryScope.feed(feed.id))
             .contextMenu {
+                Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
                 Button("購読名・フォルダを編集") { editingFeed = feed }
                 Button("購読を解除…", role: .destructive) { removingFeed = feed }
             }

@@ -6,6 +6,9 @@ import SwiftData
     public var title: String
     public var symbol: String
     public var sourceURL: String?
+    public var etag: String?
+    public var lastModified: String?
+    public var lastFetchedAt: Date?
     public var folder: String = ""
     public var customTitle: Bool = false
     public init(title: String, symbol: String) {

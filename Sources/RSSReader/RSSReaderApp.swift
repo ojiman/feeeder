@@ -4,6 +4,7 @@ import ReaderCore
 @main
 struct RSSReaderApp: App {
     @State private var store: ReaderStore?
+    @State private var refresh: FeedRefreshController?
     @State private var startupError: String?
     @State private var lifecycleError: String?
     @Environment(\.scenePhase) private var scenePhase
@@ -19,7 +20,9 @@ struct RSSReaderApp: App {
                 directory = URL.applicationSupportDirectory.appending(path: "Feeeder", directoryHint: .isDirectory)
             }
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            _store = State(initialValue: try ReaderStore(url: directory.appending(path: "Reader.store"), seedDemo: args.contains("--seed-demo")))
+            let store = try ReaderStore(url: directory.appending(path: "Reader.store"), seedDemo: args.contains("--seed-demo"))
+            _store = State(initialValue: store)
+            _refresh = State(initialValue: FeedRefreshController(store: store))
         } catch {
             _startupError = State(initialValue: error.localizedDescription)
         }
@@ -28,7 +31,7 @@ struct RSSReaderApp: App {
     var body: some Scene {
         Window("RSS Reader", id: "reader") {
             Group {
-                if let store { ReaderView(store: store, appearance: $appearance) }
+                if let store, let refresh { ReaderView(store: store, refresh: refresh, appearance: $appearance) }
                 else {
                     ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
                         description: Text(startupError ?? "不明なエラーです。"))
@@ -37,12 +40,14 @@ struct RSSReaderApp: App {
             }
             .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { purgeContent() }
+                if phase == .active { purgeContent(); Task { await refresh?.refresh() } }
             }
             .task {
+                await refresh?.refresh()
                 while !Task.isCancelled {
-                    do { try await Task.sleep(for: .seconds(3600)) } catch { break }
+                    do { try await Task.sleep(for: .seconds(1800)) } catch { break }
                     purgeContent()
+                    await refresh?.refresh()
                 }
             }
             .alert("保存データを整理できませんでした", isPresented: Binding(get: { lifecycleError != nil }, set: { if !$0 { lifecycleError = nil } })) {

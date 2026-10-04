@@ -8,6 +8,9 @@ struct SubscriptionSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var source = ""
     @State private var xml = ""
+    @State private var manualXML = false
+    @State private var etag: String?
+    @State private var lastModified: String?
     @State private var title = ""
     @State private var folder = ""
     @State private var busy = false
@@ -22,23 +25,27 @@ struct SubscriptionSheet: View {
                 TextField("購読名", text: $title)
                 TextField("フォルダ（任意・1階層）", text: $folder)
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                Text("更新する場合は、同じURLと新しいXMLを「購読を追加」から取り込んでください。")
+                Text("ツールバーの更新ボタンで最新の記事を取得できます。")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
-                Text("フィードURLとXMLを貼り付けて取り込みます。URLからの自動取得は準備中です。")
+                Text("RSS / AtomのURLを入力して、記事を取得します。")
                     .font(.callout).foregroundStyle(.secondary)
-                TextField("フィードURL（https://…）", text: $source)
-                TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
-                    .frame(minHeight: 240).border(.quaternary)
-                    .accessibilityLabel("フィードXML")
-                HStack {
-                    Menu("合成サンプルを入力") {
-                        ForEach(FeedExample.allCases, id: \.self) { example in
-                            Button(example.rawValue) { source = example.url; xml = example.xml; result = nil }
+                TextField("フィードURL（https://…）", text: $source).disabled(busy)
+                Toggle("XMLを直接入力（合成サンプル・トラブル確認用）", isOn: $manualXML).font(.caption).disabled(busy)
+                if manualXML {
+                    TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
+                        .frame(minHeight: 240).border(.quaternary)
+                        .accessibilityLabel("フィードXML").disabled(busy)
+                    HStack {
+                        Menu("合成サンプルを入力") {
+                            ForEach(FeedExample.allCases, id: \.self) { example in
+                                Button(example.rawValue) { source = example.url; xml = example.xml; result = nil }
+                            }
                         }
+                        .disabled(busy)
+                        Spacer()
+                        Text("RSS 1.0 / RSS 2.0 / Atom · 2MBまで").font(.caption).foregroundStyle(.secondary)
                     }
-                    Spacer()
-                    Text("RSS 1.0 / RSS 2.0 / Atom · 2MBまで").font(.caption).foregroundStyle(.secondary)
                 }
                 if let result, result.skippedEntries > 0 {
                     Text("識別子も記事URLもない\(result.skippedEntries)件を取り込めません。残り\(result.entries.count)件を取り込みます。")
@@ -50,7 +57,7 @@ struct SubscriptionSheet: View {
                 if busy { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("キャンセル") { parseTask?.cancel(); dismiss() }.keyboardShortcut(.cancelAction)
-                Button(feed == nil ? (result == nil ? "確認して取り込む" : "残りの記事を取り込む") : "保存", action: submit)
+                Button(feed == nil ? (result == nil ? "取得して取り込む" : "残りの記事を取り込む") : "保存", action: submit)
                     .keyboardShortcut(.defaultAction).disabled(busy)
             }
         }
@@ -58,6 +65,7 @@ struct SubscriptionSheet: View {
         .onAppear { title = feed?.title ?? ""; folder = feed?.folder ?? "" }
         .onChange(of: xml) { _, _ in result = nil }
         .onChange(of: source) { _, _ in result = nil }
+        .onChange(of: manualXML) { _, _ in result = nil }
         .onDisappear { parseTask?.cancel() }
     }
 
@@ -71,10 +79,20 @@ struct SubscriptionSheet: View {
         if let result { commit(result); return }
         guard let url = ArticleURL.validated(source) else { error = FeedImportError.invalidURL.localizedDescription; return }
         let input = Data(xml.utf8)
+        let manual = manualXML
         busy = true
         parseTask = Task {
             do {
-                let parsed = try await Task.detached(priority: .userInitiated) { try FeedParser.parse(input, sourceURL: url) }.value
+                let parsed: ParsedFeed
+                if manual {
+                    parsed = try await Task.detached(priority: .userInitiated) { try FeedParser.parse(input, sourceURL: url) }.value
+                    etag = nil; lastModified = nil
+                } else {
+                    guard case .modified(let fetched, let tag, let modified) = try await FeedClient().fetch(url: url) else {
+                        throw HTTPError.invalidResponse
+                    }
+                    parsed = fetched; etag = tag; lastModified = modified
+                }
                 guard !Task.isCancelled else { return }
                 busy = false
                 if parsed.skippedEntries > 0 { result = parsed } else { commit(parsed) }
@@ -82,7 +100,11 @@ struct SubscriptionSheet: View {
         }
     }
     private func commit(_ parsed: ParsedFeed) {
-        do { let feed = try store.importFeed(parsed); onImported(feed.id); dismiss() }
+        do {
+            let feed = try store.importFeed(parsed)
+            if !manualXML { try store.recordFetch(feed, etag: etag, lastModified: lastModified, at: .now) }
+            onImported(feed.id); dismiss()
+        }
         catch { self.error = error.localizedDescription }
     }
 }

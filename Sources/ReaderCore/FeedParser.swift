@@ -43,13 +43,13 @@ public enum ArticleURL {
 }
 
 public enum FeedParser {
-    public static func parse(_ data: Data, sourceURL: URL) throws -> ParsedFeed {
+    public static func parse(_ data: Data, sourceURL: URL, baseURL: URL? = nil) throws -> ParsedFeed {
         guard data.count <= 2 * 1024 * 1024 else { throw FeedImportError.tooLarge }
         guard let source = ArticleURL.validated(sourceURL.absoluteString) else { throw FeedImportError.invalidURL }
         // Strip NULs only for declaration detection, including UTF-16/32 input. Never resolve a DTD.
         let declarationScan = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\0", with: "")
         guard !declarationScan.contains("<!DOCTYPE"), !declarationScan.contains("<!ENTITY") else { throw FeedImportError.entities }
-        let reader = FeedXMLReader(source: source)
+        let reader = FeedXMLReader(source: baseURL.flatMap { ArticleURL.validated($0.absoluteString) } ?? source)
         let parser = XMLParser(data: data)
         parser.shouldProcessNamespaces = true
         parser.shouldReportNamespacePrefixes = true
