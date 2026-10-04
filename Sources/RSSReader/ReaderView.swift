@@ -2,12 +2,13 @@ import SwiftUI
 import ReaderCore
 
 private enum LibraryScope: Hashable {
-    case all, unread, feed(UUID)
+    case all, unread, notes, feed(UUID)
 }
 
 struct ReaderView: View {
     @Bindable var store: ReaderStore
     @Binding var appearance: String
+    @State private var priorReaderScope: LibraryScope? = .all
     @State private var scope: LibraryScope? = .all
     @State private var selection: UUID?
     @State private var saveError: String?
@@ -24,6 +25,7 @@ struct ReaderView: View {
     private var visibleArticles: [Article] {
         store.articles.filter { article in
             switch scope ?? .all {
+            case .notes: false
             case .all: true
             case .unread: !article.isRead || article.id == selection
             case .feed(let id): store.isArticle(article, in: id)
@@ -32,6 +34,7 @@ struct ReaderView: View {
     }
     private var scopeTitle: String {
         switch scope ?? .all {
+        case .notes: "振り返り"
         case .all: "すべての記事"
         case .unread: "未読"
         case .feed(let id): store.feeds.first { $0.id == id }?.title ?? "記事"
@@ -39,6 +42,19 @@ struct ReaderView: View {
     }
 
     var body: some View {
+        Group {
+            if scope == .notes {
+                WeeklyNotesView(store: store) { scope = priorReaderScope; listFocused = true }
+            } else { reader }
+        }
+        .onChange(of: scope) { old, new in
+            if new == .notes { priorReaderScope = old; return }
+            if old != .notes { selection = nil }
+            listFocused = true
+        }
+    }
+
+    private var reader: some View {
         NavigationSplitView {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
@@ -92,7 +108,6 @@ struct ReaderView: View {
                 perform { displayedContent = try store.content(articleID: article.id, at: .now) }
             } else { displayedContent = nil }
         }
-        .onChange(of: scope) { _, _ in selection = nil; listFocused = true }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled
@@ -123,6 +138,7 @@ struct ReaderView: View {
             Section("ライブラリ") {
                 sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
                 sidebarRow("未読", symbol: "circle.dotted", count: store.articles.filter { !$0.isRead }.count).tag(LibraryScope.unread)
+                sidebarRow("振り返り", symbol: "square.and.pencil", count: store.notes.count).tag(LibraryScope.notes)
             }
             Section("購読元") {
                 ForEach(store.feeds.filter { $0.folder.isEmpty }) { feed in subscriptionRow(feed) }

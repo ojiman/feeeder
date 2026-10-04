@@ -5,13 +5,16 @@ import SwiftData
 @Observable @MainActor public final class ReaderStore {
     public private(set) var articles: [Article] = []
     public private(set) var feeds: [Feed] = []
+    public private(set) var weeks: [WeeklyPeriod] = []
+    public private(set) var notes: [WeeklyNote] = []
+    public private(set) var noteSources: [NoteSource] = []
     public private(set) var memberships: [FeedMembership] = []
     private var membershipIndex: [UUID: Set<UUID>] = [:]
     @ObservationIgnored private let container: ModelContainer
     @ObservationIgnored let context: ModelContext
 
     public init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self])
+        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self])
         let configuration = ModelConfiguration("Reader", schema: schema, url: url, cloudKitDatabase: .none)
         container = try ModelContainer(for: schema, configurations: [configuration])
         context = ModelContext(container)
@@ -31,6 +34,9 @@ import SwiftData
     func reload() throws {
         articles = try context.fetch(FetchDescriptor<Article>(sortBy: [SortDescriptor(\.publishedAt, order: .reverse)]))
         feeds = try context.fetch(FetchDescriptor<Feed>(sortBy: [SortDescriptor(\.title)]))
+        weeks = try context.fetch(FetchDescriptor<WeeklyPeriod>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
+        notes = try context.fetch(FetchDescriptor<WeeklyNote>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
+        noteSources = try context.fetch(FetchDescriptor<NoteSource>())
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
         membershipIndex = [:]
         for membership in memberships { membershipIndex[membership.feedID, default: []].insert(membership.articleID) }
