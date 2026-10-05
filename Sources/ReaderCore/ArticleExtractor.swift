@@ -1,5 +1,6 @@
 import Foundation
 import SwiftSoup
+import os
 
 public struct ExtractionResult: Sendable, Equatable {
     public let text: String
@@ -69,6 +70,9 @@ public struct ArticleFetcher: Sendable {
     private let http: any HTTPFetching
     public init(http: any HTTPFetching = HTTPClient(followsRedirects: false)) { self.http = http }
     public func fetch(url: URL) async -> ExtractionResult? {
+        let signposter = OSSignposter(subsystem: "jp.ojiman.Feeeder", category: "Extraction")
+        let interval = signposter.beginInterval("Extraction")
+        defer { signposter.endInterval("Extraction", interval) }
         do {
             guard let url = ArticleURL.validated(url.absoluteString), var parts = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return nil }
             parts.path = "/robots.txt"; parts.query = nil; parts.fragment = nil

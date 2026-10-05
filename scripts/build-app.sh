@@ -1,10 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-build_dir=/private/tmp/rss-reader-build
-swift build --scratch-path "$build_dir"
-binary_dir=$(swift build --scratch-path "$build_dir" --show-bin-path)
-app_dir="$PWD/.build/RSS Reader.app"
+configuration=${1:-debug}
+case "$configuration" in debug|release) ;; *) echo "Usage: build-app.sh [debug|release]" >&2; exit 2 ;; esac
+if [ "$configuration" = release ]; then build_dir=/private/tmp/feeeder-v1-release; else build_dir=/private/tmp/rss-reader-build; fi
+swift build -c "$configuration" --scratch-path "$build_dir"
+binary_dir=$(swift build -c "$configuration" --scratch-path "$build_dir" --show-bin-path)
+app_dir="$PWD/.build/Feeeder.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp ThirdPartyNotices.md "$app_dir/Contents/Resources/ThirdPartyNotices.md"
 cp "$binary_dir/RSSReader" "$app_dir/Contents/MacOS/RSSReader"
@@ -14,8 +16,8 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <plist version="1.0"><dict>
 <key>CFBundleExecutable</key><string>RSSReader</string>
 <key>CFBundleIdentifier</key><string>jp.ojiman.RSSReader.Development</string>
-<key>CFBundleName</key><string>RSS Reader</string>
-<key>CFBundleDisplayName</key><string>RSS Reader</string>
+<key>CFBundleName</key><string>Feeeder</string>
+<key>CFBundleDisplayName</key><string>Feeeder</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleVersion</key><string>2</string>
 <key>CFBundleShortVersionString</key><string>0.2.0</string>

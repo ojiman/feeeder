@@ -9,6 +9,7 @@ let package = Package(
     targets: [
         .target(name: "ReaderCore", dependencies: ["SwiftSoup"]),
         .executableTarget(name: "RSSReader", dependencies: ["ReaderCore"]),
-        .testTarget(name: "ReaderCoreTests", dependencies: ["ReaderCore"])
+        .testTarget(name: "ReaderCoreTests", dependencies: ["ReaderCore"]),
+        .testTarget(name: "ReaderUITests", dependencies: ["RSSReader"])
     ]
 )

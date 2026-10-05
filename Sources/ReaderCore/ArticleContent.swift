@@ -15,11 +15,12 @@ public enum ContentCoverage: String, Sendable, Codable {
 public struct ArticleContent: Sendable, Equatable {
     public let articleID: UUID
     public let text: String
+    public let paragraphs: [String]
     public let summary: String
     public let coverage: ContentCoverage
     public let originalURL: URL?
     public init(articleID: UUID, text: String, summary: String, coverage: ContentCoverage, originalURL: URL?) {
-        self.articleID = articleID; self.text = text; self.summary = summary
+        self.articleID = articleID; self.text = text; self.paragraphs = text.components(separatedBy: "\n\n").filter { !$0.isEmpty }; self.summary = summary
         self.coverage = coverage; self.originalURL = originalURL
     }
 }

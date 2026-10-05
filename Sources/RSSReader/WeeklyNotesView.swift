@@ -3,6 +3,8 @@ import ReaderCore
 
 struct WeeklyNotesView: View {
     @Bindable var store: ReaderStore
+    @Bindable var aiReview: AIPackageReview
+    @Bindable var handoff: ClaudeHandoffController
     var onReturn: () -> Void
     @State private var weekKey: String?
     @State private var noteID: UUID?
@@ -10,6 +12,7 @@ struct WeeklyNotesView: View {
     @State private var newTitle = ""
     @State private var deletingNote: WeeklyNote?
     @State private var error: String?
+    @State private var reviewingWeek = false
 
     private var options: [WeekRange] {
         let current = WeekCalendar.range(containing: .now, timeZone: .current)
@@ -83,7 +86,13 @@ struct WeeklyNotesView: View {
                 }.padding(24)
             } else { ContentUnavailableView("週のノートを作成", systemImage: "square.and.pencil", description: Text("ノート名を入力して追加してください。AIを使わず編集できます。")) }
         }
-        .toolbar { Button("読書に戻る", systemImage: "arrow.left", action: onReturn) }
+        .toolbar {
+            Button("読書に戻る", systemImage: "arrow.left", action: onReturn)
+            Button("この週のAI入力を確認", systemImage: "doc.text.magnifyingglass") { reviewingWeek = true }.disabled(range == nil)
+        }
+        .sheet(isPresented: $reviewingWeek) {
+            if let range { AIReviewView(store: store, review: aiReview, handoff: handoff, articleIDs: store.candidates(in: range).map(\.id)) }
+        }
         .onAppear {
             if weekKey == nil {
                 let current = WeekCalendar.range(containing: .now, timeZone: .current)

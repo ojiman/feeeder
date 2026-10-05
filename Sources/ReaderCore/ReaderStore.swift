@@ -14,6 +14,15 @@ import SwiftData
     public private(set) var noteSources: [NoteSource] = []
     public private(set) var memberships: [FeedMembership] = []
     private var membershipIndex: [UUID: Set<UUID>] = [:]
+    @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
+    @ObservationIgnored private var feedIndex: [UUID: Feed] = [:]
+    @ObservationIgnored private var feedArticles: [UUID: [Article]] = [:]
+    @ObservationIgnored private var articleFeeds: [UUID: Set<UUID>] = [:]
+    public private(set) var articleIDs: [UUID] = []
+    @ObservationIgnored private var feedArticleIDs: [UUID: [UUID]] = [:]
+    @ObservationIgnored private var unreadIDs: Set<UUID> = []
+    public private(set) var unreadCount = 0
+    public private(set) var feedUnreadCounts: [UUID: Int] = [:]
     @ObservationIgnored private let container: ModelContainer
     @ObservationIgnored let context: ModelContext
 
@@ -55,6 +64,43 @@ import SwiftData
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
         membershipIndex = [:]
         for membership in memberships { membershipIndex[membership.feedID, default: []].insert(membership.articleID) }
+        articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
+        feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })
+        feedArticles = [:]
+        articleFeeds = [:]
+        for membership in memberships { articleFeeds[membership.articleID, default: []].insert(membership.feedID) }
+        for article in articles {
+            for feedID in articleFeeds[article.id] ?? [] { feedArticles[feedID, default: []].append(article) }
+        }
+        articleIDs = articles.map(\.id)
+        feedArticleIDs = feedArticles.mapValues { $0.map(\.id) }
+        refreshUnreadCounts()
+    }
+
+    public func article(id: UUID) -> Article? { articleIndex[id] }
+    public func feed(id: UUID) -> Feed? { feedIndex[id] }
+    public func visibleArticles(feedID: UUID?, unreadOnly: Bool, keeping: UUID?) -> [Article] {
+        visibleArticleIDs(feedID: feedID, unreadOnly: unreadOnly, keeping: keeping).compactMap { articleIndex[$0] }
+    }
+    public func visibleArticleIDs(feedID: UUID?, unreadOnly: Bool, keeping: UUID?) -> [UUID] {
+        // Observe one array/count rather than registering every SwiftData Article.id getter.
+        let all = articleIDs
+        let values = feedID.map { feedArticleIDs[$0] ?? [] } ?? all
+        guard unreadOnly else { return values }
+        _ = unreadCount
+        return values.filter { unreadIDs.contains($0) || $0 == keeping }
+    }
+    private func refreshUnreadCounts() {
+        unreadCount = articles.filter { !$0.isRead }.count
+        unreadIDs = Set(articles.filter { !$0.isRead }.map(\.id))
+        feedUnreadCounts = feedArticles.mapValues { $0.filter { !$0.isRead }.count }
+    }
+    private func updateUnreadCounts(_ article: Article, wasRead: Bool) {
+        guard article.isRead != wasRead else { return }
+        let delta = article.isRead ? -1 : 1
+        unreadCount += delta
+        if article.isRead { unreadIDs.remove(article.id) } else { unreadIDs.insert(article.id) }
+        for id in articleFeeds[article.id] ?? [] { feedUnreadCounts[id, default: 0] += delta }
     }
 
     public func isArticle(_ article: Article, in feedID: UUID) -> Bool {
@@ -125,8 +171,10 @@ import SwiftData
 
     public func setRead(_ article: Article, _ value: Bool) throws {
         guard article.isRead != value else { return }
+        let wasRead = article.isRead
         article.isRead = value
         try save()
+        updateUnreadCounts(article, wasRead: wasRead)
     }
 
     public func saveExtractedContent(articleID: UUID, result: ExtractionResult, at: Date) throws {
@@ -139,7 +187,7 @@ import SwiftData
     }
 
     public func content(articleID: UUID, at: Date) throws -> ArticleContent? {
-        guard let article = articles.first(where: { $0.id == articleID }), isContentAvailable(article, at: at) else { return nil }
+        guard let article = articleIndex[articleID], isContentAvailable(article, at: at) else { return nil }
         let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
         let snapshot = try context.fetch(request).first
         let body = snapshot?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -151,12 +199,14 @@ import SwiftData
     }
 
     public func markDisplayed(articleID: UUID, at: Date) throws {
-        guard let article = articles.first(where: { $0.id == articleID }),
+        guard let article = articleIndex[articleID],
               try content(articleID: articleID, at: at) != nil else { return }
         guard !article.isRead || article.firstReadAt == nil else { return }
+        let wasRead = article.isRead
         article.isRead = true
         if article.firstReadAt == nil { article.firstReadAt = at }
         try save()
+        updateUnreadCounts(article, wasRead: wasRead)
     }
 
     func save() throws {

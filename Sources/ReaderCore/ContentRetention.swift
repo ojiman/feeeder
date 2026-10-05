@@ -71,10 +71,11 @@ extension ReaderStore {
         let preview = try previewDeletion(days: nil, allContent: false, at: at)
         try deleteContent(articleIDs: preview.articleIDs, at: at)
     }
-    public func availableContentExpiries(at: Date) throws -> [UUID: Date] {
+    public func availableContentExpiries(at: Date, articleIDs: [UUID]? = nil) throws -> [UUID: Date] {
         var values: [UUID: Date] = [:]
         let policy = RetentionPolicy(days: retentionDays)
-        for article in articles where isContentAvailable(article, at: at) {
+        let selected = articleIDs.map { ids in ids.compactMap { article(id: $0) } } ?? articles
+        for article in selected where isContentAvailable(article, at: at) {
             if try content(articleID: article.id, at: at) != nil {
                 values[article.id] = policy.expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
             }
