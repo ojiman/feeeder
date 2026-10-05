@@ -3,6 +3,12 @@ import Testing
 @testable import RSSReader
 
 @MainActor struct NativeArticleTextTests {
+    @Test func nativeListFocusIsRecognizedWithoutSwiftUIFocusState() {
+        let table = NSTableView()
+        #expect(ReaderKeyboardCommands.listHasFocus(declared: false, responder: table))
+        #expect(!ReaderKeyboardCommands.listHasFocus(declared: false, responder: NSTextView()))
+        #expect(ReaderKeyboardCommands.listHasFocus(declared: true, responder: nil))
+    }
     @Test func paragraphPositionSurvivesNativeScrollAndWidthChange() throws {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         let scroll = NSScrollView(frame: view.frame)

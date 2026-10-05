@@ -7,7 +7,7 @@ V1は受入未完了。実装開始はPdM承認済みだが、読書UXの性能�
 - Branch: `codex/v1-implementation`。基点`bbbc0dd7213792387f7e964212219ed95b8cdb9c`。Task 1〜5の最終commitは`eea3170228d74061e81133ee4237673043984934`。Task 6〜9の記録はその後の作業中の差分が対象。この受入記録を含むcheckpoint commitがTask 6〜9差分の固定点。最終レビューは未実施。
 - Mac14,2 / RAM 16GiB / CPU 8 / display 60Hz / macOS 27.0.1 / Swift 6.4。最低対応版macOS 26.6はNOT_RUN。
 - 合成RSS/HTML、予約ドメイン`.example`、一時DBだけを使用。本人の購読・記事・ノート・認証情報は使用せず、原本動画・画面画像もGitへ含めない。
-- 全自動テスト67 core件 / 16 suitesに加え3 UI件 / 1 suite PASS（計70件）。release buildと`git diff --check`もPASS。SDKを使うローカルbuildと実機操作は自動テストと別に判定する。
+- 全自動テスト67 core件 / 16 suitesに加え5 UI件 / 1 suite PASS（計72件）。release buildと`git diff --check`もPASS。SDKを使うローカルbuildと実機操作は自動テストと別に判定する。
 
 ## シナリオ別の証拠
 
@@ -50,7 +50,7 @@ SwiftUI Instruments recordingの最初の1本はexportに失敗したため無�
 
 一覧・本文の30秒連続scrollも3回実施（30.05 / 30.14 / 30.07秒、交互scroll225 / 231 / 232往復）、選択を保持した。Macロック・長いidleを含むheartbeat総数は当該操作のhang件数に使えない。35秒の有効Time ProfilerではMainThread4,082 samples中、NSAccessibility1,279 / AX位置取得1,223 / window layout161。自動操作のAX取得が負荷に含まれるため、100ms超gapをアプリ起因の停止と断定しない。MainActor停止0件の目標と最終操作感は未確定。
 
-最初のv/Escで選択300と列幅223 / 279.5が復元した。本文の正規化scroll値は0.3310658→0.3252349の差があり、反復で累積するか確認中。ネイティブの自動幅変更10往復は、段落7＋23.5offsetを1pt未満の差で保持した。実機10往復は再びMacロックで中断し、解除待ち。
+最初のv/Escで選択300と列幅223 / 279.5が復元した。本文の正規化scroll値は0.3310658→0.3252349の差があり、反復で累積するか確認中。ネイティブの自動幅変更10往復は、段落7＋23.5offsetを1pt未満の差で保持した。解除後、Escで本文へfocusが移り、後続キーが効かない不具合を再現した。SwiftUIのfocus flagだけでなく実際のNSTableView firstResponderを保存する修正をRED→GREENで検証。修正版の実機10往復はすべて開閉し、選択・列幅を復元、本文の正規化scroll値は初回の0.3252349から累積しなかった。1行以内の絶対差は比率だけで証明しない。
 
 参照動画SHA-256は`e1d325cc6e6182bec03a84e1653c08b54ee2c2e80bfed04d61ffbce21267d0e1`。動画の購読切替（0〜6秒）、記事／scroll（6〜11・15〜18・30〜33秒）、原文遷移（11〜14・18〜19秒）、原文待ちと復帰（19〜30秒）に対応した最終比較は未実施。収録60fpsを描画fpsとして扱わない。
 

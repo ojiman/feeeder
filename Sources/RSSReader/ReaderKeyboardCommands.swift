@@ -2,6 +2,9 @@ import AppKit
 import ReaderCore
 
 @MainActor enum ReaderKeyboardCommands {
+    static func listHasFocus(declared: Bool, responder: NSResponder?) -> Bool {
+        declared || responder is NSTableView
+    }
     static func permits(sheet: Bool, originalPage: Bool) -> Bool {
         let responder = NSApp.keyWindow?.firstResponder
         let input = responder as? NSTextInputClient

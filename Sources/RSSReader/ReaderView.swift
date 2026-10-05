@@ -284,7 +284,7 @@ struct ReaderView: View {
     }
     private func openOriginal() {
         guard let article = selectedArticle, let url = article.originalURL else { return }
-        restoreListFocus = listFocused
+        restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
         priorColumnVisibility = columnVisibility
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { columnVisibility = .doubleColumn; _ = originalPage.open(articleID: article.id, url: url) }
     }
