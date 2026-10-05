@@ -4,10 +4,10 @@ V1は受入未完了。実装開始はPdM承認済みだが、読書UXの性能�
 
 ## 対象と環境
 
-- Branch: `codex/v1-implementation`。基点`bbbc0dd7213792387f7e964212219ed95b8cdb9c`。Task 1〜5の最終commitは`eea3170228d74061e81133ee4237673043984934`。Task 6〜9の記録はその後の作業中の差分が対象。この受入記録を含むcheckpoint commitがTask 6〜9差分の固定点。最終レビューは未実施。
+- Branch: `codex/v1-implementation`。基点`bbbc0dd7213792387f7e964212219ed95b8cdb9c`。Task 1〜5の最終commitは`eea3170228d74061e81133ee4237673043984934`。Task 6〜9の記録はその後の作業中の差分が対象。この受入記録を含むcheckpoint commitがTask 6〜9差分の固定点。固定範囲`bbbc0dd..d2472a4`をAstraで最終レビュー済み。Important4件を回帰テストで修正し、製品受入は継続中。
 - Mac14,2 / RAM 16GiB / CPU 8 / display 60Hz / macOS 27.0.1 / Swift 6.4。最低対応版macOS 26.6はNOT_RUN。
 - 合成RSS/HTML、予約ドメイン`.example`、一時DBだけを使用。本人の購読・記事・ノート・認証情報は使用せず、原本動画・画面画像もGitへ含めない。
-- 全自動テスト67 core件 / 16 suitesに加え5 UI件 / 1 suite PASS（計72件）。release buildと`git diff --check`もPASS。SDKを使うローカルbuildと実機操作は自動テストと別に判定する。
+- 全自動テスト71 core件 / 16 suitesに加え6 UI件 / 2 suites PASS（計77件）。release buildと`git diff --check`もPASS。SDKを使うローカルbuildと実機操作は自動テストと別に判定する。
 
 ## シナリオ別の証拠
 
@@ -54,6 +54,17 @@ SwiftUI Instruments recordingの最初の1本はexportに失敗したため無�
 
 参照動画SHA-256は`e1d325cc6e6182bec03a84e1653c08b54ee2c2e80bfed04d61ffbce21267d0e1`。動画の購読切替（0〜6秒）、記事／scroll（6〜11・15〜18・30〜33秒）、原文遷移（11〜14・18〜19秒）、原文待ちと復帰（19〜30秒）に対応した最終比較は未実施。収録60fpsを描画fpsとして扱わない。
 
+## 最終コードレビュー
+
+固定範囲`bbbc0dd..d2472a4`をgpt-6-astraが読取レビューした。Criticalなし、Important4件、Minorなし。次の4件は各テストの失敗を観察後に修正し、全77件とrelease buildを通過した。再レビューは行わず、回帰テストと全体テストを修正確認に用いた。
+
+- 背景更新の先頭挿入・並べ替えで、選択IDを再解決し、先頭記事と行内17pt位置を維持。実際のNSTableViewテストで更新後の閲覧位置ジャンプを再現した。
+- ノート未作成でも既読履歴のある過去週を選択可能にし、保存済み週の固定期間・Timezoneを優先。
+- robotsの日本語・percent-encodedパスを比較時に正規化。escaped wildcardと通常のwildcardを分け、不正なpercent表記は取得見送り。[RFC 9309 §2.2.2](https://www.rfc-editor.org/rfc/rfc9309.html#section-2.2.2)を参照した限定修正で、完全なRFC適合を宣言しない。
+- metadata保存前に中断した管理コピーが他の期限削除を妨げない。既知の生成TXTだけを含む安全な中断フォルダを回復し、未知ファイルは保持して警告しつつ正常コピーを整理。
+
+原文overlay背後で遅延抽出本文が描画された場合の既読callbackは静的レビューだけでは立証できず、実機での追加確認対象とした。抽出済み本文の再受信時の鮮度方針は追加せず、保持期限内の保存本文を使う。通常Chatや他のClaude版・プラン、最低macOS、IME・アクセシビリティとPdM判断もコードレビューから合格としない。
+
 ## 残る実演
 
-Task 6の改善と測定、原文からの復元、IME・アクセシビリティ、再起動後のAI管理コピー整理を確認する。全体レビュー後にPdMが実機でPRD-01〜08を判断する。GitHub公開・署名・配布はこの検証の範囲に含めない。
+Task 6の改善と測定、原文からの復元、IME・アクセシビリティ、再起動後のAI管理コピー整理を確認する。レビュー修正後の実機確認を踏まえ、PdMがPRD-01〜08を判断する。GitHub公開・署名・配布はこの検証の範囲に含めない。

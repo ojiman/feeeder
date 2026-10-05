@@ -46,6 +46,9 @@ import Observation
             nextExpiry = try HandoffFiles.nextExpiry(directory: directory)
             if let file, !FileManager.default.fileExists(atPath: file.path) { self.file = nil; opened = false }
             maintenanceError = nil
-        } catch { maintenanceError = error.localizedDescription; opened = false }
+        } catch {
+            nextExpiry = try? HandoffFiles.nextExpiry(directory: directory)
+            maintenanceError = error.localizedDescription; opened = false
+        }
     }
 }

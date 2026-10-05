@@ -73,17 +73,16 @@ public enum HandoffFiles {
         guard AIPackageBuilder.hash(try Data(contentsOf: file)) == expectedHash else { throw HandoffError.changed }
     }
     public static func cleanup(directory: URL, at: Date) throws {
-        for folder in try folders(directory) {
-            let metadata = try readMetadata(folder)
+        try maintain(directory: directory) { folder, metadata in
             if min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400)) <= at { try manager.removeItem(at: folder) }
         }
     }
     public static func reconcile(directory: URL, validSourceExpiries: [UUID: Date], at: Date) throws {
-        for folder in try folders(directory) {
-            var metadata = try readMetadata(folder)
+        try maintain(directory: directory) { folder, record in
+            var metadata = record
             let expiries = metadata.articleIDs.compactMap { validSourceExpiries[$0] }
             guard expiries.count == metadata.articleIDs.count, let earliest = expiries.min() else {
-                try manager.removeItem(at: folder); continue
+                try manager.removeItem(at: folder); return
             }
             metadata.expiresAt = min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400), earliest)
             if metadata.expiresAt <= at { try manager.removeItem(at: folder) }
@@ -91,10 +90,43 @@ public enum HandoffFiles {
         }
     }
     public static func nextExpiry(directory: URL) throws -> Date? {
-        try folders(directory).map { try readMetadata($0).expiresAt }.min()
+        try folders(directory).compactMap { try? readMetadata($0).expiresAt }.min()
     }
     public static func sourceIDs(directory: URL) throws -> [UUID] {
-        Array(Set(try folders(directory).flatMap { try readMetadata($0).articleIDs }))
+        Array(Set(try folders(directory).compactMap { try? readMetadata($0) }.flatMap(\.articleIDs)))
+    }
+    private static func maintain(directory: URL, operation: (URL, Metadata) throws -> Void) throws {
+        var failure: (any Error)?
+        for folder in try folders(directory) {
+            do { try operation(folder, readMetadata(folder)) }
+            catch {
+                if isInterruptedWrite(folder) {
+                    do { try manager.removeItem(at: folder) }
+                    catch { if failure == nil { failure = error } }
+                } else if failure == nil { failure = error }
+            }
+        }
+        // Report unsafe folders only after every independent valid package has been maintained.
+        if let failure { throw failure }
+    }
+    private static func isInterruptedWrite(_ folder: URL) -> Bool {
+        guard folder.standardizedFileURL == folder.resolvingSymlinksInPath(),
+              let attributes = try? manager.attributesOfItem(atPath: folder.path), attributes[.type] as? FileAttributeType == .typeDirectory,
+              (try? manager.attributesOfItem(atPath: folder.appending(path: "metadata.json").path)) == nil,
+              let names = try? manager.contentsOfDirectory(atPath: folder.path) else { return false }
+        return names.allSatisfy { name in
+            let file = folder.appending(path: name)
+            let expected: Bool
+            if folder.lastPathComponent.hasSuffix("-parts") {
+                let prefix = "Feeeder-review-part-", suffix = ".txt"
+                if name.hasPrefix(prefix), name.hasSuffix(suffix),
+                   let number = Int(name.dropFirst(prefix.count).dropLast(suffix.count)), number > 0 {
+                    expected = name == "\(prefix)\(number)\(suffix)"
+                } else { expected = false }
+            } else { expected = name == "Feeeder-review.txt" }
+            return expected && file.standardizedFileURL == file.resolvingSymlinksInPath()
+                && (try? manager.attributesOfItem(atPath: file.path)[.type] as? FileAttributeType) == .typeRegular
+        }
     }
     private static func prepareRoot(_ directory: URL) throws -> URL {
         if let attributes = try? manager.attributesOfItem(atPath: directory.path), attributes[.type] as? FileAttributeType != .typeDirectory { throw HandoffError.unsafeFile }

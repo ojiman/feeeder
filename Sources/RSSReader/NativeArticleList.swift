@@ -70,26 +70,31 @@ struct NativeArticleList: NSViewRepresentable {
         var synchronizing = false
         init(_ parent: NativeArticleList) { self.parent = parent }
         func update(_ parent: NativeArticleList) {
-            self.parent = parent
             guard let table else { return }
             synchronizing = true
+            let selectionChanged = priorSelection != parent.selection
+            let topRow = table.rows(in: table.visibleRect).location
+            let topID = ids.indices.contains(topRow) ? ids[topRow] : nil
+            let topOffset = topID == nil ? 0 : (scroll?.contentView.bounds.minY ?? 0) - table.rect(ofRow: topRow).minY
+            self.parent = parent
             let nextIDs = parent.ids
-            if ids != nextIDs {
-                let wasEmpty = ids.isEmpty
+            let idsChanged = ids != nextIDs
+            if idsChanged {
                 ids = nextIDs; table.reloadData()
-                if wasEmpty, let top = parent.initialTop, let row = ids.firstIndex(of: top) {
-                    table.scrollRowToVisible(row)
-                    if let scroll { scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: row).minY)); scroll.reflectScrolledClipView(scroll.contentView) }
-                }
             } else {
                 let range = table.rows(in: table.visibleRect)
                 if range.location != NSNotFound { table.reloadData(forRowIndexes: IndexSet(integersIn: range.location..<min(ids.count, range.location + range.length)), columnIndexes: IndexSet(integer: 0)) }
             }
-            if priorSelection != parent.selection || table.selectedRow < 0 {
+            if idsChanged || selectionChanged || table.selectedRow < 0 {
                 if let id = parent.selection, let row = ids.firstIndex(of: id) {
                     table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-                    table.scrollRowToVisible(row)
+                    if selectionChanged { table.scrollRowToVisible(row) }
                 } else { table.deselectAll(nil) }
+            }
+            if idsChanged && !selectionChanged, let top = topID ?? parent.initialTop,
+               let row = ids.firstIndex(of: top), let scroll {
+                scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: row).minY + topOffset))
+                scroll.reflectScrolledClipView(scroll.contentView)
             }
             priorSelection = parent.selection
             if parent.focus && !priorFocus { table.window?.makeFirstResponder(table) }
@@ -109,7 +114,7 @@ struct NativeArticleList: NSViewRepresentable {
             if id != parent.selection { ReaderPerformance.selectionStarted(id); parent.selection = id }
         }
         func recordTop() {
-            guard let table else { return }
+            guard !synchronizing, let table else { return }
             let row = table.rows(in: table.visibleRect).location
             if ids.indices.contains(row) { parent.onTop(ids[row]) }
         }

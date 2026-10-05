@@ -15,11 +15,7 @@ struct WeeklyNotesView: View {
     @State private var reviewingWeek = false
 
     private var options: [WeekRange] {
-        let current = WeekCalendar.range(containing: .now, timeZone: .current)
-        let previous = WeekCalendar.range(containing: current.start.addingTimeInterval(-1), timeZone: .current)
-        var values = Dictionary(uniqueKeysWithValues: store.weeks.map { ($0.weekKey, $0.range) })
-        for range in [previous, current] where values[range.startDay] == nil { values[range.startDay] = range }
-        return values.values.sorted { $0.start > $1.start }
+        store.availableWeeks(at: .now, timeZone: .current)
     }
     private var range: WeekRange? { options.first { $0.startDay == weekKey } }
     private var period: WeeklyPeriod? { store.weeks.first { $0.weekKey == weekKey } }

@@ -32,10 +32,11 @@ public enum RobotsPolicy {
         let score = groups.map(specificity).max() ?? -1
         guard score >= 0 else { return true }
         let parts = URLComponents(url: url, resolvingAgainstBaseURL: true)
-        let path = (parts?.percentEncodedPath ?? url.path) + (parts?.percentEncodedQuery.map { "?" + $0 } ?? "")
+        guard let path = normalized((parts?.percentEncodedPath ?? url.path) + (parts?.percentEncodedQuery.map { "?" + $0 } ?? ""), rule: false) else { return false }
         var winner: (length: Int, allow: Bool)?
         for group in groups where specificity(group) == score {
             for (pattern, allow) in group.rules {
+                guard let pattern = normalized(pattern, rule: true) else { return false }
                 let anchored = pattern.hasSuffix("$")
                 let value = anchored ? String(pattern.dropLast()) : pattern
                 let regex = "^" + value.components(separatedBy: "*").map(NSRegularExpression.escapedPattern).joined(separator: ".*") + (anchored ? "$" : "")
@@ -45,5 +46,36 @@ public enum RobotsPolicy {
             }
         }
         return winner?.allow ?? true
+    }
+    // Compare UTF-8 octets consistently: escape Unicode, decode escaped unreserved
+    // ASCII, and retain reserved escapes. Rule wildcards stay distinct from URL literals.
+    private static func normalized(_ text: String, rule: Bool) -> String? {
+        let bytes = Array(text.utf8)
+        var output = "", index = 0
+        func hex(_ byte: UInt8) -> UInt8? {
+            switch byte {
+            case 48...57: byte - 48
+            case 65...70: byte - 55
+            case 97...102: byte - 87
+            default: nil
+            }
+        }
+        func unreserved(_ byte: UInt8) -> Bool {
+            (65...90).contains(byte) || (97...122).contains(byte) || (48...57).contains(byte) || [45, 46, 95, 126].contains(byte)
+        }
+        while index < bytes.count {
+            let byte = bytes[index]
+            if byte == 37 {
+                guard index + 2 < bytes.count, let high = hex(bytes[index + 1]), let low = hex(bytes[index + 2]) else { return nil }
+                let decoded = high * 16 + low
+                output += unreserved(decoded) ? String(UnicodeScalar(decoded)) : String(format: "%%%02X", decoded)
+                index += 3
+            } else {
+                output += byte >= 128 || byte <= 32 || byte == 127 || (!rule && (byte == 42 || byte == 36))
+                    ? String(format: "%%%02X", byte) : String(UnicodeScalar(byte))
+                index += 1
+            }
+        }
+        return output
     }
 }

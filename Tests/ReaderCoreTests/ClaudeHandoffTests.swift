@@ -9,6 +9,33 @@ import Testing
 }
 
 @MainActor struct ClaudeHandoffTests {
+    @Test func interruptedWriteDoesNotBlockExpiredCopiesAndRecoversOwnedFiles() throws {
+        let (library, store, review, package, root) = try fixture(); defer { library.cleanup() }
+        let expired = try HandoffFiles.write(package, directory: root)
+        let orphan = root.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: orphan, withIntermediateDirectories: false)
+        try Data("合成の中断コピー".utf8).write(to: orphan.appending(path: "Feeeder-review.txt"))
+        let launcher = ProbeLauncher()
+        let controller = ClaudeHandoffController(directory: root, review: review, launcher: launcher)
+        controller.reconcile(with: store, at: package.expiresAt)
+        #expect(!FileManager.default.fileExists(atPath: expired.path))
+        #expect(!FileManager.default.fileExists(atPath: orphan.path))
+        #expect(controller.maintenanceError == nil && controller.nextExpiry == nil)
+    }
+    @Test func unsafeFolderDoesNotBlockOtherCleanupAndIsNeverDeleted() throws {
+        let (library, store, review, package, root) = try fixture(); defer { library.cleanup() }
+        let expired = try HandoffFiles.write(package, directory: root)
+        let unknown = root.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: unknown, withIntermediateDirectories: false)
+        let unrelated = unknown.appending(path: "keep.txt")
+        try Data("保持する合成ファイル".utf8).write(to: unrelated)
+        let controller = ClaudeHandoffController(directory: root, review: review, launcher: ProbeLauncher())
+        controller.reconcile(with: store, at: package.expiresAt)
+        #expect(!FileManager.default.fileExists(atPath: expired.path))
+        #expect(try String(contentsOf: unrelated, encoding: .utf8) == "保持する合成ファイル")
+        #expect(controller.maintenanceError != nil)
+        #expect(try HandoffFiles.sourceIDs(directory: root).isEmpty)
+    }
     @Test func japanesePathAndPromptRoundTripWithoutBodyInURL() throws {
         let file = URL(fileURLWithPath: "/private/tmp/日本語 空白/合成.txt")
         let prompt = "添付を読んでください。送信は本人が操作します。"

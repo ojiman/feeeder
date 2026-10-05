@@ -7,6 +7,23 @@ import Testing
     let tokyo = TimeZone(identifier: "Asia/Tokyo")!
     let la = TimeZone(identifier: "America/Los_Angeles")!
 
+    @Test func readHistoryWeeksRemainReachableBeforeCreatingNotes() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let historical = date("2026-09-16T03:00:00Z")
+        let now = date("2026-10-05T03:00:00Z")
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: historical)
+        let article = try #require(store.articles.first)
+        try store.markDisplayed(articleID: article.id, at: historical)
+        let options = store.availableWeeks(at: now, timeZone: tokyo)
+        #expect(options.map(\.startDay) == ["2026-10-05", "2026-09-28", "2026-09-14"])
+        let oldRange = try #require(options.first { $0.startDay == "2026-09-14" })
+        #expect(store.candidates(in: oldRange).map(\.id) == [article.id])
+        _ = try store.createNote(in: oldRange, title: "過去の振り返り", at: now)
+        let changed = store.availableWeeks(at: now, timeZone: la)
+        #expect(changed.first { $0.startDay == "2026-09-14" } == oldRange)
+        #expect(store.weeks.count == 1)
+    }
+
     @Test func mondayWeekCrossesYearAndDST() {
         let year = WeekCalendar.range(containing: date("2026-01-01T03:00:00Z"), timeZone: tokyo)
         #expect(year.startDay == "2025-12-29" && year.endDay == "2026-01-04")
