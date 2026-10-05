@@ -33,6 +33,22 @@ import Testing
         #expect(displayed == 0)
     }
 
+    @Test func viewportResizeRoundTripsPreserveParagraphPositionAutomatically() {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+        let paragraphs = (0..<80).map { "合成段落\($0)。" + String(repeating: "日本語の長い文章です。", count: 20) }
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: paragraphs, unavailable: nil)
+        view.restore(anchor: "paragraph-7", offset: 23.5)
+        for _ in 0..<10 {
+            for width in [850.0, 600.0] {
+                scroll.setFrameSize(NSSize(width: width, height: 400))
+                view.setFrameSize(NSSize(width: width, height: view.frame.height))
+            }
+            let position = view.readingPosition()
+            #expect(position.anchor == "paragraph-7" && abs(position.offset - 23.5) < 1)
+        }
+    }
+
     @Test func headerOnlyViewportDoesNotCountBodyAsDisplayed() {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 100))
         let scroll = NSScrollView(frame: view.frame); scroll.documentView = view

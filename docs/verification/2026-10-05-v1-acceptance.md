@@ -13,7 +13,7 @@ V1は受入未完了。実装開始はPdM承認済みだが、読書UXの性能�
 
 | PRD | 観察済みの結果 | 残る確認・判定 |
 |---|---|---|
-| 01 読書UX | 3カラム・dark、購読整理、一覧のj/kと選択本文一致。ノート／AIレビューから復帰後にkで同じ一覧を移動できた | 性能FAIL。IME変換・VoiceOver・Reduce Motion・原文10往復の位置精度・動画とのPdM比較は未完了 |
+| 01 読書UX | 3カラム・dark、購読整理、一覧のj/kと選択本文一致。ノート／AIレビューから復帰後にkで同じ一覧を移動できた | 切替開始p95は3回とも目標内。MainActor停止の原因判定は継続中。IME変換・VoiceOver・Reduce Motion・原文10往復の位置精度・動画とのPdM比較は未完了 |
 | 02 既読 | Task 1の一覧scrollで未読6件を維持。本文表示→5、j→4、kで初回既読維持。遅延した抽出が別記事に上書きしないことを自動テストで確認 | 高速切替の最終性能試験はTask 6に残る |
 | 03 取得不可 | localhost合成ページの抽出、RSS要約fallback、Coverage表示を実機確認。redirect抽出は要約を維持し、未検査転送先を取得しなかった | 実サイト抽出品質はNOT_RUN |
 | 04 週ノート | 前週初期表示、現在週追加、複数ノート、日本語編集、V1 DB再openを確認。保存済み週のTimezone・DSTは自動テストで確認 | MacのTimezoneを実際に変更した実演・host networkを切った実演はNOT_RUN |
@@ -46,7 +46,11 @@ Release / 10,000記事・100購読 / 保存済み80合成段落の記事を使�
 | ID索引化後 1 | 79 | 91.92ms | この区間のp95のみ目標内 |
 | ID索引化後 2 | 57 | 235.49ms | FAIL。安定した合格ではない |
 
-SwiftUI Instruments recordingの最初の1本はexportに失敗したため無効。有効なTime Profilerでは、一覧の大量ID参照を除いた後もMainThreadのlayout・本文Geometry/preference負荷が残った。MainActor heartbeatの100ms超gapも残り、gapだけをアプリ起因hangの証拠とはしない。利用者が本文scrollのAppKit適用を承認した。NSTextViewの実組版・段落復元・実表示判定をテストし、再利用と表示領域の分離で再計測中。本文を1つのNSTextViewで再利用し、短い遷移をlayer animationへ移した最終候補はbuild済み。Macロックによりその候補の再計測は未実施。最終100切替×3・30秒scroll×3は未完了。
+SwiftUI Instruments recordingの最初の1本はexportに失敗したため無効。有効なTime Profilerでは、一覧の大量ID参照を除いた後もMainThreadのlayout・本文Geometry/preference負荷が残った。MainActor heartbeatの100ms超gapも残り、gapだけをアプリ起因hangの証拠とはしない。利用者が本文scrollのAppKit適用を承認した。NSTextViewの実組版・段落復元・実表示判定をテストし、再利用と表示領域の分離で再計測中。本文を1つのNSTextViewで再利用し、短い遷移をlayer animationへ移した版（`8f91329`）で100切替×3を再計測。開始標本は64 / 69 / 62、p95は78.06 / 80.62 / 76.72ms、maxは96.12 / 89.21 / 79.89ms。選択と最終表示は99 / 199 / 299で一致し、80段落を保持した。開始標本のp95は3回とも目標内だが、統合された中間入力を100個の独立表示として扱わない。
+
+一覧・本文の30秒連続scrollも3回実施（30.05 / 30.14 / 30.07秒、交互scroll225 / 231 / 232往復）、選択を保持した。Macロック・長いidleを含むheartbeat総数は当該操作のhang件数に使えない。35秒の有効Time ProfilerではMainThread4,082 samples中、NSAccessibility1,279 / AX位置取得1,223 / window layout161。自動操作のAX取得が負荷に含まれるため、100ms超gapをアプリ起因の停止と断定しない。MainActor停止0件の目標と最終操作感は未確定。
+
+最初のv/Escで選択300と列幅223 / 279.5が復元した。本文の正規化scroll値は0.3310658→0.3252349の差があり、反復で累積するか確認中。ネイティブの自動幅変更10往復は、段落7＋23.5offsetを1pt未満の差で保持した。実機10往復は再びMacロックで中断し、解除待ち。
 
 参照動画SHA-256は`e1d325cc6e6182bec03a84e1653c08b54ee2c2e80bfed04d61ffbce21267d0e1`。動画の購読切替（0〜6秒）、記事／scroll（6〜11・15〜18・30〜33秒）、原文遷移（11〜14・18〜19秒）、原文待ちと復帰（19〜30秒）に対応した最終比較は未実施。収録60fpsを描画fpsとして扱わない。
 
