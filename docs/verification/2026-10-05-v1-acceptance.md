@@ -1,10 +1,10 @@
-# Feeeder V1 実機受入記録（進行中）
+# Feeeder V1 実機受入記録（Dogfoodingへ継続）
 
-V1は受入未完了。実装開始はPdM承認済みだが、読書UXの性能改善・未確認操作・最終PdM実演が残る。PASSは記載した操作だけを示し、PRD全体の受入を意味しない。
+2026-10-05にPdM／本人がPR #5のmain統合とDogfooding開始を承認した。残る実機確認と最終PdM製品受入はDogfoodingで行う。PASSは記載した操作だけを示し、未検証項目やPRD全体の受入を意味しない。
 
 ## 対象と環境
 
-- Branch: `codex/v1-implementation`。基点`bbbc0dd7213792387f7e964212219ed95b8cdb9c`。Task 1〜5の最終commitは`eea3170228d74061e81133ee4237673043984934`。Task 6〜9の記録はその後の作業中の差分が対象。この受入記録を含むcheckpoint commitがTask 6〜9差分の固定点。固定範囲`bbbc0dd..d2472a4`をAstraで最終レビュー済み。Important4件を回帰テストで修正し、製品受入は継続中。
+- Branch: `codex/v1-implementation`。基点`bbbc0dd7213792387f7e964212219ed95b8cdb9c`。Task 1〜5の最終commitは`eea3170228d74061e81133ee4237673043984934`。Task 6〜9の記録はその後の作業中の差分が対象。この受入記録を含むcheckpoint commitがTask 6〜9差分の固定点。固定範囲`bbbc0dd..d2472a4`をAstraで最終レビュー済み。Important4件を回帰テストで修正し、最終製品受入はDogfoodingへ継続。
 - Mac14,2 / RAM 16GiB / CPU 8 / display 60Hz / macOS 27.0.1 / Swift 6.4。最低対応版macOS 26.6はNOT_RUN。
 - 合成RSS/HTML、予約ドメイン`.example`、一時DBだけを使用。本人の購読・記事・ノート・認証情報は使用せず、原本動画・画面画像もGitへ含めない。
 - 全自動テスト71 core件 / 16 suitesに加え6 UI件 / 2 suites PASS（計77件）。release buildと`git diff --check`もPASS。SDKを使うローカルbuildと実機操作は自動テストと別に判定する。
@@ -19,7 +19,7 @@ V1は受入未完了。実装開始はPdM承認済みだが、読書UXの性能�
 | 04 週ノート | 前週初期表示、現在週追加、複数ノート、日本語編集、V1 DB再openを確認。保存済み週のTimezone・DSTは自動テストで確認 | MacのTimezoneを実際に変更した実演・host networkを切った実演はNOT_RUN |
 | 05 AI連携 | 単一記事／週、言語変更、除外／再追加、全文preview、TXT書き出し、起動済みClaudeへの直接起動、Attach取消→同じbytesで再試行、本人のAttach後のカードと送信前停止を確認 | 未起動からも本人によるAttach後のカードと送信前停止を確認。大きなTXTの実クライアント読取りはNOT_RUN。他版・他プラン・通常Chat自動添付はNOT_RUN |
 | 06 返答採用 | 本人が確認した内容という合成文をノートへ貼付け、j/kを本文として入力、Source A/Bを明示的に採用。AIレビュー前後も本文と出典を保持 | 実AI返答の内容をアプリが保証しない。自動採用なし |
-| 07 PdM受入 | 実装開始の承認済み | **最終実演・製品受入は承認待ち** |
+| 07 PdM受入 | 実装開始の承認済み | main統合・Dogfooding開始を承認済み。最終実演・製品受入はDogfoodingで判断 |
 | 08 保持・削除 | 30→7日のpreview取消と適用、6本文＋6要約の削除後も6メタデータ・2ノート維持を実機確認。期限・再受信復活禁止・管理AIコピー同期は自動テストPASS | 長時間の期限timer／復帰イベントの実時間待ちはNOT_RUN |
 
 ## AIパッケージとClaude
@@ -65,6 +65,13 @@ SwiftUI Instruments recordingの最初の1本はexportに失敗したため無�
 
 原文overlay背後で遅延抽出本文が描画された場合の既読callbackは静的レビューだけでは立証できず、実機での追加確認対象とした。抽出済み本文の再受信時の鮮度方針は追加せず、保持期限内の保存本文を使う。通常Chatや他のClaude版・プラン、最低macOS、IME・アクセシビリティとPdM判断もコードレビューから合格としない。
 
-## 残る実演
+## Dogfoodingで確認する項目
 
-Task 6の改善と測定、原文からの復元、IME・アクセシビリティ、再起動後のAI管理コピー整理を確認する。レビュー修正後の実機確認を踏まえ、PdMがPRD-01〜08を判断する。GitHub公開・署名・配布はこの検証の範囲に含めない。
+本人の2026-10-05の判断により、次をmain統合の前提からDogfoodingへ移した。NOT_RUN／未完了の状態は維持する。
+
+- IME変換、VoiceOver、Reduce Motion、参照動画との操作感比較と最終PdM承認。
+- 原文復帰位置の絶対差1行以内、MainActor停止の原因判定、通信中の連続操作など残る実機受入。
+- 原文オーバーレイ背後の遅延本文描画による既読callbackの追加確認。
+- 最低macOS 26.6、実サイト抽出品質、長時間の期限／復帰イベント、通常Chat自動添付、他のClaude版／プラン、大容量TXTのClaude側読取り。
+
+PR #5の統合を承認した判断は、これらの検証成功や署名・アプリ配布の承認を意味しない。Dogfoodingで結果を追記し、PdMが最終製品受入を判断する。
