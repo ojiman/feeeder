@@ -13,7 +13,8 @@ struct ReaderView: View {
     @State private var scope: LibraryScope? = .all
     @State private var selection: UUID?
     @State private var saveError: String?
-    @State private var displayedContent: ArticleContent?
+    @State private var loading: ArticleLoadingController
+    private var displayedContent: ArticleContent? { loading.displayed }
     @State private var addingSubscription = false
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
@@ -21,6 +22,11 @@ struct ReaderView: View {
     @State private var restoreListFocus = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
+
+    init(store: ReaderStore, refresh: FeedRefreshController, appearance: Binding<String>) {
+        self.store = store; self.refresh = refresh; _appearance = appearance
+        _loading = State(initialValue: ArticleLoadingController(store: store))
+    }
 
     private var selectedExpiry: Date? {
         guard let article = selectedArticle, article.contentDeletedAt == nil else { return nil }
@@ -120,14 +126,14 @@ struct ReaderView: View {
             } catch { /* Selection changes cancel the old article's deadline. */ }
         }
         .onChange(of: store.contentRevision) { _, _ in
-            guard let id = selection else { return }
-            perform { displayedContent = try store.content(articleID: id, at: .now) }
+            loading.refreshCachedContent()
         }
         .onChange(of: selection) { _, id in
             originalPage.close()
-            if let article = store.articles.first(where: { $0.id == id }) {
-                perform { displayedContent = try store.content(articleID: article.id, at: .now) }
-            } else { displayedContent = nil }
+        }
+        .task(id: selection) {
+            if let id = selection { await loading.load(articleID: id) }
+            else { loading.clear() }
         }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
@@ -265,8 +271,15 @@ struct ReaderView: View {
                         else { Text(article.publishedAt, format: .dateTime.year().month().day()) }
                     }.font(.caption).foregroundStyle(.secondary)
                     Divider()
+                    if loading.loading { Label("本文を確認中", systemImage: "arrow.down.doc").font(.caption).foregroundStyle(.secondary) }
+                    if loading.availableUpdate?.articleID == article.id {
+                        Button("取得した本文に切り替える") { perform { try loading.applyAvailableUpdate() } }
+                            .buttonStyle(.link).font(.caption)
+                    }
+                    if let error = loading.error { Text(error).font(.caption).foregroundStyle(.secondary) }
                     if let content = displayedContent, content.articleID == article.id, let expiry = selectedExpiry, expiry > .now {
                         Text(content.text)
+                            .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { _ in loading.recordInteraction(articleID: article.id) })
                             .font(.system(size: 16)).lineSpacing(8).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .onAppear {
@@ -279,7 +292,7 @@ struct ReaderView: View {
                     }
                     Divider().padding(.top, 10)
                     HStack {
-                        Label(article.identityKey == nil ? "サンプルの記事" : "フィード提供分 · 全文取得は未実装", systemImage: "doc.text")
+                        Label(displayedContent?.coverage.label ?? "本文は利用できません", systemImage: "doc.text")
                         Spacer()
 
                     }.font(.caption2).foregroundStyle(.secondary)
@@ -289,6 +302,10 @@ struct ReaderView: View {
                 .frame(maxWidth: .infinity)
             }
             .id(article.id)
+            .onScrollPhaseChange { _, phase in
+                if phase != .idle { loading.recordInteraction(articleID: article.id) }
+            }
+            .simultaneousGesture(TapGesture().onEnded { loading.recordInteraction(articleID: article.id) })
             .background(Color(nsColor: .textBackgroundColor))
         } else {
             VStack(spacing: 18) {

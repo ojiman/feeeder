@@ -90,8 +90,9 @@ import SwiftData
                 let id = article.id
                 if available, let snapshot = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })).first {
                     if !entry.body.isEmpty &&
-                        (article.feedID == feed.id || entry.body.count > snapshot.text.count) { snapshot.text = entry.body }
-                } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body)) }
+                        snapshot.coverageRaw != ContentCoverage.extracted.rawValue &&
+                        (article.feedID == feed.id || entry.body.count > snapshot.text.count) { snapshot.text = entry.body; snapshot.coverageRaw = entry.coverage.rawValue }
+                } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body, coverage: entry.coverage)) }
                 if !allMemberships.contains(where: { $0.feedID == feed.id && $0.articleID == id }) {
                     let membership = FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID)
                     context.insert(membership); allMemberships.append(membership)
@@ -126,6 +127,15 @@ import SwiftData
         guard article.isRead != value else { return }
         article.isRead = value
         try save()
+    }
+
+    public func saveExtractedContent(articleID: UUID, result: ExtractionResult, at: Date) throws {
+        guard result.coverage == .extracted, !result.text.isEmpty,
+              let article = articles.first(where: { $0.id == articleID }), isContentAvailable(article, at: at) else { return }
+        let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
+        if let snapshot = try context.fetch(request).first { snapshot.text = result.text; snapshot.coverageRaw = result.coverage.rawValue }
+        else { context.insert(ContentSnapshot(articleID: articleID, text: result.text, coverage: result.coverage)) }
+        try save(); try reload()
     }
 
     public func content(articleID: UUID, at: Date) throws -> ArticleContent? {

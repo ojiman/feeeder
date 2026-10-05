@@ -13,6 +13,7 @@ public struct ParsedEntry: Sendable {
     public let url: URL?
     public let summary: String
     public let body: String
+    public let coverage: ContentCoverage
     public let publishedAt: Date?
 }
 
@@ -173,7 +174,7 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         let summary = values["summaryPlain"] == "true" ? (values["summary"] ?? "") : PlainFeedText.convert(values["summary"] ?? "")
         let body = values["body"].map { values["bodyPlain"] == "true" ? $0 : PlainFeedText.convert($0) } ?? summary
         entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? "無題", url: entryURL,
-                                   summary: summary, body: body,
+                                   summary: summary, body: body, coverage: values["body"] == nil ? .summaryOnly : .feedProvided,
                                    publishedAt: Self.date(values["date"] ?? values["updated"] ?? "")))
     }
     static func date(_ string: String) -> Date? {

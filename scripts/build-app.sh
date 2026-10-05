@@ -5,7 +5,8 @@ build_dir=/private/tmp/rss-reader-build
 swift build --scratch-path "$build_dir"
 binary_dir=$(swift build --scratch-path "$build_dir" --show-bin-path)
 app_dir="$PWD/.build/RSS Reader.app"
-mkdir -p "$app_dir/Contents/MacOS"
+mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
+cp ThirdPartyNotices.md "$app_dir/Contents/Resources/ThirdPartyNotices.md"
 cp "$binary_dir/RSSReader" "$app_dir/Contents/MacOS/RSSReader"
 cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

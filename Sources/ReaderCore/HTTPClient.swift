@@ -27,14 +27,17 @@ public protocol HTTPFetching: Sendable {
 // Immutable configuration; each request owns its session and serial delegate.
 public struct HTTPClient: HTTPFetching, @unchecked Sendable {
     private let protocolClasses: [AnyClass]?
-    public init(protocolClasses: [AnyClass]? = nil) { self.protocolClasses = protocolClasses }
+    private let followsRedirects: Bool
+    public init(protocolClasses: [AnyClass]? = nil, followsRedirects: Bool = true) {
+        self.protocolClasses = protocolClasses; self.followsRedirects = followsRedirects
+    }
     public static func validateRedirect(from: URL, to: URL) throws {
         guard ArticleURL.validated(to.absoluteString) != nil,
               !(from.scheme?.lowercased() == "https" && to.scheme?.lowercased() == "http") else { throw HTTPError.redirect }
     }
     public func fetch(url: URL, headers: [String: String] = [:], maximumBytes: Int) async throws -> HTTPResponse {
         guard let url = ArticleURL.validated(url.absoluteString), maximumBytes > 0 else { throw HTTPError.invalidURL }
-        let receiver = HTTPReceiver(maximumBytes: maximumBytes)
+        let receiver = HTTPReceiver(maximumBytes: maximumBytes, followsRedirects: followsRedirects)
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 let configuration = URLSessionConfiguration.ephemeral
@@ -58,6 +61,7 @@ public struct HTTPClient: HTTPFetching, @unchecked Sendable {
 private final class HTTPReceiver: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private let maximumBytes: Int
+    private let followsRedirects: Bool
     private var session: URLSession?
     private var continuation: CheckedContinuation<HTTPResponse, any Error>?
     private var cancelled = false
@@ -65,7 +69,7 @@ private final class HTTPReceiver: NSObject, URLSessionDataDelegate, @unchecked S
     private var data = Data()
     private var response: HTTPURLResponse?
     private var redirects = 0
-    init(maximumBytes: Int) { self.maximumBytes = maximumBytes }
+    init(maximumBytes: Int, followsRedirects: Bool) { self.maximumBytes = maximumBytes; self.followsRedirects = followsRedirects }
     func start(configuration: URLSessionConfiguration, request: URLRequest, continuation: CheckedContinuation<HTTPResponse, any Error>) {
         lock.lock()
         if cancelled { lock.unlock(); continuation.resume(throwing: CancellationError()); return }
@@ -108,6 +112,7 @@ private final class HTTPReceiver: NSObject, URLSessionDataDelegate, @unchecked S
     }
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
         do {
+            guard followsRedirects else { throw HTTPError.redirect }
             redirects += 1
             guard redirects <= 5, let from = response.url, let to = request.url else { throw HTTPError.redirect }
             try HTTPClient.validateRedirect(from: from, to: to)
