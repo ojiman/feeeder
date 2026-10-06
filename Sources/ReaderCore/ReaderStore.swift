@@ -13,6 +13,10 @@ import SwiftData
     public private(set) var notes: [WeeklyNote] = []
     public private(set) var noteSources: [NoteSource] = []
     public private(set) var memberships: [FeedMembership] = []
+    public private(set) var dailyNotes: [DailyNote] = []
+    public private(set) var scraps: [NoteScrap] = []
+    public private(set) var starCount = 0
+    @ObservationIgnored var starredIDs: Set<UUID> = []
     private var membershipIndex: [UUID: Set<UUID>] = [:]
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
     @ObservationIgnored private var feedIndex: [UUID: Feed] = [:]
@@ -26,8 +30,13 @@ import SwiftData
     @ObservationIgnored private let container: ModelContainer
     @ObservationIgnored let context: ModelContext
 
+    public static var schema: Schema {
+        Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self,
+                WeeklyNote.self, NoteSource.self, ReaderSettings.self, DailyNote.self, NoteScrap.self])
+    }
+
     public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
+        let schema = Self.schema
         let configuration = ModelConfiguration("Reader", schema: schema, url: url, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         try self.init(container: container, seedDemo: seedDemo, now: now)
@@ -62,6 +71,8 @@ import SwiftData
         notes = try context.fetch(FetchDescriptor<WeeklyNote>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
         noteSources = try context.fetch(FetchDescriptor<NoteSource>())
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
+        dailyNotes = try context.fetch(FetchDescriptor<DailyNote>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
+        scraps = try context.fetch(FetchDescriptor<NoteScrap>(sortBy: [SortDescriptor(\.savedAt)]))
         membershipIndex = [:]
         for membership in memberships { membershipIndex[membership.feedID, default: []].insert(membership.articleID) }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
@@ -75,6 +86,12 @@ import SwiftData
         articleIDs = articles.map(\.id)
         feedArticleIDs = feedArticles.mapValues { $0.map(\.id) }
         refreshUnreadCounts()
+        refreshStarIndex()
+    }
+
+    func refreshStarIndex() {
+        starredIDs = Set(articles.filter { $0.starredAt != nil }.map(\.id))
+        starCount = starredIDs.count
     }
 
     public func article(id: UUID) -> Article? { articleIndex[id] }

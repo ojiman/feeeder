@@ -1,0 +1,69 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+destination=${1:?Usage: prepare-v1-store-fixture.sh /private/tmp/feeeder-...}
+python3 - "$destination" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1]).resolve()
+if p.parent != Path('/private/tmp') or not p.name.startswith('feeeder-'):
+    raise SystemExit('Use a dedicated /private/tmp/feeeder-* directory')
+if p.exists():
+    raise SystemExit('Destination already exists; use a new fixture directory')
+p.mkdir()
+PY
+source_dir=$(mktemp -d /private/tmp/feeeder-v1-source.XXXXXX)
+baseline=53102cc42ea665b3379ad2a23d842c3186ad9c3e
+git archive "$baseline" | tar -x -C "$source_dir"
+python3 - "$source_dir" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1]) / 'Package.swift'
+s = p.read_text().replace('.executableTarget(name: "RSSReader",', '.executableTarget(name: "V1Fixture", dependencies: ["ReaderCore"]),\n        .executableTarget(name: "RSSReader",')
+p.write_text(s)
+PY
+mkdir -p "$source_dir/Sources/V1Fixture"
+cat > "$source_dir/Sources/V1Fixture/main.swift" <<'SWIFT'
+import Foundation
+import ReaderCore
+
+@main struct V1Fixture {
+    @MainActor static func main() throws {
+        let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+        let at = Date(timeIntervalSince1970: 1_791_152_000)
+        let store = try ReaderStore(url: destination.appending(path: "Reader.store"), now: at)
+        let xml = """
+        <rss version="2.0"><channel><title>合成フィード</title><item><guid>synthetic-1</guid>
+        <title>合成記事</title><link>https://synthetic.example/article/1</link>
+        <description>合成RSS要約</description></item></channel></rss>
+        """
+        let feed = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!), receivedAt: at)
+        try store.updateSubscription(feed, title: "合成購読", folder: "技術")
+        let article = store.articles[0]
+        try store.markDisplayed(articleID: article.id, at: at.addingTimeInterval(60))
+        try store.applyRetention(days: 90, at: at)
+        let note = try store.createNote(in: WeekCalendar.range(containing: at, timeZone: TimeZone(identifier: "Asia/Tokyo")!), title: "合成の週", at: at)
+        try store.saveNote(id: note.id, text: "残す合成ノート", at: at)
+        try store.adoptSources(noteID: note.id, articleIDs: [article.id])
+        let period = store.weeks[0]
+        let manifest: [String: Any] = [
+            "baseline": "53102cc42ea665b3379ad2a23d842c3186ad9c3e", "at": at.timeIntervalSince1970,
+            "feedID": feed.id.uuidString, "articleID": article.id.uuidString, "noteID": note.id.uuidString,
+            "periodID": period.id.uuidString, "start": period.start.timeIntervalSince1970, "end": period.end.timeIntervalSince1970,
+            "firstReadAt": at.addingTimeInterval(60).timeIntervalSince1970
+        ]
+        try JSONSerialization.data(withJSONObject: manifest, options: [.sortedKeys, .prettyPrinted])
+            .write(to: destination.appending(path: "expected.json"))
+    }
+}
+SWIFT
+swift run --package-path "$source_dir" --scratch-path "$source_dir/build" V1Fixture "$destination"
+swift --version > "$destination/swift-version.txt"
+python3 - "$destination" <<'PY'
+from pathlib import Path
+import hashlib, sys
+p = Path(sys.argv[1])
+lines = [f'{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}' for f in sorted(p.iterdir()) if f.is_file()]
+(p / 'SHA256SUMS').write_text('\n'.join(lines) + '\n')
+print(f'Prepared synthetic released-V1 fixture: {p}')
+PY

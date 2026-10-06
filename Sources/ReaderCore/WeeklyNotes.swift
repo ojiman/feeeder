@@ -57,6 +57,9 @@ public enum WeekCalendar {
     public var articleID: UUID
     public var title: String
     public var url: String?
+    public var summary: String?
+    public var coverageRaw: String?
+    public var savedAt: Date?
     public init(noteID: UUID, article: Article) {
         key = noteID.uuidString + ":" + article.id.uuidString
         self.noteID = noteID; articleID = article.id; title = article.title; url = article.originalURL

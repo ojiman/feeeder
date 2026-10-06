@@ -11,6 +11,8 @@ import SwiftData
     public var lastFetchedAt: Date?
     public var folder: String = ""
     public var customTitle: Bool = false
+    public var siteURL: String?
+    public var iconURL: String?
     public init(title: String, symbol: String) {
         id = UUID(); self.title = title; self.symbol = symbol
     }
@@ -29,6 +31,8 @@ import SwiftData
     public var isRead: Bool
     public var originalURL: String?
     public var identityKey: String?
+    public var starredAt: Date?
+    public var imageURL: String?
     public init(feedID: UUID, title: String, summary: String, publisher: String, publishedAt: Date, receivedAt: Date = .now) {
         id = UUID(); self.feedID = feedID; self.title = title; self.summary = summary
         self.publisher = publisher; self.publishedAt = publishedAt; firstReceivedAt = receivedAt; isRead = false

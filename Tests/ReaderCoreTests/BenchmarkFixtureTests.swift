@@ -10,7 +10,7 @@ import Testing
         defer { library.cleanup() }
         let directory = destination ?? library.directory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
+        let schema = ReaderStore.schema
         let url = directory.appending(path: "Reader.store")
         let configuration = ModelConfiguration("Reader", schema: schema, url: url, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])

@@ -33,7 +33,7 @@ import Testing
 
     private func fixture(directory: URL, lineCount: Int) throws -> (ReaderStore, AIPackage) {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
+        let schema = ReaderStore.schema
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration("Reader", schema: schema, url: directory.appending(path: "Reader.store"), cloudKitDatabase: .none)])
         let context = ModelContext(container); context.autosaveEnabled = false
         #expect(try context.fetchCount(FetchDescriptor<Article>()) == 0)
