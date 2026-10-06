@@ -88,9 +88,9 @@ extension ReaderStore {
         let snapshots = try context.fetch(FetchDescriptor<ContentSnapshot>())
         var changed = false
         for article in selected {
-            if article.contentDeletedAt == nil || !article.summary.isEmpty {
+            if article.contentDeletedAt == nil || !article.summary.isEmpty || article.imageURL != nil {
                 article.contentDeletedAt = article.contentDeletedAt ?? at
-                article.summary = ""; changed = true
+                article.summary = ""; article.imageURL = nil; changed = true
             }
         }
         for snapshot in snapshots where ids.contains(snapshot.articleID) {

@@ -130,6 +130,8 @@ import SwiftData
         let feed = feeds.first { $0.sourceURL == parsed.sourceURL.absoluteString } ?? Feed(title: parsed.title, symbol: "dot.radiowaves.left.and.right")
         context.insert(feed)
         feed.sourceURL = parsed.sourceURL.absoluteString
+        feed.siteURL = parsed.siteURL?.absoluteString ?? feed.siteURL
+        feed.iconURL = parsed.iconURL?.absoluteString ?? feed.iconURL
         if !feed.customTitle { feed.title = parsed.title }
         do {
             var contentRemoved = false
@@ -148,7 +150,7 @@ import SwiftData
                 } else if article.identityKey == nil { article.identityKey = identity }
                 article.title = entry.title
                 let available = isContentAvailable(article, at: receivedAt)
-                if available { article.summary = entry.summary }
+                if available { article.summary = entry.summary; article.imageURL = entry.imageURL?.absoluteString ?? article.imageURL }
                 else { contentRemoved = try removeContent(articleIDs: [article.id], at: receivedAt) || contentRemoved }
                 if let date = entry.publishedAt { article.publishedAt = date }
                 // A second feed must not overwrite a saved article with a shorter excerpt.
