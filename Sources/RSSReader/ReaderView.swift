@@ -1,9 +1,7 @@
 import SwiftUI
 import ReaderCore
 
-private enum LibraryScope: Hashable {
-    case all, unread, starred, notes, feed(UUID)
-}
+private typealias LibraryScope = ReaderWorkspaceScope
 
 struct ReaderView: View {
     @Bindable var store: ReaderStore
@@ -11,8 +9,8 @@ struct ReaderView: View {
     @Bindable var aiReview: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
     @Binding var appearance: String
-    @State private var priorReaderScope: LibraryScope? = .all
     @State private var scope: LibraryScope? = .all
+    @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
@@ -42,7 +40,8 @@ struct ReaderView: View {
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
-        case .notes: []
+        case .dailyNotes, .weeklyNotes: []
+        case .folder(let name): store.articleIDs.filter { id in store.memberships.contains { $0.articleID == id && store.feed(id: $0.feedID)?.folder == name } }
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
         case .starred: store.starredArticleIDs(keeping: selection)
         case .unread: store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: selection)
@@ -52,7 +51,9 @@ struct ReaderView: View {
 
     private var scopeTitle: String {
         switch scope ?? .all {
-        case .notes: "振り返り"
+        case .dailyNotes: "日次ノート"
+        case .weeklyNotes: "週ノート"
+        case .folder(let name): name
         case .all: "すべての記事"
         case .unread: "未読"
         case .starred: "Star"
@@ -61,15 +62,24 @@ struct ReaderView: View {
     }
 
     var body: some View {
-        Group {
-            if scope == .notes {
-                WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff) { scope = priorReaderScope; listFocused = true }
-            } else { reader }
-        }
+        reader
         .onChange(of: scope) { old, new in
-            if new == .notes { priorReaderScope = old; return }
-            if old != .notes { selection = nil }
-            listFocused = true
+            if let old, old.isReading {
+                scrollMemory.state.select(selection)
+                workspace.rememberReader(scrollMemory.state, in: old)
+            }
+            workspace.scope = new ?? .all
+            if workspace.scope.isReading {
+                let restored = workspace.reader(in: workspace.scope)
+                scrollMemory.state = restored; selection = restored.selectedArticleID; listFocused = true
+            } else {
+                if originalPage.url != nil { closeOriginal() }
+                columnVisibility = .all; listFocused = false
+                if new == .dailyNotes, !workspace.dailyOpened {
+                    workspace.dailyNoteID = store.dailyNote(containing: .now)?.id
+                    workspace.dailyOpened = true
+                }
+            }
         }
     }
 
@@ -77,9 +87,13 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            articleList.navigationSplitViewColumnWidth(min: 280, ideal: 345, max: 470)
+            workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 345, max: 470)
         } detail: {
-            ZStack(alignment: .trailing) {
+            if scope == .dailyNotes {
+                DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail)
+            } else if scope == .weeklyNotes {
+                WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .detail)
+            } else { ZStack(alignment: .trailing) {
                 detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
                 if let url = originalPage.url, let expectedID = originalPage.articleID {
                     OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
@@ -88,22 +102,22 @@ struct ReaderView: View {
                     })
                         .id(url).transition(.move(edge: .trailing))
                 }
-            }.clipped().frame(minWidth: 360)
+            }.clipped().frame(minWidth: 360) }
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 930, minHeight: 600)
         .tint(.orange)
         .toolbar {
-            ToolbarItem(placement: .navigation) {
+            ToolbarItemGroup(placement: .navigation) {
                 Button { addingSubscription = true } label: { Image(systemName: "plus") }
                     .help("URLから購読を追加").accessibilityLabel("購読を追加")
-            }
-            ToolbarItemGroup(placement: .primaryAction) {
                 Button { Task { await refresh.refresh() } } label: {
                     if refresh.refreshing { ProgressView().controlSize(.small) }
                     else { Image(systemName: "arrow.clockwise") }
                 }.disabled(refresh.refreshing).help("購読を更新").accessibilityLabel("購読を更新")
-                if let article = selectedArticle {
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                if (scope ?? .all).isReading, let article = selectedArticle {
                     Button { perform(.scrap) } label: { Image(systemName: "square.and.arrow.down") }
                         .help("当日のノートへスクラップ (n)").accessibilityLabel("当日のノートへ保存")
                     Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
@@ -193,11 +207,14 @@ struct ReaderView: View {
 
     private var sidebar: some View {
         List(selection: $scope) {
-            Section("ライブラリ") {
+            Section("Feeds") {
                 sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
                 sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
                 sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
-                sidebarRow("振り返り", symbol: "square.and.pencil", count: store.notes.count).tag(LibraryScope.notes)
+            }
+            Section("Notes") {
+                sidebarRow("日次ノート", symbol: "square.and.arrow.down", count: store.dailyNotes.count).tag(LibraryScope.dailyNotes)
+                sidebarRow("週の振り返り", symbol: "square.and.pencil", count: store.notes.count).tag(LibraryScope.weeklyNotes)
             }
             Section("購読元") {
                 ForEach(store.feeds.filter { $0.folder.isEmpty }) { feed in subscriptionRow(feed) }
@@ -280,6 +297,12 @@ struct ReaderView: View {
         }
     }
 
+    @ViewBuilder private var workspaceList: some View {
+        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list) }
+        else if scope == .weeklyNotes { WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .list) }
+        else { articleList }
+    }
+
     @ViewBuilder private var detail: some View {
         if let article = selectedArticle {
             ArticleDetailView(article: article, content: displayedContent?.articleID == article.id ? displayedContent : nil,
@@ -301,7 +324,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingSubscription || reviewingArticle || editingFeed != nil, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { (scope ?? .all).isReading && ReaderKeyboardCommands.permits(sheet: addingSubscription || reviewingArticle || editingFeed != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }

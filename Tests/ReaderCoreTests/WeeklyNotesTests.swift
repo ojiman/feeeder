@@ -3,6 +3,46 @@ import Testing
 @testable import ReaderCore
 
 @MainActor struct WeeklyNotesTests {
+    @Test func intentCandidatesUseSavedWeek() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = date("2026-10-05T03:00:00Z")
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0], readOnly = store.articles[1], boundary = store.articles[2]
+        let week = WeekCalendar.range(containing: at, timeZone: tokyo)
+        try store.markDisplayed(articleID: article.id, at: week.start.addingTimeInterval(-1))
+        try store.markDisplayed(articleID: readOnly.id, at: at)
+        try store.setStar(articleID: article.id, isStarred: true, at: week.start)
+        try store.setStar(articleID: boundary.id, isStarred: true, at: week.end)
+        #expect(store.weeklyCandidates(in: week).map(\.articleID) == [article.id])
+        try store.setStar(articleID: article.id, isStarred: false, at: at)
+        #expect(store.weeklyCandidates(in: week).isEmpty)
+        let first = try store.scrap(articleID: article.id, at: at, timeZone: tokyo)
+        let second = try store.scrap(articleID: article.id, at: at.addingTimeInterval(86_400), timeZone: tokyo)
+        try store.setStar(articleID: article.id, isStarred: true, at: at)
+        let candidate = try #require(store.weeklyCandidates(in: week).first)
+        #expect(candidate.scraps.map(\.key) == [first.key, second.key])
+        #expect(store.weeklyCandidates(in: week).count == 1)
+        #expect(store.candidates(in: week).map(\.id) == [readOnly.id])
+    }
+    @Test func adoptedSummaryOutlivesDailyNote() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = date("2026-10-05T03:00:00Z")
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]; article.summary = "合成RSS要約"
+        let scrap = try store.scrap(articleID: article.id, at: at, timeZone: tokyo)
+        try store.saveScrapMemo(key: scrap.key, memo: "自分の考え", at: at)
+        try store.saveDailyNote(id: scrap.noteID, text: "日次本文", at: at)
+        let note = try store.createNote(in: WeekCalendar.range(containing: at, timeZone: tokyo), title: "週", at: at)
+        try store.adoptScraps(noteID: note.id, scrapKeys: [scrap.key, scrap.key])
+        let source = try #require(store.noteSources.first)
+        #expect(source.summary == "合成RSS要約" && source.savedAt == at && source.title == scrap.title && source.url == scrap.url)
+        #expect(note.text.isEmpty)
+        let later = try store.scrap(articleID: article.id, at: at.addingTimeInterval(86_400), timeZone: tokyo)
+        later.summary = "別の要約"; try store.adoptScraps(noteID: note.id, scrapKeys: [later.key])
+        try store.deleteDailyNote(id: scrap.noteID)
+        try store.purgeExpired(at: at.addingTimeInterval(31 * 86_400))
+        #expect(source.summary == "合成RSS要約" && store.noteSources.count == 1)
+    }
     func date(_ value: String) -> Date { ISO8601DateFormatter().date(from: value)! }
     let tokyo = TimeZone(identifier: "Asia/Tokyo")!
     let la = TimeZone(identifier: "America/Los_Angeles")!
