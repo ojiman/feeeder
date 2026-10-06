@@ -90,7 +90,7 @@ struct ReaderView: View {
             workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 345, max: 470)
         } detail: {
             if scope == .dailyNotes {
-                DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail)
+                DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail, aiReview: aiReview, handoff: handoff)
             } else if scope == .weeklyNotes {
                 WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .detail)
             } else { ZStack(alignment: .trailing) {
@@ -298,7 +298,7 @@ struct ReaderView: View {
     }
 
     @ViewBuilder private var workspaceList: some View {
-        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list) }
+        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list, aiReview: aiReview, handoff: handoff) }
         else if scope == .weeklyNotes { WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .list) }
         else { articleList }
     }

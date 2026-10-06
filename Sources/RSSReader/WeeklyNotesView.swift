@@ -61,7 +61,11 @@ struct WeeklyNotesView: View {
             } else { ContentUnavailableView("週のノートを作成", systemImage: "square.and.pencil", description: Text("中央で週を選び、ノートを追加してください。")) }
         }
         .sheet(isPresented: $reviewingWeek) {
-            if let range { AIReviewView(store: store, review: aiReview, handoff: handoff, articleIDs: store.weeklyCandidates(in: range).map(\.articleID)) }
+            if let range {
+                AIReviewView(store: store, review: aiReview, handoff: handoff, selections:
+                    store.noteSources.filter { $0.noteID == noteID }.flatMap { [.noteSource($0.key), .article($0.articleID)] } +
+                    store.weeklyCandidates(in: range).flatMap { candidate in candidate.scraps.map { .scrap($0.key) } + [.article(candidate.articleID)] })
+            }
         }
         .confirmationDialog("この週ノートを削除しますか？", isPresented: $deletingNote) {
             Button("週ノートを削除", role: .destructive) { if let note { perform { try store.deleteNote(id: note.id); noteID = weekNotes.first?.id } } }

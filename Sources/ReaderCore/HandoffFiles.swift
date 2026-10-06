@@ -19,6 +19,7 @@ public enum HandoffFiles {
     private struct Metadata: Codable {
         let packageID: UUID
         let articleIDs: [UUID]
+        let selections: [AIInputSelection]?
         let createdAt: Date
         var expiresAt: Date
         let split: Bool
@@ -54,7 +55,7 @@ public enum HandoffFiles {
                 try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
-            let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), createdAt: package.createdAt,
+            let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
                 expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records)
             try saveMetadata(metadata, folder: folder)
         } catch {
@@ -78,10 +79,14 @@ public enum HandoffFiles {
         }
     }
     public static func reconcile(directory: URL, validSourceExpiries: [UUID: Date], at: Date) throws {
+        try reconcile(directory: directory, validInputExpiries: Dictionary(uniqueKeysWithValues: validSourceExpiries.map { (AIInputSelection.article($0.key), $0.value) }), at: at)
+    }
+    public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date], at: Date) throws {
         try maintain(directory: directory) { folder, record in
             var metadata = record
-            let expiries = metadata.articleIDs.compactMap { validSourceExpiries[$0] }
-            guard expiries.count == metadata.articleIDs.count, let earliest = expiries.min() else {
+            let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
+            let expiries = selections.compactMap { validInputExpiries[$0] }
+            guard expiries.count == selections.count, let earliest = expiries.min() else {
                 try manager.removeItem(at: folder); return
             }
             metadata.expiresAt = min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400), earliest)
@@ -94,6 +99,9 @@ public enum HandoffFiles {
     }
     public static func sourceIDs(directory: URL) throws -> [UUID] {
         Array(Set(try folders(directory).compactMap { try? readMetadata($0) }.flatMap(\.articleIDs)))
+    }
+    public static func sourceSelections(directory: URL) throws -> [AIInputSelection] {
+        Array(Set(try folders(directory).compactMap { try? readMetadata($0) }.flatMap { $0.selections ?? $0.articleIDs.map(AIInputSelection.article) }))
     }
     private static func maintain(directory: URL, operation: (URL, Metadata) throws -> Void) throws {
         var failure: (any Error)?

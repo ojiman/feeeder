@@ -2,13 +2,20 @@ import Foundation
 import CryptoKit
 import Observation
 
+public enum AIInputSelection: Hashable, Codable, Sendable {
+    case article(UUID), scrap(String), noteSource(String)
+}
+
 public struct AISource: Sendable {
     public let articleID: UUID
     public let title: String
     public let url: URL?
     public let content: ArticleContent
-    public init(articleID: UUID, title: String, url: URL?, content: ArticleContent) {
+    public let selection: AIInputSelection
+    public let savedAt: Date?
+    public init(articleID: UUID, title: String, url: URL?, content: ArticleContent, selection: AIInputSelection? = nil, savedAt: Date? = nil) {
         self.articleID = articleID; self.title = title; self.url = url; self.content = content
+        self.selection = selection ?? .article(articleID); self.savedAt = savedAt
     }
 }
 
@@ -65,6 +72,8 @@ public enum AIPackageBuilder {
             case .unavailable: throw AIPackageError.unavailable
             }
             text += "BEGIN_SOURCE \(source.articleID.uuidString)\nTitle: \(source.title)\nURL: \(source.url?.absoluteString ?? "Unavailable")\nCoverage: \(coverage)\nContent UTF-8 bytes: \(source.content.text.utf8.count)\n\n"
+            if let savedAt = source.savedAt { text += "Provenance: Saved RSS snapshot\nSaved at: \(savedAt.ISO8601Format())\n\n" }
+            else { text += "Provenance: Retained article content\n\n" }
             text += source.content.text + "\nEND_SOURCE \(source.articleID.uuidString)\n\n"
         }
         text += "END_PACKAGE\n"
@@ -97,10 +106,38 @@ public enum AIPackageBuilder {
 extension ReaderStore {
     public func aiSources(articleIDs: [UUID], at: Date) throws -> [AISource] {
         var seen = Set<UUID>()
-        return try articleIDs.compactMap { id in
-            guard seen.insert(id).inserted, let article = article(id: id), let content = try content(articleID: id, at: at) else { return nil }
-            return AISource(articleID: id, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0) }, content: content)
+        return try aiSources(selections: articleIDs.filter { seen.insert($0).inserted }.map(AIInputSelection.article), at: at)
+    }
+    public func aiSources(selections: [AIInputSelection], at: Date) throws -> [AISource] {
+        try selections.compactMap { selection in
+            switch selection {
+            case .article(let id):
+                guard let article = article(id: id), let content = try content(articleID: id, at: at) else { return nil }
+                return AISource(articleID: id, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0) }, content: content)
+            case .scrap(let key):
+                guard let scrap = scraps.first(where: { $0.key == key }) else { return nil }
+                return savedSource(selection: selection, id: scrap.articleID, title: scrap.title, url: scrap.url, summary: scrap.summary, savedAt: scrap.savedAt)
+            case .noteSource(let key):
+                guard let source = noteSources.first(where: { $0.key == key }), let summary = source.summary, let savedAt = source.savedAt else { return nil }
+                return savedSource(selection: selection, id: source.articleID, title: source.title, url: source.url, summary: summary, savedAt: savedAt)
+            }
         }
+    }
+    private func savedSource(selection: AIInputSelection, id: UUID, title: String, url: String?, summary: String, savedAt: Date) -> AISource? {
+        guard !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        let url = url.flatMap { ArticleURL.validated($0) }
+        return AISource(articleID: id, title: title, url: url,
+            content: ArticleContent(articleID: id, text: summary, summary: summary, coverage: .summaryOnly, originalURL: url), selection: selection, savedAt: savedAt)
+    }
+    public func availableInputExpiries(selections: [AIInputSelection], at: Date) throws -> [AIInputSelection: Date] {
+        let ids = selections.compactMap { if case .article(let id) = $0 { id } else { nil } }
+        let articleExpiries = try availableContentExpiries(at: at, articleIDs: ids)
+        var values: [AIInputSelection: Date] = [:]
+        for source in try aiSources(selections: selections, at: at) {
+            if case .article(let id) = source.selection { values[source.selection] = articleExpiries[id] }
+            else { values[source.selection] = at.addingTimeInterval(86_400) }
+        }
+        return values
     }
     func aiExpiry(articleIDs: [UUID], at: Date) -> Date? {
         let policy = RetentionPolicy(days: retentionDays)
@@ -121,11 +158,16 @@ extension ReaderStore {
     }
     public func clear() { package = nil; reason = nil }
     public func build(articleIDs: [UUID], language: String, at: Date) throws {
+        var seen = Set<UUID>()
+        try build(selections: articleIDs.filter { seen.insert($0).inserted }.map(AIInputSelection.article), language: language, at: at)
+    }
+    public func build(selections: [AIInputSelection], language: String, at: Date) throws {
         clear()
         do {
-            let sources = try store.aiSources(articleIDs: articleIDs, at: at)
-            guard !articleIDs.isEmpty else { throw AIPackageError.empty }
-            guard sources.count == Set(articleIDs).count, let expiry = store.aiExpiry(articleIDs: articleIDs, at: at) else { throw AIPackageError.unavailable }
+            guard !selections.isEmpty else { throw AIPackageError.empty }
+            let sources = try store.aiSources(selections: selections, at: at)
+            let expiries = try store.availableInputExpiries(selections: selections, at: at)
+            guard sources.count == selections.count, let expiry = expiries.values.min() else { throw AIPackageError.unavailable }
             package = try AIPackageBuilder.build(sources: sources, language: language, createdAt: at, expiresAt: expiry)
         } catch { reason = error.localizedDescription; throw error }
     }
@@ -133,10 +175,11 @@ extension ReaderStore {
         guard let prior = package else { return }
         do {
             guard prior.expiresAt > at else { throw AIPackageError.expired }
-            let ids = prior.sources.map(\.articleID)
-            let current = try store.aiSources(articleIDs: ids, at: at)
-            guard current.count == prior.sources.count, let expiry = store.aiExpiry(articleIDs: ids, at: at) else { throw AIPackageError.unavailable }
-            guard zip(current, prior.sources).allSatisfy({ $0.articleID == $1.articleID && $0.title == $1.title && $0.url == $1.url && $0.content == $1.content }) else { throw AIPackageError.changed }
+            let selections = prior.sources.map(\.selection)
+            let current = try store.aiSources(selections: selections, at: at)
+            let expiries = try store.availableInputExpiries(selections: selections, at: at)
+            guard current.count == prior.sources.count, let expiry = expiries.values.min() else { throw AIPackageError.unavailable }
+            guard zip(current, prior.sources).allSatisfy({ $0.selection == $1.selection && $0.savedAt == $1.savedAt && $0.articleID == $1.articleID && $0.title == $1.title && $0.url == $1.url && $0.content == $1.content }) else { throw AIPackageError.changed }
             package = prior.shorteningExpiry(to: expiry)
         } catch { package = nil; reason = error.localizedDescription }
     }

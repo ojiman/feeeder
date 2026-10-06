@@ -81,9 +81,10 @@ extension ReaderStore {
         for scrap in scraps where scrap.noteID == id { context.delete(scrap) }
         context.delete(note)
         try save(); try reload()
+        onContentPolicyChanged?()
     }
     public func removeScrap(key: String) throws {
         guard let scrap = scraps.first(where: { $0.key == key }) else { return }
-        context.delete(scrap); try save(); try reload()
+        context.delete(scrap); try save(); try reload(); onContentPolicyChanged?()
     }
 }

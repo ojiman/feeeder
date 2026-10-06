@@ -40,9 +40,9 @@ import Observation
     public func reconcile(with store: ReaderStore, at: Date) {
         review.reconcile(at: at)
         do {
-            let ids = try HandoffFiles.sourceIDs(directory: directory)
-            let expiries = try store.availableContentExpiries(at: at, articleIDs: ids)
-            try HandoffFiles.reconcile(directory: directory, validSourceExpiries: expiries, at: at)
+            let selections = try HandoffFiles.sourceSelections(directory: directory)
+            let expiries = try store.availableInputExpiries(selections: selections, at: at)
+            try HandoffFiles.reconcile(directory: directory, validInputExpiries: expiries, at: at)
             nextExpiry = try HandoffFiles.nextExpiry(directory: directory)
             if let file, !FileManager.default.fileExists(atPath: file.path) { self.file = nil; opened = false }
             maintenanceError = nil

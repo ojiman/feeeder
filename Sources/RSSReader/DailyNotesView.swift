@@ -7,8 +7,11 @@ struct DailyNotesView: View {
     @Bindable var store: ReaderStore
     @Binding var noteID: UUID?
     let pane: NotePane
+    @Bindable var aiReview: AIPackageReview
+    @Bindable var handoff: ClaudeHandoffController
     @State private var error: String?
     @State private var deletingNote = false
+    @State private var reviewing = false
     @State private var removingScrap: String?
     private var note: DailyNote? { store.dailyNotes.first { $0.id == noteID } }
     var body: some View {
@@ -25,7 +28,7 @@ struct DailyNotesView: View {
             } else if let note {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        HStack { Text(note.title).font(.title2.bold()); Spacer(); Button("ノートを削除…", role: .destructive) { deletingNote = true } }
+                        HStack { Text(note.title).font(.title2.bold()); Spacer(); Button("AI入力を確認") { reviewing = true }; Button("ノートを削除…", role: .destructive) { deletingNote = true } }
                         Text("\(note.day) (\(note.timeZoneID)) · 自動削除しません").font(.caption).foregroundStyle(.secondary)
                         TextEditor(text: Binding(get: { note.text }, set: { text in perform { try store.saveDailyNote(id: note.id, text: text, at: .now) } }))
                             .frame(minHeight: 160).accessibilityLabel("日次ノート本文")
@@ -46,6 +49,9 @@ struct DailyNotesView: View {
                     }.padding(24)
                 }
             } else { ContentUnavailableView("当日のノートはまだありません", systemImage: "square.and.pencil", description: Text("記事で n を押すと、当日のノートに保存できます。過去のノートは中央で選択できます。")) }
+        }
+        .sheet(isPresented: $reviewing) {
+            AIReviewView(store: store, review: aiReview, handoff: handoff, selections: store.scraps.filter { $0.noteID == noteID }.flatMap { [.scrap($0.key), .article($0.articleID)] })
         }
         .confirmationDialog("この日次ノートとスクラップを削除しますか？", isPresented: $deletingNote) {
             Button("日次ノートを削除", role: .destructive) { if let note { perform { try store.deleteDailyNote(id: note.id); noteID = nil } } }

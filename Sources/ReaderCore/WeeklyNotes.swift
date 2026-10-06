@@ -144,6 +144,7 @@ extension ReaderStore {
         for source in noteSources where source.noteID == id { context.delete(source) }
         context.delete(note)
         try save(); try reload()
+        onContentPolicyChanged?()
     }
 }
 
