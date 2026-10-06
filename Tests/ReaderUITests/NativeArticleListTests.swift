@@ -4,6 +4,17 @@ import Testing
 @testable import RSSReader
 
 @MainActor struct NativeArticleListTests {
+    @Test func starKeyRoutesWithoutConsumingModifiedInput() throws {
+        let table = NativeArticleList.Table()
+        var handled: [String] = []
+        table.keyHandler = { handled.append($0); return true }
+        for flags: NSEvent.ModifierFlags in [[], .shift, .command] {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags,
+                timestamp: 0, windowNumber: 0, context: nil, characters: "s", charactersIgnoringModifiers: "s", isARepeat: false, keyCode: 1))
+            table.keyDown(with: event)
+        }
+        #expect(handled == ["s"])
+    }
     @Test func backgroundInsertionAndReorderPreserveSelectedArticleAndTopOffset() {
         let original = (0..<40).map { _ in UUID() }
         var selected: UUID? = original[10]

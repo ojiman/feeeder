@@ -2,7 +2,7 @@ import SwiftUI
 import ReaderCore
 
 private enum LibraryScope: Hashable {
-    case all, unread, notes, feed(UUID)
+    case all, unread, starred, notes, feed(UUID)
 }
 
 struct ReaderView: View {
@@ -43,6 +43,7 @@ struct ReaderView: View {
         switch scope ?? .all {
         case .notes: []
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
+        case .starred: store.starredArticleIDs(keeping: selection)
         case .unread: store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: selection)
         case .feed(let id): store.visibleArticleIDs(feedID: id, unreadOnly: false, keeping: selection)
         }
@@ -53,6 +54,7 @@ struct ReaderView: View {
         case .notes: "振り返り"
         case .all: "すべての記事"
         case .unread: "未読"
+        case .starred: "Star"
         case .feed(let id): store.feed(id: id)?.title ?? "記事"
         }
     }
@@ -78,8 +80,11 @@ struct ReaderView: View {
         } detail: {
             ZStack(alignment: .trailing) {
                 detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
-                if let url = originalPage.url {
-                    OriginalPageView(url: url, onClose: closeOriginal)
+                if let url = originalPage.url, let expectedID = originalPage.articleID {
+                    OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
+                        guard selection == expectedID, originalPage.articleID == expectedID else { return }
+                        perform(command)
+                    })
                         .id(url).transition(.move(edge: .trailing))
                 }
             }.clipped().frame(minWidth: 360)
@@ -98,6 +103,8 @@ struct ReaderView: View {
                     else { Image(systemName: "arrow.clockwise") }
                 }.disabled(refresh.refreshing).help("購読を更新").accessibilityLabel("購読を更新")
                 if let article = selectedArticle {
+                    Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
+                        .help("Starを切り替える (s)").accessibilityLabel(article.starredAt == nil ? "Starを付ける" : "Starを外す")
                     Button { perform { try store.setRead(article, !article.isRead) } } label: {
                         Image(systemName: article.isRead ? "envelope.open" : "envelope.badge")
                     }
@@ -135,7 +142,10 @@ struct ReaderView: View {
             loading.refreshCachedContent()
         }
         .onChange(of: selection) { _, id in
-            if originalPage.url != nil { closeOriginal() }
+            if originalPage.url != nil {
+                originalPage.followSelection(articleID: id, url: id.flatMap { store.article(id: $0)?.originalURL })
+                if originalPage.url == nil { columnVisibility = priorColumnVisibility }
+            }
             scrollMemory.state.select(id)
         }
         .task(id: selection) {
@@ -147,8 +157,8 @@ struct ReaderView: View {
             perform { try store.setRead(article, !article.isRead) }; return .handled
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
+        .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
-        .onExitCommand { if originalPage.url != nil { closeOriginal() } }
         .sheet(isPresented: $addingSubscription) {
             SubscriptionSheet(store: store) { scope = .feed($0) }
         }
@@ -175,6 +185,7 @@ struct ReaderView: View {
             Section("ライブラリ") {
                 sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
                 sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
+                sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
                 sidebarRow("振り返り", symbol: "square.and.pencil", count: store.notes.count).tag(LibraryScope.notes)
             }
             Section("購読元") {
@@ -235,6 +246,7 @@ struct ReaderView: View {
                 case "m": if let article = selectedArticle { perform { try store.setRead(article, !article.isRead) } }
                 case "b": openExternal()
                 case "v": openOriginal()
+                case "s": perform(.toggleStar)
                 default: break
                 }
             })
@@ -265,7 +277,7 @@ struct ReaderView: View {
                 onInteraction: { loading.recordInteraction(articleID: article.id) },
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
-                onDisplayed: { guard selection == article.id else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } })
+                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } })
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(.orange.opacity(0.8))
@@ -292,6 +304,19 @@ struct ReaderView: View {
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { originalPage.close(); columnVisibility = priorColumnVisibility }
         scrollMemory.state.returnFromOriginal()
         listFocused = restoreListFocus
+    }
+
+    private func perform(_ command: ReaderCommand) {
+        guard !addingSubscription, !reviewingArticle, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
+        switch command {
+        case .next: move(1)
+        case .previous: move(-1)
+        case .toggleStar:
+            guard let article = selectedArticle else { return }
+            perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
+        case .closeOriginal: closeOriginal()
+        case .scrap: break
+        }
     }
 
     private func move(_ offset: Int) {
