@@ -24,6 +24,8 @@ import SwiftData
     @ObservationIgnored private var articleFeeds: [UUID: Set<UUID>] = [:]
     public private(set) var articleIDs: [UUID] = []
     @ObservationIgnored private var feedArticleIDs: [UUID: [UUID]] = [:]
+    @ObservationIgnored var folderIndex: [String: [UUID]] = [:]
+    public private(set) var folderUnreadCounts: [String: Int] = [:]
     @ObservationIgnored private var unreadIDs: Set<UUID> = []
     public private(set) var unreadCount = 0
     public private(set) var feedUnreadCounts: [UUID: Int] = [:]
@@ -87,6 +89,11 @@ import SwiftData
         }
         articleIDs = articles.map(\.id)
         feedArticleIDs = feedArticles.mapValues { $0.map(\.id) }
+        folderIndex = [:]
+        for article in articles {
+            let folders = Set((articleFeeds[article.id] ?? []).compactMap { feedIndex[$0]?.folder })
+            for folder in folders { folderIndex[folder, default: []].append(article.id) }
+        }
         refreshUnreadCounts()
         refreshStarIndex()
     }
@@ -113,6 +120,7 @@ import SwiftData
         unreadCount = articles.filter { !$0.isRead }.count
         unreadIDs = Set(articles.filter { !$0.isRead }.map(\.id))
         feedUnreadCounts = feedArticles.mapValues { $0.filter { !$0.isRead }.count }
+        folderUnreadCounts = folderIndex.mapValues { $0.filter { unreadIDs.contains($0) }.count }
     }
     private func updateUnreadCounts(_ article: Article, wasRead: Bool) {
         guard article.isRead != wasRead else { return }
@@ -120,6 +128,8 @@ import SwiftData
         unreadCount += delta
         if article.isRead { unreadIDs.remove(article.id) } else { unreadIDs.insert(article.id) }
         for id in articleFeeds[article.id] ?? [] { feedUnreadCounts[id, default: 0] += delta }
+        let folders = Set((articleFeeds[article.id] ?? []).compactMap { feedIndex[$0]?.folder })
+        for folder in folders { folderUnreadCounts[folder, default: 0] += delta }
     }
 
     public func isArticle(_ article: Article, in feedID: UUID) -> Bool {
