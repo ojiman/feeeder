@@ -18,6 +18,7 @@ struct ReaderView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var priorColumnVisibility: NavigationSplitViewVisibility = .all
     @State private var saveError: String?
+    @State private var scrapMessage: String?
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     @State private var addingSubscription = false
@@ -103,6 +104,8 @@ struct ReaderView: View {
                     else { Image(systemName: "arrow.clockwise") }
                 }.disabled(refresh.refreshing).help("購読を更新").accessibilityLabel("購読を更新")
                 if let article = selectedArticle {
+                    Button { perform(.scrap) } label: { Image(systemName: "square.and.arrow.down") }
+                        .help("当日のノートへスクラップ (n)").accessibilityLabel("当日のノートへ保存")
                     Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
                         .help("Starを切り替える (s)").accessibilityLabel(article.starredAt == nil ? "Starを付ける" : "Starを外す")
                     Button { perform { try store.setRead(article, !article.isRead) } } label: {
@@ -158,9 +161,17 @@ struct ReaderView: View {
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
+        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.scrap); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
         .sheet(isPresented: $addingSubscription) {
             SubscriptionSheet(store: store) { scope = .feed($0) }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if let scrapMessage { Text(scrapMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
+        }
+        .task(id: scrapMessage) {
+            guard scrapMessage != nil else { return }
+            do { try await Task.sleep(for: .seconds(2)); scrapMessage = nil } catch {}
         }
         .sheet(isPresented: $reviewingArticle, onDismiss: { listFocused = true }) {
             if let selection { AIReviewView(store: store, review: aiReview, handoff: handoff, articleIDs: [selection]) }
@@ -247,6 +258,7 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
+                case "n": perform(.scrap)
                 default: break
                 }
             })
@@ -262,7 +274,7 @@ struct ReaderView: View {
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) { Text("j/k 移動"); Text("m 既読"); Text("b/v 原文") }
+            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("n 保存"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
         }
@@ -315,7 +327,12 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
-        case .scrap: break
+        case .scrap:
+            guard let selection else { return }
+            perform {
+                _ = try store.scrap(articleID: selection, at: .now, timeZone: .current)
+                scrapMessage = "当日のノートに保存しました"
+            }
         }
     }
 

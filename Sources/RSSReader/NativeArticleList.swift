@@ -53,7 +53,7 @@ struct NativeArticleList: NSViewRepresentable {
         var keyHandler: ((String) -> Bool)?
         override func keyDown(with event: NSEvent) {
             if event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
-               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s"].contains(key),
+               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n"].contains(key),
                keyHandler?(key) == true { return }
             super.keyDown(with: event)
         }

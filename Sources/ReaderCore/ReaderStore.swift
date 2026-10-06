@@ -29,6 +29,7 @@ import SwiftData
     public private(set) var feedUnreadCounts: [UUID: Int] = [:]
     @ObservationIgnored private let container: ModelContainer
     @ObservationIgnored let context: ModelContext
+    @ObservationIgnored private var saveHook: (() throws -> Void)?
 
     public static var schema: Schema {
         Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self,
@@ -42,7 +43,7 @@ import SwiftData
         try self.init(container: container, seedDemo: seedDemo, now: now)
     }
 
-    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now) throws {
+    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now, saveHook: (() throws -> Void)? = nil) throws {
         self.container = container
         context = ModelContext(container)
         context.autosaveEnabled = false
@@ -52,6 +53,7 @@ import SwiftData
         if seedDemo { try seedIfEmpty(now: now) }
         else { try reload() }
         try purgeExpired(at: now)
+        self.saveHook = saveHook
     }
 
     public func seedIfEmpty(now: Date = .now) throws {
@@ -227,7 +229,7 @@ import SwiftData
     }
 
     func save() throws {
-        do { try context.save() }
+        do { try saveHook?(); try context.save() }
         catch { context.rollback(); try? reload(); throw error }
     }
 }
