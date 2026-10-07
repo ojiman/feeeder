@@ -13,7 +13,11 @@ if p.exists():
 p.mkdir()
 PY
 source_dir=$(mktemp -d /private/tmp/feeeder-v1-source.XXXXXX)
-baseline=53102cc42ea665b3379ad2a23d842c3186ad9c3e
+baseline=${2:-53102cc42ea665b3379ad2a23d842c3186ad9c3e}
+case "$baseline" in
+    53102cc42ea665b3379ad2a23d842c3186ad9c3e|f9db83b49a82947a7031ddf874bc94fcb91ef89d) ;;
+    *) echo "Use a tested released V1 commit" >&2; exit 2 ;;
+esac
 git archive "$baseline" | tar -x -C "$source_dir"
 python3 - "$source_dir" <<'PY'
 from pathlib import Path
@@ -57,6 +61,20 @@ import ReaderCore
     }
 }
 SWIFT
+python3 - "$source_dir" "$baseline" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1]) / 'Sources/V1Fixture/main.swift'
+s = p.read_text().replace('53102cc42ea665b3379ad2a23d842c3186ad9c3e', sys.argv[2])
+if sys.argv[2] == 'f9db83b49a82947a7031ddf874bc94fcb91ef89d':
+    s = s.replace('let manifest: [String: Any]', 'var manifest: [String: Any]')
+    s = s.replace('        try JSONSerialization.data', '''        try store.setStar(articleID: article.id, isStarred: true, at: at)
+        let scrap = try store.scrap(articleID: article.id, at: at, timeZone: TimeZone(identifier: "Asia/Tokyo")!)
+        manifest["dailyNoteID"] = scrap.noteID.uuidString
+        manifest["scrapKey"] = scrap.key
+        try JSONSerialization.data''')
+p.write_text(s)
+PY
 swift run --package-path "$source_dir" --scratch-path "$source_dir/build" V1Fixture "$destination"
 swift --version > "$destination/swift-version.txt"
 python3 - "$destination" <<'PY'

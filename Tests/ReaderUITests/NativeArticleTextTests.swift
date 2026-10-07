@@ -1,8 +1,31 @@
 import AppKit
 import Testing
+import ReaderCore
 @testable import RSSReader
 
 @MainActor struct NativeArticleTextTests {
+    @Test func namedBodyLinkIsClickableAndQuoteIsIndented() throws {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        let text = "合成🙂：詳細はこちら"
+        let range = (text as NSString).range(of: "詳細はこちら")
+        let paragraph = BodyParagraph(text: text, links: [BodyLink(location: range.location, length: range.length, url: "https://synthetic.example/detail#section")], quoteDepth: 1)
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: [text], unavailable: nil, bodyParagraphs: [paragraph])
+        let body = (view.string as NSString).range(of: text)
+        let index = body.location + range.location
+        let link = try #require(view.textStorage?.attribute(.link, at: index, effectiveRange: nil) as? URL)
+        #expect(link.absoluteString == "https://synthetic.example/detail#section")
+        let style = try #require(view.textStorage?.attribute(.paragraphStyle, at: index, effectiveRange: nil) as? NSParagraphStyle)
+        #expect(style.headIndent > 0)
+        var opened: URL?
+        view.onOpenLink = { opened = $0; return true }
+        #expect(view.textView(view, clickedOnLink: link, at: index))
+        #expect(opened == link)
+        #expect(view.textView(view, clickedOnLink: "file:///private/tmp/forbidden", at: index))
+        #expect(opened == link)
+        view.install(title: "次の記事", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: [text], unavailable: nil)
+        let plain = (view.string as NSString).range(of: text)
+        #expect(view.textStorage?.attribute(.link, at: plain.location + range.location, effectiveRange: nil) == nil)
+    }
     @Test func fixedHeroArrivalDoesNotMoveReadingPosition() {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         let scroll = NSScrollView(frame: view.frame); scroll.documentView = view

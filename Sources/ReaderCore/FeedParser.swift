@@ -22,9 +22,10 @@ public struct ParsedEntry: Sendable {
     public let coverage: ContentCoverage
     public let publishedAt: Date?
     public let imageURL: URL?
-    public init(sourceID: String, title: String, url: URL?, summary: String, body: String, coverage: ContentCoverage, publishedAt: Date?, imageURL: URL? = nil) {
+    public let bodyParagraphs: [BodyParagraph]?
+    public init(sourceID: String, title: String, url: URL?, summary: String, body: String, coverage: ContentCoverage, publishedAt: Date?, imageURL: URL? = nil, bodyParagraphs: [BodyParagraph]? = nil) {
         self.sourceID = sourceID; self.title = title; self.url = url; self.summary = summary; self.body = body
-        self.coverage = coverage; self.publishedAt = publishedAt; self.imageURL = imageURL
+        self.coverage = coverage; self.publishedAt = publishedAt; self.imageURL = imageURL; self.bodyParagraphs = bodyParagraphs
     }
 }
 
@@ -43,6 +44,14 @@ public enum FeedImportError: LocalizedError {
 }
 
 public enum ArticleURL {
+    // Article identity drops fragments; user-clicked links must retain them.
+    public static func link(_ value: String, relativeTo base: URL? = nil) -> URL? {
+        guard let validated = validated(value, relativeTo: base),
+              let resolved = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines), relativeTo: base)?.absoluteURL,
+              var components = URLComponents(url: validated, resolvingAgainstBaseURL: true) else { return nil }
+        components.percentEncodedFragment = URLComponents(url: resolved, resolvingAgainstBaseURL: true)?.percentEncodedFragment
+        return components.url
+    }
     public static func validated(_ value: String, relativeTo base: URL? = nil) -> URL? {
         guard let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines), relativeTo: base)?.absoluteURL,
               var parts = URLComponents(url: url, resolvingAgainstBaseURL: true),
@@ -86,6 +95,7 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         let base: URL
         let attributes: [String: String]
         var text = ""
+        var markup = ""
     }
     var stack: [Node] = []
     var format: String?
@@ -141,10 +151,6 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
                     if name == "content", attributes["medium"] == "image" || attributes["type"]?.hasPrefix("image/") == true || (attributes["medium"] == nil && attributes["type"] == nil) { recordImage(attributes["url"], base: base, priority: 1) }
                 }
             }
-            if name == "img", ns == "http://www.w3.org/1999/xhtml", stack.count > depth + 1 {
-                let content = stack[depth].name
-                if ["content", "summary"].contains(content) { recordImage(attributes["src"], base: base, priority: content == "content" ? 3 : 4) }
-            }
         } else if format == "atom", stack.count == 2, ns == Self.atom, name == "link", [nil, "alternate"].contains(attributes["rel"]), siteURL == nil {
             siteURL = attributes["href"].flatMap { ArticleURL.validated($0, relativeTo: base) }
         }
@@ -161,7 +167,10 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
     }
     func parser(_ parser: XMLParser, didEndMappingPrefix prefix: String) { _ = namespaces[prefix]?.popLast() }
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        if !stack.isEmpty { stack[stack.count - 1].text += string }
+        if !stack.isEmpty {
+            stack[stack.count - 1].text += string
+            stack[stack.count - 1].markup += Self.escape(string)
+        }
     }
     func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
         if let text = String(data: CDATABlock, encoding: .utf8) { self.parser(parser, foundCharacters: text) }
@@ -177,10 +186,14 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
                     case "guid", "id": values["id"] = text
                     case "description", "summary":
                         values["summary"] = text
+                        values["summaryBase"] = node.base.absoluteString
+                        if node.attributes["type"] == "xhtml" { values["summaryHTML"] = node.markup }
                         if format != "atom" || node.attributes["type"] == "html", let image = ImageMetadata.firstHTMLImage(text, base: node.base) { recordImage(image.absoluteString, base: node.base, priority: 4) }
                         if format == "atom" && node.attributes["type"] != "html" { values["summaryPlain"] = "true" }
                     case "content":
                         values["body"] = text
+                        values["bodyBase"] = node.base.absoluteString
+                        if node.attributes["type"] == "xhtml" { values["bodyHTML"] = node.markup }
                         if format != "atom" || node.attributes["type"] == "html", let image = ImageMetadata.firstHTMLImage(text, base: node.base) { recordImage(image.absoluteString, base: node.base, priority: 3) }
                         if format == "atom" && node.attributes["type"] != "html" { values["bodyPlain"] = "true" }
                     case "pubDate", "published": values["date"] = text
@@ -190,9 +203,13 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
                     }
                 } else if node.namespace == Self.content && name == "encoded" {
                     values["body"] = text
+                    values["bodyBase"] = node.base.absoluteString
                     if let image = ImageMetadata.firstHTMLImage(text, base: node.base) { recordImage(image.absoluteString, base: node.base, priority: 3) }
                 }
                 else if node.namespace == Self.dc && name == "date" { values["date"] = text }
+                else if node.namespace == "http://www.hatena.ne.jp/info/xmlns#", name == "imageurl" {
+                    recordImage(text, base: node.base, priority: -1)
+                }
             } else if stack.count == depth {
                 finishEntry()
                 entryDepth = nil
@@ -212,17 +229,33 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         stack.removeLast()
         if !stack.isEmpty {
             stack[stack.count - 1].text += node.text
+            if node.namespace == "http://www.w3.org/1999/xhtml" {
+                let attrs = node.attributes.sorted { $0.key < $1.key }.map { " \($0.key)=\"\(Self.escape($0.value))\"" }.joined()
+                let voidElement = ["img", "br", "hr", "input", "link", "meta", "area", "base", "embed", "param", "source", "track", "wbr"].contains(name)
+                stack[stack.count - 1].markup += voidElement ? "<\(name)\(attrs)>" : "<\(name)\(attrs)>\(node.markup)</\(name)>"
+            } else { stack[stack.count - 1].markup += node.markup }
             if ["p", "div", "br", "pre", "li"].contains(name) { stack[stack.count - 1].text += "\n" }
         }
     }
     private func finishEntry() {
         if entryURL == nil, let guid = values["id"] { entryURL = ArticleURL.validated(guid) }
         guard let identity = values["id"].flatMap({ $0.isEmpty ? nil : $0 }) ?? entryURL?.absoluteString else { skipped += 1; return }
-        let summary = values["summaryPlain"] == "true" ? (values["summary"] ?? "") : PlainFeedText.convert(values["summary"] ?? "")
-        let body = values["body"].map { values["bodyPlain"] == "true" ? $0 : PlainFeedText.convert($0) } ?? summary
+        let summaryBase = values["summaryBase"].flatMap(URL.init(string:)) ?? entryBase ?? source
+        let bodyBase = values["bodyBase"].flatMap(URL.init(string:)) ?? entryBase ?? source
+        let summaryHTML = values["summaryHTML"] ?? (values["summaryPlain"] == "true" ? nil : values["summary"])
+        let bodyHTML = values["bodyHTML"] ?? (values["bodyPlain"] == "true" ? nil : values["body"])
+        let summaryParagraphs = summaryHTML.flatMap { ArticleMarkup.parse($0, base: summaryBase) }
+        let bodyParagraphs = values["body"] == nil ? summaryParagraphs : bodyHTML.flatMap { ArticleMarkup.parse($0, base: bodyBase) }
+        let summary = summaryParagraphs?.map(\.text).joined(separator: "\n\n") ?? values["summary"] ?? ""
+        let body = bodyParagraphs?.map(\.text).joined(separator: "\n\n") ?? values["body"] ?? summary
+        if let html = values["bodyHTML"], let image = ImageMetadata.firstHTMLImage(html, base: bodyBase) { recordImage(image.absoluteString, base: bodyBase, priority: 3) }
+        if let html = values["summaryHTML"], let image = ImageMetadata.firstHTMLImage(html, base: summaryBase) { recordImage(image.absoluteString, base: summaryBase, priority: 4) }
         entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? "無題", url: entryURL,
                                    summary: summary, body: body, coverage: values["body"] == nil ? .summaryOnly : .feedProvided,
-                                   publishedAt: Self.date(values["date"] ?? values["updated"] ?? ""), imageURL: entryImages.sorted { $0.key < $1.key }.first?.value))
+                                   publishedAt: Self.date(values["date"] ?? values["updated"] ?? ""), imageURL: entryImages.sorted { $0.key < $1.key }.first?.value, bodyParagraphs: bodyParagraphs))
+    }
+    private static func escape(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
     }
     static func date(_ string: String) -> Date? {
         let iso = ISO8601DateFormatter()

@@ -54,7 +54,9 @@ import SwiftData
     @Attribute(.unique) public var articleID: UUID
     public var text: String
     public var coverageRaw: String
-    public init(articleID: UUID, text: String, coverage: ContentCoverage = .feedProvided) {
+    public var bodyFormatData: Data?
+    public init(articleID: UUID, text: String, coverage: ContentCoverage = .feedProvided, bodyParagraphs: [BodyParagraph]? = nil) {
         self.articleID = articleID; self.text = text; coverageRaw = coverage.rawValue
+        bodyFormatData = BodyParagraph.encode(bodyParagraphs)
     }
 }

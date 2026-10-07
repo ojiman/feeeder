@@ -4,7 +4,7 @@ import QuartzCore
 import ReaderCore
 
 // A single native text layout replaces per-paragraph SwiftUI geometry/preferences.
-@MainActor final class ArticleTextView: NSTextView {
+@MainActor final class ArticleTextView: NSTextView, NSTextViewDelegate {
     private var paragraphRanges: [NSRange] = []
     private var paragraphYs: [CGFloat] = []
     private var bodyRange: NSRange?
@@ -16,6 +16,8 @@ import ReaderCore
     var onInteraction: (() -> Void)?
     var onScroll: ((String, Double) -> Void)?
     private var didDisplayBody = false
+    private var quoteRanges: [(NSRange, CGFloat)] = []
+    var onOpenLink: (URL) -> Bool = { NSWorkspace.shared.open($0) }
 
     override init(frame: NSRect) {
         let storage = NSTextStorage()
@@ -25,6 +27,8 @@ import ReaderCore
         super.init(frame: frame, textContainer: container)
         container.widthTracksTextView = false; container.lineFragmentPadding = 0
         isEditable = false; isSelectable = true; isRichText = true
+        delegate = self
+        linkTextAttributes = [.foregroundColor: NSColor.linkColor, .underlineStyle: NSUnderlineStyle.single.rawValue]
         isVerticallyResizable = true; isHorizontallyResizable = false
         minSize = NSSize(width: 0, height: 0); maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         autoresizingMask = [.width]
@@ -38,7 +42,7 @@ import ReaderCore
         if heroView !== view { heroView?.removeFromSuperview(); heroView = view; if let view { addSubview(view) } }
         positionHero()
     }
-    func install(title: String, publisher: String, date: String, coverage: String, paragraphs: [String], unavailable: String?, hero: Bool = false) {
+    func install(title: String, publisher: String, date: String, coverage: String, paragraphs: [String], unavailable: String?, hero: Bool = false, bodyParagraphs: [BodyParagraph]? = nil) {
         if !paragraphs.isEmpty { onDisplayBegin?() }
         installing = true; defer { installing = false }
         let document = NSMutableAttributedString()
@@ -55,11 +59,26 @@ import ReaderCore
             let style = NSMutableParagraphStyle(); style.minimumLineHeight = 180; style.maximumLineHeight = 180; style.paragraphSpacing = 22
             document.append(NSAttributedString(string: " \n", attributes: [.font: NSFont.systemFont(ofSize: 1), .foregroundColor: NSColor.clear, .paragraphStyle: style]))
         }
-        paragraphRanges = []; paragraphYs = []; bodyRange = nil
+        paragraphRanges = []; paragraphYs = []; bodyRange = nil; quoteRanges = []
         let start = document.length
-        for paragraph in paragraphs {
-            paragraphRanges.append(NSRange(location: document.length, length: (paragraph as NSString).length))
+        for (index, paragraph) in paragraphs.enumerated() {
+            let range = NSRange(location: document.length, length: (paragraph as NSString).length)
+            paragraphRanges.append(range)
             append(paragraph, size: 16)
+            guard let blocks = bodyParagraphs, blocks.indices.contains(index), blocks[index].text == paragraph else { continue }
+            let block = blocks[index]
+            if block.quoteDepth > 0 {
+                let indent = CGFloat(min(block.quoteDepth, 3)) * 20
+                let style = NSMutableParagraphStyle(); style.lineSpacing = 8; style.paragraphSpacing = 22
+                style.headIndent = indent; style.firstLineHeadIndent = indent
+                document.addAttributes([.paragraphStyle: style, .foregroundColor: NSColor.secondaryLabelColor], range: range)
+                quoteRanges.append((range, indent))
+            }
+            for link in block.links {
+                guard link.location >= 0, link.length > 0, link.location <= range.length, link.length <= range.length - link.location,
+                      let url = ArticleURL.link(link.url) else { continue }
+                document.addAttributes([.link: url, .foregroundColor: NSColor.linkColor, .underlineStyle: NSUnderlineStyle.single.rawValue], range: NSRange(location: range.location + link.location, length: link.length))
+            }
         }
         if !paragraphs.isEmpty { bodyRange = NSRange(location: start, length: document.length - start) }
         if let unavailable { append(unavailable, size: 16, secondary: true) }
@@ -138,6 +157,15 @@ import ReaderCore
     }
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        if let manager = layoutManager, let container = textContainer {
+            NSColor.separatorColor.setFill()
+            for (range, indent) in quoteRanges {
+                let glyphs = manager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+                let rect = manager.boundingRect(forGlyphRange: glyphs, in: container)
+                let line = NSRect(x: textContainerOrigin.x + indent - 12, y: textContainerOrigin.y + rect.minY, width: 2, height: rect.height)
+                if line.intersects(dirtyRect) { line.fill() }
+            }
+        }
         guard !didDisplayBody, window != nil, hasVisibleBody else { return }
         didDisplayBody = true
         // SwiftUI state/storage writes happen after the native draw, never inside its update.
@@ -145,6 +173,12 @@ import ReaderCore
         DispatchQueue.main.async { callback?() }
     }
     override func mouseDown(with event: NSEvent) { onInteraction?(); super.mouseDown(with: event) }
+    func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+        let value = (link as? URL)?.absoluteString ?? (link as? String)
+        guard let value, let url = ArticleURL.link(value) else { return true }
+        _ = onOpenLink(url)
+        return true
+    }
     func recordScroll() {
         guard !installing else { return }
         let position = readingPosition(); onScroll?(position.anchor, position.offset)
@@ -168,9 +202,11 @@ struct NativeArticleText: NSViewRepresentable {
     let onDisplayed: () -> Void
     var imageLoader: ReaderImageLoader? = nil
     var heroURL: URL? = nil
+    var bodyParagraphs: [BodyParagraph]? = nil
 
     @MainActor final class Coordinator {
         var signature: [String] = []
+        var bodyParagraphs: [BodyParagraph]?
         nonisolated(unsafe) var observer: NSObjectProtocol?
         var restoring = false
         var hero: NSHostingView<ArticleImageView>?
@@ -195,7 +231,7 @@ struct NativeArticleText: NSViewRepresentable {
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let text = scroll.documentView as? ArticleTextView else { return }
         let signature = [articleID.uuidString, title, publisher, date, coverage, unavailable ?? "", heroURL?.absoluteString ?? ""] + paragraphs
-        let changed = signature != context.coordinator.signature
+        let changed = signature != context.coordinator.signature || bodyParagraphs != context.coordinator.bodyParagraphs
         if changed { text.recordScroll() }
         text.onScroll = onScroll; text.onInteraction = onInteraction; text.onDisplayBegin = onDisplayBegin; text.onDisplayed = onDisplayed
         (scroll as? ArticleScrollView)?.onInteraction = onInteraction
@@ -214,7 +250,8 @@ struct NativeArticleText: NSViewRepresentable {
         guard changed else { return }
         context.coordinator.restoring = true
         context.coordinator.signature = signature
-        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil)
+        context.coordinator.bodyParagraphs = bodyParagraphs
+        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs)
         text.restore(anchor: initialAnchor, offset: initialOffset)
         context.coordinator.restoring = false
         scroll.wantsLayer = true

@@ -6,8 +6,10 @@ public struct ExtractionResult: Sendable, Equatable {
     public let text: String
     public let coverage: ContentCoverage
     public let sourceURL: URL
-    public init(text: String, coverage: ContentCoverage, sourceURL: URL) {
+    public let bodyParagraphs: [BodyParagraph]?
+    public init(text: String, coverage: ContentCoverage, sourceURL: URL, bodyParagraphs: [BodyParagraph]? = nil) {
         self.text = text; self.coverage = coverage; self.sourceURL = sourceURL
+        self.bodyParagraphs = bodyParagraphs
     }
 }
 
@@ -23,26 +25,11 @@ public enum ArticleExtractor {
         try document.select("script, style, nav, form, iframe, aside, footer, header, [hidden], [aria-hidden=true], .advertisement, .ads").remove()
         guard let root = try document.select("article").first() ?? document.select("main").first(),
               !(try root.select("p, pre").isEmpty()) else { return nil }
-        let text = render(root).replacingOccurrences(of: "\n[ \t]+\n", with: "\n\n", options: .regularExpression)
-            .replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let paragraphs = ArticleMarkup.render(root, base: response.finalURL)
+        let text = paragraphs.map(\.text).joined(separator: "\n\n")
         // A quality floor, not a claim that the complete article was obtained.
         guard text.filter({ $0.isLetter || $0.isNumber }).count >= 25 else { return nil }
-        return ExtractionResult(text: text, coverage: .extracted, sourceURL: response.finalURL)
-    }
-    private static func render(_ node: Node, preformatted: Bool = false, depth: Int = 0) -> String {
-        guard depth <= 128 else { return "" }
-        if let text = node as? TextNode {
-            return preformatted ? text.getWholeText() : text.getWholeText().replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-        }
-        guard let element = node as? Element else { return "" }
-        let tag = element.tagName().lowercased()
-        if tag == "br" { return "\n" }
-        let text = element.getChildNodes().map { render($0, preformatted: preformatted || tag == "pre", depth: depth + 1) }.joined()
-        if ["p", "pre", "div", "section", "h1", "h2", "h3", "h4", "li", "blockquote", "tr"].contains(tag) {
-            return "\n\n" + (tag == "pre" ? text.trimmingCharacters(in: .newlines) : text.trimmingCharacters(in: .whitespacesAndNewlines)) + "\n\n"
-        }
-        return text
+        return ExtractionResult(text: text, coverage: .extracted, sourceURL: response.finalURL, bodyParagraphs: paragraphs)
     }
     private static func decode(_ data: Data, contentType: String?) -> String? {
         let scan = String(decoding: data.prefix(8192), as: UTF8.self)

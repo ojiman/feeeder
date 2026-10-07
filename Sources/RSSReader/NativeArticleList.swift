@@ -56,6 +56,11 @@ struct NativeArticleList: NSViewRepresentable {
 
     @MainActor final class Table: NSTableView {
         var keyHandler: ((String) -> Bool)?
+        var focusWhenAttached = false
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if focusWhenAttached { window?.makeFirstResponder(self) }
+        }
         override func keyDown(with event: NSEvent) {
             if event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
                let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n"].contains(key),
@@ -103,6 +108,7 @@ struct NativeArticleList: NSViewRepresentable {
                 scroll.reflectScrolledClipView(scroll.contentView)
             }
             priorSelection = parent.selection
+            table.focusWhenAttached = parent.focus
             if parent.focus && !priorFocus { table.window?.makeFirstResponder(table) }
             priorFocus = parent.focus
             synchronizing = false
@@ -153,11 +159,12 @@ struct NativeArticleList: NSViewRepresentable {
             stack.translatesAutoresizingMaskIntoConstraints = false
             let iconStack = NSStackView(views: [favicon, stack, thumbnail])
             iconStack.orientation = .horizontal; iconStack.alignment = .top; iconStack.spacing = 8
+            iconStack.distribution = .fill
             iconStack.translatesAutoresizingMaskIntoConstraints = false
             favicon.imageScaling = .scaleProportionallyUpOrDown; thumbnail.imageScaling = .scaleProportionallyUpOrDown
             favicon.setAccessibilityLabel("購読元のアイコン"); thumbnail.setAccessibilityLabel("記事のサムネイル")
             addSubview(iconStack)
-            NSLayoutConstraint.activate([iconStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12), iconStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12), iconStack.topAnchor.constraint(equalTo: topAnchor, constant: 10), iconStack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8), favicon.widthAnchor.constraint(equalToConstant: 18), favicon.heightAnchor.constraint(equalToConstant: 18), thumbnail.widthAnchor.constraint(equalToConstant: 56), thumbnail.heightAnchor.constraint(equalToConstant: 56), source.widthAnchor.constraint(equalTo: stack.widthAnchor), title.widthAnchor.constraint(equalTo: stack.widthAnchor), summary.widthAnchor.constraint(equalTo: stack.widthAnchor)])
+            NSLayoutConstraint.activate([iconStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12), iconStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12), iconStack.topAnchor.constraint(equalTo: topAnchor, constant: 10), iconStack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8), favicon.widthAnchor.constraint(equalToConstant: 18), favicon.heightAnchor.constraint(equalToConstant: 18), thumbnail.widthAnchor.constraint(equalToConstant: 40), thumbnail.heightAnchor.constraint(equalToConstant: 40), source.widthAnchor.constraint(equalTo: stack.widthAnchor), title.widthAnchor.constraint(equalTo: stack.widthAnchor), summary.widthAnchor.constraint(equalTo: stack.widthAnchor)])
         }
         convenience init() { self.init(frame: .zero) }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
