@@ -30,7 +30,7 @@ import SwiftData
     public private(set) var unreadCount = 0
     public private(set) var feedUnreadCounts: [UUID: Int] = [:]
     @ObservationIgnored private let container: ModelContainer
-    @ObservationIgnored let context: ModelContext
+    @ObservationIgnored var context: ModelContext
     @ObservationIgnored private var saveHook: (() throws -> Void)?
 
     public static var schema: Schema {
@@ -182,10 +182,11 @@ import SwiftData
             try reload()
             if contentRemoved { onContentPolicyChanged?() }
             return feed
-        } catch { context.processPendingChanges(); context.rollback(); try? reload(); throw error }
+        } catch { rollback(); throw error }
     }
 
     public func updateSubscription(_ feed: Feed, title: String, folder: String) throws {
+        guard let feed = self.feed(id: feed.id) else { return }
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { throw FeedImportError.missingTitle }
         feed.title = title; feed.folder = folder.trimmingCharacters(in: .whitespacesAndNewlines); feed.customTitle = true
@@ -193,6 +194,7 @@ import SwiftData
     }
 
     public func unsubscribe(_ feed: Feed) throws {
+        guard let feed = self.feed(id: feed.id) else { return }
         for membership in memberships where membership.feedID == feed.id { context.delete(membership) }
         context.delete(feed)
         // Keep articles and bodies. Subscription removal is not article deletion.
@@ -204,6 +206,7 @@ import SwiftData
     }
 
     public func setRead(_ article: Article, _ value: Bool) throws {
+        guard let article = self.article(id: article.id) else { return }
         guard article.isRead != value else { return }
         let wasRead = article.isRead
         article.isRead = value
@@ -250,7 +253,16 @@ import SwiftData
 
     func save() throws {
         do { try saveHook?(); try context.save() }
-        catch { context.processPendingChanges(); context.rollback(); try? reload(); throw error }
+        catch { rollback(); throw error }
+    }
+
+    private func rollback() {
+        context.rollback()
+        // A failed save can leave registered models changed on macOS 26.
+        // Reload committed values using a fresh context for the same store.
+        context = ModelContext(container)
+        context.autosaveEnabled = false
+        try? reload()
     }
 }
 
