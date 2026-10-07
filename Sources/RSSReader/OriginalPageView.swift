@@ -18,13 +18,46 @@ struct OriginalPageView: View {
             }.padding(10).background(.bar)
             if loading { ProgressView("元ページを読み込み中").controlSize(.small).padding(8).frame(maxWidth: .infinity).background(.bar) }
             if let failure {
-                ContentUnavailableView("元ページを開けませんでした", systemImage: "wifi.exclamationmark", description: Text(failure))
+                OriginalFailureView(message: failure, onCommand: onCommand)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 OriginalWebView(url: url, onClose: onClose, onCommand: onCommand, onFailure: { loading = false; failure = $0 }, onLoading: { loading = $0 })
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
+    }
+}
+
+// This input target exists only after the page has failed and its editable
+// web content has been removed. It never handles keys from a live page input.
+@MainActor final class OriginalFailureHostingView<Content: View>: NSHostingView<Content> {
+    var onCommand: (ReaderCommand) -> Void = { _ in }
+    override var acceptsFirstResponder: Bool { true }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.makeFirstResponder(self)
+    }
+    override func keyDown(with event: NSEvent) {
+        guard window?.firstResponder === self, window?.attachedSheet == nil,
+              let command = ReaderKeyboardCommands.command(for: event) else { super.keyDown(with: event); return }
+        onCommand(command)
+    }
+}
+
+private struct OriginalFailureView: NSViewRepresentable {
+    let message: String
+    let onCommand: (ReaderCommand) -> Void
+    private var content: AnyView {
+        AnyView(ContentUnavailableView("元ページを開けませんでした", systemImage: "wifi.exclamationmark", description: Text(message)))
+    }
+    func makeNSView(context: Context) -> OriginalFailureHostingView<AnyView> {
+        let view = OriginalFailureHostingView(rootView: content)
+        view.sizingOptions = []
+        view.onCommand = onCommand
+        return view
+    }
+    func updateNSView(_ view: OriginalFailureHostingView<AnyView>, context: Context) {
+        view.rootView = content; view.onCommand = onCommand
     }
 }
 

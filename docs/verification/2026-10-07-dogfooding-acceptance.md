@@ -7,7 +7,7 @@
 - Branch `codex/dogfooding-reader`。基点 `34b3bddc02f01d6da84f7289c38b037f0d6e5bd2`、Task 1–7 `1c6ecfa`〜`6a8f0a5`、実機修正checkpoint `ad6982c`。最終レビュー範囲は下記へ追記する。
 - Mac14,2 / RAM 16GiB / CPU 8 / 60Hz / macOS 27.0.1 (26A434)、Swift 6.4。最低26.6はNOT_RUN。
 - 合成RSS/HTML・予約ドメイン・localhost 18889の合成原文／64×64 PNG・一時DBを使用。実データ、参考画像・動画、端末のログはGitへ含めない。
-- Releaseビルドと全109テスト（Core 94 / 22 suites、UI 15 / 3 suites）、`git diff --check` PASS、終了コード0。画像・10,000記事fixtureは今回のテスト用で、実サービスの品質を示さない。
+- Releaseビルドと全110テスト（Core 94 / 22 suites、UI 16 / 3 suites）、`git diff --check` PASS、終了コード0。画像・10,000記事fixtureは今回のテスト用で、実サービスの品質を示さない。
 
 ```sh
 bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-store-fixture-20261007-final
@@ -82,4 +82,8 @@ UIツールへの初回接続に長い遅延、接続切断、Macロック中の
 
 ## 最終コードレビュー
 
-固定範囲のfresh-contextレビュー結果をここへ追記する。
+固定範囲 `34b3bdd..05ce026` をgpt-6-astraがfresh-contextで読取レビューした。Critical0、Important1、Minor1。Importantは原文失敗時のキーボード経路消失。失敗画面に限定した非編集の入力先を追加し、j/k/s/n/Escを配送する。`failedOriginalKeepsEscapeAndNavigation` は配送を外すと次記事・commands・Esc復帰の3assertが失敗し、修正後にGREEN。広域のEscapeハンドラを原文入力欄へ戻していない。全110テストとReleaseビルドで修正を検証した（終了コード0）。停止済みlocalhostの原文を実機で開き、接続失敗画面からjで次の記事へ進み、Escでその記事の本文へ戻ることも確認した。再レビューは行わない。
+
+Minorは、空の日次画面を先に開き→Feedsで初回スクラップ→日次へ戻った際、中央に存在するノートが選択されず、右が空表示になるケース。データは保持され、中央のノートを選択すれば回復する。この初期選択表示は未修正として次の改善へ残す。
+
+レビューで判断できない実IME・アクセシビリティ設定・最低macOS・絶対位置・オフライン再openはNOT_RUNを維持する。MainActor gapの原因・体感品質、実サイト・変更後のClaude読取り、最終PdM判断も未受入。レビュー指示をOSの読取専用隔離の証拠としない。

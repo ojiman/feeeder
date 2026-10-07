@@ -1,9 +1,43 @@
 import AppKit
 import WebKit
+import SwiftUI
+import ReaderCore
 import Testing
 @testable import RSSReader
 
 @Suite(.serialized) @MainActor struct OriginalKeyboardTests {
+    @Test func failedOriginalKeepsEscapeAndNavigation() throws {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 320), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let first = UUID(), next = UUID()
+        var original = OriginalPageState()
+        let opened = original.open(articleID: first, url: "http://127.0.0.1:1/failing")
+        #expect(opened)
+        var reader = ReaderSelectionState(); reader.select(first)
+        reader.recordScroll(articleID: first, anchor: "paragraph-7", offset: 23.5)
+        let errorPane = OriginalFailureHostingView(rootView: Text("合成ネットワーク失敗"))
+        var commands: [ReaderCommand] = []
+        errorPane.onCommand = { command in
+            commands.append(command)
+            switch command {
+            case .next: original.followSelection(articleID: next, url: "http://127.0.0.1:1/next")
+            case .previous: original.followSelection(articleID: first, url: "http://127.0.0.1:1/failing")
+            case .closeOriginal: original.close(); reader.returnFromOriginal()
+            default: break
+            }
+        }
+        window.contentView = errorPane
+        #expect(window.firstResponder === errorPane)
+        errorPane.keyDown(with: try event("j")); #expect(original.articleID == next)
+        errorPane.keyDown(with: try event("k")); #expect(original.articleID == first)
+        errorPane.keyDown(with: try event("s")); errorPane.keyDown(with: try event("n"))
+        errorPane.keyDown(with: try event("j", modifiers: .command))
+        errorPane.keyDown(with: try event("Escape"))
+        #expect(commands == [.next, .previous, .toggleStar, .scrap, .closeOriginal])
+        #expect(original.url == nil && reader.selectedArticleID == first)
+        #expect(reader.scrollAnchors[first] == "paragraph-7" && reader.scrollOffsets[first] == 23.5)
+    }
     @Test func mountingOriginalPageTransfersKeyboardFocus() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 320), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
@@ -19,7 +53,7 @@ import Testing
     func event(_ key: String, modifiers: NSEvent.ModifierFlags = []) throws -> NSEvent {
         try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers,
             timestamp: 0, windowNumber: 0, context: nil, characters: key, charactersIgnoringModifiers: key,
-            isARepeat: false, keyCode: 0))
+            isARepeat: false, keyCode: key == "Escape" ? 53 : 0))
     }
     @Test func nativeCommandsIgnoreModifiedInput() throws {
         #expect(ReaderKeyboardCommands.command(for: try event("j")) == .next)
