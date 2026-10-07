@@ -34,6 +34,7 @@ extension ReaderStore {
         RetentionPolicy(days: retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt) > at
     }
     public func previewDeletion(days: Int?, allContent: Bool, at: Date) throws -> DeletionPreview {
+        try reloadIfNeeded()
         let policy = RetentionPolicy(days: days ?? retentionDays)
         let snapshots = try context.fetch(FetchDescriptor<ContentSnapshot>())
         let selected = articles.filter { article in
@@ -48,6 +49,7 @@ extension ReaderStore {
                                estimatedBytes: bodies.reduce(0) { $0 + $1.text.utf8.count } + summaries.reduce(0) { $0 + $1.summary.utf8.count })
     }
     public func applyRetention(days: Int, at: Date) throws {
+        try reloadIfNeeded()
         guard RetentionPolicy.choices.contains(days) else { throw RetentionError.invalidDays }
         // Purge under both policies: extending retention must not revive already-expired bytes.
         let old = try previewDeletion(days: nil, allContent: false, at: at)
@@ -62,6 +64,7 @@ extension ReaderStore {
         try reload()
     }
     public func deleteContent(articleIDs: [UUID], at: Date) throws {
+        try reloadIfNeeded()
         guard try removeContent(articleIDs: articleIDs, at: at) else { return }
         try save()
         defer { onContentPolicyChanged?() }
@@ -72,6 +75,7 @@ extension ReaderStore {
         try deleteContent(articleIDs: preview.articleIDs, at: at)
     }
     public func availableContentExpiries(at: Date, articleIDs: [UUID]? = nil) throws -> [UUID: Date] {
+        try reloadIfNeeded()
         var values: [UUID: Date] = [:]
         let policy = RetentionPolicy(days: retentionDays)
         let selected = articleIDs.map { ids in ids.compactMap { article(id: $0) } } ?? articles
@@ -83,6 +87,7 @@ extension ReaderStore {
         return values
     }
     @discardableResult func removeContent(articleIDs: [UUID], at: Date) throws -> Bool {
+        try reloadIfNeeded()
         let ids = Set(articleIDs)
         let selected = articles.filter { ids.contains($0.id) }
         let snapshots = try context.fetch(FetchDescriptor<ContentSnapshot>())

@@ -3,10 +3,10 @@ name: Feeeder CI
 on:
   pull_request:
     branches: [main]
-    paths-ignore: ['docs/**']
+    paths-ignore: ['docs/**', '**.md']
   push:
     branches: [main]
-    paths-ignore: ['docs/**']
+    paths-ignore: ['docs/**', '**.md']
   workflow_dispatch:
 
 permissions:
@@ -32,6 +32,7 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       CI_RESULTS: ${{ github.workspace }}/ci-results
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -41,6 +42,7 @@ jobs:
           mkdir -p "$CI_RESULTS"
           {
             git rev-parse HEAD
+            printf 'pr_head=%s\n' "$PR_HEAD"
             sw_vers
             uname -m
             xcodebuild -version

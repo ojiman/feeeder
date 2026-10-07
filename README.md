@@ -12,7 +12,14 @@ bash scripts/build-app.sh release
 
 生成される `.build/Feeeder.app` をFinderから開いてください。未署名のローカル開発用アプリです。releaseの中間出力は `/private/tmp/feeeder-v1-release`、debugは `/private/tmp/rss-reader-build` に置きます。debug buildは引数を省略できます。
 
-通常起動は空ライブラリから開始します。V1の保存先は `Application Support/Feeeder/Reader.store`。同じ版での再起動では購読・記事・既読日時・ノートを保持します。ベータ中はバージョン更新をまたぐデータ保持を保証せず、1.0以降は保証します。旧DBを開けない場合は「ライブラリを開けませんでした」と表示し、自動削除・作り直しは行いません。ベータ配布時のリリースノートにもこの制約を記載します。プロトタイプのデータ移行はありません。
+通常起動は空ライブラリから開始します。V1の保存先は `Application Support/Feeeder/Reader.store`。同じ版での再起動では購読・記事・既読日時・ノートを保持します。ベータ中はバージョン更新をまたぐデータ保持を保証せず、1.0以降は保証します。旧スキーマのDBは開けない場合があります。初期化がエラーを返した場合は「ライブラリを開けませんでした」と表示し、アプリによる自動削除・作り直しは行いません。非互換スキーマでのSwiftDataの挙動は未検証です。ベータ配布時のリリースノートにもこの制約を記載します。過去のリリースノートの保持検証は、その版での結果であり、以後のベータ間の互換性保証ではありません。プロトタイプのデータ移行はありません。
+
+ベータの更新後に開けず、新しい空ライブラリで使い直す場合は、本人の操作で次のように退避します。この手順自体の実機確認は未実施です。
+
+1. Feeederを⌘Qで終了します。
+2. Finderの「移動 → フォルダへ移動」で `~/Library/Application Support/` を開きます。
+3. `Feeeder`フォルダ全体を、例えば`Feeeder-backup-20261007-2100`へ名前変更して残します。`Reader.store`と、存在する場合の`Reader.store-shm`／`Reader.store-wal`は同じ組として退避し、DBファイルだけを抜き出さないでください。フォルダにはノートやHandoffの管理データも含まれます。
+4. Feeederを起動すると、新しい`Feeeder`フォルダと空ライブラリを作ります。退避したフォルダは確認が済むまで残してください。退避はデータの変換・復元を保証するものではありません。
 
 合成デモは保存先と挿入を明示して起動します。
 
@@ -54,7 +61,7 @@ Claude側の **Attach確認** と **本人による送信** が必要です。�
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-ベータ中のCIは回帰テストとReleaseビルドの2並列です。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
+ベータ中のCIは回帰テストとReleaseビルドの2並列です。`docs/**`またはMarkdownだけの変更ではCIを省略します。CIのZIPは未署名の開発ビルドで、配布済みベータのZIPとは異なります。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
 
 ```sh
 bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new

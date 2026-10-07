@@ -46,6 +46,7 @@ private extension Result where Failure == any Error {
 
 extension ReaderStore {
     public func applyRefresh(_ result: FeedFetchResult, to feed: Feed, at: Date) throws {
+        try reloadIfNeeded()
         guard let feed = self.feed(id: feed.id) else { return }
         switch result {
         case .notModified: break
@@ -57,6 +58,7 @@ extension ReaderStore {
         try recordFetch(feed, etag: feed.etag, lastModified: feed.lastModified, at: at)
     }
     public func recordFetch(_ feed: Feed, etag: String?, lastModified: String?, at: Date) throws {
+        try reloadIfNeeded()
         guard let feed = self.feed(id: feed.id) else { return }
         feed.etag = etag; feed.lastModified = lastModified; feed.lastFetchedAt = at
         try save(); try reload()

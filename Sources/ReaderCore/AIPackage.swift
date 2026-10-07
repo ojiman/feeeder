@@ -109,7 +109,8 @@ extension ReaderStore {
         return try aiSources(selections: articleIDs.filter { seen.insert($0).inserted }.map(AIInputSelection.article), at: at)
     }
     public func aiSources(selections: [AIInputSelection], at: Date) throws -> [AISource] {
-        try selections.compactMap { selection in
+        try reloadIfNeeded()
+        return try selections.compactMap { selection in
             switch selection {
             case .article(let id):
                 guard let article = article(id: id), let content = try content(articleID: id, at: at) else { return nil }
