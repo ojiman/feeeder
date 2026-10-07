@@ -41,6 +41,13 @@ struct FeedParserTests {
         #expect(parsed.entries[0].imageURL?.absoluteString == "https://synthetic.example/base/image.png")
         #expect(parsed.entries[0].url?.absoluteString == "https://synthetic.example/base/article")
     }
+    @Test func nestedXHTMLBaseAppliesToArticleImages() throws {
+        for element in ["content", "summary"] {
+            let xml = "<feed xmlns='http://www.w3.org/2005/Atom'><entry><id>a</id><\(element) type='xhtml' xml:base='https://synthetic.example/base/'><div xmlns='http://www.w3.org/1999/xhtml' xml:base='https://cdn.synthetic.example/photos/'><p xml:base='nested/'><img src='preview.jpg'/></p><p>合成本文</p></div></\(element)></entry></feed>"
+            let entry = try #require(try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/feed/atom")!).entries.first)
+            #expect(entry.imageURL?.absoluteString == "https://cdn.synthetic.example/photos/nested/preview.jpg")
+        }
+    }
     @Test @MainActor func expiredArticleImagesDoNotResurrect() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let at = Date.now, url = URL(string: "https://synthetic.example/image-rss")!

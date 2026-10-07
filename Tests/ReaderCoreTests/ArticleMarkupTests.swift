@@ -42,6 +42,12 @@ struct ArticleMarkupTests {
         #expect(content.paragraphs.first?.hasPrefix("  if true") == true)
         #expect(content.bodyParagraphs.last?.links.first?.url == "https://synthetic.example/detail#section")
     }
+    @Test func atomXHTMLLineBreakDoesNotDuplicateBeforeLink() throws {
+        let xml = "<feed xmlns='http://www.w3.org/2005/Atom'><entry><id>a</id><content type='xhtml'><div xmlns='http://www.w3.org/1999/xhtml'><p>前半<br/><a href='https://synthetic.example/detail'>後半</a></p></div></content></entry></feed>"
+        let entry = try #require(try FeedParser.parse(Data(xml.utf8), sourceURL: Self.source).entries.first)
+        #expect(entry.body == "前半\n後半")
+        #expect(entry.bodyParagraphs?.first?.links.first?.location == 3)
+    }
     @Test @MainActor func formattingSurvivesReopenAndExpiresWithBody() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let at = Date.now

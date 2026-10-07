@@ -11,7 +11,11 @@ public enum ImageMetadata {
             if src.lowercased().contains("favicon") || src.contains("/entry/image/") || src.contains("/images/append.gif") { continue }
             if let width = try? image.attr("width"), let height = try? image.attr("height"),
                let w = Int(width), let h = Int(height), w <= 32 && h <= 32 { continue }
-            if let value = try? image.attr("src"), let url = ArticleURL.validated(value, relativeTo: base) { return url }
+            var resolvedBase = base
+            for element in image.parents().array().reversed() + [image] {
+                if let value = try? element.attr("xml:base"), let url = ArticleURL.validated(value, relativeTo: resolvedBase) { resolvedBase = url }
+            }
+            if let value = try? image.attr("src"), let url = ArticleURL.validated(value, relativeTo: resolvedBase) { return url }
         }
         return nil
     }

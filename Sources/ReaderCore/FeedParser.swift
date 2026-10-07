@@ -231,7 +231,8 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
             stack[stack.count - 1].text += node.text
             if node.namespace == "http://www.w3.org/1999/xhtml" {
                 let attrs = node.attributes.sorted { $0.key < $1.key }.map { " \($0.key)=\"\(Self.escape($0.value))\"" }.joined()
-                stack[stack.count - 1].markup += "<\(name)\(attrs)>\(node.markup)</\(name)>"
+                let voidElement = ["img", "br", "hr", "input", "link", "meta", "area", "base", "embed", "param", "source", "track", "wbr"].contains(name)
+                stack[stack.count - 1].markup += voidElement ? "<\(name)\(attrs)>" : "<\(name)\(attrs)>\(node.markup)</\(name)>"
             } else { stack[stack.count - 1].markup += node.markup }
             if ["p", "div", "br", "pre", "li"].contains(name) { stack[stack.count - 1].text += "\n" }
         }
