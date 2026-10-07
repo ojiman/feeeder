@@ -78,7 +78,7 @@ V1の通常作業は実装者1名とし、サブエージェントを常用し�
 
 ### 4.6 PRごとのCI
 
-[Feeeder CI](../.github/workflows/ci.yml)はPRの作成・更新、mainへのマージ、手動実行で起動する。macOS 26 / Xcode 26.6の別runnerで、同じcommitの4ジョブを並列に検証する。1ジョブの失敗で他を中断せず、同じPRに新commitが来た場合は古い実行を取り消す。
+[Feeeder CI](../.github/workflows/ci.yml)はPRの作成・更新、mainへのマージ、手動実行で起動する。`docs/**`だけの変更は自動実行を省略し、Draft PRのコード変更は実行する。macOS 26 / Xcode 26.6の別runnerで、同じcommitの4ジョブを並列に検証する。1ジョブの失敗で他を中断せず、同じPRに新commitが来た場合は古い実行を取り消す。mainと手動実行は実行ごとに分け、連続実行で前の結果を取り消さない。将来このCIを必須チェックにする場合は、docsのみのPRでチェックがPendingにならないようpath filterを見直す。
 
 - `regression`: Core/UIの既存テストを実行する。旧ストア試験は以下の2ジョブへ分離する。
 - `store-beta1` / `store-beta2`: 配布済みV1の各commitから既存スクリプトで合成DBを生成し、新版で2回openしてデータ保持を確認する。プロトタイプ移行を追加しない。
