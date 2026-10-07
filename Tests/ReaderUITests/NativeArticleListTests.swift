@@ -5,6 +5,27 @@ import ReaderCore
 @testable import RSSReader
 
 @MainActor struct NativeArticleListTests {
+    @Test func selectedFolderListReceivesKeyboardFocusAfterMount() {
+        var selection: UUID?
+        let parent = NativeArticleList(ids: [], article: { _ in nil }, feedTitle: { _ in "" }, selection: Binding(get: { selection }, set: { selection = $0 }), initialTop: nil, focus: true, shortcutsEnabled: true, onTop: { _ in }, onKey: { _ in })
+        let table = NativeArticleList.Table(frame: NSRect(x: 0, y: 0, width: 320, height: 300))
+        table.addTableColumn(NSTableColumn(identifier: .init("article")))
+        let coordinator = NativeArticleList.Coordinator(parent); coordinator.table = table
+        coordinator.update(parent)
+        let window = NSWindow(contentRect: table.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView?.addSubview(table)
+        #expect(window.firstResponder === table)
+    }
+    @Test func articleTextUsesSpaceUpToCompactThumbnail() {
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        let article = Article(feedID: UUID(), title: "合成記事の長いタイトルを途中で短く切らずに表示します。", summary: "合成の要約です。", publisher: "合成", publishedAt: .now)
+        article.imageURL = "https://synthetic.example/image.png"
+        cell.configure(article, feed: "合成購読")
+        cell.layoutSubtreeIfNeeded()
+        let thumbnail = cell.convert(cell.thumbnail.bounds, from: cell.thumbnail)
+        #expect(abs(thumbnail.maxX - (cell.bounds.width - 12)) < 1)
+        #expect(thumbnail.width == 40 && thumbnail.minX > 250)
+    }
     @Test func lateImagesNeverLeakAcrossReusedRows() {
         let first = Article(feedID: UUID(), title: "A", summary: "", publisher: "合成", publishedAt: .now)
         let second = Article(feedID: UUID(), title: "B", summary: "", publisher: "合成", publishedAt: .now)

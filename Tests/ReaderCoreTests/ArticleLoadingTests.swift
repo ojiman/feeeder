@@ -3,6 +3,33 @@ import Testing
 @testable import ReaderCore
 
 @MainActor struct ArticleLoadingTests {
+    @Test func explicitRefreshUpdatesPreviouslyExtractedPlainText() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        let xml = "<rss><channel><item><guid>a</guid><link>https://synthetic.example/posts/1</link><description>合成要約</description></item></channel></rss>"
+        _ = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!))
+        let article = try #require(store.articles.first)
+        try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "以前の抽出本文", coverage: .extracted, sourceURL: ArticleExtractorTests.url), at: .now)
+        let http = ExtractionHTTP(mode: "ok")
+        let loading = ArticleLoadingController(store: store, fetcher: ArticleFetcher(http: http))
+        await loading.load(articleID: article.id)
+        #expect(await http.count == 0 && loading.displayed?.text == "以前の抽出本文")
+        await loading.load(articleID: article.id, refresh: true)
+        #expect(await http.count == 2 && loading.displayed?.text.contains("最初の段落") == true)
+        #expect(article.firstReadAt == nil)
+    }
+    @Test func failedExplicitRefreshRetainsSavedBodyAndExplainsFailure() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        _ = try store.importFeed(ArticleMarkupTests.feed())
+        let article = try #require(store.articles.first)
+        let before = try store.content(articleID: article.id, at: .now)
+        let loading = ArticleLoadingController(store: store, fetcher: ArticleFetcher(http: ExtractionHTTP(mode: "deny")))
+        await loading.load(articleID: article.id, refresh: true)
+        #expect(loading.displayed == before)
+        #expect(loading.error?.contains("保存済み本文") == true && !loading.loading)
+        #expect(article.firstReadAt == nil)
+    }
     @Test func lateExtractionDoesNotReplaceSelectedArticle() throws {
         var state = ArticleLoadingState()
         let a = UUID(), b = UUID()

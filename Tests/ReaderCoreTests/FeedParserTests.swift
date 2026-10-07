@@ -3,6 +3,16 @@ import Testing
 @testable import ReaderCore
 
 struct FeedParserTests {
+    @Test func bookmarkArticleImageIsNotPublisherIcon() throws {
+        let source = URL(string: "https://synthetic.example/rss")!
+        let body = "<blockquote><cite><img src='https://synthetic.example/favicon.png'></cite><p><img class='entry-image' src='https://synthetic.example/preview.jpg'></p><p>合成抜粋</p></blockquote>"
+        for (metadata, expected) in [("<h:imageurl>https://synthetic.example/photo.jpg</h:imageurl>", "photo.jpg"), ("", "preview.jpg"), ("<x:imageurl>https://synthetic.example/wrong.jpg</x:imageurl>", "preview.jpg")] {
+            let xml = "<rss xmlns:h='http://www.hatena.ne.jp/info/xmlns#' xmlns:x='urn:foreign' xmlns:c='http://purl.org/rss/1.0/modules/content/'><channel><title>合成ブックマーク</title><item><guid>a</guid>\(metadata)<c:encoded><![CDATA[\(body)]]></c:encoded></item></channel></rss>"
+            let entry = try #require(try FeedParser.parse(Data(xml.utf8), sourceURL: source).entries.first)
+            #expect(entry.imageURL?.absoluteString == "https://synthetic.example/" + expected)
+        }
+        #expect(ImageMetadata.firstHTMLImage("<cite><img src='/favicon.png'></cite><img width='1' height='1' src='/tracker.png'>", base: source) == nil)
+    }
     @Test func imageMetadataUsesPriorityAndNodeBase() throws {
         let source = URL(string: "https://synthetic.example/feed/rss")!
         let enclosure = "<enclosure url='../enclosure.jpg' type='image/jpeg'/>"

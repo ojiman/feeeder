@@ -168,8 +168,11 @@ import SwiftData
                 if available, let snapshot = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })).first {
                     if !entry.body.isEmpty &&
                         snapshot.coverageRaw != ContentCoverage.extracted.rawValue &&
-                        (article.feedID == feed.id || entry.body.count > snapshot.text.count) { snapshot.text = entry.body; snapshot.coverageRaw = entry.coverage.rawValue }
-                } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body, coverage: entry.coverage)) }
+                        (article.feedID == feed.id || entry.body.count > snapshot.text.count) {
+                        snapshot.text = entry.body; snapshot.coverageRaw = entry.coverage.rawValue
+                        snapshot.bodyFormatData = BodyParagraph.encode(entry.bodyParagraphs)
+                    }
+                } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body, coverage: entry.coverage, bodyParagraphs: entry.bodyParagraphs)) }
                 if !allMemberships.contains(where: { $0.feedID == feed.id && $0.articleID == id }) {
                     let membership = FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID)
                     context.insert(membership); allMemberships.append(membership)
@@ -212,8 +215,11 @@ import SwiftData
         guard result.coverage == .extracted, !result.text.isEmpty,
               let article = articles.first(where: { $0.id == articleID }), isContentAvailable(article, at: at) else { return }
         let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
-        if let snapshot = try context.fetch(request).first { snapshot.text = result.text; snapshot.coverageRaw = result.coverage.rawValue }
-        else { context.insert(ContentSnapshot(articleID: articleID, text: result.text, coverage: result.coverage)) }
+        if let snapshot = try context.fetch(request).first {
+            snapshot.text = result.text; snapshot.coverageRaw = result.coverage.rawValue
+            snapshot.bodyFormatData = BodyParagraph.encode(result.bodyParagraphs)
+        }
+        else { context.insert(ContentSnapshot(articleID: articleID, text: result.text, coverage: result.coverage, bodyParagraphs: result.bodyParagraphs)) }
         try save(); try reload()
     }
 
@@ -221,12 +227,14 @@ import SwiftData
         guard let article = articleIndex[articleID], isContentAvailable(article, at: at) else { return nil }
         let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
         let snapshot = try context.fetch(request).first
-        let body = snapshot?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let savedBody = snapshot?.text ?? ""
+        let body = savedBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : savedBody
         let summary = article.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !body.isEmpty || !summary.isEmpty else { return nil }
         return ArticleContent(articleID: articleID, text: body.isEmpty ? summary : body, summary: summary,
                               coverage: body.isEmpty ? .summaryOnly : ContentCoverage(rawValue: snapshot?.coverageRaw ?? "") ?? .unavailable,
-                              originalURL: article.originalURL.flatMap { ArticleURL.validated($0) })
+                              originalURL: article.originalURL.flatMap { ArticleURL.validated($0) },
+                              bodyParagraphs: body.isEmpty ? nil : BodyParagraph.decode(snapshot?.bodyFormatData, matching: body))
     }
 
     public func markDisplayed(articleID: UUID, at: Date) throws {

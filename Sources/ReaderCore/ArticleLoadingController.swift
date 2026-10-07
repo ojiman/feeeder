@@ -14,18 +14,21 @@ import Observation
         self.store = store; self.fetcher = fetcher; self.now = now
     }
     public func clear() { state = ArticleLoadingState(); displayed = nil; availableUpdate = nil; loading = false }
-    public func load(articleID: UUID) async {
+    public func load(articleID: UUID, refresh: Bool = false) async {
         let generation = state.begin(articleID: articleID)
         error = nil; availableUpdate = nil
         do { displayed = try store.content(articleID: articleID, at: now()) } catch { self.error = error.localizedDescription; displayed = nil }
-        guard displayed?.coverage != .extracted,
+        guard refresh || displayed?.coverage != .extracted,
               let article = store.articles.first(where: { $0.id == articleID }), store.isContentAvailable(article, at: now()),
               let url = article.originalURL.flatMap({ ArticleURL.validated($0) }) else { loading = false; return }
         loading = true
         let result = await fetcher.fetch(url: url)
         guard !Task.isCancelled, state.accept(articleID: articleID, generation: generation) else { return }
         loading = false
-        guard let result else { return }
+        guard let result else {
+            if refresh { error = displayed == nil ? "本文を取得できませんでした。" : "本文を再取得できませんでした。保存済み本文を表示しています。" }
+            return
+        }
         do {
             try store.saveExtractedContent(articleID: articleID, result: result, at: now())
             refreshCachedContent()

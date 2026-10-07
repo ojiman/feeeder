@@ -25,7 +25,7 @@ struct SubscriptionSheet: View {
                 TextField("購読名", text: $title)
                 TextField("フォルダ（任意・1階層）", text: $folder)
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                Text("ツールバーの更新ボタンで最新の記事を取得できます。")
+                Text("左カラム上部の更新ボタンで最新の記事を取得できます。")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 Text("RSS / AtomのURLを入力して、記事を取得します。")

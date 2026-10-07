@@ -25,13 +25,16 @@ import Testing
             context.insert(feed)
         }
         let text = (1...80).map { "合成段落 \($0)。日本語の長い本文と読書位置を検証します。これは現実の記事ではありません。" }.joined(separator: "\n\n")
+        let formatted = text.components(separatedBy: "\n\n").enumerated().map { index, text in
+            BodyParagraph(text: text, links: [BodyLink(location: 0, length: 4, url: "http://127.0.0.1:18889/linked#section")], quoteDepth: index < 20 ? 1 : 0)
+        }
         for index in 0..<10_000 {
             let feed = feeds[index % 100]
             let article = Article(feedID: feed.id, title: String(format: "合成記事 %05d", index), summary: "負荷試験のための合成要約です。", publisher: "synthetic.example", publishedAt: now.addingTimeInterval(-Double(index)), receivedAt: now)
             article.originalURL = originalBase?.appending(path: "\(index)").absoluteString ?? "http://127.0.0.1:18888/posts/extracted"
             article.imageURL = imageBase?.appending(path: "\(index).png").absoluteString
             context.insert(article)
-            context.insert(ContentSnapshot(articleID: article.id, text: text, coverage: .extracted))
+            context.insert(ContentSnapshot(articleID: article.id, text: text, coverage: .extracted, bodyParagraphs: formatted))
             context.insert(FeedMembership(feedID: feed.id, articleID: article.id, sourceID: String(index)))
         }
         try context.save()
@@ -44,5 +47,6 @@ import Testing
         #expect(store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: nil).count == 9_999)
         #expect(store.unreadCount == 9_999 && store.feedUnreadCounts[article.feedID] == 99)
         #expect(try store.content(articleID: article.id, at: now)?.text == text)
+        #expect(try store.content(articleID: article.id, at: now)?.bodyParagraphs == formatted)
     }
 }
