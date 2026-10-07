@@ -30,8 +30,10 @@ import SwiftData
     public private(set) var unreadCount = 0
     public private(set) var feedUnreadCounts: [UUID: Int] = [:]
     @ObservationIgnored private let container: ModelContainer
-    @ObservationIgnored let context: ModelContext
+    @ObservationIgnored var context: ModelContext
     @ObservationIgnored private var saveHook: (() throws -> Void)?
+    @ObservationIgnored private var reloadHook: (() throws -> Void)?
+    @ObservationIgnored private var needsReload = false
 
     public static var schema: Schema {
         Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self,
@@ -45,7 +47,8 @@ import SwiftData
         try self.init(container: container, seedDemo: seedDemo, now: now)
     }
 
-    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now, saveHook: (() throws -> Void)? = nil) throws {
+    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now,
+         saveHook: (() throws -> Void)? = nil, reloadHook: (() throws -> Void)? = nil) throws {
         self.container = container
         context = ModelContext(container)
         context.autosaveEnabled = false
@@ -56,9 +59,11 @@ import SwiftData
         else { try reload() }
         try purgeExpired(at: now)
         self.saveHook = saveHook
+        self.reloadHook = reloadHook
     }
 
     public func seedIfEmpty(now: Date = .now) throws {
+        try reloadIfNeeded()
         if try context.fetchCount(FetchDescriptor<Article>()) == 0 {
             DemoLibrary.insert(into: context, at: now)
             try save()
@@ -67,6 +72,8 @@ import SwiftData
     }
 
     func reload() throws {
+        needsReload = true
+        try reloadHook?()
         contentRevision += 1
         settings = try context.fetch(FetchDescriptor<ReaderSettings>()).first
         articles = try context.fetch(FetchDescriptor<Article>(sortBy: [SortDescriptor(\.publishedAt, order: .reverse)]))
@@ -96,6 +103,11 @@ import SwiftData
         }
         refreshUnreadCounts()
         refreshStarIndex()
+        needsReload = false
+    }
+
+    func reloadIfNeeded() throws {
+        if needsReload { try reload() }
     }
 
     func refreshStarIndex() {
@@ -137,6 +149,7 @@ import SwiftData
     }
 
     @discardableResult public func importFeed(_ parsed: ParsedFeed, receivedAt: Date = .now) throws -> Feed {
+        try reloadIfNeeded()
         let feed = feeds.first { $0.sourceURL == parsed.sourceURL.absoluteString } ?? Feed(title: parsed.title, symbol: "dot.radiowaves.left.and.right")
         context.insert(feed)
         feed.sourceURL = parsed.sourceURL.absoluteString
@@ -182,10 +195,12 @@ import SwiftData
             try reload()
             if contentRemoved { onContentPolicyChanged?() }
             return feed
-        } catch { context.rollback(); try? reload(); throw error }
+        } catch { rollback(); throw error }
     }
 
     public func updateSubscription(_ feed: Feed, title: String, folder: String) throws {
+        try reloadIfNeeded()
+        guard let feed = self.feed(id: feed.id) else { return }
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { throw FeedImportError.missingTitle }
         feed.title = title; feed.folder = folder.trimmingCharacters(in: .whitespacesAndNewlines); feed.customTitle = true
@@ -193,6 +208,8 @@ import SwiftData
     }
 
     public func unsubscribe(_ feed: Feed) throws {
+        try reloadIfNeeded()
+        guard let feed = self.feed(id: feed.id) else { return }
         for membership in memberships where membership.feedID == feed.id { context.delete(membership) }
         context.delete(feed)
         // Keep articles and bodies. Subscription removal is not article deletion.
@@ -204,6 +221,8 @@ import SwiftData
     }
 
     public func setRead(_ article: Article, _ value: Bool) throws {
+        try reloadIfNeeded()
+        guard let article = self.article(id: article.id) else { return }
         guard article.isRead != value else { return }
         let wasRead = article.isRead
         article.isRead = value
@@ -212,6 +231,7 @@ import SwiftData
     }
 
     public func saveExtractedContent(articleID: UUID, result: ExtractionResult, at: Date) throws {
+        try reloadIfNeeded()
         guard result.coverage == .extracted, !result.text.isEmpty,
               let article = articles.first(where: { $0.id == articleID }), isContentAvailable(article, at: at) else { return }
         let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
@@ -224,6 +244,7 @@ import SwiftData
     }
 
     public func content(articleID: UUID, at: Date) throws -> ArticleContent? {
+        try reloadIfNeeded()
         guard let article = articleIndex[articleID], isContentAvailable(article, at: at) else { return nil }
         let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
         let snapshot = try context.fetch(request).first
@@ -238,6 +259,7 @@ import SwiftData
     }
 
     public func markDisplayed(articleID: UUID, at: Date) throws {
+        try reloadIfNeeded()
         guard let article = articleIndex[articleID],
               try content(articleID: articleID, at: at) != nil else { return }
         guard !article.isRead || article.firstReadAt == nil else { return }
@@ -249,8 +271,20 @@ import SwiftData
     }
 
     func save() throws {
+        // Mutations must resolve models only after recovery has loaded this context.
+        guard !needsReload else { throw CocoaError(.fileReadUnknown) }
         do { try saveHook?(); try context.save() }
-        catch { context.rollback(); try? reload(); throw error }
+        catch { rollback(); throw error }
+    }
+
+    private func rollback() {
+        context.rollback()
+        // ContentRetentionTests.failedSaveRollsBackAndDoesNotNotify reproduces
+        // changed registered models after a failed save on macOS 26.6.2 / Xcode 26.6.
+        // Reload committed values using a fresh context for the same store.
+        context = ModelContext(container)
+        context.autosaveEnabled = false
+        try? reload()
     }
 }
 

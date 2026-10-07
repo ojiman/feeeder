@@ -4,6 +4,8 @@
 
 **Goal:** 気持ちよく記事を読み、Starで関心を示し、日次スクラップから週の振り返りへつなげる3カラムを作る。
 
+> 2026-10-07の方針変更: 本計画は当時の実装・検証の履歴として残す。以後のベータ間のデータ互換性は保証せず、保持試験は任意の手動実行にする。同じ版の保存・再起動による保持は維持し、1.0以降の保証とCI復帰は現行[PRD](../../specification.md)を正とする。
+
 **Architecture:** SwiftDataに任意属性と日次ノートを追加し、配布済みV1のデータを保持する。既存のNavigationSplitView・NSTableView・NSTextViewとClaudeハンドオフを拡張し、保存済みスクラップの寿命を元記事から分離する。画像は取得・縮小を読書描画から分離して容量制限付きで保存する。
 
 **Tech Stack:** Swift 6、SwiftUI、AppKit、SwiftData、WebKit、Foundation／URLSession、ImageIO、既存のSwiftSoup 2.13.9、Swift Testing。外部依存の追加なし。

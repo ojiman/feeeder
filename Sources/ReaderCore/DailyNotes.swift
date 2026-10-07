@@ -47,6 +47,7 @@ extension ReaderStore {
         }
     }
     @discardableResult public func scrap(articleID: UUID, at: Date, timeZone: TimeZone) throws -> NoteScrap {
+        try reloadIfNeeded()
         guard let article = article(id: articleID) else { throw DailyNoteError.missingArticle }
         let note: DailyNote
         if let existing = dailyNote(containing: at) { note = existing }
@@ -67,16 +68,19 @@ extension ReaderStore {
         return scrap
     }
     public func saveDailyNote(id: UUID, text: String, at: Date) throws {
+        try reloadIfNeeded()
         guard let note = dailyNotes.first(where: { $0.id == id }) else { return }
         note.text = text; note.updatedAt = at; try save()
     }
     public func saveScrapMemo(key: String, memo: String, at: Date) throws {
+        try reloadIfNeeded()
         guard let scrap = scraps.first(where: { $0.key == key }) else { return }
         scrap.memo = memo
         dailyNotes.first { $0.id == scrap.noteID }?.updatedAt = at
         try save()
     }
     public func deleteDailyNote(id: UUID) throws {
+        try reloadIfNeeded()
         guard let note = dailyNotes.first(where: { $0.id == id }) else { return }
         for scrap in scraps where scrap.noteID == id { context.delete(scrap) }
         context.delete(note)
@@ -84,6 +88,7 @@ extension ReaderStore {
         onContentPolicyChanged?()
     }
     public func removeScrap(key: String) throws {
+        try reloadIfNeeded()
         guard let scrap = scraps.first(where: { $0.key == key }) else { return }
         context.delete(scrap); try save(); try reload(); onContentPolicyChanged?()
     }

@@ -84,6 +84,7 @@ extension ReaderStore {
         return values.values.sorted { $0.start > $1.start }
     }
     public func createNote(in range: WeekRange, title: String, at: Date) throws -> WeeklyNote {
+        try reloadIfNeeded()
         let period = weeks.first { $0.weekKey == range.startDay } ?? WeeklyPeriod(range: range)
         context.insert(period)
         let isDefault = !notes.contains { $0.weekID == period.id && $0.isDefault }
@@ -94,6 +95,7 @@ extension ReaderStore {
         return note
     }
     public func saveNote(id: UUID, text: String, at: Date) throws {
+        try reloadIfNeeded()
         guard let note = notes.first(where: { $0.id == id }) else { return }
         note.text = text; note.updatedAt = at
         try save()
@@ -105,6 +107,7 @@ extension ReaderStore {
         }
     }
     public func adoptSources(noteID: UUID, articleIDs: [UUID]) throws {
+        try reloadIfNeeded()
         guard notes.contains(where: { $0.id == noteID }) else { return }
         for id in Set(articleIDs) {
             guard let article = articles.first(where: { $0.id == id }),
@@ -129,6 +132,7 @@ extension ReaderStore {
         }
     }
     public func adoptScraps(noteID: UUID, scrapKeys: [String]) throws {
+        try reloadIfNeeded()
         guard notes.contains(where: { $0.id == noteID }) else { return }
         var adopted = Set(noteSources.filter { $0.noteID == noteID }.map(\.articleID))
         for key in scrapKeys {
@@ -140,6 +144,7 @@ extension ReaderStore {
         try save(); try reload()
     }
     public func deleteNote(id: UUID) throws {
+        try reloadIfNeeded()
         guard let note = notes.first(where: { $0.id == id }) else { return }
         for source in noteSources where source.noteID == id { context.delete(source) }
         context.delete(note)
