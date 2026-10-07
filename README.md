@@ -12,7 +12,7 @@ bash scripts/build-app.sh release
 
 生成される `.build/Feeeder.app` をFinderから開いてください。未署名のローカル開発用アプリです。releaseの中間出力は `/private/tmp/feeeder-v1-release`、debugは `/private/tmp/rss-reader-build` に置きます。debug buildは引数を省略できます。
 
-通常起動は空ライブラリから開始します。V1の保存先は `Application Support/Feeeder/Reader.store`。再起動しても購読・記事・既読日時・ノートを保持します。プロトタイプのデータ移行はありません。
+通常起動は空ライブラリから開始します。V1の保存先は `Application Support/Feeeder/Reader.store`。同じ版での再起動では購読・記事・既読日時・ノートを保持します。ベータ中はバージョン更新をまたぐデータ保持を保証せず、1.0以降は保証します。旧DBを開けない場合は「ライブラリを開けませんでした」と表示し、自動削除・作り直しは行いません。ベータ配布時のリリースノートにもこの制約を記載します。プロトタイプのデータ移行はありません。
 
 合成デモは保存先と挿入を明示して起動します。
 
@@ -51,11 +51,17 @@ Claude側の **Attach確認** と **本人による送信** が必要です。�
 ## 検証と仕様
 
 ```sh
+swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+```
+
+ベータ中のCIは回帰テストとReleaseビルドの2並列です。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
+
+```sh
 bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
 FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-fixture生成先は存在しないディレクトリを指定します。配布済みV1の固定commitで合成DBを作り、新スキーマで開いてデータ保持を検証します。テストは合成RSS/HTMLと一時DBを使います。[PRD](docs/specification.md)、[Architecture](docs/architecture.md)、[今回の受入記録](docs/verification/2026-10-07-dogfooding-acceptance.md)に仕様・検証結果・未確認事項を記録しています。macOS 26.6での実機動作、Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。
+fixture生成先は存在しないディレクトリを指定します。配布済みベータの固定commitで合成DBを作り、新スキーマで開いて保持を検証します。1.0出荷時にはスキーマを`VersionedSchema`として固定し、1.0リリースタグを起点とする保持検証をCIへ組み込みます。テストは合成RSS/HTMLと一時DBを使います。[PRD](docs/specification.md)、[Architecture](docs/architecture.md)、[今回の受入記録](docs/verification/2026-10-07-dogfooding-acceptance.md)に仕様・検証結果・未確認事項を記録しています。macOS 26.6での実機動作、Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。
 
 ## ライセンス
 

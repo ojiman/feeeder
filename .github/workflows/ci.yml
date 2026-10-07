@@ -22,30 +22,19 @@ defaults:
 
 jobs:
   verify:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.job }}
     runs-on: macos-26
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: regression
-            baseline: ''
-          - name: store-beta1
-            baseline: 53102cc42ea665b3379ad2a23d842c3186ad9c3e
-          - name: store-beta2
-            baseline: f9db83b49a82947a7031ddf874bc94fcb91ef89d
-          - name: release
-            baseline: ''
+        job: [regression, release]
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       CI_RESULTS: ${{ github.workspace }}/ci-results
-      BASELINE: ${{ matrix.baseline }}
-      FIXTURE_DIR: /private/tmp/feeeder-ci-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 0 # The store fixtures build the two released V1 commits.
           persist-credentials: false
       - name: Record commit and environment
         run: |
@@ -57,24 +46,12 @@ jobs:
             xcodebuild -version
             swift --version
           } | tee "$CI_RESULTS/environment.txt"
-      - name: Generate released-V1 synthetic store
-        if: matrix.baseline != ''
-        run: |
-          { time bash scripts/prepare-v1-store-fixture.sh "$FIXTURE_DIR" "$BASELINE"; } 2>&1 | tee "$CI_RESULTS/fixture.log"
-          cp "$FIXTURE_DIR/expected.json" "$FIXTURE_DIR/SHA256SUMS" "$CI_RESULTS/"
-          printf 'FEEEDER_V1_FIXTURE_DIR=%s\n' "$FIXTURE_DIR" >> "$GITHUB_ENV"
       - name: Run tests
-        if: matrix.name != 'release'
+        if: matrix.job == 'regression'
         run: |
-          args=(--scratch-path "$RUNNER_TEMP/feeeder-ci-build" --force-resolved-versions --disable-keychain --disable-netrc)
-          if [ -n "$BASELINE" ]; then
-            args+=(--filter V1StoreUpgradeTests)
-          else
-            args+=(--skip V1StoreUpgradeTests)
-          fi
-          { time swift test "${args[@]}"; } 2>&1 | tee "$CI_RESULTS/tests.log"
+          { time swift test --scratch-path "$RUNNER_TEMP/feeeder-ci-build" --force-resolved-versions --disable-keychain --disable-netrc; } 2>&1 | tee "$CI_RESULTS/tests.log"
       - name: Build unsigned Release app
-        if: matrix.name == 'release'
+        if: matrix.job == 'release'
         run: |
           { time bash scripts/build-app.sh release; } 2>&1 | tee "$CI_RESULTS/build.log"
           ditto -c -k --sequesterRsrc --keepParent .build/Feeeder.app "$CI_RESULTS/Feeeder-unsigned.zip"
@@ -82,7 +59,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: feeeder-${{ matrix.name }}-${{ github.sha }}
+          name: feeeder-${{ matrix.job }}-${{ github.sha }}
           path: ${{ env.CI_RESULTS }}/
           if-no-files-found: warn
           retention-days: 7
