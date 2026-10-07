@@ -28,6 +28,15 @@ struct OriginalPageView: View {
     }
 }
 
+@MainActor final class OriginalReaderWebView: WKWebView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // Set this window's input target without activating another application.
+        // Later clicks in page inputs retain their own focus.
+        if let window { window.makeFirstResponder(self) }
+    }
+}
+
 private struct OriginalWebView: NSViewRepresentable {
     let url: URL
     let onClose: () -> Void
@@ -39,7 +48,7 @@ private struct OriginalWebView: NSViewRepresentable {
         let configuration = WKWebViewConfiguration()
         // Original-page browsing has a separate, temporary session.
         configuration.websiteDataStore = .nonPersistent()
-        let view = WKWebView(frame: .zero, configuration: configuration)
+        let view = OriginalReaderWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
         view.uiDelegate = context.coordinator
         view.allowsBackForwardNavigationGestures = true

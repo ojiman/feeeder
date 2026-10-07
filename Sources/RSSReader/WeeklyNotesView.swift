@@ -17,7 +17,7 @@ struct WeeklyNotesView: View {
     private var range: WeekRange? { options.first { $0.startDay == weekKey } }
     private var period: WeeklyPeriod? { store.weeks.first { $0.weekKey == weekKey } }
     private var weekNotes: [WeeklyNote] { store.notes.filter { $0.weekID == period?.id } }
-    private var note: WeeklyNote? { store.notes.first { $0.id == noteID } }
+    private var note: WeeklyNote? { store.notes.first { $0.id == noteID && $0.weekID == period?.id } }
     var body: some View {
         Group {
             if pane == .list {
@@ -31,7 +31,7 @@ struct WeeklyNotesView: View {
                     HStack { TextField("新しいノートの名前", text: $newTitle); Button("追加") { createNote() }.disabled(range == nil) }.padding()
                 }.navigationTitle("週ノート")
                 .onChange(of: weekKey) { _, _ in noteID = weekNotes.first?.id }
-                .onAppear { if noteID == nil { noteID = weekNotes.first?.id } }
+                .onAppear { if !weekNotes.contains(where: { $0.id == noteID }) { noteID = weekNotes.first?.id } }
             } else if let note {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {

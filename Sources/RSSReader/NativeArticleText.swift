@@ -201,8 +201,14 @@ struct NativeArticleText: NSViewRepresentable {
         (scroll as? ArticleScrollView)?.onInteraction = onInteraction
         if let imageLoader, let heroURL {
             let image = ArticleImageView(loader: imageLoader, articleID: articleID, url: heroURL, size: CGSize(width: 0, height: 180))
-            if let hero = context.coordinator.hero { hero.rootView = image }
-            else { context.coordinator.hero = NSHostingView(rootView: image) }
+            if let hero = context.coordinator.hero { if changed { hero.rootView = image } }
+            else {
+                let hero = NSHostingView(rootView: image)
+                // ArticleTextView owns the fixed frame; intrinsic-size constraints
+                // must not resize the surrounding text layout when an image arrives.
+                hero.sizingOptions = []
+                context.coordinator.hero = hero
+            }
             text.configureHero(context.coordinator.hero)
         } else { text.configureHero(nil); context.coordinator.hero = nil }
         guard changed else { return }

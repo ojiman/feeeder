@@ -9,7 +9,12 @@ binary_dir=$(swift build -c "$configuration" --scratch-path "$build_dir" --show-
 app_dir="$PWD/.build/Feeeder.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp ThirdPartyNotices.md "$app_dir/Contents/Resources/ThirdPartyNotices.md"
-cp "$binary_dir/RSSReader" "$app_dir/Contents/MacOS/RSSReader"
+# Replace the inode: overwriting an executable previously launched on macOS
+# can retain stale kernel code-signature cache entries and terminate it with SIGKILL.
+task_binary=$(mktemp "$app_dir/Contents/MacOS/RSSReader.XXXXXX")
+cp "$binary_dir/RSSReader" "$task_binary"
+chmod 755 "$task_binary"
+mv -f "$task_binary" "$app_dir/Contents/MacOS/RSSReader"
 cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

@@ -4,6 +4,18 @@ import Testing
 @testable import RSSReader
 
 @Suite(.serialized) @MainActor struct OriginalKeyboardTests {
+    @Test func mountingOriginalPageTransfersKeyboardFocus() {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 320), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let host = NSView(frame: window.contentView!.bounds)
+        window.contentView = host
+        let reader = NSTextView(frame: host.bounds)
+        host.addSubview(reader); window.makeFirstResponder(reader)
+        let original = OriginalReaderWebView(frame: host.bounds, configuration: WKWebViewConfiguration())
+        host.addSubview(original)
+        #expect(window.firstResponder === original)
+    }
     func event(_ key: String, modifiers: NSEvent.ModifierFlags = []) throws -> NSEvent {
         try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers,
             timestamp: 0, windowNumber: 0, context: nil, characters: key, charactersIgnoringModifiers: key,

@@ -95,8 +95,10 @@ struct ReaderView: View {
         } detail: {
             if scope == .dailyNotes {
                 DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail, aiReview: aiReview, handoff: handoff)
+                    .id(workspace.dailyNoteID)
             } else if scope == .weeklyNotes {
                 WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .detail)
+                    .id(workspace.weekKey + (workspace.weeklyNoteID?.uuidString ?? ""))
             } else { ZStack(alignment: .trailing) {
                 detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
                 if let url = originalPage.url, let expectedID = originalPage.articleID {
@@ -104,7 +106,7 @@ struct ReaderView: View {
                         guard selection == expectedID, originalPage.articleID == expectedID else { return }
                         perform(command)
                     })
-                        .id(url).transition(.move(edge: .trailing))
+                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
                 }
             }.clipped().frame(minWidth: 360) }
         }
@@ -227,7 +229,9 @@ struct ReaderView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $scope) {
+        let grouped = Dictionary(grouping: store.feeds, by: \.folder)
+        let folders = grouped.keys.filter { !$0.isEmpty }.sorted()
+        return List(selection: $scope) {
             Section("Feeds") {
                 sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
                 sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
@@ -238,10 +242,10 @@ struct ReaderView: View {
                 sidebarRow("週の振り返り", symbol: "square.and.pencil", count: store.notes.count).tag(LibraryScope.weeklyNotes)
             }
             Section("購読元") {
-                ForEach(store.feeds.filter { $0.folder.isEmpty }) { feed in subscriptionRow(feed) }
-                ForEach(Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), id: \.self) { folder in
+                ForEach(grouped[""] ?? []) { feed in subscriptionRow(feed, folders: folders) }
+                ForEach(folders, id: \.self) { folder in
                     DisclosureGroup {
-                        ForEach(store.feeds.filter { $0.folder == folder }) { feed in subscriptionRow(feed) }
+                        ForEach(grouped[folder] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                     } label: {
                         sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder)).tag(LibraryScope.folder(folder))
                             .contextMenu { Button("フォルダ名を変更…") { folderName = folder; renamingFolder = folder } }
@@ -262,7 +266,7 @@ struct ReaderView: View {
         }
     }
 
-    private func subscriptionRow(_ feed: Feed) -> some View {
+    private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {
         HStack {
             sidebarRow(feed.title, symbol: feed.symbol,
                        count: store.feedUnreadCounts[feed.id] ?? 0)
@@ -277,7 +281,7 @@ struct ReaderView: View {
                 Button("購読名・フォルダを編集") { editingFeed = feed }
                 Menu("フォルダへ移動") {
                     Button("未分類") { perform { try store.moveFeed(id: feed.id, toFolder: "") } }
-                    ForEach(Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), id: \.self) { folder in
+                    ForEach(folders, id: \.self) { folder in
                         Button(folder) { perform { try store.moveFeed(id: feed.id, toFolder: folder) } }
                     }
                 }
@@ -332,8 +336,8 @@ struct ReaderView: View {
     }
 
     @ViewBuilder private var workspaceList: some View {
-        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list, aiReview: aiReview, handoff: handoff) }
-        else if scope == .weeklyNotes { WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .list) }
+        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list, aiReview: aiReview, handoff: handoff).id(workspace.dailyNoteID) }
+        else if scope == .weeklyNotes { WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .list).id(workspace.weekKey) }
         else { articleList.id(scope) }
     }
 
