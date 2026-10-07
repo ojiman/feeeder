@@ -182,7 +182,7 @@ import SwiftData
             try reload()
             if contentRemoved { onContentPolicyChanged?() }
             return feed
-        } catch { context.rollback(); try? reload(); throw error }
+        } catch { context.processPendingChanges(); context.rollback(); try? reload(); throw error }
     }
 
     public func updateSubscription(_ feed: Feed, title: String, folder: String) throws {
@@ -250,7 +250,7 @@ import SwiftData
 
     func save() throws {
         do { try saveHook?(); try context.save() }
-        catch { context.rollback(); try? reload(); throw error }
+        catch { context.processPendingChanges(); context.rollback(); try? reload(); throw error }
     }
 }
 
