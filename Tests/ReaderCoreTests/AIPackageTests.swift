@@ -4,6 +4,50 @@ import Testing
 @testable import ReaderCore
 
 @MainActor struct AIPackageTests {
+    @Test func savedSummaryIgnoresOriginalExpiry() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now, later = at.addingTimeInterval(31 * 86_400)
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]; article.summary = "保存した合成要約"
+        let scrap = try store.scrap(articleID: article.id, at: at, timeZone: .current)
+        let emptyArticle = store.articles[1]; emptyArticle.summary = ""
+        let empty = try store.scrap(articleID: emptyArticle.id, at: at, timeZone: .current)
+        try store.purgeExpired(at: later)
+        let review = AIPackageReview(store: store, now: { later })
+        try review.build(selections: [.scrap(scrap.key)], language: "日本語", at: later)
+        let saved = try #require(review.package)
+        #expect(saved.expiresAt == later.addingTimeInterval(86_400))
+        #expect(saved.sources[0].savedAt == at && saved.sources[0].content.coverage == .summaryOnly)
+        #expect(saved.text.contains("Saved RSS snapshot") && saved.text.contains(at.ISO8601Format()))
+        #expect(try store.aiSources(selections: [.scrap(empty.key)], at: later).isEmpty)
+        #expect(throws: (any Error).self) { try review.build(selections: [.scrap(empty.key)], language: "日本語", at: later) }
+        try review.build(selections: [.scrap(scrap.key)], language: "日本語", at: later)
+        scrap.summary = "変更した要約"
+        #expect(throws: (any Error).self) { try review.validated(at: later) }
+        let note = try store.createNote(in: WeekCalendar.range(containing: at, timeZone: .current), title: "週", at: at)
+        try store.adoptScraps(noteID: note.id, scrapKeys: [scrap.key])
+        let source = try #require(store.noteSources.first)
+        try store.removeScrap(key: scrap.key)
+        try review.build(selections: [.noteSource(source.key)], language: "日本語", at: later)
+        #expect(review.package?.sources[0].content.text == "変更した要約")
+    }
+    @Test func mixedSourcesUseEarliestExpiryAndRejectDuplicateArticles() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now, received = at.addingTimeInterval(-6.5 * 86_400)
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: received)
+        try store.applyRetention(days: 7, at: at)
+        let a = store.articles[0], b = store.articles[1]
+        let scrap = try store.scrap(articleID: a.id, at: at, timeZone: .current)
+        let review = AIPackageReview(store: store, now: { at })
+        #expect(throws: (any Error).self) { try review.build(selections: [.article(a.id), .scrap(scrap.key)], language: "日本語", at: at) }
+        try review.build(selections: [.article(b.id), .scrap(scrap.key)], language: "日本語", at: at)
+        #expect(review.package?.expiresAt == received.addingTimeInterval(7 * 86_400))
+        try review.build(selections: [.scrap(scrap.key)], language: "日本語", at: at)
+        try store.deleteContent(articleIDs: [a.id], at: at)
+        #expect(review.package != nil)
+        try store.removeScrap(key: scrap.key)
+        #expect(throws: (any Error).self) { try review.validated(at: at) }
+    }
     func source(_ title: String, text: String, coverage: ContentCoverage) -> AISource {
         let id = UUID(), url = URL(string: "https://synthetic.example/" + title)!
         return AISource(articleID: id, title: title, url: url,

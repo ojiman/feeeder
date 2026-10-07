@@ -7,6 +7,7 @@ struct RSSReaderApp: App {
     @State private var refresh: FeedRefreshController?
     @State private var aiReview: AIPackageReview?
     @State private var handoff: ClaudeHandoffController?
+    @State private var imageLoader: ReaderImageLoader?
     @State private var startupError: String?
     @State private var lifecycleError: String?
     @Environment(\.scenePhase) private var scenePhase
@@ -33,6 +34,8 @@ struct RSSReaderApp: App {
             handoff.reconcile(with: store, at: .now)
             _aiReview = State(initialValue: review)
             _handoff = State(initialValue: handoff)
+            let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "Feeeder/Images")
+            _imageLoader = State(initialValue: ReaderImageLoader(directory: cache))
             _lifecycleError = State(initialValue: handoff.maintenanceError)
         } catch {
             _startupError = State(initialValue: error.localizedDescription)
@@ -42,7 +45,7 @@ struct RSSReaderApp: App {
     var body: some Scene {
         Window("Feeeder", id: "reader") {
             Group {
-                if let store, let refresh, let aiReview, let handoff { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, appearance: $appearance) }
+                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, appearance: $appearance, imageLoader: imageLoader) }
                 else {
                     ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
                         description: Text(startupError ?? "不明なエラーです。"))

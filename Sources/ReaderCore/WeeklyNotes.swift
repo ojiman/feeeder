@@ -57,9 +57,17 @@ public enum WeekCalendar {
     public var articleID: UUID
     public var title: String
     public var url: String?
+    public var summary: String?
+    public var coverageRaw: String?
+    public var savedAt: Date?
     public init(noteID: UUID, article: Article) {
         key = noteID.uuidString + ":" + article.id.uuidString
         self.noteID = noteID; articleID = article.id; title = article.title; url = article.originalURL
+    }
+    public init(noteID: UUID, articleID: UUID, title: String, url: String?, summary: String, coverageRaw: String, savedAt: Date) {
+        key = noteID.uuidString + ":" + articleID.uuidString
+        self.noteID = noteID; self.articleID = articleID; self.title = title; self.url = url
+        self.summary = summary; self.coverageRaw = coverageRaw; self.savedAt = savedAt
     }
 }
 
@@ -69,7 +77,8 @@ extension ReaderStore {
         let current = WeekCalendar.range(containing: at, timeZone: timeZone)
         let previous = WeekCalendar.range(containing: current.start.addingTimeInterval(-1), timeZone: timeZone)
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = timeZone
-        let readDays = Set(articles.compactMap { $0.firstReadAt }.map { calendar.startOfDay(for: $0) })
+        let intentDates = articles.compactMap(\.starredAt) + scraps.map(\.savedAt)
+        let readDays = Set((articles.compactMap { $0.firstReadAt } + intentDates).map { calendar.startOfDay(for: $0) })
         let ranges = [current, previous] + readDays.map { WeekCalendar.range(containing: $0, timeZone: timeZone) }
         for range in ranges where values[range.startDay] == nil { values[range.startDay] = range }
         return values.values.sorted { $0.start > $1.start }
@@ -104,10 +113,43 @@ extension ReaderStore {
         }
         try save(); try reload()
     }
+    public func weeklyCandidates(in range: WeekRange) -> [WeeklyCandidate] {
+        let saved = Dictionary(grouping: scraps.filter { range.start <= $0.savedAt && $0.savedAt < range.end }, by: \.articleID)
+        let starred = articles.filter { article in
+            article.starredAt.map { range.start <= $0 && $0 < range.end } == true
+        }
+        let ids = Set(starred.map(\.id)).union(saved.keys)
+        return ids.map { id in
+            WeeklyCandidate(articleID: id, starredAt: starred.first { $0.id == id }?.starredAt,
+                scraps: (saved[id] ?? []).sorted { $0.savedAt == $1.savedAt ? $0.key < $1.key : $0.savedAt < $1.savedAt })
+        }.sorted {
+            let left = $0.scraps.first?.savedAt ?? $0.starredAt ?? .distantPast
+            let right = $1.scraps.first?.savedAt ?? $1.starredAt ?? .distantPast
+            return left == right ? $0.articleID.uuidString < $1.articleID.uuidString : left < right
+        }
+    }
+    public func adoptScraps(noteID: UUID, scrapKeys: [String]) throws {
+        guard notes.contains(where: { $0.id == noteID }) else { return }
+        var adopted = Set(noteSources.filter { $0.noteID == noteID }.map(\.articleID))
+        for key in scrapKeys {
+            guard let scrap = scraps.first(where: { $0.key == key }), !adopted.contains(scrap.articleID) else { continue }
+            let source = NoteSource(noteID: noteID, articleID: scrap.articleID, title: scrap.title, url: scrap.url,
+                summary: scrap.summary, coverageRaw: scrap.coverageRaw, savedAt: scrap.savedAt)
+            context.insert(source); adopted.insert(scrap.articleID)
+        }
+        try save(); try reload()
+    }
     public func deleteNote(id: UUID) throws {
         guard let note = notes.first(where: { $0.id == id }) else { return }
         for source in noteSources where source.noteID == id { context.delete(source) }
         context.delete(note)
         try save(); try reload()
+        onContentPolicyChanged?()
     }
+}
+
+public struct WeeklyCandidate {
+    public let articleID: UUID
+    public let starredAt: Date?
+    public let scraps: [NoteScrap]
 }

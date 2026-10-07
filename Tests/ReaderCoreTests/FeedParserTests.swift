@@ -3,6 +3,48 @@ import Testing
 @testable import ReaderCore
 
 struct FeedParserTests {
+    @Test func imageMetadataUsesPriorityAndNodeBase() throws {
+        let source = URL(string: "https://synthetic.example/feed/rss")!
+        let enclosure = "<enclosure url='../enclosure.jpg' type='image/jpeg'/>"
+        let media = "<m:content url='../media.jpg' medium='image'/><m:thumbnail url='../thumb.jpg'/>"
+        let body = "<content:encoded xml:base='https://synthetic.example/articles/'><![CDATA[<p>本文<img src='file:///bad'><img src='https://user:pass@bad.example/image'><img src='../image.jpg'></p>]]></content:encoded>"
+        for (nodes, expected) in [(enclosure + media + body, "enclosure.jpg"), (media + body, "media.jpg"), ("<m:thumbnail url='../thumb.jpg'/>" + body, "thumb.jpg"), (body, "image.jpg")] {
+            let xml = "<rss xmlns:m='http://search.yahoo.com/mrss/' xmlns:content='http://purl.org/rss/1.0/modules/content/'><channel><title>合成</title><link>https://synthetic.example/site/</link><image><url>../icon.png</url></image><item><guid>a</guid><title>A</title>\(nodes)</item></channel></rss>"
+            let feed = try FeedParser.parse(Data(xml.utf8), sourceURL: source)
+            #expect(feed.entries[0].imageURL?.absoluteString == "https://synthetic.example/" + expected)
+            #expect(feed.entries[0].body == "本文")
+            #expect(feed.siteURL?.absoluteString == "https://synthetic.example/site/" && feed.iconURL?.absoluteString == "https://synthetic.example/icon.png")
+        }
+    }
+    @Test func atomImagesSupportHTMLXHTMLAndEnclosures() throws {
+        let source = URL(string: "https://synthetic.example/feed/atom")!
+        for body in ["<content type='html'>&lt;p&gt;本文&lt;img src='../image.jpg'&gt;&lt;/p&gt;</content>", "<content type='xhtml'><div xmlns='http://www.w3.org/1999/xhtml'><p>本文<img src='../image.jpg'/></p></div></content>"] {
+            let xml = "<feed xmlns='http://www.w3.org/2005/Atom'><title>合成</title><link href='../site/'/><logo>../logo.png</logo><icon>../icon.png</icon><entry><id>a</id>\(body)</entry></feed>"
+            let parsed = try FeedParser.parse(Data(xml.utf8), sourceURL: source)
+            #expect(parsed.iconURL?.absoluteString == "https://synthetic.example/icon.png")
+            #expect(parsed.siteURL?.absoluteString == "https://synthetic.example/site/")
+            #expect(parsed.entries[0].imageURL?.absoluteString == "https://synthetic.example/image.jpg")
+            #expect(parsed.entries[0].body == "本文")
+        }
+        let xml = "<feed xmlns='http://www.w3.org/2005/Atom' xml:base='https://synthetic.example/base/'><entry><id>a</id><link rel='enclosure' type='image/png' href='image.png'/><link rel='alternate' href='article'/></entry></feed>"
+        let parsed = try FeedParser.parse(Data(xml.utf8), sourceURL: source)
+        #expect(parsed.entries[0].imageURL?.absoluteString == "https://synthetic.example/base/image.png")
+        #expect(parsed.entries[0].url?.absoluteString == "https://synthetic.example/base/article")
+    }
+    @Test @MainActor func expiredArticleImagesDoNotResurrect() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now, url = URL(string: "https://synthetic.example/image-rss")!
+        let xml = "<rss><channel><title>合成</title><link>https://synthetic.example/</link><item><guid>a</guid><description>要約</description><enclosure url='https://synthetic.example/image.png' type='image/png'/></item></channel></rss>"
+        let parsed = try FeedParser.parse(Data(xml.utf8), sourceURL: url)
+        let store = try ReaderStore(url: library.url, now: at)
+        let feed = try store.importFeed(parsed, receivedAt: at)
+        let article = try #require(store.articles.first)
+        #expect(article.imageURL == "https://synthetic.example/image.png")
+        #expect(ImageMetadata.favicon(iconURL: feed.iconURL, siteURL: feed.siteURL, sourceURL: feed.sourceURL)?.absoluteString == "https://synthetic.example/favicon.ico")
+        let later = at.addingTimeInterval(31 * 86_400)
+        try store.purgeExpired(at: later); _ = try store.importFeed(parsed, receivedAt: later)
+        #expect(article.imageURL == nil && article.summary.isEmpty)
+    }
     static let rss = """
     <rss version="2.0" xmlns:body="http://purl.org/rss/1.0/modules/content/">
     <channel><title>合成ニュース</title><item><guid>one</guid><title>A &amp; B</title>

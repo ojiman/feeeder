@@ -5,6 +5,7 @@ import ReaderCore
 struct OriginalPageView: View {
     let url: URL
     let onClose: () -> Void
+    let onCommand: (ReaderCommand) -> Void
     @State private var failure: String?
     @State private var loading = true
     var body: some View {
@@ -17,32 +18,75 @@ struct OriginalPageView: View {
             }.padding(10).background(.bar)
             if loading { ProgressView("元ページを読み込み中").controlSize(.small).padding(8).frame(maxWidth: .infinity).background(.bar) }
             if let failure {
-                ContentUnavailableView("元ページを開けませんでした", systemImage: "wifi.exclamationmark", description: Text(failure))
+                OriginalFailureView(message: failure, onCommand: onCommand)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                OriginalWebView(url: url, onClose: onClose, onFailure: { loading = false; failure = $0 }, onLoading: { loading = $0 })
+                OriginalWebView(url: url, onClose: onClose, onCommand: onCommand, onFailure: { loading = false; failure = $0 }, onLoading: { loading = $0 })
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
-        .onExitCommand(perform: onClose)
+    }
+}
+
+// This input target exists only after the page has failed and its editable
+// web content has been removed. It never handles keys from a live page input.
+@MainActor final class OriginalFailureHostingView<Content: View>: NSHostingView<Content> {
+    var onCommand: (ReaderCommand) -> Void = { _ in }
+    override var acceptsFirstResponder: Bool { true }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.makeFirstResponder(self)
+    }
+    override func keyDown(with event: NSEvent) {
+        guard window?.firstResponder === self, window?.attachedSheet == nil,
+              let command = ReaderKeyboardCommands.command(for: event) else { super.keyDown(with: event); return }
+        onCommand(command)
+    }
+}
+
+private struct OriginalFailureView: NSViewRepresentable {
+    let message: String
+    let onCommand: (ReaderCommand) -> Void
+    private var content: AnyView {
+        AnyView(ContentUnavailableView("元ページを開けませんでした", systemImage: "wifi.exclamationmark", description: Text(message)))
+    }
+    func makeNSView(context: Context) -> OriginalFailureHostingView<AnyView> {
+        let view = OriginalFailureHostingView(rootView: content)
+        view.sizingOptions = []
+        view.onCommand = onCommand
+        return view
+    }
+    func updateNSView(_ view: OriginalFailureHostingView<AnyView>, context: Context) {
+        view.rootView = content; view.onCommand = onCommand
+    }
+}
+
+@MainActor final class OriginalReaderWebView: WKWebView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // Set this window's input target without activating another application.
+        // Later clicks in page inputs retain their own focus.
+        if let window { window.makeFirstResponder(self) }
     }
 }
 
 private struct OriginalWebView: NSViewRepresentable {
     let url: URL
     let onClose: () -> Void
+    let onCommand: (ReaderCommand) -> Void
     let onFailure: (String) -> Void
     let onLoading: (Bool) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(onClose: onClose, onFailure: onFailure, onLoading: onLoading) }
+    func makeCoordinator() -> Coordinator { Coordinator(onFailure: onFailure, onLoading: onLoading) }
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         // Original-page browsing has a separate, temporary session.
         configuration.websiteDataStore = .nonPersistent()
-        let view = WKWebView(frame: .zero, configuration: configuration)
+        let view = OriginalReaderWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
         view.uiDelegate = context.coordinator
         view.allowsBackForwardNavigationGestures = true
-        context.coordinator.installEscape(for: view)
+        context.coordinator.keyboard = OriginalKeyboardBridge(allowsScrap: true, onCommand: onCommand)
+        context.coordinator.keyboard?.install(in: view)
         view.load(URLRequest(url: url))
         return view
     }
@@ -50,26 +94,18 @@ private struct OriginalWebView: NSViewRepresentable {
     static func dismantleNSView(_ view: WKWebView, coordinator: Coordinator) {
         coordinator.active = false
         view.stopLoading(); view.navigationDelegate = nil; view.uiDelegate = nil
-        if let monitor = coordinator.monitor { NSEvent.removeMonitor(monitor); coordinator.monitor = nil }
+        coordinator.keyboard?.uninstall(); coordinator.keyboard = nil
     }
     @MainActor final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
-        let onClose: () -> Void
         let onFailure: (String) -> Void
         let onLoading: (Bool) -> Void
         var active = true
-        var monitor: Any?
-        init(onClose: @escaping () -> Void, onFailure: @escaping (String) -> Void, onLoading: @escaping (Bool) -> Void) {
-            self.onClose = onClose; self.onFailure = onFailure; self.onLoading = onLoading
+        var keyboard: OriginalKeyboardBridge?
+        init(onFailure: @escaping (String) -> Void, onLoading: @escaping (Bool) -> Void) {
+            self.onFailure = onFailure; self.onLoading = onLoading
         }
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { if active { onLoading(true) } }
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { if active { onLoading(false) } }
-        func installEscape(for view: WKWebView) {
-            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak view] event in
-                guard let self, let view, event.keyCode == 53, event.window === view.window,
-                      (view.window?.firstResponder as? NSTextInputClient)?.hasMarkedText() != true else { return event }
-                self.onClose(); return nil
-            }
-        }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void) {
             guard let url = action.request.url, ArticleURL.validated(url.absoluteString) != nil else { decisionHandler(.cancel); return }
             if action.targetFrame == nil { webView.load(action.request); decisionHandler(.cancel) }

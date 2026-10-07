@@ -8,7 +8,7 @@
 
 **Tech Stack:** Swift 6、SwiftUI、AppKit、SwiftData、WebKit、Foundation／URLSession、ImageIO、既存のSwiftSoup 2.13.9、Swift Testing。外部依存の追加なし。
 
-**Spec:** [PRD](../../specification.md)第3・5・7節、[Architecture](../../architecture.md)第6節。仕様承認: [PR #6](https://github.com/ojiman/feeeder/pull/6)、main `728877d9bb684160238026d9f242a89c56d8d24c`。本計画はPR承認待ちで、実装・受入の完了を表さない。
+**Spec:** [PRD](../../specification.md)第3・5・7節、[Architecture](../../architecture.md)第6節。仕様承認: [PR #6](https://github.com/ojiman/feeeder/pull/6)、main `728877d9bb684160238026d9f242a89c56d8d24c`。本計画は[PR #7](https://github.com/ojiman/feeeder/pull/7)のマージで承認済み。実装・検証結果は[今回の受入記録](../../verification/2026-10-07-dogfooding-acceptance.md)へ記録し、計画承認を最終製品受入とは扱わない。
 
 ## Global Constraints
 

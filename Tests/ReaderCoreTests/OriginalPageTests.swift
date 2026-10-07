@@ -3,6 +3,15 @@ import Testing
 @testable import ReaderCore
 
 struct OriginalPageTests {
+    @Test func movingOriginalTracksSelectedArticle() {
+        let a = UUID(), b = UUID(), c = UUID()
+        var state = OriginalPageState()
+        _ = state.open(articleID: a, url: "https://synthetic.example/a")
+        state.followSelection(articleID: b, url: "https://synthetic.example/b")
+        #expect(state.articleID == b && state.url?.path == "/b")
+        state.followSelection(articleID: c, url: nil)
+        #expect(state.articleID == nil && state.url == nil)
+    }
     @Test func originalPageRouteValidatesURLAndClearsOnClose() {
         let id = UUID()
         var state = OriginalPageState()

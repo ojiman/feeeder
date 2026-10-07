@@ -10,20 +10,26 @@ import Testing
         defer { library.cleanup() }
         let directory = destination ?? library.directory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
+        let schema = ReaderStore.schema
         let url = directory.appending(path: "Reader.store")
         let configuration = ModelConfiguration("Reader", schema: schema, url: url, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = ModelContext(container); context.autosaveEnabled = false
         #expect(try context.fetchCount(FetchDescriptor<Article>()) == 0)
         let now = Date.now
+        let imageBase = ProcessInfo.processInfo.environment["FEEEDER_BENCHMARK_IMAGE_BASE"].flatMap(URL.init(string:))
+        let originalBase = ProcessInfo.processInfo.environment["FEEEDER_BENCHMARK_ORIGINAL_BASE"].flatMap(URL.init(string:))
         let feeds = (0..<100).map { Feed(title: String(format: "合成購読 %03d", $0), symbol: "dot.radiowaves.left.and.right") }
-        for feed in feeds { context.insert(feed) }
+        for feed in feeds {
+            feed.iconURL = imageBase?.appending(path: "favicon.png").absoluteString
+            context.insert(feed)
+        }
         let text = (1...80).map { "合成段落 \($0)。日本語の長い本文と読書位置を検証します。これは現実の記事ではありません。" }.joined(separator: "\n\n")
         for index in 0..<10_000 {
             let feed = feeds[index % 100]
             let article = Article(feedID: feed.id, title: String(format: "合成記事 %05d", index), summary: "負荷試験のための合成要約です。", publisher: "synthetic.example", publishedAt: now.addingTimeInterval(-Double(index)), receivedAt: now)
-            article.originalURL = "http://127.0.0.1:18888/posts/extracted"
+            article.originalURL = originalBase?.appending(path: "\(index)").absoluteString ?? "http://127.0.0.1:18888/posts/extracted"
+            article.imageURL = imageBase?.appending(path: "\(index).png").absoluteString
             context.insert(article)
             context.insert(ContentSnapshot(articleID: article.id, text: text, coverage: .extracted))
             context.insert(FeedMembership(feedID: feed.id, articleID: article.id, sourceID: String(index)))

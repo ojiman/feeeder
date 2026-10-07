@@ -1,14 +1,50 @@
 import AppKit
 import SwiftUI
 import Testing
+import ReaderCore
 @testable import RSSReader
 
 @MainActor struct NativeArticleListTests {
+    @Test func lateImagesNeverLeakAcrossReusedRows() {
+        let first = Article(feedID: UUID(), title: "A", summary: "", publisher: "合成", publishedAt: .now)
+        let second = Article(feedID: UUID(), title: "B", summary: "", publisher: "合成", publishedAt: .now)
+        let a = URL(string: "https://synthetic.example/a.png")!, b = URL(string: "https://synthetic.example/b.png")!
+        first.imageURL = a.absoluteString; second.imageURL = b.absoluteString
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        cell.configure(first, feed: "合成", iconURL: a, loader: nil, scrapped: false)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil, scrapped: true)
+        let stale = NSImage(size: NSSize(width: 10, height: 10))
+        cell.completeImage(stale, articleID: first.id, url: a, thumbnail: true)
+        cell.completeImage(stale, articleID: first.id, url: a, thumbnail: false)
+        #expect(cell.thumbnail.image == nil && cell.favicon.image == nil)
+        let current = NSImage(size: NSSize(width: 20, height: 20))
+        cell.completeImage(current, articleID: second.id, url: b, thumbnail: true)
+        cell.completeImage(current, articleID: second.id, url: b, thumbnail: false)
+        #expect(cell.thumbnail.image === current && cell.favicon.image === current)
+        #expect(cell.frame.height == 96)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil, scrapped: true)
+        #expect(cell.thumbnail.image === current)
+    }
+    @Test func starKeyRoutesWithoutConsumingModifiedInput() throws {
+        let table = NativeArticleList.Table()
+        var handled: [String] = []
+        table.keyHandler = { handled.append($0); return true }
+        for flags: NSEvent.ModifierFlags in [[], .shift, .command] {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags,
+                timestamp: 0, windowNumber: 0, context: nil, characters: "s", charactersIgnoringModifiers: "s", isARepeat: false, keyCode: 1))
+            table.keyDown(with: event)
+        }
+        #expect(handled == ["s"])
+    }
     @Test func backgroundInsertionAndReorderPreserveSelectedArticleAndTopOffset() {
         let original = (0..<40).map { _ in UUID() }
+        let articles = Dictionary(uniqueKeysWithValues: original.map { id in
+            let article = Article(feedID: UUID(), title: "合成", summary: "要約", publisher: "合成", publishedAt: .now)
+            article.id = id; return (id, article)
+        })
         var selected: UUID? = original[10]
         func parent(_ ids: [UUID]) -> NativeArticleList {
-            NativeArticleList(ids: ids, article: { _ in nil }, feedTitle: { _ in "" },
+            NativeArticleList(ids: ids, article: { articles[$0] }, feedTitle: { _ in "" },
                 selection: Binding(get: { selected }, set: { selected = $0 }), initialTop: nil,
                 focus: false, shortcutsEnabled: true, onTop: { _ in }, onKey: { _ in })
         }
@@ -34,6 +70,31 @@ import Testing
             let top = table.rows(in: table.visibleRect).location
             #expect(ids[top] == original[8])
             #expect(abs(scroll.contentView.bounds.minY - table.rect(ofRow: top).minY - 17) < 1)
+            let article = articles[original[8]]!
+            let url = URL(string: "https://synthetic.example/delayed.png")!
+            article.imageURL = url.absoluteString
+            if let cell = table.view(atColumn: 0, row: top, makeIfNecessary: true) as? NativeArticleList.Cell {
+                cell.configure(article, feed: "合成", iconURL: url, loader: nil)
+                let offset = scroll.contentView.bounds.minY
+                cell.completeImage(NSImage(size: NSSize(width: 400, height: 400)), articleID: article.id, url: url, thumbnail: true)
+                cell.completeImage(NSImage(size: NSSize(width: 18, height: 18)), articleID: article.id, url: url, thumbnail: false)
+                cell.layoutSubtreeIfNeeded()
+                #expect(abs(scroll.contentView.bounds.minY - offset) < 1 && table.rowHeight == 96)
+            } else { Issue.record("Expected the visible native cell") }
         }
+    }
+    @Test func remountRestoresTopOffsetIndependentlyOfSelection() {
+        let ids = (0..<30).map { _ in UUID() }
+        var selection: UUID? = ids[12]
+        let parent = NativeArticleList(ids: ids, article: { _ in nil }, feedTitle: { _ in "" }, selection: Binding(get: { selection }, set: { selection = $0 }), initialTop: ids[8], focus: false, shortcutsEnabled: true, onTop: { _ in }, onKey: { _ in }, initialTopOffset: 17)
+        let coordinator = NativeArticleList.Coordinator(parent)
+        let table = NativeArticleList.Table(frame: NSRect(x: 0, y: 0, width: 280, height: 3000))
+        table.headerView = nil; table.rowHeight = 96; table.intercellSpacing = .zero
+        table.addTableColumn(NSTableColumn(identifier: .init("article")))
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 280, height: 300)); scroll.documentView = table
+        table.dataSource = coordinator; table.delegate = coordinator; coordinator.table = table; coordinator.scroll = scroll
+        coordinator.update(parent)
+        #expect(table.selectedRow == 12)
+        #expect(abs(scroll.contentView.bounds.minY - table.rect(ofRow: 8).minY - 17) < 1)
     }
 }

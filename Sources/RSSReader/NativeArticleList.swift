@@ -13,6 +13,11 @@ struct NativeArticleList: NSViewRepresentable {
     let shortcutsEnabled: Bool
     let onTop: (UUID) -> Void
     let onKey: (String) -> Void
+    var imageLoader: ReaderImageLoader? = nil
+    var iconURL: (Article) -> URL? = { _ in nil }
+    var scrapped: (UUID) -> Bool = { _ in false }
+    var initialTopOffset: Double = 0
+    var onTopOffset: ((UUID, Double) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
@@ -52,8 +57,8 @@ struct NativeArticleList: NSViewRepresentable {
     @MainActor final class Table: NSTableView {
         var keyHandler: ((String) -> Bool)?
         override func keyDown(with event: NSEvent) {
-            if event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
-               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v"].contains(key),
+            if event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n"].contains(key),
                keyHandler?(key) == true { return }
             super.keyDown(with: event)
         }
@@ -73,6 +78,7 @@ struct NativeArticleList: NSViewRepresentable {
             guard let table else { return }
             synchronizing = true
             let selectionChanged = priorSelection != parent.selection
+            let firstLoad = ids.isEmpty
             let topRow = table.rows(in: table.visibleRect).location
             let topID = ids.indices.contains(topRow) ? ids[topRow] : nil
             let topOffset = topID == nil ? 0 : (scroll?.contentView.bounds.minY ?? 0) - table.rect(ofRow: topRow).minY
@@ -91,9 +97,9 @@ struct NativeArticleList: NSViewRepresentable {
                     if selectionChanged { table.scrollRowToVisible(row) }
                 } else { table.deselectAll(nil) }
             }
-            if idsChanged && !selectionChanged, let top = topID ?? parent.initialTop,
+            if idsChanged && (!selectionChanged || firstLoad), let top = firstLoad ? parent.initialTop : topID ?? parent.initialTop,
                let row = ids.firstIndex(of: top), let scroll {
-                scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: row).minY + topOffset))
+                scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: row).minY + (firstLoad ? parent.initialTopOffset : topOffset)))
                 scroll.reflectScrolledClipView(scroll.contentView)
             }
             priorSelection = parent.selection
@@ -105,7 +111,7 @@ struct NativeArticleList: NSViewRepresentable {
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard parent.ids.indices.contains(row), let article = parent.article(parent.ids[row]) else { return nil }
             let cell = tableView.makeView(withIdentifier: .init("article"), owner: self) as? Cell ?? Cell()
-            cell.configure(article, feed: parent.feedTitle(article))
+            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader, scrapped: parent.scrapped(article.id))
             return cell
         }
         func tableViewSelectionDidChange(_ notification: Notification) {
@@ -116,7 +122,10 @@ struct NativeArticleList: NSViewRepresentable {
         func recordTop() {
             guard !synchronizing, let table else { return }
             let row = table.rows(in: table.visibleRect).location
-            if ids.indices.contains(row) { parent.onTop(ids[row]) }
+            if ids.indices.contains(row) {
+                parent.onTop(ids[row])
+                parent.onTopOffset?(ids[row], Double((scroll?.contentView.bounds.minY ?? 0) - table.rect(ofRow: row).minY))
+            }
         }
     }
 
@@ -124,6 +133,13 @@ struct NativeArticleList: NSViewRepresentable {
         private let source = NSTextField(labelWithString: "")
         private let title = NSTextField(wrappingLabelWithString: "")
         private let summary = NSTextField(wrappingLabelWithString: "")
+        let favicon = NSImageView()
+        let thumbnail = NSImageView()
+        private var representedID: UUID?
+        private var iconURL: URL?
+        private var thumbnailURL: URL?
+        private var imageTasks: [Task<Void, Never>] = []
+        deinit { imageTasks.forEach { $0.cancel() } }
         override init(frame: NSRect) {
             super.init(frame: frame)
             identifier = .init("article")
@@ -135,16 +151,39 @@ struct NativeArticleList: NSViewRepresentable {
             let stack = NSStackView(views: [source, title, summary])
             stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 5
             stack.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(stack)
-            NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12), stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12), stack.topAnchor.constraint(equalTo: topAnchor, constant: 10), stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8), source.widthAnchor.constraint(equalTo: stack.widthAnchor), title.widthAnchor.constraint(equalTo: stack.widthAnchor), summary.widthAnchor.constraint(equalTo: stack.widthAnchor)])
+            let iconStack = NSStackView(views: [favicon, stack, thumbnail])
+            iconStack.orientation = .horizontal; iconStack.alignment = .top; iconStack.spacing = 8
+            iconStack.translatesAutoresizingMaskIntoConstraints = false
+            favicon.imageScaling = .scaleProportionallyUpOrDown; thumbnail.imageScaling = .scaleProportionallyUpOrDown
+            favicon.setAccessibilityLabel("購読元のアイコン"); thumbnail.setAccessibilityLabel("記事のサムネイル")
+            addSubview(iconStack)
+            NSLayoutConstraint.activate([iconStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12), iconStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12), iconStack.topAnchor.constraint(equalTo: topAnchor, constant: 10), iconStack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8), favicon.widthAnchor.constraint(equalToConstant: 18), favicon.heightAnchor.constraint(equalToConstant: 18), thumbnail.widthAnchor.constraint(equalToConstant: 56), thumbnail.heightAnchor.constraint(equalToConstant: 56), source.widthAnchor.constraint(equalTo: stack.widthAnchor), title.widthAnchor.constraint(equalTo: stack.widthAnchor), summary.widthAnchor.constraint(equalTo: stack.widthAnchor)])
         }
         convenience init() { self.init(frame: .zero) }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-        func configure(_ article: Article, feed: String) {
-            source.stringValue = (article.isRead ? "" : "● ") + feed + (article.publishedAt == .distantPast ? "" : " · " + article.publishedAt.formatted(.dateTime.month().day()))
+        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, scrapped: Bool = false) {
+            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (scrapped ? "▣ " : "") + feed + (article.publishedAt == .distantPast ? "" : " · " + article.publishedAt.formatted(.dateTime.month().day()))
             source.textColor = article.isRead ? .secondaryLabelColor : .systemOrange
             title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
+            let imageURL = article.imageURL.flatMap { ArticleURL.validated($0) }
+            guard representedID != article.id || self.iconURL != iconURL || thumbnailURL != imageURL else { return }
+            imageTasks.forEach { $0.cancel() }; imageTasks = []
+            representedID = article.id; self.iconURL = iconURL; thumbnailURL = imageURL
+            favicon.image = nil; thumbnail.image = nil; thumbnail.isHidden = imageURL == nil
+            let id = article.id
+            guard let loader else { return }
+            for (url, isThumbnail) in [(iconURL, false), (imageURL, true)] {
+                guard let url else { continue }
+                imageTasks.append(Task { [weak self] in
+                    guard let data = try? await loader.image(url: url, at: .now), !Task.isCancelled else { return }
+                    self?.completeImage(NSImage(data: data), articleID: id, url: url, thumbnail: isThumbnail)
+                })
+            }
+        }
+        func completeImage(_ image: NSImage?, articleID: UUID, url: URL, thumbnail: Bool) {
+            guard representedID == articleID, (thumbnail ? thumbnailURL : iconURL) == url else { return }
+            (thumbnail ? self.thumbnail : favicon).image = image
         }
     }
 }

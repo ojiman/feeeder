@@ -9,6 +9,33 @@ import Testing
 }
 
 @MainActor struct ClaudeHandoffTests {
+    @Test func savedSourcesAndOldMetadataReconcile() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let id = store.articles[0].id
+        let scrap = try store.scrap(articleID: id, at: at, timeZone: .current)
+        let review = AIPackageReview(store: store, now: { at })
+        let root = library.directory.appending(path: "handoff")
+        try review.build(articleIDs: [id], language: "日本語", at: at)
+        let oldFile = try HandoffFiles.write(try #require(review.package), directory: root)
+        let metadataFile = oldFile.deletingLastPathComponent().appending(path: "metadata.json")
+        var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+        metadata.removeValue(forKey: "selections")
+        try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+        try review.build(selections: [.scrap(scrap.key)], language: "日本語", at: at)
+        let savedFile = try HandoffFiles.write(try #require(review.package), directory: root)
+        try store.deleteContent(articleIDs: [id], at: at)
+        let inputs = try HandoffFiles.sourceSelections(directory: root)
+        #expect(Set(inputs) == [.article(id), .scrap(scrap.key)])
+        try HandoffFiles.reconcile(directory: root, validInputExpiries: store.availableInputExpiries(selections: inputs, at: at), at: at)
+        #expect(!FileManager.default.fileExists(atPath: oldFile.path))
+        #expect(FileManager.default.fileExists(atPath: savedFile.path))
+        let data = try Data(contentsOf: savedFile)
+        #expect(AIPackageBuilder.hash(data) == review.package?.sha256)
+        try HandoffFiles.cleanup(directory: root, at: at.addingTimeInterval(86_400))
+        #expect(!FileManager.default.fileExists(atPath: savedFile.path))
+    }
     @Test func interruptedWriteDoesNotBlockExpiredCopiesAndRecoversOwnedFiles() throws {
         let (library, store, review, package, root) = try fixture(); defer { library.cleanup() }
         let expired = try HandoffFiles.write(package, directory: root)

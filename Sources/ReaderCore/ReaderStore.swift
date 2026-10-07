@@ -13,6 +13,10 @@ import SwiftData
     public private(set) var notes: [WeeklyNote] = []
     public private(set) var noteSources: [NoteSource] = []
     public private(set) var memberships: [FeedMembership] = []
+    public private(set) var dailyNotes: [DailyNote] = []
+    public private(set) var scraps: [NoteScrap] = []
+    public private(set) var starCount = 0
+    @ObservationIgnored var starredIDs: Set<UUID> = []
     private var membershipIndex: [UUID: Set<UUID>] = [:]
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
     @ObservationIgnored private var feedIndex: [UUID: Feed] = [:]
@@ -20,20 +24,28 @@ import SwiftData
     @ObservationIgnored private var articleFeeds: [UUID: Set<UUID>] = [:]
     public private(set) var articleIDs: [UUID] = []
     @ObservationIgnored private var feedArticleIDs: [UUID: [UUID]] = [:]
+    @ObservationIgnored var folderIndex: [String: [UUID]] = [:]
+    public private(set) var folderUnreadCounts: [String: Int] = [:]
     @ObservationIgnored private var unreadIDs: Set<UUID> = []
     public private(set) var unreadCount = 0
     public private(set) var feedUnreadCounts: [UUID: Int] = [:]
     @ObservationIgnored private let container: ModelContainer
     @ObservationIgnored let context: ModelContext
+    @ObservationIgnored private var saveHook: (() throws -> Void)?
+
+    public static var schema: Schema {
+        Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self,
+                WeeklyNote.self, NoteSource.self, ReaderSettings.self, DailyNote.self, NoteScrap.self])
+    }
 
     public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
+        let schema = Self.schema
         let configuration = ModelConfiguration("Reader", schema: schema, url: url, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         try self.init(container: container, seedDemo: seedDemo, now: now)
     }
 
-    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now) throws {
+    init(container: ModelContainer, seedDemo: Bool = false, now: Date = .now, saveHook: (() throws -> Void)? = nil) throws {
         self.container = container
         context = ModelContext(container)
         context.autosaveEnabled = false
@@ -43,6 +55,7 @@ import SwiftData
         if seedDemo { try seedIfEmpty(now: now) }
         else { try reload() }
         try purgeExpired(at: now)
+        self.saveHook = saveHook
     }
 
     public func seedIfEmpty(now: Date = .now) throws {
@@ -62,6 +75,8 @@ import SwiftData
         notes = try context.fetch(FetchDescriptor<WeeklyNote>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
         noteSources = try context.fetch(FetchDescriptor<NoteSource>())
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
+        dailyNotes = try context.fetch(FetchDescriptor<DailyNote>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
+        scraps = try context.fetch(FetchDescriptor<NoteScrap>(sortBy: [SortDescriptor(\.savedAt)]))
         membershipIndex = [:]
         for membership in memberships { membershipIndex[membership.feedID, default: []].insert(membership.articleID) }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
@@ -74,7 +89,18 @@ import SwiftData
         }
         articleIDs = articles.map(\.id)
         feedArticleIDs = feedArticles.mapValues { $0.map(\.id) }
+        folderIndex = [:]
+        for article in articles {
+            let folders = Set((articleFeeds[article.id] ?? []).compactMap { feedIndex[$0]?.folder })
+            for folder in folders { folderIndex[folder, default: []].append(article.id) }
+        }
         refreshUnreadCounts()
+        refreshStarIndex()
+    }
+
+    func refreshStarIndex() {
+        starredIDs = Set(articles.filter { $0.starredAt != nil }.map(\.id))
+        starCount = starredIDs.count
     }
 
     public func article(id: UUID) -> Article? { articleIndex[id] }
@@ -94,6 +120,7 @@ import SwiftData
         unreadCount = articles.filter { !$0.isRead }.count
         unreadIDs = Set(articles.filter { !$0.isRead }.map(\.id))
         feedUnreadCounts = feedArticles.mapValues { $0.filter { !$0.isRead }.count }
+        folderUnreadCounts = folderIndex.mapValues { $0.filter { unreadIDs.contains($0) }.count }
     }
     private func updateUnreadCounts(_ article: Article, wasRead: Bool) {
         guard article.isRead != wasRead else { return }
@@ -101,6 +128,8 @@ import SwiftData
         unreadCount += delta
         if article.isRead { unreadIDs.remove(article.id) } else { unreadIDs.insert(article.id) }
         for id in articleFeeds[article.id] ?? [] { feedUnreadCounts[id, default: 0] += delta }
+        let folders = Set((articleFeeds[article.id] ?? []).compactMap { feedIndex[$0]?.folder })
+        for folder in folders { folderUnreadCounts[folder, default: 0] += delta }
     }
 
     public func isArticle(_ article: Article, in feedID: UUID) -> Bool {
@@ -111,6 +140,8 @@ import SwiftData
         let feed = feeds.first { $0.sourceURL == parsed.sourceURL.absoluteString } ?? Feed(title: parsed.title, symbol: "dot.radiowaves.left.and.right")
         context.insert(feed)
         feed.sourceURL = parsed.sourceURL.absoluteString
+        feed.siteURL = parsed.siteURL?.absoluteString ?? feed.siteURL
+        feed.iconURL = parsed.iconURL?.absoluteString ?? feed.iconURL
         if !feed.customTitle { feed.title = parsed.title }
         do {
             var contentRemoved = false
@@ -129,7 +160,7 @@ import SwiftData
                 } else if article.identityKey == nil { article.identityKey = identity }
                 article.title = entry.title
                 let available = isContentAvailable(article, at: receivedAt)
-                if available { article.summary = entry.summary }
+                if available { article.summary = entry.summary; article.imageURL = entry.imageURL?.absoluteString ?? article.imageURL }
                 else { contentRemoved = try removeContent(articleIDs: [article.id], at: receivedAt) || contentRemoved }
                 if let date = entry.publishedAt { article.publishedAt = date }
                 // A second feed must not overwrite a saved article with a shorter excerpt.
@@ -210,7 +241,7 @@ import SwiftData
     }
 
     func save() throws {
-        do { try context.save() }
+        do { try saveHook?(); try context.save() }
         catch { context.rollback(); try? reload(); throw error }
     }
 }

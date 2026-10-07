@@ -5,6 +5,12 @@ public struct ParsedFeed: Sendable {
     public let sourceURL: URL
     public let entries: [ParsedEntry]
     public let skippedEntries: Int
+    public let siteURL: URL?
+    public let iconURL: URL?
+    public init(title: String, sourceURL: URL, entries: [ParsedEntry], skippedEntries: Int, siteURL: URL? = nil, iconURL: URL? = nil) {
+        self.title = title; self.sourceURL = sourceURL; self.entries = entries; self.skippedEntries = skippedEntries
+        self.siteURL = siteURL; self.iconURL = iconURL
+    }
 }
 
 public struct ParsedEntry: Sendable {
@@ -15,6 +21,11 @@ public struct ParsedEntry: Sendable {
     public let body: String
     public let coverage: ContentCoverage
     public let publishedAt: Date?
+    public let imageURL: URL?
+    public init(sourceID: String, title: String, url: URL?, summary: String, body: String, coverage: ContentCoverage, publishedAt: Date?, imageURL: URL? = nil) {
+        self.sourceID = sourceID; self.title = title; self.url = url; self.summary = summary; self.body = body
+        self.coverage = coverage; self.publishedAt = publishedAt; self.imageURL = imageURL
+    }
 }
 
 public enum FeedImportError: LocalizedError {
@@ -60,7 +71,7 @@ public enum FeedParser {
         guard parser.parse(), reader.failure == nil else { throw reader.failure ?? FeedImportError.invalidXML }
         guard reader.format != nil, reader.sawContainer else { throw FeedImportError.unsupported }
         return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? "フィード") : reader.title,
-                          sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped)
+                          sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped, siteURL: reader.siteURL, iconURL: reader.iconURL ?? reader.logoURL)
     }
 }
 
@@ -88,6 +99,10 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
     var values: [String: String] = [:]
     var entryURL: URL?
     var entryBase: URL?
+    var siteURL: URL?
+    var iconURL: URL?
+    var logoURL: URL?
+    var entryImages: [Int: URL] = [:]
     var namespaces: [String: [String]] = [:]
     init(source: URL) { self.source = source }
 
@@ -107,7 +122,7 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
             || (format == "rss" && name == "item" && ns.isEmpty && stack.count == 3 && stack[1].name == "channel")
             || (format == "rdf" && name == "item" && ns == Self.rss1 && stack.count == 2)
         if isEntry {
-            entryDepth = stack.count; values = [:]; entryURL = nil; entryBase = base
+            entryDepth = stack.count; values = [:]; entryURL = nil; entryBase = base; entryImages = [:]
             values["id"] = attributes.first { key, _ in
                 let parts = key.split(separator: ":", maxSplits: 1)
                 return parts.count == 2 && parts[1] == "about" && namespaces[String(parts[0])]?.last == "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -117,6 +132,26 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
            [nil, "alternate"].contains(attributes["rel"]), entryURL == nil, let href = attributes["href"] {
             entryURL = ArticleURL.validated(href, relativeTo: base)
         }
+        if let depth = entryDepth {
+            if stack.count == depth + 1 {
+                if (name == "enclosure" && standard(ns) || name == "link" && ns == Self.atom && attributes["rel"] == "enclosure"),
+                   attributes["type"]?.lowercased().hasPrefix("image/") == true { recordImage(attributes["url"] ?? attributes["href"], base: base, priority: 0) }
+                if ns == "http://search.yahoo.com/mrss/" {
+                    if name == "thumbnail" { recordImage(attributes["url"], base: base, priority: 2) }
+                    if name == "content", attributes["medium"] == "image" || attributes["type"]?.hasPrefix("image/") == true || (attributes["medium"] == nil && attributes["type"] == nil) { recordImage(attributes["url"], base: base, priority: 1) }
+                }
+            }
+            if name == "img", ns == "http://www.w3.org/1999/xhtml", stack.count > depth + 1 {
+                let content = stack[depth].name
+                if ["content", "summary"].contains(content) { recordImage(attributes["src"], base: base, priority: content == "content" ? 3 : 4) }
+            }
+        } else if format == "atom", stack.count == 2, ns == Self.atom, name == "link", [nil, "alternate"].contains(attributes["rel"]), siteURL == nil {
+            siteURL = attributes["href"].flatMap { ArticleURL.validated($0, relativeTo: base) }
+        }
+    }
+    private func recordImage(_ value: String?, base: URL, priority: Int) {
+        guard entryImages[priority] == nil, let value, let url = ArticleURL.validated(value, relativeTo: base) else { return }
+        entryImages[priority] = url
     }
     private func standard(_ ns: String) -> Bool {
         switch format { case "atom": ns == Self.atom; case "rdf": ns == Self.rss1; case "rss": ns.isEmpty; default: false }
@@ -142,16 +177,21 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
                     case "guid", "id": values["id"] = text
                     case "description", "summary":
                         values["summary"] = text
+                        if format != "atom" || node.attributes["type"] == "html", let image = ImageMetadata.firstHTMLImage(text, base: node.base) { recordImage(image.absoluteString, base: node.base, priority: 4) }
                         if format == "atom" && node.attributes["type"] != "html" { values["summaryPlain"] = "true" }
                     case "content":
                         values["body"] = text
+                        if format != "atom" || node.attributes["type"] == "html", let image = ImageMetadata.firstHTMLImage(text, base: node.base) { recordImage(image.absoluteString, base: node.base, priority: 3) }
                         if format == "atom" && node.attributes["type"] != "html" { values["bodyPlain"] = "true" }
                     case "pubDate", "published": values["date"] = text
                     case "updated": values["updated"] = text
                     case "link": if format != "atom" { entryURL = ArticleURL.validated(text, relativeTo: node.base) }
                     default: break
                     }
-                } else if node.namespace == Self.content && name == "encoded" { values["body"] = text }
+                } else if node.namespace == Self.content && name == "encoded" {
+                    values["body"] = text
+                    if let image = ImageMetadata.firstHTMLImage(text, base: node.base) { recordImage(image.absoluteString, base: node.base, priority: 3) }
+                }
                 else if node.namespace == Self.dc && name == "date" { values["date"] = text }
             } else if stack.count == depth {
                 finishEntry()
@@ -161,6 +201,13 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         } else if name == "title", standard(node.namespace),
                   (format == "atom" && stack.count == 2) || (stack.count == 3 && stack[1].name == "channel") {
             title = node.attributes["type"] == "html" ? PlainFeedText.convert(text) : text
+        }
+        if entryDepth == nil, standard(node.namespace) {
+            if format == "atom", stack.count == 2 {
+                if name == "icon" { iconURL = ArticleURL.validated(text, relativeTo: node.base) }
+                if name == "logo" { logoURL = ArticleURL.validated(text, relativeTo: node.base) }
+            } else if stack.count == 3, stack[1].name == "channel", name == "link", siteURL == nil { siteURL = ArticleURL.validated(text, relativeTo: node.base) }
+            else if stack.count == 4, stack[1].name == "channel", stack[2].name == "image", name == "url" { iconURL = ArticleURL.validated(text, relativeTo: node.base) }
         }
         stack.removeLast()
         if !stack.isEmpty {
@@ -175,7 +222,7 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         let body = values["body"].map { values["bodyPlain"] == "true" ? $0 : PlainFeedText.convert($0) } ?? summary
         entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? "無題", url: entryURL,
                                    summary: summary, body: body, coverage: values["body"] == nil ? .summaryOnly : .feedProvided,
-                                   publishedAt: Self.date(values["date"] ?? values["updated"] ?? "")))
+                                   publishedAt: Self.date(values["date"] ?? values["updated"] ?? ""), imageURL: entryImages.sorted { $0.key < $1.key }.first?.value))
     }
     static func date(_ string: String) -> Date? {
         let iso = ISO8601DateFormatter()

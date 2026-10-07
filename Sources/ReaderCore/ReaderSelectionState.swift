@@ -6,6 +6,7 @@ public struct ReaderSelectionState: Sendable {
     public private(set) var scrollAnchors: [UUID: String] = [:]
     public private(set) var scrollOffsets: [UUID: Double] = [:]
     public var listScrollAnchor: UUID?
+    public var listScrollOffset: Double = 0
     public var listFocusRequested = false
     public init() {}
     public mutating func select(_ id: UUID?) { selectedArticleID = id; visibleArticleID = id; listFocusRequested = true }

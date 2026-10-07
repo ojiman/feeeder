@@ -6,18 +6,25 @@ struct AIReviewView: View {
     @Bindable var store: ReaderStore
     @Bindable var review: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
-    let articleIDs: [UUID]
+    let selections: [AIInputSelection]
     @Environment(\.dismiss) private var dismiss
-    @State private var selected = Set<UUID>()
+    @State private var selected = Set<AIInputSelection>()
     @State private var options: [Option] = []
     @State private var language = "日本語"
     @State private var error: String?
     @State private var copied = false
     private struct Option: Identifiable {
-        let id: UUID
+        let id: AIInputSelection
+        let articleID: UUID
         let title: String
         let coverage: String
         let available: Bool
+    }
+    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, articleIDs: [UUID]) {
+        self.init(store: store, review: review, handoff: handoff, selections: articleIDs.map(AIInputSelection.article))
+    }
+    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection]) {
+        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -33,7 +40,10 @@ struct AIReviewView: View {
             HSplitView {
                 List(options) { option in
                     Toggle(isOn: Binding(get: { selected.contains(option.id) }, set: { included in
-                        if included { selected.insert(option.id) } else { selected.remove(option.id) }
+                        if included {
+                            for other in options where other.articleID == option.articleID { selected.remove(other.id) }
+                            selected.insert(option.id)
+                        } else { selected.remove(option.id) }
                         generate()
                     })) {
                         VStack(alignment: .leading, spacing: 5) {
@@ -80,7 +90,12 @@ struct AIReviewView: View {
             Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、ノートへ貼り付け・編集してください。")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 820, minHeight: 640)
-        .onAppear { handoff.resetStatus(); refreshOptions(); selected = Set(options.filter(\.available).map(\.id)); generate() }
+        .onAppear {
+            handoff.resetStatus(); refreshOptions()
+            var seen = Set<UUID>()
+            selected = Set(options.filter { $0.available && seen.insert($0.articleID).inserted }.map(\.id))
+            generate()
+        }
         .onChange(of: language) { _, _ in generate() }
         .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
         .task(id: review.package?.expiresAt) {
@@ -93,15 +108,25 @@ struct AIReviewView: View {
         .onDisappear { review.clear() }
     }
     private func refreshOptions() {
-        options = articleIDs.compactMap { id in
-            guard let article = store.article(id: id) else { return nil }
-            let content = try? store.content(articleID: id, at: .now)
-            return Option(id: id, title: article.title, coverage: content?.coverage.label ?? "本文期限切れ・削除済み、または本文なし", available: content != nil)
+        var seen = Set<AIInputSelection>()
+        options = selections.filter { seen.insert($0).inserted }.compactMap { selection in
+            let source = try? store.aiSources(selections: [selection], at: .now).first
+            switch selection {
+            case .article(let id):
+                guard let article = store.article(id: id) else { return nil }
+                return Option(id: selection, articleID: id, title: article.title, coverage: "保持中の記事 · " + (source?.content.coverage.label ?? "本文期限切れ・削除済み、または本文なし"), available: source != nil)
+            case .scrap(let key):
+                guard let scrap = store.scraps.first(where: { $0.key == key }) else { return nil }
+                return Option(id: selection, articleID: scrap.articleID, title: scrap.title, coverage: "保存時のRSS要約 · \(scrap.savedAt.formatted())" + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            case .noteSource(let key):
+                guard let saved = store.noteSources.first(where: { $0.key == key }) else { return nil }
+                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "採用済みRSS要約 · " + (saved.savedAt?.formatted() ?? "保存日時なし") + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            }
         }
     }
     private func generate() {
         copied = false; error = nil; handoff.resetStatus()
-        perform { try review.build(articleIDs: articleIDs.filter { selected.contains($0) }, language: language, at: .now) }
+        perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, language: language, at: .now) }
     }
     private func export() {
         perform {

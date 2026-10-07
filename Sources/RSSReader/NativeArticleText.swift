@@ -1,12 +1,15 @@
 import AppKit
 import SwiftUI
 import QuartzCore
+import ReaderCore
 
 // A single native text layout replaces per-paragraph SwiftUI geometry/preferences.
 @MainActor final class ArticleTextView: NSTextView {
     private var paragraphRanges: [NSRange] = []
     private var paragraphYs: [CGFloat] = []
     private var bodyRange: NSRange?
+    private var heroRange: NSRange?
+    private var heroView: NSView?
     private var installing = false
     var onDisplayBegin: (() -> Void)?
     var onDisplayed: (() -> Void)?
@@ -31,7 +34,11 @@ import QuartzCore
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func install(title: String, publisher: String, date: String, coverage: String, paragraphs: [String], unavailable: String?) {
+    func configureHero(_ view: NSView?) {
+        if heroView !== view { heroView?.removeFromSuperview(); heroView = view; if let view { addSubview(view) } }
+        positionHero()
+    }
+    func install(title: String, publisher: String, date: String, coverage: String, paragraphs: [String], unavailable: String?, hero: Bool = false) {
         if !paragraphs.isEmpty { onDisplayBegin?() }
         installing = true; defer { installing = false }
         let document = NSMutableAttributedString()
@@ -42,6 +49,12 @@ import QuartzCore
         append(publisher + "    " + coverage, size: 11, weight: .medium, secondary: true)
         append(title, size: 30, weight: .bold)
         append(date, size: 12, secondary: true)
+        heroRange = nil
+        if hero {
+            heroRange = NSRange(location: document.length, length: 1)
+            let style = NSMutableParagraphStyle(); style.minimumLineHeight = 180; style.maximumLineHeight = 180; style.paragraphSpacing = 22
+            document.append(NSAttributedString(string: " \n", attributes: [.font: NSFont.systemFont(ofSize: 1), .foregroundColor: NSColor.clear, .paragraphStyle: style]))
+        }
         paragraphRanges = []; paragraphYs = []; bodyRange = nil
         let start = document.length
         for paragraph in paragraphs {
@@ -76,6 +89,14 @@ import QuartzCore
         manager.ensureLayout(for: container)
         let height = max(enclosingScrollView?.contentSize.height ?? 0, manager.usedRect(for: container).maxY + 88)
         if abs(frame.height - height) > 0.5 { super.setFrameSize(NSSize(width: frame.width, height: height)) }
+        positionHero()
+    }
+    private func positionHero() {
+        guard let heroView, let heroRange, let manager = layoutManager, let container = textContainer else { self.heroView?.isHidden = true; return }
+        let glyphs = manager.glyphRange(forCharacterRange: heroRange, actualCharacterRange: nil)
+        let rect = manager.lineFragmentRect(forGlyphAt: glyphs.location, effectiveRange: nil)
+        heroView.isHidden = false
+        heroView.frame = NSRect(x: textContainerOrigin.x, y: textContainerOrigin.y + rect.minY, width: container.containerSize.width, height: 180)
     }
     private func paragraphPositions() -> [CGFloat] {
         if paragraphYs.count == paragraphRanges.count { return paragraphYs }
@@ -145,11 +166,14 @@ struct NativeArticleText: NSViewRepresentable {
     let onInteraction: () -> Void
     let onDisplayBegin: () -> Void
     let onDisplayed: () -> Void
+    var imageLoader: ReaderImageLoader? = nil
+    var heroURL: URL? = nil
 
     @MainActor final class Coordinator {
         var signature: [String] = []
         nonisolated(unsafe) var observer: NSObjectProtocol?
         var restoring = false
+        var hero: NSHostingView<ArticleImageView>?
         deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
     }
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -170,15 +194,27 @@ struct NativeArticleText: NSViewRepresentable {
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let text = scroll.documentView as? ArticleTextView else { return }
-        let signature = [articleID.uuidString, title, publisher, date, coverage, unavailable ?? ""] + paragraphs
+        let signature = [articleID.uuidString, title, publisher, date, coverage, unavailable ?? "", heroURL?.absoluteString ?? ""] + paragraphs
         let changed = signature != context.coordinator.signature
         if changed { text.recordScroll() }
         text.onScroll = onScroll; text.onInteraction = onInteraction; text.onDisplayBegin = onDisplayBegin; text.onDisplayed = onDisplayed
         (scroll as? ArticleScrollView)?.onInteraction = onInteraction
+        if let imageLoader, let heroURL {
+            let image = ArticleImageView(loader: imageLoader, articleID: articleID, url: heroURL, size: CGSize(width: 0, height: 180))
+            if let hero = context.coordinator.hero { if changed { hero.rootView = image } }
+            else {
+                let hero = NSHostingView(rootView: image)
+                // ArticleTextView owns the fixed frame; intrinsic-size constraints
+                // must not resize the surrounding text layout when an image arrives.
+                hero.sizingOptions = []
+                context.coordinator.hero = hero
+            }
+            text.configureHero(context.coordinator.hero)
+        } else { text.configureHero(nil); context.coordinator.hero = nil }
         guard changed else { return }
         context.coordinator.restoring = true
         context.coordinator.signature = signature
-        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable)
+        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil)
         text.restore(anchor: initialAnchor, offset: initialOffset)
         context.coordinator.restoring = false
         scroll.wantsLayer = true

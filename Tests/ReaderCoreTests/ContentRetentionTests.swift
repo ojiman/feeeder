@@ -97,8 +97,7 @@ import SwiftData
             _ = try writable.importFeed(parsed(), receivedAt: start)
             return try #require(writable.articles.first).id
         }
-        let schema = Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self,
-                             WeeklyPeriod.self, WeeklyNote.self, NoteSource.self, ReaderSettings.self])
+        let schema = ReaderStore.schema
         let configuration = ModelConfiguration("Reader", schema: schema, url: library.url, allowsSave: false, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let store = try ReaderStore(container: container, now: start)

@@ -3,6 +3,20 @@ import Testing
 @testable import RSSReader
 
 @MainActor struct NativeArticleTextTests {
+    @Test func fixedHeroArrivalDoesNotMoveReadingPosition() {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+        let hero = NSImageView()
+        view.configureHero(hero)
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: (0..<50).map { "段落 \($0)" }, unavailable: nil, hero: true)
+        view.restore(anchor: "paragraph-7", offset: 12)
+        let before = view.readingPosition()
+        hero.image = NSImage(size: NSSize(width: 500, height: 300))
+        view.layoutSubtreeIfNeeded()
+        let after = view.readingPosition()
+        #expect(hero.frame.height == 180)
+        #expect(before.anchor == after.anchor && abs(before.offset - after.offset) < 1)
+    }
     @Test func nativeListFocusIsRecognizedWithoutSwiftUIFocusState() {
         let table = NSTableView()
         #expect(ReaderKeyboardCommands.listHasFocus(declared: false, responder: table))
