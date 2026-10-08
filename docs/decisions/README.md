@@ -29,10 +29,10 @@
 | [0001](0001-fresh-library-no-prototype-migration.md) | V1は空ライブラリから始める | 有効 |
 | [0002](0002-single-supervised-writer.md) | 実装者は同時に1名 | 有効 |
 | [0003](0003-beta-data-compatibility.md) | ベータ中はデータ互換を保証せず、1.0から保証する | 有効 |
-| [0004](0004-dogfooding-keys-and-scrap.md) | Dogfooding改訂: キー操作・スクラップ・週候補 | 草案 |
-| [0005](0005-v1-product-decisions-2026-10-04.md) | V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開） | 草案 |
-| [0006](0006-original-page-and-sidebar-behavior.md) | 原文表示中の記事選択とサイドバー操作の方針 | 草案 |
+| [0004](0004-dogfooding-keys-and-scrap.md) | Dogfooding改訂: キー操作・スクラップ・週候補 | 有効 |
+| [0005](0005-v1-product-decisions-2026-10-04.md) | V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開） | 有効 |
+| [0006](0006-original-page-and-sidebar-behavior.md) | 原文表示中の記事選択とサイドバー操作の方針 | 有効 |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
-状態「草案」は、旧PRD・旧Architectureの記述から書き起こしたもので、決定者がまだ確認していないことを表します。確認後に「有効」へ変え、確認の日付を残してください。確認までは、記録の存在を承認の根拠にしません。
+0004〜0006の承認根拠は各出典のマージ済みPRです。転記によって新しい承認待ちを作りません。現行の契約はPRD／Architectureを読み、理由・承認の来歴が必要なときに該当記録を参照します。

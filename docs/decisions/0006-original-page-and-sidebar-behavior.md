@@ -1,12 +1,12 @@
 # 0006 原文表示中の記事選択とサイドバー操作の方針
 
-- 状態: 草案（決定者の確認待ち。確認までは「有効」として扱わない）
-- 日付: 2026-10-08
+- 状態: 有効（承認済み内容の転記。承認根拠は出典のPR）
+- 日付: 2026-10-08（PR #11）、2026-10-09（PR #14のマージ、日本時間）
 - 決定者: 本人（PdM）
 
 ## 背景
 
-追加のDogfooding（2026-10-07〜08）で、原文表示と左カラムの操作に不便が出た。方針は本人が会話で指示し、実装は改修PR（[PR #14](https://github.com/ojiman/feeeder/pull/14)ほか）で確認した。
+Dogfoodingで、左カラムの操作整理と、原文表示から戻る際のボタン消失・列幅の変動を改善した。本人の指示をPR #11・#14で反映し、マージで承認した。
 
 ## 決定
 
@@ -24,4 +24,4 @@
 ## 出典
 
 - 旧 docs/architecture.md §6.3・§6.7（commit `7451608` 時点。`git show 7451608:docs/architecture.md`）
-- [PR #14](https://github.com/ojiman/feeeder/pull/14)
+- [PR #11](https://github.com/ojiman/feeeder/pull/11)（左カラム）、[PR #14](https://github.com/ojiman/feeeder/pull/14)（原文表示と復帰）
