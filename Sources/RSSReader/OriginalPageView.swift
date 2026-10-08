@@ -15,8 +15,11 @@ struct OriginalPageView: View {
                     .help("記事に戻る (Esc)")
                 Text(url.host ?? url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer()
+                if loading {
+                    ProgressView().controlSize(.small).frame(width: 16, height: 16)
+                        .accessibilityLabel("元ページを読み込み中")
+                }
             }.padding(10).background(.bar)
-            if loading { ProgressView("元ページを読み込み中").controlSize(.small).padding(8).frame(maxWidth: .infinity).background(.bar) }
             if let failure {
                 OriginalFailureView(message: failure, onCommand: onCommand)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

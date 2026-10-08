@@ -15,7 +15,6 @@ struct ReaderView: View {
     @State private var pageForward = true
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var priorColumnVisibility: NavigationSplitViewVisibility = .all
     @State private var saveError: String?
     @State private var scrapMessage: String?
     @State private var loading: ArticleLoadingController
@@ -138,7 +137,6 @@ struct ReaderView: View {
         .onChange(of: selection) { _, id in
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) {
                 if originalPage.selectionChanged(to: id) {
-                    columnVisibility = priorColumnVisibility
                     listFocused = true
                 }
             }
@@ -349,13 +347,12 @@ struct ReaderView: View {
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
     }
     private func openOriginal() {
-        guard let article = selectedArticle, let url = article.originalURL else { return }
+        guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
-        priorColumnVisibility = columnVisibility
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { columnVisibility = .doubleColumn; _ = originalPage.open(articleID: article.id, url: url) }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
     }
     private func closeOriginal() {
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { originalPage.close(); columnVisibility = priorColumnVisibility }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { originalPage.close() }
         scrollMemory.state.returnFromOriginal()
         listFocused = restoreListFocus
     }
