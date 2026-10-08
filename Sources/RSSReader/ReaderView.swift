@@ -91,7 +91,7 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 345, max: 470)
+            workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
             if scope == .dailyNotes {
                 DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail, aiReview: aiReview, handoff: handoff)
