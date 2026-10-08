@@ -21,7 +21,6 @@ struct ReaderView: View {
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     @State private var addingSubscription = false
-    @State private var organizingFeeds = false
     @State private var reviewingArticle = false
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
@@ -180,7 +179,6 @@ struct ReaderView: View {
         .sheet(isPresented: $addingSubscription) {
             SubscriptionSheet(store: store) { scope = .feed($0) }
         }
-        .sheet(isPresented: $organizingFeeds) { FolderOrganizationSheet(store: store) }
         .overlay(alignment: .bottomTrailing) {
             if let scrapMessage { Text(scrapMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
         }
@@ -249,21 +247,10 @@ struct ReaderView: View {
         }
         .listStyle(.sidebar)
         .navigationTitle("Feeeder")
-        .safeAreaInset(edge: .top, spacing: 0) {
-            HStack(spacing: 16) {
-                Text("購読").font(.headline)
-                Spacer()
-                Button { organizingFeeds = true } label: { Image(systemName: "folder.badge.gearshape") }
-                    .disabled(store.feeds.isEmpty).help("フォルダを整理").accessibilityLabel("フォルダを整理")
-                Button { addingSubscription = true } label: { Image(systemName: "plus") }
-                    .help("URLから購読を追加").accessibilityLabel("購読を追加")
-                Button { Task { await refresh.refresh() } } label: {
-                    if refresh.refreshing { ProgressView().controlSize(.small) }
-                    else { Image(systemName: "arrow.clockwise") }
-                }.disabled(refresh.refreshing).help("購読を更新").accessibilityLabel("購読を更新")
-            }.buttonStyle(.borderless).padding(.horizontal, 16).padding(.vertical, 12)
-            .background(.bar)
-        }
+        .toolbar(removing: .sidebarToggle)
+        .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
+            visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,
+            onAdd: { addingSubscription = true }, onRefresh: { Task { await refresh.refresh() } }))
         .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 6) {
                 Label("ローカルライブラリ", systemImage: "books.vertical").font(.caption.weight(.medium))
@@ -378,7 +365,7 @@ struct ReaderView: View {
         guard let id = store.dailyNote(containing: .now)?.id else { return [] }
         return Set(store.scraps.filter { $0.noteID == id }.map(\.articleID))
     }
-    private var shortcutsEnabled: Bool { (scope ?? .all).isReading && ReaderKeyboardCommands.permits(sheet: addingSubscription || organizingFeeds || reviewingArticle || editingFeed != nil || renamingFolder != nil, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { (scope ?? .all).isReading && ReaderKeyboardCommands.permits(sheet: addingSubscription || reviewingArticle || editingFeed != nil || renamingFolder != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -396,7 +383,7 @@ struct ReaderView: View {
     }
 
     private func perform(_ command: ReaderCommand) {
-        guard !addingSubscription, !organizingFeeds, !reviewingArticle, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
+        guard !addingSubscription, !reviewingArticle, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
         switch command {
         case .next: move(1)
         case .previous: move(-1)
