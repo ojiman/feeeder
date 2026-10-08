@@ -23,7 +23,6 @@ struct SubscriptionSheet: View {
             Text(feed == nil ? "購読を追加" : "購読を編集").font(.title2.bold())
             if let feed {
                 TextField("購読名", text: $title)
-                TextField("フォルダ（任意・1階層）", text: $folder)
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
                 Text("左カラム上部の更新ボタンで最新の記事を取得できます。")
                     .font(.caption).foregroundStyle(.secondary)
@@ -52,6 +51,18 @@ struct SubscriptionSheet: View {
                         .font(.callout).foregroundStyle(.orange)
                 }
             }
+            HStack {
+                TextField("フォルダ名（空欄は未分類）", text: $folder)
+                    .accessibilityLabel("フォルダ名")
+                Menu("既存から選ぶ") {
+                    Button("未分類") { folder = "" }
+                    ForEach(Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), id: \.self) { name in
+                        Button(name) { folder = name }
+                    }
+                }
+            }.disabled(busy)
+            Text("既存のフォルダを選ぶか、新しい名前を入力できます。フォルダは1階層です。")
+                .font(.caption).foregroundStyle(.secondary)
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
                 if busy { ProgressView().controlSize(.small) }
@@ -101,7 +112,7 @@ struct SubscriptionSheet: View {
     }
     private func commit(_ parsed: ParsedFeed) {
         do {
-            let feed = try store.importFeed(parsed)
+            let feed = try store.importFeed(parsed, folder: folder)
             if !manualXML { try store.recordFetch(feed, etag: etag, lastModified: lastModified, at: .now) }
             onImported(feed.id); dismiss()
         }

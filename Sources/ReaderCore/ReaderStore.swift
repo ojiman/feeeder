@@ -148,7 +148,7 @@ import SwiftData
         membershipIndex[feedID]?.contains(article.id) == true
     }
 
-    @discardableResult public func importFeed(_ parsed: ParsedFeed, receivedAt: Date = .now) throws -> Feed {
+    @discardableResult public func importFeed(_ parsed: ParsedFeed, receivedAt: Date = .now, folder: String? = nil) throws -> Feed {
         try reloadIfNeeded()
         let feed = feeds.first { $0.sourceURL == parsed.sourceURL.absoluteString } ?? Feed(title: parsed.title, symbol: "dot.radiowaves.left.and.right")
         context.insert(feed)
@@ -157,6 +157,7 @@ import SwiftData
         feed.iconURL = parsed.iconURL?.absoluteString ?? feed.iconURL
         if !feed.customTitle { feed.title = parsed.title }
         do {
+            if let folder { feed.folder = folder.trimmingCharacters(in: .whitespacesAndNewlines) }
             var contentRemoved = false
             var allArticles = articles
             var allMemberships = memberships

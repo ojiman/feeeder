@@ -3,6 +3,22 @@ import Testing
 @testable import ReaderCore
 
 @MainActor struct SubscriptionTests {
+    @Test func selectedFolderIsSavedOnImportAndRetainedOnRefresh() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        let parsed = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://synthetic.example/folder-feed")!)
+        let feed = try store.importFeed(parsed, folder: " 技術 ")
+        let article = try #require(store.articles.first)
+        #expect(store.folderArticleIDs(folder: "技術", keeping: nil) == [article.id])
+        _ = try store.importFeed(parsed)
+        #expect(feed.folder == "技術")
+        let reopened = try ReaderStore(url: library.url)
+        #expect(reopened.feed(id: feed.id)?.folder == "技術")
+        _ = try store.importFeed(parsed, folder: "")
+        #expect(feed.folder.isEmpty)
+        #expect(store.feeds.count == 1 && store.articles.count == 1)
+    }
+
     @Test func importUpdateDeduplicateAndUnsubscribePreservesReadHistory() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "rss-subscriptions-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
