@@ -45,9 +45,9 @@ import Testing
     @Test func lateExtractionPreservesSummaryReadingPosition() {
         var state = ArticleLoadingState(); let id = UUID()
         let generation = state.begin(articleID: id)
-        #expect(state.canReplaceDisplay(articleID: id, generation: generation))
+        #expect(state.accept(articleID: id, generation: generation) && state.mayReplaceCurrentDisplay)
         state.recordInteraction(articleID: id)
-        #expect(!state.canReplaceDisplay(articleID: id, generation: generation))
+        #expect(!(state.accept(articleID: id, generation: generation) && state.mayReplaceCurrentDisplay))
     }
     @Test func expiredOrDeletedContentCannotBeRestoredByLateResponse() throws {
         let library = try TestLibrary(); defer { library.cleanup() }

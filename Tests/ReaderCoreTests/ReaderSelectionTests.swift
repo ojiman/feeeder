@@ -31,12 +31,12 @@ struct ReaderSelectionTests {
         let first = try #require(store.articles.first)
         let next = store.articles[1].id
         try store.markDisplayed(articleID: first.id, at: .now)
-        let visible = store.visibleArticles(feedID: nil, unreadOnly: true, keeping: first.id)
-        #expect(visible.first?.id == first.id)
-        #expect(ReaderNavigation.move(first.id, by: 1, in: visible.map(\.id)) == next)
+        let visible = store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: first.id)
+        #expect(visible.first == first.id)
+        #expect(ReaderNavigation.move(first.id, by: 1, in: visible) == next)
         let feed = try #require(store.feeds.first)
         try store.unsubscribe(feed)
-        #expect(store.visibleArticles(feedID: feed.id, unreadOnly: false, keeping: nil).isEmpty)
+        #expect(store.visibleArticleIDs(feedID: feed.id, unreadOnly: false, keeping: nil).isEmpty)
     }
     @Test func textEditingAndIMEDoNotPermitReaderShortcuts() {
         #expect(!ReaderShortcutPolicy.permits(textInput: true, markedText: false, sheet: false, originalPage: false))

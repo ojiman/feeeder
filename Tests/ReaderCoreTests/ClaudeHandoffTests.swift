@@ -61,7 +61,7 @@ import Testing
         #expect(!FileManager.default.fileExists(atPath: expired.path))
         #expect(try String(contentsOf: unrelated, encoding: .utf8) == "保持する合成ファイル")
         #expect(controller.maintenanceError != nil)
-        #expect(try HandoffFiles.sourceIDs(directory: root).isEmpty)
+        #expect(try HandoffFiles.sourceSelections(directory: root).isEmpty)
     }
     @Test func japanesePathAndPromptRoundTripWithoutBodyInURL() throws {
         let file = URL(fileURLWithPath: "/private/tmp/日本語 空白/合成.txt")
@@ -132,7 +132,8 @@ import Testing
         let bytes = Data(package.text.utf8); try bytes.write(to: export)
         try store.deleteContent(articleIDs: package.sources.map(\.articleID), at: .now)
         #expect(review.package == nil)
-        try HandoffFiles.reconcile(directory: root, validSourceExpiries: store.availableContentExpiries(at: .now), at: .now)
+        let remaining = try store.availableInputExpiries(selections: package.sources.map(\.selection), at: .now)
+        try HandoffFiles.reconcile(directory: root, validInputExpiries: remaining, at: .now)
         #expect(!FileManager.default.fileExists(atPath: file.path) && parts.allSatisfy { !FileManager.default.fileExists(atPath: $0.path) })
         #expect(try Data(contentsOf: export) == bytes)
     }
@@ -140,8 +141,8 @@ import Testing
         let (library, _, _, package, root) = try fixture(); defer { library.cleanup() }
         let file = try HandoffFiles.write(package, directory: root)
         let early = Date.now.addingTimeInterval(60)
-        try HandoffFiles.reconcile(directory: root, validSourceExpiries: [package.sources[0].articleID: early], at: .now)
-        try HandoffFiles.reconcile(directory: root, validSourceExpiries: [package.sources[0].articleID: package.expiresAt], at: .now)
+        try HandoffFiles.reconcile(directory: root, validInputExpiries: [package.sources[0].selection: early], at: .now)
+        try HandoffFiles.reconcile(directory: root, validInputExpiries: [package.sources[0].selection: package.expiresAt], at: .now)
         try HandoffFiles.cleanup(directory: root, at: early)
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }
