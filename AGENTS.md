@@ -23,9 +23,11 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build          # local tests
 swift test --scratch-path /private/tmp/feeeder-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
 bash scripts/build-app.sh release                                        # ad hoc signed .build/Feeeder.app (debug is the default)
-open '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo   # synthetic run, never the user's library
+open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
 git diff --check
 ```
+
+Use `open -n` for the synthetic run. Without it, `open` can reuse a Feeeder that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `RSSReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl RSSReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
 
 Opt-in store compatibility check (skipped unless `FEEEDER_V1_FIXTURE_DIR` is set; not part of CI during beta):
 
@@ -35,6 +37,15 @@ FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-
 ```
 
 CI runs two jobs (`regression`, `release`) on macOS 26 / Xcode 26.6 / Swift 6.3.3. Changes that touch only `docs/**` or Markdown skip CI, so such a PR shows no checks. The local toolchain may be newer (macOS 27 / Swift 6.4); CI is the reference for the support floor (macOS 26.6).
+
+## Starting or resuming work
+
+A new thread starts without the previous one's memory. Rebuild the state from Git, PRs and records, not from a summary:
+
+1. Check the current branch, HEAD, uncommitted changes, and related open PRs.
+2. Read the relevant part of the spec and the latest verification record.
+3. Say what is done, what is not, and the next step before changing anything.
+4. Reuse an earlier PASS only where its commit and environment match the current ones.
 
 ## Boundaries
 
@@ -50,9 +61,9 @@ CI runs two jobs (`regression`, `release`) on macOS 26 / Xcode 26.6 / Swift 6.3.
 2. For a bug, reproduce it with a failing test first, then fix it, and record both results.
 3. Run the checks relevant to the change (tests; the release build when UI or packaging changes; `git diff --check`). Report what passed, what was not run, and the environment (OS, Xcode/Swift) of each result.
 4. For UI changes, also exercise a synthetic app instance with its own data directory. Say which behaviors stay unverified on macOS.
-5. Never turn unverified behavior into PASS without evidence (macOS 26.6 floor, IME, VoiceOver, Reduce Motion, long-running use). Track each one as an issue using the "Unverified check" template so it has an owner.
+5. Never turn unverified behavior into PASS without evidence (macOS 26.6 floor, IME, VoiceOver, Reduce Motion, long-running use). List what this change leaves unverified in the PR, and link the existing verification record or issue. Open a new issue (template: "Unverified check") only for items that need ongoing tracking, and only within what the user has allowed, since it is an external write.
 6. A change in product behavior or policy updates the spec/architecture in the same PR and adds a decision record. Do not edit an "approved" header to imply an approval that did not happen.
-7. Do not add silent success paths (a missing target that returns without error, `try?` that discards a failure). If one is unavoidable, say so in the PR.
+7. Never report success for a save or change the user asked for when it did not happen (for example `try?` discarding a save or reload failure, or user-entered text dropped because its target is gone). Legitimate no-ops are fine and should be kept distinct: cancellation, a stale async response after the selection moved, and an optional action with nothing to act on.
 8. Risky changes (store/model, concurrency, external writes) get an independent review of a fixed commit using docs/review-checklist.md. A review that finds nothing lists what it checked and what it did not.
 
 ## Data policy
