@@ -102,3 +102,9 @@ macOS 27.0.1／Apple Siliconで、合成3購読・12記事と合成100購読・1
 動きの方向・時間・停止条件はテストしたが、「シュッ」と感じる快適さ、連打中の全記事描画、Reduce MotionのOS設定による実機動作、VoiceOver、IME変換、原文復帰位置の絶対差1行以内、最低macOS 26.6、長時間利用は未検証。従来の未検証項目を合格へ変更しない。利用者のライブラリ・ブラウザプロファイル・認証情報は使っていない。ストアのモデル変更、新Tag／Release公開は今回含めない。
 
 固定差分`5dfee10..f322cc1`の独立レビューで、AppKitレイヤーの移動符号が画面上では逆になるP2指摘1件があった。実際の`NativeArticleText`をSwiftUIホストへ載せ、レイヤー座標を画面方向へ換算する再現テストでREDを確認した。符号を修正してGREEN、全133テストとReleaseビルドを再実行した。上記性能値はこの修正後のビルドで計測した値。追加の具体的な指摘はなかった。
+
+### PR #14のCIコンパイラ障害への対応
+
+初回CI `37789743260` はregression／release両方でSwift 6.3.3のコンパイル中にsignal 6で終了した。`ReaderView.swift`のコード生成時、`UUID?`のactor-isolatedコールバックの変換thunkで`SmallVector unable to grow`が記録され、テスト実行には到達していない。ローカルはSwift 6.4で、このコンパイラ障害は再現しなかった。
+
+記事選択Bindingのsetterへメソッド参照を直接渡す記述を、`{ selectArticle($0) }`という明示クロージャへ変更した。合成の最小SwiftUIコードのSILでも、メソッド参照時に生成される変換thunkがクロージャでは不要になることを確認した。選択処理・MainActor・CIのXcode指定は変更しない。変更後のローカル全133テスト、Releaseビルド、署名検証、`git diff --check`は成功。Swift 6.3.3での確認はPR #14に紐付く修正後CIの実行結果で判断する。

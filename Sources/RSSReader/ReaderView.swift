@@ -273,8 +273,9 @@ struct ReaderView: View {
     }
 
     private var articleList: some View {
+        // Swift 6.3 crashes compiling an actor-isolated method reference as the setter.
         NativeArticleList(ids: visibleArticleIDs, article: { store.article(id: $0) }, feedTitle: { store.feed(id: $0.feedID)?.title ?? $0.publisher },
-            selection: Binding(get: { selection }, set: selectArticle), initialTop: scrollMemory.state.listScrollAnchor, focus: listFocused && originalPage.url == nil,
+            selection: Binding(get: { selection }, set: { selectArticle($0) }), initialTop: scrollMemory.state.listScrollAnchor, focus: listFocused && originalPage.url == nil,
             shortcutsEnabled: shortcutsEnabled, onTop: { scrollMemory.state.listScrollAnchor = $0 },
             onKey: { key in
                 switch key {
