@@ -6,7 +6,7 @@
 # Usage: fetch-ci-app.sh <PR number>
 #        fetch-ci-app.sh --run <workflow run id>
 # Needs macOS (ditto, codesign, xattr) and an authenticated, recent `gh` (`run download --pattern`)
-# run inside this repository.
+# run inside this repository. FEEEDER_CI_ROOT overrides the output root (scripts/test-fetch-ci-app.sh uses it).
 set -euo pipefail
 
 usage() { echo "Usage: fetch-ci-app.sh <PR number> | --run <workflow run id>" >&2; exit 2; }
@@ -26,7 +26,7 @@ case "${1:-}" in
         label=pr-$1-${expected_head:0:7} ;;
 esac
 
-dest=/private/tmp/feeeder-ci/$label
+dest=${FEEEDER_CI_ROOT:-/private/tmp/feeeder-ci}/$label
 [ ! -e "$dest" ] || { echo "$dest already exists; remove it or use another run." >&2; exit 1; }
 mkdir -p "$dest"
 
@@ -46,7 +46,10 @@ ditto -x -k "$zip" "$app_dir"
 app=$app_dir/Feeeder.app
 codesign --verify --deep --strict "$app"
 
-if xattr -lr "$app" | grep -q com.apple.quarantine; then
+# Read the attributes as a plain assignment so a failing xattr stops the script (set -e does not
+# apply inside an `if` condition, where a failed read would look like "no attribute").
+attrs=$(xattr -lr "$app")
+if grep -q com.apple.quarantine <<<"$attrs"; then
     echo "WARNING: $app still carries com.apple.quarantine. Check how it was extracted before opening it." >&2
     exit 1
 fi
