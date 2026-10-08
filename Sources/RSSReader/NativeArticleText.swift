@@ -50,7 +50,7 @@ import ReaderCore
             let style = NSMutableParagraphStyle(); style.lineSpacing = size == 16 ? 8 : 5; style.paragraphSpacing = spacing
             document.append(NSAttributedString(string: text + "\n", attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: secondary ? NSColor.secondaryLabelColor : NSColor.labelColor, .paragraphStyle: style]))
         }
-        append(publisher + "    " + coverage, size: 11, weight: .medium, secondary: true)
+        append(publisher, size: 11, weight: .medium, secondary: true)
         append(title, size: 30, weight: .bold)
         append(date, size: 12, secondary: true)
         heroRange = nil
@@ -203,6 +203,7 @@ struct NativeArticleText: NSViewRepresentable {
     var imageLoader: ReaderImageLoader? = nil
     var heroURL: URL? = nil
     var bodyParagraphs: [BodyParagraph]? = nil
+    var pageForward = true
 
     @MainActor final class Coordinator {
         var signature: [String] = []
@@ -210,6 +211,23 @@ struct NativeArticleText: NSViewRepresentable {
         nonisolated(unsafe) var observer: NSObjectProtocol?
         var restoring = false
         var hero: NSHostingView<ArticleImageView>?
+        private var articleID: UUID?
+        func animatePage(in scroll: NSScrollView, articleID: UUID, forward: Bool, reduceMotion: Bool) {
+            let changed = self.articleID != nil && self.articleID != articleID
+            self.articleID = articleID
+            scroll.wantsLayer = true
+            if reduceMotion { scroll.layer?.removeAnimation(forKey: "article-motion"); return }
+            guard changed else { return }
+            scroll.layer?.removeAnimation(forKey: "article-motion")
+            let move = CABasicAnimation(keyPath: "transform.translation.y")
+            move.fromValue = forward ? 64.0 : -64.0; move.toValue = 0.0; move.duration = 0.22
+            let fade = CABasicAnimation(keyPath: "opacity")
+            fade.fromValue = 0.88; fade.toValue = 1.0; fade.duration = 0.22
+            let page = CAAnimationGroup()
+            page.animations = [move, fade]; page.duration = 0.22
+            page.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            scroll.layer?.add(page, forKey: "article-motion")
+        }
         deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
     }
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -247,6 +265,7 @@ struct NativeArticleText: NSViewRepresentable {
             }
             text.configureHero(context.coordinator.hero)
         } else { text.configureHero(nil); context.coordinator.hero = nil }
+        if reduceMotion { scroll.layer?.removeAnimation(forKey: "article-motion") }
         guard changed else { return }
         context.coordinator.restoring = true
         context.coordinator.signature = signature
@@ -254,13 +273,7 @@ struct NativeArticleText: NSViewRepresentable {
         text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs)
         text.restore(anchor: initialAnchor, offset: initialOffset)
         context.coordinator.restoring = false
-        scroll.wantsLayer = true
-        scroll.layer?.removeAllAnimations()
-        if !reduceMotion {
-            let fade = CABasicAnimation(keyPath: "opacity"); fade.fromValue = 0.5; fade.toValue = 1; fade.duration = 0.18
-            let move = CABasicAnimation(keyPath: "transform.translation.y"); move.fromValue = -12; move.toValue = 0; move.duration = 0.18
-            scroll.layer?.add(fade, forKey: "article-fade"); scroll.layer?.add(move, forKey: "article-move")
-        }
+        context.coordinator.animatePage(in: scroll, articleID: articleID, forward: pageForward, reduceMotion: reduceMotion)
     }
     static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
         (scroll.documentView as? ArticleTextView)?.recordScroll()

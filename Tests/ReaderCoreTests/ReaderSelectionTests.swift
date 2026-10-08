@@ -3,6 +3,14 @@ import Testing
 @testable import ReaderCore
 
 struct ReaderSelectionTests {
+    @Test func pageDirectionUsesListOrderForKeysAndClicks() {
+        let ids = [UUID(), UUID(), UUID()]
+        #expect(ReaderNavigation.isForward(from: ids[0], to: ids[2], in: ids))
+        #expect(!ReaderNavigation.isForward(from: ids[2], to: ids[0], in: ids))
+        #expect(ReaderNavigation.isForward(from: nil, to: ids[0], in: ids))
+        #expect(ReaderNavigation.isForward(from: UUID(), to: ids[0], in: ids))
+        #expect(ReaderNavigation.isForward(from: ids[0], to: nil, in: ids))
+    }
     @Test func originalReturnKeepsSelectionParagraphOffsetAndListAnchor() {
         var state = ReaderSelectionState(); let id = UUID()
         state.select(id); state.recordScroll(articleID: id, anchor: "paragraph-7", offset: 23.5)

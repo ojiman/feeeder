@@ -1,9 +1,44 @@
 import AppKit
+import QuartzCore
 import Testing
 import ReaderCore
 @testable import RSSReader
 
 @MainActor struct NativeArticleTextTests {
+    @Test func pageMotionFollowsDirectionWithoutReplayingForContentUpdates() throws {
+        let coordinator = NativeArticleText.Coordinator()
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 600, height: 400)), a = UUID(), b = UUID()
+        let window = NSWindow(contentRect: scroll.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = scroll
+        defer { window.close() }
+        coordinator.animatePage(in: scroll, articleID: a, forward: true, reduceMotion: false)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+        coordinator.animatePage(in: scroll, articleID: b, forward: true, reduceMotion: false)
+        let next = try #require(scroll.layer?.animation(forKey: "article-motion") as? CAAnimationGroup)
+        let nextMove = try #require(next.animations?.first as? CABasicAnimation)
+        #expect(nextMove.keyPath == "transform.translation.y" && (nextMove.fromValue as? Double) == 64)
+        #expect((nextMove.toValue as? Double) == 0 && next.duration == 0.22)
+        scroll.layer?.removeAnimation(forKey: "article-motion")
+        coordinator.animatePage(in: scroll, articleID: b, forward: false, reduceMotion: false)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+        coordinator.animatePage(in: scroll, articleID: a, forward: false, reduceMotion: false)
+        let previous = try #require(scroll.layer?.animation(forKey: "article-motion") as? CAAnimationGroup)
+        let previousMove = try #require(previous.animations?.first as? CABasicAnimation)
+        #expect(previousMove.keyPath == "transform.translation.y" && (previousMove.fromValue as? Double) == -64)
+        coordinator.animatePage(in: scroll, articleID: a, forward: true, reduceMotion: true)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+        coordinator.animatePage(in: scroll, articleID: b, forward: true, reduceMotion: true)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+    }
+    @Test func contentCoverageAppearsOnlyAtTheEnd() {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        for paragraphs in [["取得できた合成要約"], []] {
+            view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: paragraphs, unavailable: paragraphs.isEmpty ? "本文は利用できません。" : nil)
+            #expect(view.string.hasPrefix("SYNTHETIC\n"))
+            #expect(view.string.components(separatedBy: "RSS要約のみ").count == 2)
+            #expect(view.string.hasSuffix("RSS要約のみ\n"))
+        }
+    }
     @Test func namedBodyLinkIsClickableAndQuoteIsIndented() throws {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         let text = "合成🙂：詳細はこちら"

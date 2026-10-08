@@ -45,7 +45,7 @@ open '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --se
 
 ## Claude Desktop連携
 
-記事・日次ノート・週ノートから「AI入力を確認」を開きます。出力言語と出典を選び、保存済みRSS要約と保持中の記事を区別して、省略のない全文・カバー範囲・出典URLをレビューして「Claudeで開く」を操作します。
+日次ノート・週ノートから「AI入力を確認」を開きます。出力言語と出典を選び、保存済みRSS要約と保持中の記事を区別して、省略のない全文・カバー範囲・出典URLをレビューして「Claudeで開く」を操作します。
 
 確認対象は **Claude Desktop 2.19675.0 / Pro / Cowork**。通常Chatへの自動添付、他版・他プランは未検証です。アプリは短い依頼文とTXTのパスを起動リンクへ渡し、記事本文はTXT内に保持します。
 

@@ -8,11 +8,11 @@ struct ReaderView: View {
     @Bindable var refresh: FeedRefreshController
     @Bindable var aiReview: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
-    @Binding var appearance: String
     let imageLoader: ReaderImageLoader
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
+    @State private var pageForward = true
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var priorColumnVisibility: NavigationSplitViewVisibility = .all
@@ -21,7 +21,6 @@ struct ReaderView: View {
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     @State private var addingSubscription = false
-    @State private var reviewingArticle = false
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
@@ -31,8 +30,8 @@ struct ReaderView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
-    init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, appearance: Binding<String>, imageLoader: ReaderImageLoader) {
-        self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff; _appearance = appearance
+    init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader) {
+        self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader
         _loading = State(initialValue: ArticleLoadingController(store: store))
     }
@@ -75,7 +74,7 @@ struct ReaderView: View {
             workspace.scope = new ?? .all
             if workspace.scope.isReading {
                 let restored = workspace.reader(in: workspace.scope)
-                scrollMemory.state = restored; selection = restored.selectedArticleID; listFocused = true
+                scrollMemory.state = restored; selectArticle(restored.selectedArticleID); listFocused = true
             } else {
                 if originalPage.url != nil { closeOriginal() }
                 columnVisibility = .all; listFocused = false
@@ -106,7 +105,7 @@ struct ReaderView: View {
                         guard selection == expectedID, originalPage.articleID == expectedID else { return }
                         perform(command)
                     })
-                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
+                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .bottom))
                 }
             }.clipped().frame(minWidth: 360) }
         }
@@ -116,33 +115,12 @@ struct ReaderView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if (scope ?? .all).isReading, let article = selectedArticle {
-                    Button { perform(.scrap) } label: { Image(systemName: todayScrappedIDs.contains(article.id) ? "square.and.arrow.down.fill" : "square.and.arrow.down") }
-                        .help("当日のノートへスクラップ (n)").accessibilityLabel("当日のノートへ保存")
                     Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
                         .help("Starを切り替える (s)").accessibilityLabel(article.starredAt == nil ? "Starを付ける" : "Starを外す")
-                    Button { perform { try store.setRead(article, !article.isRead) } } label: {
-                        Image(systemName: article.isRead ? "envelope.open" : "envelope.badge")
-                    }
-                    .help("既読・未読を切り替える (m)")
-                    .accessibilityLabel(article.isRead ? "未読にする" : "既読にする")
-                    Button(action: openExternal) { Image(systemName: "arrow.up.right.square") }
-                        .help("元ページをブラウザで開く (b)").accessibilityLabel("ブラウザで開く")
+                    Button(action: openExternal) { Image(systemName: "globe") }
+                        .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
                         .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
-                    Button(action: openOriginal) { Image(systemName: "globe") }
-                        .help("元ページをアプリ内で開く (v)").accessibilityLabel("アプリ内で開く")
-                        .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
-                    Divider()
-                    Button("AI入力を確認", systemImage: "doc.text.magnifyingglass") { reviewingArticle = true }
                 }
-                Menu {
-                    Picker("外観", selection: $appearance) {
-                        Text("システムに合わせる").tag("system")
-                        Text("ライト").tag("light")
-                        Text("ダーク").tag("dark")
-                    }
-                } label: { Image(systemName: "circle.lefthalf.filled") }
-                .help("外観を切り替える")
-                .accessibilityLabel("外観")
             }
         }
         .task(id: selectedExpiry) {
@@ -158,9 +136,11 @@ struct ReaderView: View {
             loading.refreshCachedContent()
         }
         .onChange(of: selection) { _, id in
-            if originalPage.url != nil {
-                originalPage.followSelection(articleID: id, url: id.flatMap { store.article(id: $0)?.originalURL })
-                if originalPage.url == nil { columnVisibility = priorColumnVisibility }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) {
+                if originalPage.selectionChanged(to: id) {
+                    columnVisibility = priorColumnVisibility
+                    listFocused = true
+                }
             }
             scrollMemory.state.select(id)
         }
@@ -185,9 +165,6 @@ struct ReaderView: View {
         .task(id: scrapMessage) {
             guard scrapMessage != nil else { return }
             do { try await Task.sleep(for: .seconds(2)); scrapMessage = nil } catch {}
-        }
-        .sheet(isPresented: $reviewingArticle, onDismiss: { listFocused = true }) {
-            if let selection { AIReviewView(store: store, review: aiReview, handoff: handoff, articleIDs: [selection]) }
         }
         .sheet(item: $editingFeed) { feed in
             SubscriptionSheet(store: store, feed: feed) { _ in }
@@ -297,7 +274,7 @@ struct ReaderView: View {
 
     private var articleList: some View {
         NativeArticleList(ids: visibleArticleIDs, article: { store.article(id: $0) }, feedTitle: { store.feed(id: $0.feedID)?.title ?? $0.publisher },
-            selection: $selection, initialTop: scrollMemory.state.listScrollAnchor, focus: listFocused && originalPage.url == nil,
+            selection: Binding(get: { selection }, set: selectArticle), initialTop: scrollMemory.state.listScrollAnchor, focus: listFocused && originalPage.url == nil,
             shortcutsEnabled: shortcutsEnabled, onTop: { scrollMemory.state.listScrollAnchor = $0 },
             onKey: { key in
                 switch key {
@@ -349,7 +326,7 @@ struct ReaderView: View {
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
                 onReload: { Task { guard selection == article.id else { return }; await loading.load(articleID: article.id, refresh: true) } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
-                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader)
+                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward)
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(.orange.opacity(0.8))
@@ -365,7 +342,7 @@ struct ReaderView: View {
         guard let id = store.dailyNote(containing: .now)?.id else { return [] }
         return Set(store.scraps.filter { $0.noteID == id }.map(\.articleID))
     }
-    private var shortcutsEnabled: Bool { (scope ?? .all).isReading && ReaderKeyboardCommands.permits(sheet: addingSubscription || reviewingArticle || editingFeed != nil || renamingFolder != nil, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { (scope ?? .all).isReading && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -374,16 +351,16 @@ struct ReaderView: View {
         guard let article = selectedArticle, let url = article.originalURL else { return }
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
         priorColumnVisibility = columnVisibility
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { columnVisibility = .doubleColumn; _ = originalPage.open(articleID: article.id, url: url) }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { columnVisibility = .doubleColumn; _ = originalPage.open(articleID: article.id, url: url) }
     }
     private func closeOriginal() {
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { originalPage.close(); columnVisibility = priorColumnVisibility }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { originalPage.close(); columnVisibility = priorColumnVisibility }
         scrollMemory.state.returnFromOriginal()
         listFocused = restoreListFocus
     }
 
     private func perform(_ command: ReaderCommand) {
-        guard !addingSubscription, !reviewingArticle, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
+        guard !addingSubscription, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
         switch command {
         case .next: move(1)
         case .previous: move(-1)
@@ -403,7 +380,11 @@ struct ReaderView: View {
     private func move(_ offset: Int) {
         let next = ReaderNavigation.move(selection, by: offset, in: visibleArticleIDs)
         if let next, next != selection { ReaderPerformance.selectionStarted(next) }
-        selection = next
+        selectArticle(next)
+    }
+    private func selectArticle(_ id: UUID?) {
+        pageForward = ReaderNavigation.isForward(from: selection, to: id, in: visibleArticleIDs)
+        selection = id
     }
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { saveError = error.localizedDescription }
