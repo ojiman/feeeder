@@ -16,6 +16,12 @@ import Testing
         anchor.setFrameSize(NSSize(width: 280, height: 600))
         anchor.layoutSubtreeIfNeeded()
         #expect(abs(accessory.view.convert(accessory.view.bounds, to: nil).maxX - 280) < 1)
+        anchor.sidebarVisible = false
+        #expect(window.titlebarAccessoryViewControllers.isEmpty)
+        anchor.sidebarVisible = true
+        anchor.layoutSubtreeIfNeeded()
+        #expect(window.titlebarAccessoryViewControllers.count == 1)
+        #expect(abs(accessory.view.convert(accessory.view.bounds, to: nil).maxX - 280) < 1)
         anchor.removeFromSuperview()
         #expect(window.titlebarAccessoryViewControllers.isEmpty)
     }

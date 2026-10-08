@@ -249,6 +249,7 @@ struct ReaderView: View {
         .navigationTitle("Feeeder")
         .toolbar(removing: .sidebarToggle)
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
+            visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,
             onAdd: { addingSubscription = true }, onRefresh: { Task { await refresh.refresh() } }))
         .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 6) {

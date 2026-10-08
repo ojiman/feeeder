@@ -2,12 +2,14 @@ import SwiftUI
 
 struct SidebarTitlebarControls: NSViewRepresentable {
     var refreshing: Bool
+    var visible: Bool
     var onAdd: () -> Void
     var onRefresh: () -> Void
 
     func makeNSView(context: Context) -> Anchor { Anchor() }
     func updateNSView(_ view: Anchor, context: Context) {
         view.host.rootView = Buttons(refreshing: refreshing, onAdd: onAdd, onRefresh: onRefresh)
+        view.sidebarVisible = visible
     }
     static func dismantleNSView(_ view: Anchor, coordinator: ()) { view.detach() }
 
@@ -15,6 +17,7 @@ struct SidebarTitlebarControls: NSViewRepresentable {
         let accessory = NSTitlebarAccessoryViewController()
         let host = NSHostingView(rootView: Buttons(refreshing: false, onAdd: {}, onRefresh: {}))
         private weak var installedWindow: NSWindow?
+        var sidebarVisible = true { didSet { updateAttachment() } }
 
         init() {
             super.init(frame: .zero)
@@ -26,9 +29,13 @@ struct SidebarTitlebarControls: NSViewRepresentable {
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            guard window !== installedWindow else { return }
+            updateAttachment()
+        }
+        private func updateAttachment() {
+            let target = sidebarVisible ? window : nil
+            guard target !== installedWindow else { return }
             detach()
-            if let window {
+            if let window = target {
                 installedWindow = window
                 window.addTitlebarAccessoryViewController(accessory)
                 needsLayout = true
@@ -36,7 +43,7 @@ struct SidebarTitlebarControls: NSViewRepresentable {
         }
         override func layout() {
             super.layout()
-            guard window != nil else { return }
+            guard installedWindow != nil else { return }
             // SwiftUI's navigation toolbar is placed after the sidebar separator.
             let right = convert(bounds, to: nil).maxX
             let left = host.convert(host.bounds, to: nil).minX

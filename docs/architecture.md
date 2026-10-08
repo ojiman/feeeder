@@ -153,7 +153,7 @@ Faviconは購読元のアイコンとして、サムネイルは記事の画像�
 
 2026-10-07の追加Dogfoodingで、左の購読アイコン／更新配置／フォルダ整理の入口と、記事画像・本文リンクを改修する方針を本人が会話で承認した。承認は改修PRで行う。検証は[追加受入記録](verification/2026-10-07-feed-polish.md)へ記載する。
 
-購読アイコンは既存の画像actorとキャッシュを共用し、18ptの固定枠に表示する。2026-10-08の追加指示で、sidebarの標準Hide Sidebarを`toolbar(removing: .sidebarToggle)`で除去する。SwiftUIのnavigation toolbarでは中央カラムへ置かれるため、`NSTitlebarAccessoryViewController`のleft配置に追加・更新を置き、sidebarの右端に追随させる。sidebarの取り外し時はaccessoryも外す。フォルダ整理ボタンと専用sheetは削除し、購読追加・編集sheetで既存`Feed.folder`を選択／入力する。`importFeed`へ明示されたフォルダだけを記事と同じ保存に含め、通常更新は所属を保持する。空フォルダのモデルは追加しない。NSTableViewの行高は96ptのまま、横stackは利用可能幅を使う。フォルダ切替で新たにmountした一覧には、window接続時に必要なフォーカスを与える。
+購読アイコンは既存の画像actorとキャッシュを共用し、18ptの固定枠に表示する。2026-10-08の追加指示で、sidebarの標準Hide Sidebarを`toolbar(removing: .sidebarToggle)`で除去する。SwiftUIのnavigation toolbarでは中央カラムへ置かれるため、`NSTitlebarAccessoryViewController`のleft配置に追加・更新を置き、sidebarの右端に追随させる。原文表示などでsidebarを非表示にする時と取り外し時はaccessoryも外し、表示復帰時に再装着する。フォルダ整理ボタンと専用sheetは削除し、購読追加・編集sheetで既存`Feed.folder`を選択／入力する。`importFeed`へ明示されたフォルダだけを記事と同じ保存に含め、通常更新は所属を保持する。空フォルダのモデルは追加しない。NSTableViewの行高は96ptのまま、横stackは利用可能幅を使う。フォルダ切替で新たにmountした一覧には、window接続時に必要なフォーカスを与える。
 
 RSSの`hatena:imageurl`はnamespace URIと要素位置を確認し、記事画像として優先する。HTMLからは`entry-image`を優先し、`cite`内の画像・favicon・はてブの件数バッジ／追加ボタン・明示的な小さい画像を候補から除く。第三者favicon APIへの新規取得は追加しない。画像の完全な意味分類や原文の画像探索は保証しない。
 
