@@ -220,7 +220,7 @@ struct NativeArticleText: NSViewRepresentable {
             guard changed else { return }
             scroll.layer?.removeAnimation(forKey: "article-motion")
             let move = CABasicAnimation(keyPath: "transform.translation.y")
-            move.fromValue = forward ? 64.0 : -64.0; move.toValue = 0.0; move.duration = 0.22
+            move.fromValue = forward ? -64.0 : 64.0; move.toValue = 0.0; move.duration = 0.22
             let fade = CABasicAnimation(keyPath: "opacity")
             fade.fromValue = 0.88; fade.toValue = 1.0; fade.duration = 0.22
             let page = CAAnimationGroup()
