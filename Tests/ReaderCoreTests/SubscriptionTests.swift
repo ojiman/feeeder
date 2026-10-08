@@ -39,16 +39,18 @@ import Testing
             let second = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://aggregator.example/rss")!)
             let other = try store.importFeed(second, receivedAt: Date(timeIntervalSince1970: 123))
             #expect(store.articles.count == 1)
-            #expect(store.isArticle(article, in: feed.id))
-            #expect(store.isArticle(article, in: other.id))
+            let feedID = feed.id, otherID = other.id
+            let isMember = { (id: UUID) in store.memberships.contains { $0.feedID == id && $0.articleID == articleID } }
+            #expect(isMember(feedID))
+            #expect(isMember(otherID))
             #expect(article.publisher == "publisher.example")
             #expect(article.isRead)
             try store.unsubscribe(feed)
-            #expect(!store.isArticle(article, in: feed.id))
+            #expect(!isMember(feedID))
             try store.unsubscribe(other)
             #expect(store.articles.contains { $0.id == articleID })
             #expect(article.firstReadAt == Date(timeIntervalSince1970: 123))
-            #expect(store.body(for: article, at: Date(timeIntervalSince1970: 123))?.contains("本文 & 補足") == true)
+            #expect(try store.content(articleID: articleID, at: Date(timeIntervalSince1970: 123))?.text.contains("本文 & 補足") == true)
             return articleID
         }
         let reopened = try ReaderStore(url: storeURL, now: Date(timeIntervalSince1970: 123))
@@ -94,6 +96,6 @@ import Testing
         _ = try store.importFeed(FeedParser.parse(Data(changed.utf8), sourceURL: source))
         #expect(store.articles.count == 1)
         #expect(article.originalURL == "https://publisher.example/posts/1")
-        #expect(store.body(for: article) == "訂正")
+        #expect(try store.content(articleID: article.id, at: .now)?.text == "訂正")
     }
 }

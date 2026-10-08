@@ -78,9 +78,6 @@ public enum HandoffFiles {
             if min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400)) <= at { try manager.removeItem(at: folder) }
         }
     }
-    public static func reconcile(directory: URL, validSourceExpiries: [UUID: Date], at: Date) throws {
-        try reconcile(directory: directory, validInputExpiries: Dictionary(uniqueKeysWithValues: validSourceExpiries.map { (AIInputSelection.article($0.key), $0.value) }), at: at)
-    }
     public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date], at: Date) throws {
         try maintain(directory: directory) { folder, record in
             var metadata = record
@@ -96,9 +93,6 @@ public enum HandoffFiles {
     }
     public static func nextExpiry(directory: URL) throws -> Date? {
         try folders(directory).compactMap { try? readMetadata($0).expiresAt }.min()
-    }
-    public static func sourceIDs(directory: URL) throws -> [UUID] {
-        Array(Set(try folders(directory).compactMap { try? readMetadata($0) }.flatMap(\.articleIDs)))
     }
     public static func sourceSelections(directory: URL) throws -> [AIInputSelection] {
         Array(Set(try folders(directory).compactMap { try? readMetadata($0) }.flatMap { $0.selections ?? $0.articleIDs.map(AIInputSelection.article) }))

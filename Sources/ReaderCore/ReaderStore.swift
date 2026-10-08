@@ -17,7 +17,6 @@ import SwiftData
     public private(set) var scraps: [NoteScrap] = []
     public private(set) var starCount = 0
     @ObservationIgnored var starredIDs: Set<UUID> = []
-    private var membershipIndex: [UUID: Set<UUID>] = [:]
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
     @ObservationIgnored private var feedIndex: [UUID: Feed] = [:]
     @ObservationIgnored private var feedArticles: [UUID: [Article]] = [:]
@@ -84,8 +83,6 @@ import SwiftData
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
         dailyNotes = try context.fetch(FetchDescriptor<DailyNote>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
         scraps = try context.fetch(FetchDescriptor<NoteScrap>(sortBy: [SortDescriptor(\.savedAt)]))
-        membershipIndex = [:]
-        for membership in memberships { membershipIndex[membership.feedID, default: []].insert(membership.articleID) }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
         feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })
         feedArticles = [:]
@@ -117,9 +114,6 @@ import SwiftData
 
     public func article(id: UUID) -> Article? { articleIndex[id] }
     public func feed(id: UUID) -> Feed? { feedIndex[id] }
-    public func visibleArticles(feedID: UUID?, unreadOnly: Bool, keeping: UUID?) -> [Article] {
-        visibleArticleIDs(feedID: feedID, unreadOnly: unreadOnly, keeping: keeping).compactMap { articleIndex[$0] }
-    }
     public func visibleArticleIDs(feedID: UUID?, unreadOnly: Bool, keeping: UUID?) -> [UUID] {
         // Observe one array/count rather than registering every SwiftData Article.id getter.
         let all = articleIDs
@@ -142,10 +136,6 @@ import SwiftData
         for id in articleFeeds[article.id] ?? [] { feedUnreadCounts[id, default: 0] += delta }
         let folders = Set((articleFeeds[article.id] ?? []).compactMap { feedIndex[$0]?.folder })
         for folder in folders { folderUnreadCounts[folder, default: 0] += delta }
-    }
-
-    public func isArticle(_ article: Article, in feedID: UUID) -> Bool {
-        membershipIndex[feedID]?.contains(article.id) == true
     }
 
     @discardableResult public func importFeed(_ parsed: ParsedFeed, receivedAt: Date = .now, folder: String? = nil) throws -> Feed {
@@ -215,10 +205,6 @@ import SwiftData
         context.delete(feed)
         // Keep articles and bodies. Subscription removal is not article deletion.
         try save(); try reload()
-    }
-
-    public func body(for article: Article, at: Date = .now) -> String? {
-        try? content(articleID: article.id, at: at)?.text
     }
 
     public func setRead(_ article: Article, _ value: Bool) throws {

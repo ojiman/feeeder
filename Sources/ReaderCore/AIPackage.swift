@@ -140,11 +140,6 @@ extension ReaderStore {
         }
         return values
     }
-    func aiExpiry(articleIDs: [UUID], at: Date) -> Date? {
-        let policy = RetentionPolicy(days: retentionDays)
-        return articleIDs.compactMap { article(id: $0) }.filter { isContentAvailable($0, at: at) }
-            .map { policy.expiresAt(receivedAt: $0.firstReceivedAt, firstReadAt: $0.firstReadAt) }.min()
-    }
 }
 
 // The app owns one review for its lifetime. Policy changes erase its copies or shorten their life.

@@ -11,5 +11,4 @@ public struct ArticleLoadingState: Sendable {
     }
     public func accept(articleID: UUID, generation: UUID) -> Bool { selectedArticleID == articleID && self.generation == generation }
     public mutating func recordInteraction(articleID: UUID) { if selectedArticleID == articleID { interacted = true } }
-    public func canReplaceDisplay(articleID: UUID, generation: UUID) -> Bool { accept(articleID: articleID, generation: generation) && !interacted }
 }

@@ -40,7 +40,7 @@ import Testing
         try context.save()
         let store = try ReaderStore(container: container, now: now)
         #expect(store.articles.count == 10_000 && store.feeds.count == 100 && store.unreadCount == 10_000)
-        #expect(store.visibleArticles(feedID: feeds[0].id, unreadOnly: false, keeping: nil).count == 100)
+        #expect(store.visibleArticleIDs(feedID: feeds[0].id, unreadOnly: false, keeping: nil).count == 100)
         let article = try #require(store.articles.first)
         try store.markDisplayed(articleID: article.id, at: now)
         #expect(store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: article.id).count == 10_000)
