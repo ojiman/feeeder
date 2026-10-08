@@ -61,7 +61,7 @@ Claude側の **Attach確認** と **本人による送信** が必要です。�
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-ベータ中のCIは回帰テストとReleaseビルドの2並列です。`docs/**`またはMarkdownだけの変更ではCIを省略します。CIのZIPはad hoc署名された開発ビルドで、Developer ID署名・公証・自動Release公開を行わず、配布済みベータのZIPとは異なります。ダウンロードしたZIPからアプリを開くときmacOSに止められた場合は、システム設定の「プライバシーとセキュリティ」から「このまま開く (Open Anyway)」を選んでください。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
+ベータ中のCIは回帰テストとReleaseビルドの2並列です。`docs/**`またはMarkdownだけの変更ではCIを省略します。CIのZIPはad hoc署名された開発ビルドで、Developer ID署名・公証・自動Release公開を行わず、配布済みベータのZIPとは異なります。CIのビルドをMacで試すときは、ブラウザで保存せず `bash scripts/fetch-ci-app.sh <PR番号>` を使ってください（macOSと、ログイン済みの最近の`gh`が必要です）。ブラウザで保存したファイルには隔離属性が付き、公証のないアプリはビルドのたびにmacOSに止められます。`gh`で取得すると付かず、PRのheadと一致するビルドかを確認し、署名を検証し、合成データ用の起動コマンドを表示します。ブラウザで保存した場合に止められたときは、システム設定の「プライバシーとセキュリティ」から「このまま開く (Open Anyway)」を選んでください。管理者パスワードが必要です。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
 
 ```sh
 bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
