@@ -15,7 +15,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | Sources/ReaderCore | Models, store, parsing, retention, handoff. No UI. |
 | Sources/RSSReader | SwiftUI/AppKit app. |
 | Tests/ReaderCoreTests, Tests/ReaderUITests | Tests. Synthetic data only. |
-| scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`. |
+| scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`, `fetch-ci-app.sh` (tested by `test-fetch-ci-app.sh`). |
 
 ## Commands
 
@@ -23,6 +23,8 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build          # local tests
 swift test --scratch-path /private/tmp/feeeder-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
 bash scripts/build-app.sh release                                        # ad hoc signed .build/Feeeder.app (debug is the default)
+bash scripts/fetch-ci-app.sh <PR number>                                  # a PR's CI-built app without a browser, so no quarantine attribute (needs macOS and gh)
+bash scripts/test-fetch-ci-app.sh                                         # control-flow tests for that script with stubbed tools (no macOS, network or gh needed)
 open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
 git diff --check
 ```
