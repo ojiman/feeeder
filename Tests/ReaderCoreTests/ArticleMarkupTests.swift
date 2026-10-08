@@ -75,11 +75,13 @@ struct ArticleMarkupTests {
         for feedNumber in 1...3 {
             let entries = (1...4).map { number in
                 let index = (feedNumber - 1) * 4 + number
+                let published = number == 1 ? "" : "<pubDate>\(at.addingTimeInterval(number == 2 ? -86400 * 400 : number == 3 ? -86400 : -Double(index * 60)).formatted(.iso8601))</pubDate>"
                 let paragraphs = (1...24).map { "<p>合成段落 \($0)：日本語の長い本文を読み、選択とスクロールの維持を確かめます。<a href='\(base)/linked#section'>詳細はこちら</a>。</p>" }.joined()
-                return "<item><guid>demo-\(index)</guid><title>合成記事 \(index) — 読書と関心を整理する</title><link>\(base)/article/\(index)</link><h:imageurl>\(base)/photo.png</h:imageurl><description>これは実際の記事ではない合成要約です。</description><c:encoded><![CDATA[<blockquote><cite><img src='\(base)/favicon.png'><a href='\(base)/linked'>合成出典</a></cite><p><img class='entry-image' src='\(base)/photo.png'></p>\(paragraphs)</blockquote><p>引用の外の通常段落。</p>]]></c:encoded></item>"
+                return "<item><guid>demo-\(index)</guid><title>合成記事 \(index) — 読書と関心を整理する、日々の情報から次のアイデアを見つけるために</title>\(published)<link>\(base)/article/\(index)</link><h:imageurl>\(base)/photo.png</h:imageurl><description>これは実際の記事ではない合成要約です。公開時刻と長いタイトル、既読・未読の一覧表示を確かめます。</description><c:encoded><![CDATA[<blockquote><cite><img src='\(base)/favicon.png'><a href='\(base)/linked'>合成出典</a></cite><p><img class='entry-image' src='\(base)/photo.png'></p>\(paragraphs)</blockquote><p>引用の外の通常段落。</p>]]></c:encoded></item>"
             }.joined()
             let xml = "<rss xmlns:h='http://www.hatena.ne.jp/info/xmlns#' xmlns:c='http://purl.org/rss/1.0/modules/content/'><channel><title>合成購読 \(feedNumber)</title><image><url>\(base)/favicon.png</url></image>\(entries)</channel></rss>"
             let parsed = try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: base + "/rss/\(feedNumber)")!)
+            #expect(parsed.entries.filter { $0.publishedAt != nil }.count == 3)
             let feed = try store.importFeed(parsed, receivedAt: at)
             if feedNumber < 3 { try store.moveFeed(id: feed.id, toFolder: feedNumber == 1 ? "技術" : "暮らし") }
             let article = try #require(store.articles.first { $0.feedID == feed.id })

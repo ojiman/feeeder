@@ -16,15 +16,68 @@ import ReaderCore
         window.contentView?.addSubview(table)
         #expect(window.firstResponder === table)
     }
-    @Test func articleTextUsesSpaceUpToCompactThumbnail() {
-        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
-        let article = Article(feedID: UUID(), title: "合成記事の長いタイトルを途中で短く切らずに表示します。", summary: "合成の要約です。", publisher: "合成", publishedAt: .now)
+    private func labels(in view: NSView) -> [NSTextField] {
+        (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap { labels(in: $0) }
+    }
+    @Test func publicationTimeIsSeparateFromSourceAndNeverUsesReceiptTime() throws {
+        let cell = NativeArticleList.Cell()
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now, receivedAt: .now.addingTimeInterval(-3600))
+        cell.configure(article, feed: "合成購読")
+        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
+        let expected = article.publishedAt.formatted(.dateTime.hour().minute())
+        #expect(time.stringValue == expected)
+        #expect(labels(in: cell).contains { $0.stringValue == "● 合成購読" })
+        article.publishedAt = .now.addingTimeInterval(-86400 * 400)
+        cell.configure(article, feed: "合成購読")
+        #expect(time.stringValue == article.publishedAt.formatted(.dateTime.year().month().day().hour().minute()))
+        article.publishedAt = .distantPast
+        cell.configure(article, feed: "合成購読")
+        #expect(time.stringValue == "—" && time.toolTip == "公開日時不明")
+    }
+    @Test func readPaletteAndSelectionResetWhenCellIsReused() throws {
+        let cell = NativeArticleList.Cell()
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "合成要約", publisher: "合成", publishedAt: .now)
+        cell.configure(article, feed: "合成購読")
+        let title = try #require(labels(in: cell).first { $0.stringValue == article.title })
+        let summary = try #require(labels(in: cell).first { $0.stringValue == article.summary })
+        let unreadTitle = title.textColor, unreadSummary = summary.textColor
+        article.isRead = true
+        cell.configure(article, feed: "合成購読")
+        #expect(title.textColor != unreadTitle && summary.textColor != unreadSummary)
+        #expect(cell.thumbnail.alphaValue < 1 && cell.favicon.alphaValue < 1)
+        cell.backgroundStyle = .emphasized
+        #expect(title.textColor == .alternateSelectedControlTextColor && cell.thumbnail.alphaValue == 1)
+        cell.backgroundStyle = .normal
+        article.isRead = false
+        cell.configure(article, feed: "合成購読")
+        #expect(title.textColor == unreadTitle && summary.textColor == unreadSummary)
+        #expect(cell.thumbnail.alphaValue == 1 && cell.favicon.alphaValue == 1)
+    }
+    @Test(arguments: [280.0, 400.0, 640.0]) func articleTextUsesSpaceUpToCompactThumbnail(width: Double) throws {
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: width, height: 96))
+        let article = Article(feedID: UUID(), title: "合成記事の長いタイトルを途中で短く切らずに表示します。", summary: "合成の長い要約です。幅が狭くてもタイトルや次の記事と重ならず、広げると読める範囲が増えます。", publisher: "合成", publishedAt: .now)
         article.imageURL = "https://synthetic.example/image.png"
         cell.configure(article, feed: "合成購読")
         cell.layoutSubtreeIfNeeded()
         let thumbnail = cell.convert(cell.thumbnail.bounds, from: cell.thumbnail)
         #expect(abs(thumbnail.maxX - (cell.bounds.width - 12)) < 1)
-        #expect(thumbnail.width == 40 && thumbnail.minX > 250)
+        #expect(thumbnail.width == 52)
+        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
+        let title = try #require(labels(in: cell).first { $0.stringValue == article.title })
+        let timeRect = cell.convert(time.bounds, from: time)
+        let titleRect = cell.convert(title.bounds, from: title)
+        if width < 640 { #expect(titleRect.height > 25) }
+        let summary = try #require(labels(in: cell).first { $0.stringValue == article.summary })
+        let summaryRect = cell.convert(summary.bounds, from: summary)
+        #expect(abs(timeRect.maxX - thumbnail.maxX) <= 2)
+        #expect(abs(titleRect.maxX + 8 - thumbnail.minX) <= 2)
+        #expect(cell.isFlipped ? timeRect.maxY <= thumbnail.minY : timeRect.minY >= thumbnail.maxY)
+        #expect(summaryRect.minY >= 8 && summaryRect.maxY <= 88)
+        #expect(cell.isFlipped ? titleRect.maxY <= summaryRect.minY : titleRect.minY >= summaryRect.maxY)
+        article.imageURL = nil
+        cell.configure(article, feed: "合成購読"); cell.layoutSubtreeIfNeeded()
+        #expect(cell.thumbnail.isHidden)
+        #expect(abs(cell.convert(title.bounds, from: title).maxX - (width - 12)) <= 2)
     }
     @Test func lateImagesNeverLeakAcrossReusedRows() {
         let first = Article(feedID: UUID(), title: "A", summary: "", publisher: "合成", publishedAt: .now)

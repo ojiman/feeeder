@@ -139,40 +139,79 @@ struct NativeArticleList: NSViewRepresentable {
         private let source = NSTextField(labelWithString: "")
         private let title = NSTextField(wrappingLabelWithString: "")
         private let summary = NSTextField(wrappingLabelWithString: "")
+        private let timestamp = NSTextField(labelWithString: "")
         let favicon = NSImageView()
         let thumbnail = NSImageView()
         private var representedID: UUID?
         private var iconURL: URL?
         private var thumbnailURL: URL?
         private var imageTasks: [Task<Void, Never>] = []
+        private var isRead = false
+        override var backgroundStyle: NSView.BackgroundStyle { didSet { updatePalette() } }
         deinit { imageTasks.forEach { $0.cancel() } }
         override init(frame: NSRect) {
             super.init(frame: frame)
             identifier = .init("article")
             source.font = .systemFont(ofSize: 11); source.textColor = .secondaryLabelColor
             source.lineBreakMode = .byTruncatingTail
-            title.maximumNumberOfLines = 2; title.lineBreakMode = .byTruncatingTail
+            title.maximumNumberOfLines = 2; title.lineBreakMode = .byWordWrapping
+            title.cell?.truncatesLastVisibleLine = true
             summary.font = .systemFont(ofSize: 12); summary.textColor = .secondaryLabelColor
-            summary.maximumNumberOfLines = 2; summary.lineBreakMode = .byTruncatingTail
-            let stack = NSStackView(views: [source, title, summary])
-            stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 5
+            summary.maximumNumberOfLines = 2; summary.lineBreakMode = .byWordWrapping
+            summary.cell?.truncatesLastVisibleLine = true
+            summary.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+            timestamp.font = .monospacedDigitSystemFont(ofSize: 10, weight: .regular)
+            timestamp.alignment = .right
+            timestamp.setAccessibilityLabel("記事の公開日時")
+            timestamp.setContentCompressionResistancePriority(.required, for: .horizontal)
+            timestamp.setContentHuggingPriority(.required, for: .horizontal)
+            source.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            source.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            let header = NSStackView(views: [favicon, source, timestamp])
+            header.orientation = .horizontal; header.alignment = .centerY; header.spacing = 8
+            header.distribution = .fill
+            let text = NSStackView(views: [title, summary])
+            text.orientation = .vertical; text.alignment = .leading; text.spacing = 3
+            let body = NSStackView(views: [text, thumbnail])
+            body.orientation = .horizontal; body.alignment = .top; body.spacing = 8
+            body.distribution = .fill
+            let stack = NSStackView(views: [header, body])
+            stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 4
             stack.translatesAutoresizingMaskIntoConstraints = false
-            let iconStack = NSStackView(views: [favicon, stack, thumbnail])
-            iconStack.orientation = .horizontal; iconStack.alignment = .top; iconStack.spacing = 8
-            iconStack.distribution = .fill
-            iconStack.translatesAutoresizingMaskIntoConstraints = false
             favicon.imageScaling = .scaleProportionallyUpOrDown; thumbnail.imageScaling = .scaleProportionallyUpOrDown
             favicon.setAccessibilityLabel("購読元のアイコン"); thumbnail.setAccessibilityLabel("記事のサムネイル")
-            addSubview(iconStack)
-            NSLayoutConstraint.activate([iconStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12), iconStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12), iconStack.topAnchor.constraint(equalTo: topAnchor, constant: 10), iconStack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8), favicon.widthAnchor.constraint(equalToConstant: 18), favicon.heightAnchor.constraint(equalToConstant: 18), thumbnail.widthAnchor.constraint(equalToConstant: 40), thumbnail.heightAnchor.constraint(equalToConstant: 40), source.widthAnchor.constraint(equalTo: stack.widthAnchor), title.widthAnchor.constraint(equalTo: stack.widthAnchor), summary.widthAnchor.constraint(equalTo: stack.widthAnchor)])
+            addSubview(stack)
+            NSLayoutConstraint.activate([
+                stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+                stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+                stack.topAnchor.constraint(equalTo: topAnchor, constant: 10),
+                stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8),
+                header.widthAnchor.constraint(equalTo: stack.widthAnchor), body.widthAnchor.constraint(equalTo: stack.widthAnchor),
+                body.heightAnchor.constraint(equalToConstant: 52),
+                text.bottomAnchor.constraint(lessThanOrEqualTo: body.bottomAnchor),
+                favicon.widthAnchor.constraint(equalToConstant: 18), favicon.heightAnchor.constraint(equalToConstant: 18),
+                thumbnail.widthAnchor.constraint(equalToConstant: 52), thumbnail.heightAnchor.constraint(equalToConstant: 52),
+                title.widthAnchor.constraint(equalTo: text.widthAnchor), summary.widthAnchor.constraint(equalTo: text.widthAnchor)
+            ])
         }
         convenience init() { self.init(frame: .zero) }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
         func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, scrapped: Bool = false) {
-            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (scrapped ? "▣ " : "") + feed + (article.publishedAt == .distantPast ? "" : " · " + article.publishedAt.formatted(.dateTime.month().day()))
-            source.textColor = article.isRead ? .secondaryLabelColor : .systemOrange
+            isRead = article.isRead
+            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (scrapped ? "▣ " : "") + feed
             title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
+            let published = article.publishedAt
+            if published == .distantPast {
+                timestamp.stringValue = "—"; timestamp.toolTip = "公開日時不明"
+            } else {
+                var style: Date.FormatStyle = .dateTime.hour().minute()
+                if !Calendar.current.isDateInToday(published) { style = style.month().day() }
+                if !Calendar.current.isDate(published, equalTo: .now, toGranularity: .year) { style = style.year() }
+                timestamp.stringValue = published.formatted(style)
+                timestamp.toolTip = "公開日時：" + published.formatted(.dateTime.year().month().day().hour().minute().second().timeZone())
+            }
+            updatePalette()
             let imageURL = article.imageURL.flatMap { ArticleURL.validated($0) }
             guard representedID != article.id || self.iconURL != iconURL || thumbnailURL != imageURL else { return }
             imageTasks.forEach { $0.cancel() }; imageTasks = []
@@ -187,6 +226,15 @@ struct NativeArticleList: NSViewRepresentable {
                     self?.completeImage(NSImage(data: data), articleID: id, url: url, thumbnail: isThumbnail)
                 })
             }
+        }
+        private func updatePalette() {
+            let selected = backgroundStyle == .emphasized
+            source.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : .systemOrange
+            title.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : .labelColor
+            summary.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .tertiaryLabelColor : .secondaryLabelColor
+            timestamp.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .tertiaryLabelColor : .secondaryLabelColor
+            favicon.alphaValue = isRead && !selected ? 0.75 : 1
+            thumbnail.alphaValue = favicon.alphaValue
         }
         func completeImage(_ image: NSImage?, articleID: UUID, url: URL, thumbnail: Bool) {
             guard representedID == articleID, (thumbnail ? thumbnailURL : iconURL) == url else { return }
