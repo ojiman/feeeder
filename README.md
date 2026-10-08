@@ -10,7 +10,7 @@ XcodeのSwiftツールチェーンで、プロジェクトルートから実行�
 bash scripts/build-app.sh release
 ```
 
-生成される `.build/Feeeder.app` をFinderから開いてください。未署名のローカル開発用アプリです。releaseの中間出力は `/private/tmp/feeeder-v1-release`、debugは `/private/tmp/rss-reader-build` に置きます。debug buildは引数を省略できます。
+生成される `.build/Feeeder.app` をFinderから開いてください。ad hoc署名されたローカル開発用アプリです。Developer ID署名・公証は行いません。releaseの中間出力は `/private/tmp/feeeder-v1-release`、debugは `/private/tmp/rss-reader-build` に置きます。debug buildは引数を省略できます。
 
 通常起動は空ライブラリから開始します。V1の保存先は `Application Support/Feeeder/Reader.store`。同じ版での再起動では購読・記事・既読日時・ノートを保持します。ベータ中はバージョン更新をまたぐデータ保持を保証せず、1.0以降は保証します。旧スキーマのDBは開けない場合があります。初期化がエラーを返した場合は「ライブラリを開けませんでした」と表示し、アプリによる自動削除・作り直しは行いません。非互換スキーマでのSwiftDataの挙動は未検証です。ベータ配布時のリリースノートにもこの制約を記載します。過去のリリースノートの保持検証は、その版での結果であり、以後のベータ間の互換性保証ではありません。プロトタイプのデータ移行はありません。
 
@@ -61,7 +61,7 @@ Claude側の **Attach確認** と **本人による送信** が必要です。�
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-ベータ中のCIは回帰テストとReleaseビルドの2並列です。`docs/**`またはMarkdownだけの変更ではCIを省略します。CIのZIPは未署名の開発ビルドで、配布済みベータのZIPとは異なります。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
+ベータ中のCIは回帰テストとReleaseビルドの2並列です。`docs/**`またはMarkdownだけの変更ではCIを省略します。CIのZIPはad hoc署名された開発ビルドで、Developer ID署名・公証・自動Release公開を行わず、配布済みベータのZIPとは異なります。ダウンロードしたZIPからアプリを開くときmacOSに止められた場合は、システム設定の「プライバシーとセキュリティ」から「このまま開く (Open Anyway)」を選んでください。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
 
 ```sh
 bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new

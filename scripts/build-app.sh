@@ -30,4 +30,6 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+codesign --force --sign - "$app_dir"
+codesign --verify --deep --strict "$app_dir"
 printf 'Built: %s\n' "$app_dir"

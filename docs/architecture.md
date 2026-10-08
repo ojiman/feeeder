@@ -81,7 +81,7 @@ V1の通常作業は実装者1名とし、サブエージェントを常用し�
 [Feeeder CI](../.github/workflows/ci.yml)はPRの作成・更新、mainへのマージ、手動実行で起動する。`docs/**`またはMarkdownだけの変更は自動実行を省略し、Draft PRのコード変更は実行する。ベータ中はmacOS 26 / Xcode 26.6の別runnerで、同じcommitの2ジョブを並列に検証する。1ジョブの失敗で他を中断せず、同じPRに新commitが来た場合は古い実行を取り消す。mainと手動実行は実行ごとに分け、連続実行で前の結果を取り消さない。将来このCIを必須チェックにする場合は、docsのみのPRでチェックがPendingにならないようpath filterを見直す。
 
 - `regression`: Core/UIの既存テストを実行する。同じ版の保存・再openと保存失敗からの復旧も対象にする。
-- `release`: 既存スクリプトでReleaseアプリを組み立て、実行権限を保つZIPを保存する。署名・公証・Release公開は行わない。
+- `release`: 既存スクリプトでad hoc署名したReleaseアプリを組み立て、ZIPへ再圧縮・展開して署名を検証する。Developer ID署名・公証・自動Release公開は行わない。
 
 各ジョブのcheckout commit（PRでは合成merge commit）・PR head・OS・Xcode・Swift、コマンドの所要時間と失敗ログをartifactへ7日間保存する。実行待ち時間と各stepの時間はActions画面で確認する。CIの成功と最終PdM受入は区別し、アプリ全体の操作、IME、VoiceOver、滑らかさの実機確認は引き続き必要とする。CI内で修正Agentは起動せず、対話中の実装者が結果を確認して修正する。
 
