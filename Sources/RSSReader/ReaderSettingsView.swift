@@ -3,6 +3,7 @@ import ReaderCore
 
 struct ReaderSettingsView: View {
     @Bindable var store: ReaderStore
+    @Binding var appearance: String
     @State private var days = 30
     @State private var pendingDays: Int?
     @State private var deletingAll = false
@@ -10,18 +11,21 @@ struct ReaderSettingsView: View {
     @State private var error: String?
 
     var body: some View {
-        Form {
-            Picker("記事本文・RSS要約の保持期間", selection: $days) {
-                ForEach(RetentionPolicy.choices, id: \.self) { Text("\($0)日").tag($0) }
-            }
-            Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
-                .font(.caption).foregroundStyle(.secondary)
-            Text("ノートと採用済み出典タイトル・リンクは自動削除しません。")
-            Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
-                perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
-            }
-        }
-        .formStyle(.grouped).padding().frame(width: 500)
+        TabView {
+            Form {
+                Picker("外観", selection: $appearance) {
+                    Text("システムに合わせる").tag("system")
+                    Text("ライト").tag("light")
+                    Text("ダーク").tag("dark")
+                }.pickerStyle(.segmented)
+                Text("システムに合わせると、Macの外観設定に追従します。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }.formStyle(.grouped).padding()
+                .tabItem { Label("外観", systemImage: "circle.lefthalf.filled") }
+            storage
+                .tabItem { Label("保存", systemImage: "externaldrive") }
+        }.frame(width: 520, height: 340)
+        .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         .onAppear { days = store.retentionDays }
         .onChange(of: days) { _, value in
             guard value != store.retentionDays else { return }
@@ -49,6 +53,20 @@ struct ReaderSettingsView: View {
         .alert("変更できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("閉じる") { error = nil }
         } message: { Text(error ?? "") }
+    }
+    private var storage: some View {
+        Form {
+            Picker("記事本文・RSS要約の保持期間", selection: $days) {
+                ForEach(RetentionPolicy.choices, id: \.self) { Text("\($0)日").tag($0) }
+            }
+            Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
+                .font(.caption).foregroundStyle(.secondary)
+            Text("ノートと採用済み出典タイトル・リンクは自動削除しません。")
+            Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
+                perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
+            }
+        }
+        .formStyle(.grouped).padding()
     }
     private func byteCount(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()

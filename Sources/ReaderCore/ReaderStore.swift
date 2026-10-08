@@ -290,6 +290,10 @@ import SwiftData
 }
 
 public enum ReaderNavigation {
+    public static func isForward(from: UUID?, to: UUID?, in ids: [UUID]) -> Bool {
+        guard let from, let to, let old = ids.firstIndex(of: from), let new = ids.firstIndex(of: to) else { return true }
+        return new >= old
+    }
     public static func move(_ selected: UUID?, by offset: Int, in ids: [UUID]) -> UUID? {
         guard !ids.isEmpty else { return nil }
         guard let selected, let index = ids.firstIndex(of: selected) else { return ids.first }

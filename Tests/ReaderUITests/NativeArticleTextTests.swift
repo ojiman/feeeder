@@ -1,9 +1,66 @@
 import AppKit
+import QuartzCore
+import SwiftUI
 import Testing
 import ReaderCore
 @testable import RSSReader
 
 @MainActor struct NativeArticleTextTests {
+    @Test func pageMotionFollowsDirectionWithoutReplayingForContentUpdates() throws {
+        let coordinator = NativeArticleText.Coordinator()
+        let a = UUID(), b = UUID()
+        let native = NativeArticleText(articleID: a, title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: ["合成本文"], unavailable: nil, initialAnchor: nil, initialOffset: 0, reduceMotion: false, onScroll: { _, _ in }, onInteraction: {}, onDisplayBegin: {}, onDisplayed: {})
+        let host = NSHostingView(rootView: native)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host
+        defer { window.close() }
+        host.layoutSubtreeIfNeeded()
+        func findScroll(_ view: NSView) -> NSScrollView? {
+            if let scroll = view as? NSScrollView { return scroll }
+            return view.subviews.lazy.compactMap(findScroll).first
+        }
+        let scroll = try #require(findScroll(host))
+        func screenDelta(_ move: CABasicAnimation) throws -> Double {
+            let layer = try #require(scroll.layer), root = try #require(host.layer)
+            let offset = try #require(move.fromValue as? Double)
+            let center = CGPoint(x: layer.bounds.midX, y: layer.bounds.midY)
+            let before = layer.convert(center, to: root)
+            CATransaction.begin(); CATransaction.setDisableActions(true)
+            layer.transform = CATransform3DMakeTranslation(0, offset, 0)
+            let after = layer.convert(center, to: root)
+            layer.transform = CATransform3DIdentity; CATransaction.commit()
+            return (after.y - before.y) * (host.isFlipped ? -1 : 1)
+        }
+        coordinator.animatePage(in: scroll, articleID: a, forward: true, reduceMotion: false)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+        coordinator.animatePage(in: scroll, articleID: b, forward: true, reduceMotion: false)
+        let next = try #require(scroll.layer?.animation(forKey: "article-motion") as? CAAnimationGroup)
+        let nextMove = try #require(next.animations?.first as? CABasicAnimation)
+        #expect(nextMove.keyPath == "transform.translation.y")
+        #expect(try screenDelta(nextMove) == -64)
+        #expect((nextMove.toValue as? Double) == 0 && next.duration == 0.22)
+        scroll.layer?.removeAnimation(forKey: "article-motion")
+        coordinator.animatePage(in: scroll, articleID: b, forward: false, reduceMotion: false)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+        coordinator.animatePage(in: scroll, articleID: a, forward: false, reduceMotion: false)
+        let previous = try #require(scroll.layer?.animation(forKey: "article-motion") as? CAAnimationGroup)
+        let previousMove = try #require(previous.animations?.first as? CABasicAnimation)
+        #expect(previousMove.keyPath == "transform.translation.y")
+        #expect(try screenDelta(previousMove) == 64)
+        coordinator.animatePage(in: scroll, articleID: a, forward: true, reduceMotion: true)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+        coordinator.animatePage(in: scroll, articleID: b, forward: true, reduceMotion: true)
+        #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
+    }
+    @Test func contentCoverageAppearsOnlyAtTheEnd() {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        for paragraphs in [["取得できた合成要約"], []] {
+            view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: paragraphs, unavailable: paragraphs.isEmpty ? "本文は利用できません。" : nil)
+            #expect(view.string.hasPrefix("SYNTHETIC\n"))
+            #expect(view.string.components(separatedBy: "RSS要約のみ").count == 2)
+            #expect(view.string.hasSuffix("RSS要約のみ\n"))
+        }
+    }
     @Test func namedBodyLinkIsClickableAndQuoteIsIndented() throws {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         let text = "合成🙂：詳細はこちら"

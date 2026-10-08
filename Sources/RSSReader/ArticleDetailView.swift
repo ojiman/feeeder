@@ -17,6 +17,7 @@ struct ArticleDetailView: View {
     let onDisplayBegin: () -> Void
     let onDisplayed: () -> Void
     let imageLoader: ReaderImageLoader
+    var pageForward = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var available: Bool { content?.articleID == article.id && (expiry ?? .distantPast) > .now }
@@ -44,7 +45,7 @@ struct ArticleDetailView: View {
                 unavailable: available ? nil : (article.contentDeletedAt != nil ? "本文とRSS要約は削除済みです。" : "本文を利用できません。"),
                 initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
                 imageLoader: imageLoader, heroURL: available ? article.imageURL.flatMap { ArticleURL.validated($0) } : nil,
-                bodyParagraphs: available ? content!.bodyParagraphs : nil)
+                bodyParagraphs: available ? content!.bodyParagraphs : nil, pageForward: pageForward)
         }.background(Color(nsColor: .textBackgroundColor))
     }
 }

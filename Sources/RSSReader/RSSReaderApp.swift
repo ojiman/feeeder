@@ -45,7 +45,7 @@ struct RSSReaderApp: App {
     var body: some Scene {
         Window("Feeeder", id: "reader") {
             Group {
-                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, appearance: $appearance, imageLoader: imageLoader) }
+                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader) }
                 else {
                     ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
                         description: Text(startupError ?? "不明なエラーです。"))
@@ -90,7 +90,7 @@ struct RSSReaderApp: App {
         .defaultSize(width: 1240, height: 810)
         .commands { CommandGroup(replacing: .newItem) {} }
         Settings {
-            if let store { ReaderSettingsView(store: store) }
+            if let store { ReaderSettingsView(store: store, appearance: $appearance) }
         }
     }
     private func purgeContent() {

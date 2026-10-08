@@ -21,16 +21,16 @@ import Testing
         errorPane.onCommand = { command in
             commands.append(command)
             switch command {
-            case .next: original.followSelection(articleID: next, url: "http://127.0.0.1:1/next")
-            case .previous: original.followSelection(articleID: first, url: "http://127.0.0.1:1/failing")
+            case .next: reader.select(next); original.selectionChanged(to: next)
+            case .previous: reader.select(first); original.selectionChanged(to: first)
             case .closeOriginal: original.close(); reader.returnFromOriginal()
             default: break
             }
         }
         window.contentView = errorPane
         #expect(window.firstResponder === errorPane)
-        errorPane.keyDown(with: try event("j")); #expect(original.articleID == next)
-        errorPane.keyDown(with: try event("k")); #expect(original.articleID == first)
+        errorPane.keyDown(with: try event("j")); #expect(original.url == nil && reader.selectedArticleID == next)
+        errorPane.keyDown(with: try event("k")); #expect(original.url == nil && reader.selectedArticleID == first)
         errorPane.keyDown(with: try event("s")); errorPane.keyDown(with: try event("n"))
         errorPane.keyDown(with: try event("j", modifiers: .command))
         errorPane.keyDown(with: try event("Escape"))
