@@ -68,6 +68,15 @@ struct OnDeviceThemeAssistantTests {
         #expect(embedder.calls < items.count)
     }
 
+    @Test func japaneseHeadlinesAreRoutedToTheJapaneseModelEvenWithoutKana() {
+        for text in ["日銀が政策金利を引き上げ、住宅ローン金利も上昇する見通し", "金利上昇と家計負担", "日銀政策金利引上", "住宅ローン", "AIモデルの量子化"] {
+            #expect(ContextualTextEmbedder.route(text)?.0 == .japanese, "\(text)")
+        }
+        #expect(ContextualTextEmbedder.route("The central bank raised interest rates again this week")?.0 == .latin)
+        #expect(ContextualTextEmbedder.route("")?.0 == nil)
+        #expect(ContextualTextEmbedder.route("한국어 기사 제목입니다")?.0 == nil)
+    }
+
     @Test func availabilityPassesThrough() async {
         let state = await OnDeviceThemeAssistant(embedder: KeywordEmbedder()).availability()
         #expect(state == .available)

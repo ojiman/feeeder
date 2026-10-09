@@ -40,6 +40,9 @@ actor FakeAssistant: ThemeAssistant {
     }
 }
 
+/// A switch the tests can flip while a request is in flight, without capturing a mutable local in a Sendable closure.
+@MainActor final class SuggestionSwitch { var on = true }
+
 @MainActor struct ThemeSuggestionModelTests {
     let at = Date(timeIntervalSince1970: 1_791_152_000)
     struct Boom: Error {}
@@ -160,11 +163,11 @@ actor FakeAssistant: ThemeAssistant {
         let subject = store.articles[0].id
         let fake = FakeAssistant()
         await fake.script(nearest: [subject: [ThemeMatch(themeID: theme.id, score: 0.5)]], hold: true)
-        var enabled = true
-        let suggestions = ThemeSuggestionModel(store: store, assistant: fake, isEnabled: { enabled }, now: { self.at })
+        let enabled = SuggestionSwitch()
+        let suggestions = ThemeSuggestionModel(store: store, assistant: fake, isEnabled: { enabled.on }, now: { self.at })
         let task = Task { await suggestions.loadNearest(for: subject) }
         try await waitUntil { await fake.parkedCount == 1 }
-        enabled = false
+        enabled.on = false
         await fake.release(article: subject); await task.value
         #expect(suggestions.nearestThemes.isEmpty)
     }
@@ -247,11 +250,11 @@ actor FakeAssistant: ThemeAssistant {
         for id in ids.prefix(4) { try store.setStar(articleID: id, isStarred: true, at: at) }
         let fake = FakeAssistant()
         await fake.script(groups: [[ids[0], ids[1]]], hold: true)
-        var enabled = true
-        let suggestions = ThemeSuggestionModel(store: store, assistant: fake, isEnabled: { enabled }, now: { self.at })
+        let enabled = SuggestionSwitch()
+        let suggestions = ThemeSuggestionModel(store: store, assistant: fake, isEnabled: { enabled.on }, now: { self.at })
         let task = Task { await suggestions.loadClusters() }
         try await waitUntil { await fake.parkedCount == 1 }
-        enabled = false
+        enabled.on = false
         await fake.releaseClusters(); await task.value
         #expect(suggestions.clusters == .empty && !suggestions.isFindingClusters)
     }

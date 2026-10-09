@@ -16,7 +16,7 @@ protocol TextEmbedder: Sendable {
 /// model, and anything else gets no vector. Only assets already on the device are used; the app never asks the
 /// system to download any (decision 0009). An article's vector is the mean of its token vectors.
 actor ContextualTextEmbedder: TextEmbedder {
-    private enum Space: String { case japanese = "ja", latin = "latin" }
+    enum Space: String { case japanese = "ja", latin = "latin" }
     private var models: [Space: NLContextualEmbedding] = [:]
     private var loaded: Set<Space> = []
     private var cache: [String: EmbeddedVector] = [:]
@@ -67,12 +67,20 @@ actor ContextualTextEmbedder: TextEmbedder {
         return model
     }
 
-    private static func route(_ text: String) -> (Space, NLLanguage)? {
+    private static let latinLanguages: Set<NLLanguage> = Set(NLContextualEmbedding(script: .latin)?.languages ?? [])
+
+    /// Kana means Japanese. Kanji-only headlines are often labelled Chinese by the recognizer, so Japanese is
+    /// given a head start; other Latin-script languages go to the Latin model, anything else gets no vector.
+    static func route(_ text: String) -> (Space, NLLanguage)? {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+        if text.unicodeScalars.contains(where: { (0x3040...0x30FF).contains($0.value) }) { return (.japanese, .japanese) }
         let recognizer = NLLanguageRecognizer()
+        recognizer.languageHints = [.japanese: 0.6, .english: 0.3, .simplifiedChinese: 0.05, .traditionalChinese: 0.05]
         recognizer.processString(text)
         guard let language = recognizer.dominantLanguage else { return nil }
-        if language == .japanese { return (.japanese, language) }
-        if let latin = NLContextualEmbedding(script: .latin), latin.languages.contains(language) { return (.latin, language) }
+        if language == .japanese || language == .simplifiedChinese || language == .traditionalChinese { return (.japanese, .japanese) }
+        if latinLanguages.contains(language) { return (.latin, language) }
         return nil
     }
 }
