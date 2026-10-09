@@ -4,7 +4,7 @@ A fast, keyboard-driven RSS reader for macOS that helps you go from skimming to 
 
 Skim hundreds of articles in a smooth three-column reader. Star what catches your eye. Later, gather those stars into themes, ask yourself questions, and answer them in your own words. Everything stays on your Mac.
 
-> **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is currently in Japanese only. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
+> **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is currently in Japanese only; a language setting is planned before the public release. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
 
 ## Why
 
@@ -47,7 +47,7 @@ The app is ad hoc signed for local use. It is not signed with a Developer ID and
 
 **Where is my data?** In `~/Library/Application Support/Feeeder/`, with the database in `Reader.store` (plus its `-shm` / `-wal` files).
 
-**Will an update break my library?** During the beta, compatibility between versions is **not guaranteed**: an update can leave the library unreadable, and the app shows an error rather than deleting or recreating it. Back up the `Feeeder` folder before updating. From 1.0 onward, the policy is to preserve saved data across updates.
+**Will an update break my library?** During the beta, compatibility between versions is **not guaranteed**: an update can leave the library unreadable, and the app shows an error rather than deleting or recreating it. Back up the `Feeeder` folder before updating (see the [user guide](docs/user-guide.md#back-up-the-library-by-hand)). From 1.0 onward, the policy is to preserve saved data across updates.
 
 **Does it work without AI?** Yes. All features, including creating and editing themes, questions, and answers, work with AI turned off. If the on-device language assets are not installed, the app does not download them; suggestions simply do not appear.
 
@@ -57,16 +57,16 @@ This is a beta under active development.
 
 - Final product acceptance on a real Mac is not complete.
 - CI builds and tests on macOS 26.6, which covers only the build floor. The macOS 27.0 support floor is exercised only on the maintainer's local machine. Several behaviors are unverified: input methods (IME), VoiceOver, Reduce Motion, and long-running use. See the [verification records](docs/verification/) for what has and has not been checked.
-- The app's labels and messages are Japanese only. There is no localization yet.
+- The app's labels and messages are Japanese only today. A language setting is planned before the public release, but it is not implemented yet.
 - Not yet in this build: Claude Desktop hand-off from themes.
 
 ## Documentation
 
-Most documentation is currently in Japanese only.
+The user guide is available in English and Japanese. The other documents are currently in Japanese only.
 
 | | |
 |---|---|
-| [User guide (Japanese)](docs/user-guide.ja.md) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
+| [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are (Japanese) |
