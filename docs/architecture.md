@@ -19,14 +19,14 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 ### 2.1 保存モデル
 
-保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。実装は段階的で、置き換えが終わるまで現行の`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`が残る。
+保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。実装は段階的で、`Theme`・`ThemeArticle`・`ThemeQuestion`は追加済み（画面は未接続）。置き換えが終わるまで現行の`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`が残る。
 
-`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル。
+置き換え後の`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル（現在は旧5モデルが残り13モデル）。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
-- `Theme`は名前（空にできない）・「いまの理解」・作成／更新日時を持つ。
-- `ThemeArticle`はテーマIDと記事IDの組で一意（多対多）。追加日時と、追加時点で保持していたRSS要約を所有する。タイトル・原文URLは、削除されない`Article`を参照して読む（購読解除でも記事は残る）。要約は読書表示と同じテキスト化を使い、抽出全文で置換しない。再追加は既存の記録を返し、日時・内容を変えない。元記事の本文期限で`Article.summary`が消えても、記録した要約は残る。
+- `Theme`は名前（空にできない）・「いまの理解」・作成／更新日時を持つ。`updatedAt`は、テーマの中の変更（記事の追加・取り外し、問いの追加・更新・削除、答え、根拠、いまの理解、名前）のたびに更新する。同じ時刻の並びは、時刻の次にID（記事の記録はキー）で固定する。
+- `ThemeArticle`はテーマIDと記事IDの組で一意（多対多）。追加日時と、追加時点のタイトル・原文URL・保持していたRSS要約を所有する（`NoteScrap`と同じ。再取得で元記事のタイトルやURLが変わっても、テーマの記録は変わらない）。要約は読書表示と同じテキスト化を使い、抽出全文で置換しない。再追加は既存の記録を返し、日時・内容を変えない。元記事の本文期限で`Article.summary`が消えても、購読を解除しても、記録は残る。
 - `ThemeQuestion`はテーマID、レンズ（固定の列挙型の生値。自由記述は専用の値）、問い文、答え、根拠の記事ID群、作成／更新日時を持つ。「回答済み」は答えが空でないことから導き、別のフラグを持たない。レンズごとの定型文はコードに持ち、モデルにしない。
 - 「未整理のStar」は、Starが付いていてどの`ThemeArticle`にも無い記事から導く。保存しない。
 - 端末内AIの有効／無効は`AppStorage`で持ち、スキーマを増やさない。埋め込みなどAIの中間結果は保存しない。
