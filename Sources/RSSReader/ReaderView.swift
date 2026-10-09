@@ -43,6 +43,7 @@ struct ReaderView: View {
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
+        initialWorkspace.scope = initialScope
         if case .theme(let id) = initialScope, initialThemeFace != .articles {
             initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
         }
@@ -280,7 +281,7 @@ struct ReaderView: View {
                 perform { try store.deleteTheme(id: id); if scope == .theme(id) { scope = .all } }
                 deletingTheme = nil
             }
-        } message: { Text("記事とStarは消えません。このテーマの問い・答え・いまの理解は消えます。") }
+        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、問い・答え・いまの理解は消えます。") }
     }
 
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {

@@ -119,7 +119,7 @@ import Testing
         let saved = try #require(review.package)
         #expect(saved.expiresAt == later.addingTimeInterval(86_400))
         #expect(saved.sources[0].savedAt == at && saved.sources[0].content.coverage == .summaryOnly)
-        #expect(saved.sources[0].title == article.title && saved.text.contains("Saved RSS snapshot"))
+        #expect(saved.sources[0].title == article.title && saved.text.contains("Saved RSS snapshot") && saved.text.contains(at.ISO8601Format()))
         #expect(try store.aiSources(selections: [.themeArticle(empty.key)], at: later).isEmpty)
         #expect(throws: (any Error).self) { try review.build(selections: [.themeArticle(empty.key)], language: "日本語", at: later) }
         try review.build(selections: [.themeArticle(link.key)], language: "日本語", at: later)

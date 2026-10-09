@@ -106,6 +106,8 @@ struct ReaderStoreTests {
             { try store.renameTheme(id: theme.id, to: "変更", at: at) },
             { try store.saveUnderstanding(themeID: theme.id, text: "捨ててはいけない変更", at: at) },
             { _ = try store.addArticle(article.id, toTheme: theme.id, at: at) },
+            { _ = try store.toggleTheme(theme.id, for: article.id, at: at) },
+            { _ = try store.createTheme(name: "変更", adding: article.id, at: at) },
             { try store.removeArticle(article.id, fromTheme: theme.id, at: at) },
             { _ = try store.addQuestion(themeID: theme.id, lens: .custom, text: "変更", at: at) },
             { try store.updateQuestion(id: question.id, text: "変更", at: at) },

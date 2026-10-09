@@ -12,13 +12,17 @@ import Testing
         if let result = view as? T { return result }
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
     }
-    private func settle(_ host: NSView, until ready: () -> Bool) async throws {
+    private func settle(_ host: NSView, until ready: @MainActor () -> Bool) async throws {
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
             if ready() { return }
             try await Task.sleep(for: .milliseconds(20))
         }
         #expect(ready(), "Synthetic reader did not reach the expected state")
+    }
+    private func containsText(_ text: String, in view: NSView) -> Bool {
+        if let field = view as? NSTextView, field.string == text { return true }
+        return view.subviews.contains { containsText(text, in: $0) }
     }
     private struct Harness {
         let store: ReaderStore
@@ -76,19 +80,11 @@ import Testing
             try store.saveUnderstanding(themeID: theme.id, text: "既存のいまの理解", at: .now)
         }
         defer { finish(h) }
-        try await settle(h.host) {
-            var found = false
-            func visit(_ view: NSView) {
-                if let text = view as? NSTextView, text.string == "既存のいまの理解" { found = true }
-                view.subviews.forEach(visit)
-            }
-            visit(h.host)
-            return found
-        }
+        try await settle(h.host) { containsText("既存のいまの理解", in: h.host) }
         #expect(find(NativeArticleList.Table.self, in: h.host) == nil)
     }
 
-    @Test func emptyThemeAndEmptyInboxShowGuidanceWithoutRows() async throws {
+    @Test func emptyThemeAndEmptyInboxListNoRows() async throws {
         let h = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
             _ = try store.createTheme(name: "空", at: .now)
         }
@@ -107,6 +103,9 @@ import Testing
         }
         defer { finish(h) }
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
+        let table = try #require(find(NativeArticleList.Table.self, in: h.host))
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
         let control = try #require(find(NSSegmentedControl.self, in: h.host))
         #expect(control.segmentCount == 2)
         let frame = control.convert(control.bounds, to: nil)
@@ -114,18 +113,15 @@ import Testing
         control.selectedSegment = 1
         control.performClick(nil)
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host) == nil }
-        try await settle(h.host) {
-            var found = false
-            func visit(_ view: NSView) {
-                if let text = view as? NSTextView, text.string == "既存のいまの理解" { found = true }
-                view.subviews.forEach(visit)
-            }
-            visit(h.host)
-            return found
-        }
+        try await settle(h.host) { containsText("既存のいまの理解", in: h.host) }
         let back = try #require(find(NSSegmentedControl.self, in: h.host))
         back.selectedSegment = 0
         back.performClick(nil)
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
+        // The theme's own reader (selection) comes back, not another scope's. Wait past the first remount
+        // so a transient state cannot satisfy the check.
+        try await Task.sleep(for: .milliseconds(300))
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 0 }
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
     }
 }
