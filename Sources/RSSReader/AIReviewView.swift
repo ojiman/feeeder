@@ -121,6 +121,9 @@ struct AIReviewView: View {
             case .noteSource(let key):
                 guard let saved = store.noteSources.first(where: { $0.key == key }) else { return nil }
                 return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "採用済みRSS要約 · " + (saved.savedAt?.formatted() ?? "保存日時なし") + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            case .themeArticle(let key):
+                guard let saved = store.themeArticles.first(where: { $0.key == key }) else { return nil }
+                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "テーマに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)
             }
         }
     }

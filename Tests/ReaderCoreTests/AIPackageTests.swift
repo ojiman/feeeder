@@ -132,4 +132,40 @@ import Testing
         try store.applyRetention(days: 365, at: now)
         #expect(review.package?.expiresAt == received.addingTimeInterval(7 * 86_400))
     }
+
+    @Test func themeSummaryIgnoresOriginalExpiryAndFollowsMembership() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now, later = at.addingTimeInterval(31 * 86_400)
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]; article.summary = "記録した合成要約"
+        let theme = try store.createTheme(name: "A", at: at)
+        let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
+        let emptyArticle = store.articles[1]; emptyArticle.summary = ""
+        let empty = try store.addArticle(emptyArticle.id, toTheme: theme.id, at: at)
+        try store.purgeExpired(at: later)
+        let review = AIPackageReview(store: store, now: { later })
+        try review.build(selections: [.themeArticle(link.key)], language: "日本語", at: later)
+        let saved = try #require(review.package)
+        #expect(saved.expiresAt == later.addingTimeInterval(86_400))
+        #expect(saved.sources[0].savedAt == at && saved.sources[0].content.coverage == .summaryOnly)
+        #expect(saved.sources[0].title == article.title && saved.text.contains("Saved RSS snapshot"))
+        #expect(try store.aiSources(selections: [.themeArticle(empty.key)], at: later).isEmpty)
+        #expect(throws: (any Error).self) { try review.build(selections: [.themeArticle(empty.key)], language: "日本語", at: later) }
+        try review.build(selections: [.themeArticle(link.key)], language: "日本語", at: later)
+        try store.removeArticle(article.id, fromTheme: theme.id, at: later)
+        #expect(throws: (any Error).self) { try review.validated(at: later) }
+    }
+
+    @Test func themeSummaryAndTheArticleItselfCannotBeMixed() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let a = store.articles[0], b = store.articles[1]
+        let theme = try store.createTheme(name: "A", at: at)
+        let link = try store.addArticle(a.id, toTheme: theme.id, at: at)
+        let review = AIPackageReview(store: store, now: { at })
+        #expect(throws: (any Error).self) { try review.build(selections: [.article(a.id), .themeArticle(link.key)], language: "日本語", at: at) }
+        try review.build(selections: [.article(b.id), .themeArticle(link.key)], language: "日本語", at: at)
+        #expect(review.package?.sources.count == 2)
+    }
 }
