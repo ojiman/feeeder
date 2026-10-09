@@ -240,6 +240,22 @@ actor FakeAssistant: ThemeAssistant {
         #expect(suggestions.clusters == .empty)
     }
 
+    @Test func switchingTheAssistantOffWhileFindingClustersDiscardsTheGroups() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 5)
+        let ids = store.articles.map(\.id)
+        for id in ids.prefix(4) { try store.setStar(articleID: id, isStarred: true, at: at) }
+        let fake = FakeAssistant()
+        await fake.script(groups: [[ids[0], ids[1]]], hold: true)
+        var enabled = true
+        let suggestions = ThemeSuggestionModel(store: store, assistant: fake, isEnabled: { enabled }, now: { self.at })
+        let task = Task { await suggestions.loadClusters() }
+        try await waitUntil { await fake.parkedCount == 1 }
+        enabled = false
+        await fake.releaseClusters(); await task.value
+        #expect(suggestions.clusters == .empty && !suggestions.isFindingClusters)
+    }
+
     @Test func availabilityIsReportedOnlyWhileEnabled() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library, articles: 1)
