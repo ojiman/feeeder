@@ -23,6 +23,11 @@ struct ThemePickerView: View {
             TextField("テーマを探す、または新しい名前", text: $query)
                 .focused($fieldFocused)
                 .onSubmit(activateHighlighted)
+                .onKeyPress(.return) {
+                    guard NSEvent.modifierFlags.contains(.command),
+                          let action = ThemePicker.explicitAction(rows: rows, query: query) else { return .ignored }
+                    run(action); return .handled
+                }
                 .onKeyPress(.upArrow) { highlighted = ThemePicker.move(highlighted, by: -1, count: rows.count); return .handled }
                 .onKeyPress(.downArrow) { highlighted = ThemePicker.move(highlighted, by: 1, count: rows.count); return .handled }
                 .accessibilityLabel("テーマを探す、または新しい名前")
@@ -38,7 +43,7 @@ struct ThemePickerView: View {
                     }
                 }.frame(maxHeight: 220)
             }
-            Text("↑↓で選び、Returnで入れる／外す。Escで閉じる。").font(.caption2).foregroundStyle(.secondary)
+            Text("↑↓で選び、Returnで入れる／外す。⌘Returnで入力した名前で作る。Escで閉じる。").font(.caption2).foregroundStyle(.secondary)
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .padding(14).frame(width: 300)

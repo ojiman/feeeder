@@ -57,4 +57,14 @@ struct ThemePickerTests {
         #expect(ThemePicker.action(rows: rows, highlighted: nil) == nil)
         #expect(ThemePicker.action(rows: rows, highlighted: 5) == nil)
     }
+
+    @Test func commandReturnCreatesWithTheTypedNameUnlessItAlreadyExists() {
+        func explicit(_ query: String) -> ThemePickerAction? {
+            ThemePicker.explicitAction(rows: ThemePicker.rows(themes: themes, memberOf: [], query: query), query: query)
+        }
+        #expect(explicit("llm") == .create("llm"))            // partial matches exist, but the person asked for this name
+        #expect(explicit("宇宙") == .create("宇宙"))
+        #expect(explicit("LLMの実用設計") == .toggle(llm))      // exact name: never a duplicate
+        #expect(explicit("") == nil && explicit("  ") == nil)
+    }
 }

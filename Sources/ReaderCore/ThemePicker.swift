@@ -34,6 +34,15 @@ public enum ThemePicker {
         return 0
     }
 
+    /// ⌘Return: create with the typed name even when other themes only partially match it; an exact name acts on that theme.
+    public static func explicitAction(rows: [ThemePickerRow], query: String) -> ThemePickerAction? {
+        if let create = rows.first(where: { if case .create = $0.kind { true } else { false } }), case .create(let name) = create.kind {
+            return .create(name)
+        }
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return action(rows: rows, highlighted: defaultHighlight(rows: rows, query: query))
+    }
+
     public static func move(_ index: Int?, by delta: Int, count: Int) -> Int? {
         guard count > 0 else { return nil }
         guard let index else { return delta >= 0 ? 0 : count - 1 }
