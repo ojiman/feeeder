@@ -50,4 +50,12 @@ struct ReaderWorkspaceTests {
         workspace.selectQuestion(.understanding, in: first)
         #expect(workspace.questionSelection(of: first) == .understanding)
     }
+
+    @Test func aQuestionThatNoLongerExistsFallsBackToTheUnderstanding() {
+        let kept = UUID(), gone = UUID()
+        #expect(ThemeQuestionSelection.question(kept).resolved(existing: [kept]) == .question(kept))
+        #expect(ThemeQuestionSelection.question(gone).resolved(existing: [kept]) == .understanding)
+        #expect(ThemeQuestionSelection.question(gone).resolved(existing: []) == .understanding)
+        #expect(ThemeQuestionSelection.understanding.resolved(existing: [kept]) == .understanding)
+    }
 }

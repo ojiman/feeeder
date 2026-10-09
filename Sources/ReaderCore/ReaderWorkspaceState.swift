@@ -8,7 +8,14 @@ public enum ReaderWorkspaceScope: Hashable, Sendable {
 public enum ThemeFace: String, Sendable { case articles, questions }
 
 /// What the questions face has selected: the theme's "いまの理解" or one question.
-public enum ThemeQuestionSelection: Hashable, Sendable { case understanding, question(UUID) }
+public enum ThemeQuestionSelection: Hashable, Sendable {
+    case understanding, question(UUID)
+    /// A question that no longer exists (deleted, or from another theme) falls back to the theme's "いまの理解".
+    public func resolved(existing: Set<UUID>) -> ThemeQuestionSelection {
+        if case .question(let id) = self, existing.contains(id) { return self }
+        return .understanding
+    }
+}
 
 public struct ReaderWorkspaceState {
     public var scope: ReaderWorkspaceScope = .all

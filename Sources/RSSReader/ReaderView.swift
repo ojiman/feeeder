@@ -430,10 +430,7 @@ struct ReaderView: View {
 
     /// A selection that points at a question that no longer exists shows the "いまの理解" instead.
     private func effectiveQuestionSelection(_ themeID: UUID) -> ThemeQuestionSelection {
-        if case .question(let id) = workspace.questionSelection(of: themeID), store.themeQuestions.contains(where: { $0.id == id }) {
-            return .question(id)
-        }
-        return .understanding
+        workspace.questionSelection(of: themeID).resolved(existing: Set(store.questions(themeID: themeID).map(\.id)))
     }
     private func questionSelectionBinding(_ themeID: UUID) -> Binding<ThemeQuestionSelection> {
         Binding(get: { effectiveQuestionSelection(themeID) }, set: { workspace.selectQuestion($0, in: themeID) })
