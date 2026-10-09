@@ -165,4 +165,52 @@ extension ReaderStore {
         return articleIDs.filter { (starredIDs.contains($0) && articleThemeIDs[$0] == nil) || $0 == keeping }
     }
     public var unfiledStarCount: Int { unfiledStarredArticleIDs(keeping: nil).count }
+
+    @discardableResult public func addQuestion(themeID: UUID, lens: QuestionLens, text: String, at: Date) throws -> ThemeQuestion {
+        try reloadIfNeeded()
+        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { throw ThemeError.missingQuestionText }
+        let question = ThemeQuestion(themeID: themeID, lens: lens, text: text, at: at)
+        context.insert(question)
+        theme.updatedAt = at
+        try save(); try reload()
+        return question
+    }
+    public func questions(themeID: UUID) -> [ThemeQuestion] {
+        themeQuestions.filter { $0.themeID == themeID }.sorted {
+            $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
+        }
+    }
+    public func updateQuestion(id: UUID, text: String, at: Date) throws {
+        try reloadIfNeeded()
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { throw ThemeError.missingQuestionText }
+        guard let question = themeQuestions.first(where: { $0.id == id }), question.text != text else { return }
+        question.text = text; question.updatedAt = at
+        try save()
+    }
+    /// Typing path: saves without reloading. The answer is stored exactly as typed.
+    public func saveAnswer(questionID: UUID, answer: String, at: Date) throws {
+        try reloadIfNeeded()
+        guard let question = themeQuestions.first(where: { $0.id == questionID }), question.answer != answer else { return }
+        question.answer = answer; question.updatedAt = at
+        try save()
+    }
+    public func setEvidence(questionID: UUID, articleIDs: [UUID], at: Date) throws {
+        try reloadIfNeeded()
+        guard let question = themeQuestions.first(where: { $0.id == questionID }) else { return }
+        let members = themeMembers[question.themeID] ?? []
+        var seen = Set<UUID>()
+        let evidence = articleIDs.filter { members.contains($0) && seen.insert($0).inserted }
+        guard evidence != question.evidenceArticleIDs else { return }
+        question.evidenceArticleIDs = evidence; question.updatedAt = at
+        try save()
+    }
+    public func deleteQuestion(id: UUID) throws {
+        try reloadIfNeeded()
+        guard let question = themeQuestions.first(where: { $0.id == id }) else { return }
+        context.delete(question)
+        try save(); try reload()
+    }
 }

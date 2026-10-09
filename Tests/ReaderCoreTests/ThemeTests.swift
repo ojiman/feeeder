@@ -150,4 +150,76 @@ import Testing
         #expect(throws: ThemeError.self) { try store.addArticle(store.articles[0].id, toTheme: UUID(), at: at) }
         #expect(store.themeArticles.isEmpty)
     }
+
+    @Test func questionsKeepAnswersAndDeriveTheAnsweredState() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "A", at: at)
+        let draft = QuestionLens.assumption.draft(themeName: "A")
+        let question = try store.addQuestion(themeID: theme.id, lens: .assumption, text: " \(draft) ", at: at)
+        #expect(question.lens == .assumption && question.text == draft && !question.isAnswered)
+        try store.saveAnswer(questionID: question.id, answer: "自分の答え", at: at.addingTimeInterval(5))
+        #expect(question.isAnswered && question.updatedAt == at.addingTimeInterval(5))
+        try store.saveAnswer(questionID: question.id, answer: "  \n", at: at.addingTimeInterval(6))
+        #expect(!question.isAnswered)
+        #expect(throws: ThemeError.self) { try store.addQuestion(themeID: theme.id, lens: .custom, text: "  ", at: at) }
+        let second = try store.addQuestion(themeID: theme.id, lens: .custom, text: "自分で立てた問い", at: at.addingTimeInterval(1))
+        #expect(store.questions(themeID: theme.id).map(\.id) == [question.id, second.id])
+        try store.updateQuestion(id: second.id, text: " 言い換えた問い ", at: at.addingTimeInterval(2))
+        #expect(second.text == "言い換えた問い")
+        #expect(throws: ThemeError.self) { try store.updateQuestion(id: second.id, text: " ", at: at) }
+        #expect(second.text == "言い換えた問い")
+        try store.deleteQuestion(id: second.id)
+        #expect(store.questions(themeID: theme.id).map(\.id) == [question.id])
+    }
+
+    @Test func unknownThemeOrQuestionIsRejectedOrIgnored() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        #expect(throws: ThemeError.self) { try store.addQuestion(themeID: UUID(), lens: .custom, text: "問い", at: at) }
+        try store.saveAnswer(questionID: UUID(), answer: "書けない", at: at)
+        try store.setEvidence(questionID: UUID(), articleIDs: [], at: at)
+        try store.deleteQuestion(id: UUID())
+        #expect(store.themeQuestions.isEmpty)
+    }
+
+    @Test func evidenceMustBeThemeMembersAndRemovingAnArticleKeepsTheAnswer() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let id = try autoreleasepool {
+            let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+            let a = store.articles[0], b = store.articles[1], outsider = store.articles[2]
+            let theme = try store.createTheme(name: "A", at: at)
+            try store.addArticle(a.id, toTheme: theme.id, at: at)
+            try store.addArticle(b.id, toTheme: theme.id, at: at)
+            let question = try store.addQuestion(themeID: theme.id, lens: .custom, text: "問い", at: at)
+            try store.setEvidence(questionID: question.id, articleIDs: [b.id, outsider.id, a.id, b.id], at: at)
+            #expect(question.evidenceArticleIDs == [b.id, a.id])
+            try store.saveAnswer(questionID: question.id, answer: "答え", at: at)
+            try store.removeArticle(b.id, fromTheme: theme.id, at: at.addingTimeInterval(5))
+            #expect(question.evidenceArticleIDs == [a.id] && question.answer == "答え")
+            return question.id
+        }
+        let reopened = try ReaderStore(url: library.url, now: at)
+        let question = try #require(reopened.themeQuestions.first { $0.id == id })
+        #expect(question.evidenceArticleIDs.count == 1 && question.answer == "答え")
+    }
+
+    @Test func deletingAThemeRemovesOnlyItsOwnRecords() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]
+        try store.setStar(articleID: article.id, isStarred: true, at: at)
+        let first = try store.createTheme(name: "A", at: at)
+        let second = try store.createTheme(name: "B", at: at.addingTimeInterval(1))
+        for theme in [first, second] {
+            try store.addArticle(article.id, toTheme: theme.id, at: at)
+            try store.addQuestion(themeID: theme.id, lens: .custom, text: "問い", at: at)
+        }
+        try store.deleteTheme(id: first.id)
+        #expect(store.themes.map(\.id) == [second.id])
+        #expect(store.themeArticles.map(\.themeID) == [second.id] && store.themeQuestions.map(\.themeID) == [second.id])
+        #expect(store.article(id: article.id)?.starredAt == at)
+        let reopened = try ReaderStore(url: library.url, now: at)
+        #expect(reopened.themes.map(\.id) == [second.id] && reopened.themeQuestions.count == 1)
+    }
 }
