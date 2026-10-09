@@ -428,4 +428,59 @@ import Testing
         let questionOrder = reopened.themeQuestions.map { "\($0.createdAt.timeIntervalSince1970)|\($0.id.uuidString)" }
         #expect(questionOrder == questionOrder.sorted())
     }
+
+    @Test func themeListKeepsTheSelectedArticleUntilItMoves() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let ids = store.articles.map(\.id)
+        let theme = try store.createTheme(name: "A", at: at)
+        try store.addArticle(ids[0], toTheme: theme.id, at: at)
+        try store.addArticle(ids[2], toTheme: theme.id, at: at)
+        #expect(store.themeArticleIDs(themeID: theme.id, keeping: nil) == [ids[0], ids[2]])
+        try store.removeArticle(ids[0], fromTheme: theme.id, at: at)
+        #expect(store.themeArticleIDs(themeID: theme.id, keeping: ids[0]) == [ids[0], ids[2]])
+        #expect(store.themeArticleIDs(themeID: theme.id, keeping: nil) == [ids[2]])
+        #expect(store.themeArticleIDs(themeID: theme.id) == [ids[2]])
+    }
+
+    @Test func isInAnyThemeFollowsMembership() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let id = store.articles[0].id
+        #expect(!store.isInAnyTheme(articleID: id))
+        let theme = try store.createTheme(name: "A", at: at)
+        try store.addArticle(id, toTheme: theme.id, at: at)
+        #expect(store.isInAnyTheme(articleID: id))
+        try store.removeArticle(id, fromTheme: theme.id, at: at)
+        #expect(!store.isInAnyTheme(articleID: id))
+    }
+
+    @Test func toggleAddsThenRemovesAndNamesTheTheme() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let id = store.articles[0].id
+        let theme = try store.createTheme(name: "金利", at: at)
+        #expect(try store.toggleTheme(theme.id, for: id, at: at) == .added(themeName: "金利"))
+        #expect(store.isInAnyTheme(articleID: id))
+        #expect(try store.toggleTheme(theme.id, for: id, at: at) == .removed(themeName: "金利"))
+        #expect(!store.isInAnyTheme(articleID: id))
+        #expect(throws: ThemeError.self) { try store.toggleTheme(UUID(), for: id, at: at) }
+    }
+
+    @Test func creatingWithAnArticleIsOneAtomicSave() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let gate = SaveGate()
+        let store = try gatedStore(library, gate)
+        let id = store.articles[0].id
+        let expectedSummary = store.articles[0].summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.createTheme(name: "失敗", adding: id, at: at) }
+        #expect(store.themes.isEmpty && store.themeArticles.isEmpty)
+        let theme = try store.createTheme(name: "  成功  ", adding: id, at: at)
+        #expect(theme.name == "成功" && store.themeIDs(containing: id) == [theme.id])
+        #expect(!expectedSummary.isEmpty && store.themeArticles.first?.summary == expectedSummary)
+        #expect(throws: ThemeError.self) { try store.createTheme(name: " ", adding: id, at: at) }
+        #expect(throws: ThemeError.self) { try store.createTheme(name: "存在しない", adding: UUID(), at: at) }
+        #expect(store.themes.count == 1)
+    }
 }

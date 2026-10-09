@@ -20,4 +20,25 @@ struct ReaderWorkspaceTests {
         #expect(workspace.dailyNoteID != nil && workspace.weeklyNoteID != nil)
         #expect(workspace.reader(in: .all).selectedArticleID == nil)
     }
+
+    @Test func themeFacesGateReadingAndKeepTheSavedReader() {
+        var workspace = ReaderWorkspaceState()
+        let themeID = UUID(), other = UUID()
+        #expect(workspace.face(of: themeID) == .articles && workspace.isReading(.theme(themeID)))
+        #expect(workspace.isReading(.unfiledStars) && workspace.isReading(.all))
+        let article = UUID()
+        var reader = ReaderSelectionState(); reader.select(article)
+        workspace.switchFace(of: themeID, to: .questions, rememberingReader: reader)
+        #expect(workspace.face(of: themeID) == .questions && !workspace.isReading(.theme(themeID)))
+        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == article)
+        #expect(workspace.face(of: other) == .articles)
+        var later = ReaderSelectionState(); later.select(UUID())
+        workspace.switchFace(of: themeID, to: .articles, rememberingReader: later)
+        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == article)
+        #expect(workspace.isReading(.theme(themeID)))
+        workspace.switchFace(of: themeID, to: .questions, rememberingReader: later)
+        var third = ReaderSelectionState(); third.select(UUID())
+        workspace.rememberReader(third, in: .theme(themeID))
+        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == later.selectedArticleID)
+    }
 }

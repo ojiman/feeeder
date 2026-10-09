@@ -43,6 +43,7 @@ struct ReaderView: View {
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
         case .dailyNotes, .weeklyNotes: []
+        case .unfiledStars, .theme: []
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
         case .starred: store.starredArticleIDs(keeping: selection)
@@ -55,6 +56,7 @@ struct ReaderView: View {
         switch scope ?? .all {
         case .dailyNotes: "日次ノート"
         case .weeklyNotes: "週ノート"
+        case .unfiledStars, .theme: "テーマ"
         case .folder(let name): name
         case .all: "すべての記事"
         case .unread: "未読"

@@ -129,7 +129,7 @@ extension ReaderStore {
            let existing = themeArticles.first(where: { $0.themeID == themeID && $0.articleID == articleID }) {
             return existing
         }
-        let summary = isContentAvailable(article, at: at) ? article.summary.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let summary = recordedSummary(of: article, at: at)
         let link = ThemeArticle(themeID: themeID, article: article, summary: summary, at: at)
         context.insert(link)
         theme.updatedAt = at
@@ -148,10 +148,41 @@ extension ReaderStore {
         try save(); try reload()
     }
 
-    public func themeArticleIDs(themeID: UUID) -> [UUID] {
+    public func themeArticleIDs(themeID: UUID, keeping: UUID? = nil) -> [UUID] {
         _ = themeArticles
-        guard let members = themeMembers[themeID], !members.isEmpty else { return [] }
-        return articleIDs.filter { members.contains($0) }
+        let members = themeMembers[themeID] ?? []
+        guard !members.isEmpty || keeping != nil else { return [] }
+        return articleIDs.filter { members.contains($0) || $0 == keeping }
+    }
+    public func isInAnyTheme(articleID: UUID) -> Bool {
+        _ = themeArticles
+        return articleThemeIDs[articleID] != nil
+    }
+    @discardableResult public func toggleTheme(_ themeID: UUID, for articleID: UUID, at: Date) throws -> ThemeMembershipChange {
+        try reloadIfNeeded()
+        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
+        let name = theme.name
+        if themeMembers[themeID]?.contains(articleID) == true {
+            try removeArticle(articleID, fromTheme: themeID, at: at)
+            return .removed(themeName: name)
+        }
+        try addArticle(articleID, toTheme: themeID, at: at)
+        return .added(themeName: name)
+    }
+    /// Creates the theme and its first article in one save, so a failure never leaves an empty new theme behind.
+    @discardableResult public func createTheme(name: String, adding articleID: UUID, at: Date) throws -> Theme {
+        try reloadIfNeeded()
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw ThemeError.missingName }
+        guard let article = article(id: articleID) else { throw ThemeError.missingArticle }
+        let theme = Theme(name: name, at: at)
+        context.insert(theme)
+        context.insert(ThemeArticle(themeID: theme.id, article: article, summary: recordedSummary(of: article, at: at), at: at))
+        try save(); try reload()
+        return theme
+    }
+    private func recordedSummary(of article: Article, at: Date) -> String {
+        isContentAvailable(article, at: at) ? article.summary.trimmingCharacters(in: .whitespacesAndNewlines) : ""
     }
     public func themeArticleCount(themeID: UUID) -> Int {
         _ = themeArticles
@@ -221,4 +252,9 @@ extension ReaderStore {
         context.delete(question)
         try save(); try reload()
     }
+}
+
+public enum ThemeMembershipChange: Equatable, Sendable {
+    case added(themeName: String)
+    case removed(themeName: String)
 }
