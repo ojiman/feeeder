@@ -1,125 +1,105 @@
 # Settings メニュードラフトのフィジビリティ検証
 
-更新日: 2026-10-10（日本時間）
+更新日: 2026-10-10（日本時間）。状態: 設計判断のための検証、製品受入・仕様承認ではない。
 
-対象: [Settingsドラフト](../superpowers/specs/2026-10-10-settings-draft.md)。仕様を確定する前に、現行構成での実現可能性と追加検証が必要な条件を確認した。**製品コード・保存モデル・依存・正式PRD/Architectureは変更していない。** 検証専用の合成プローブを別の一時コピーで実行した。
+対象: [Settingsドラフト](../superpowers/specs/2026-10-10-settings-draft.md)。製品コード・保存モデル・依存・正式PRD/Architectureは変更していない。固定commitの一時コピーへ設定値化パッチと合成試験を追加した。
 
-## 結論と推奨
+## 結論と判断理由
 
-**基本構成は実現可能。ただし「読書位置を保つ」と「IME変換中にもノート文字サイズを即時反映する」は、そのまま仕様確定できない。**
+**本文の設定値化は小さな変更で実現できる。5カテゴリは内容描画まで確認。ノートの文字サイズは合成部品で成立したが、製品エディタと実IMEの受入は残る。**
 
-推奨は、5カテゴリと既存の保存契約を採用候補にし、文字サイズ・行間・幅の値は仮案のままとすること。表示設定の適用方法は、次の2点を検証してから確定する。
+- 本文: 実際の`ArticleTextView.install()`と`setFrameSize()`を設定値化し、文字サイズ・通常段落と引用の行間・幅上限・左右余白を108通り確認した。設定を無視する対照で試験が失敗することも確認した。ただしSettingsからの通知・呼出側・保存・既読化副作用のない更新は未接続。
+- ノート: ネイティブのfont変更と、SwiftUIのBinding同期を切り分けた。同期した合成変換中テキストはfont変更後も保持された。**前回の「即時反映では変換中テキストを保持できない」という診断と「編集中は反映を保留する」という推奨を撤回する。** 実際の日本語IMEとSettings sceneで反映方式を判断する。
+- 読書位置: 実ウィンドウ上のスクロール領域で、段落内に収まる縦位置を確認して測った。同じ段落/80ptでも、幅変更で先頭文字が92 UTF-16 code unit移動した。現行方式で同じ文字へ戻れるとは言えない。文字基準の方式は未実装・未検証。本文設定の採用と位置保持の精度を別の判断にする。
+- AI: この端末のAPI利用可否を読んだだけ。仮のUserDefaultsキーを保存しても製品のAI無効化を証明できないため、そのPASSを削除した。呼出抑止と遅延応答破棄は機能開発との合流で確認する。
 
-1. 本文は同じ段落/ピクセル差への復帰では同じ文を保てない。表示中の文字位置を基準に再組版後へ戻す方式を検証する。
-2. ノートはSwiftUIの`.font`変更だけではAPI生成の変換中テキストを保持できなかった。まず編集中の反映を保留し、編集終了後に反映する案を実際の日本語IMEで試す。即時反映を残す場合は、変換・選択・入力を保つ別の反映方法を検証する。
-
-独立した設定管理基盤、SwiftDataの新モデル、依存ライブラリ、AI実装の追加は不要。既存の`Settings`・`AppStorage`・`ReaderStore`を使う方針で進められる。AIの実装と編集面への接続には、並行開発との合流が必要。
+既存の`Settings`・`AppStorage`・`ReaderStore`を使う方針は妥当。独立した設定基盤、新しい保存モデル、依存の追加を必要とする根拠はない。これらは構成の判断であり、完成したSettings統合の証拠ではない。
 
 ## 基準と環境
 
 | 項目 | 値 |
 |---|---|
-| 基準commit | `e9bcd933873fe920fc3751ba417afe561ff2a99c`（main、問い・レンズ・答え・根拠の実装） |
-| 作業ブランチ | `codex/settings-feasibility` |
+| 固定した製品ソース | `e9bcd933873fe920fc3751ba417afe561ff2a99c`（問い・レンズ・答え・根拠の実装） |
+| 作業ブランチ | `codex/settings-feasibility`、Draft PR #28 |
+| レビュー時のmain | `19f6f05`。追加分はAI計画の文書で、今回の製品ソースは変わらない |
 | OS | macOS 27.0.1、build 26A434、Apple Silicon |
 | Xcode / Swift | Xcode 27.0（27A266a）/ Swift 6.4（swiftlang-6.4.0.34.1） |
-| SDK | macOS 27 SDK。macOS 26 SDK・Swift 6.3.3の検証ではない |
-| 入力 | 合成した日本語/英語の文章、絵文字、架空のリンク、一時DB |
-| 設定保存 | UUIDで作った専用UserDefaults suite。試験後にそのsuiteだけを削除 |
-| 外部操作 | 公開GitHubのmain取得とPR作成。モデル推論・資産取得・Claude起動・記事取得なし |
+| SDK | macOS 27 SDK。macOS 26 SDK / Swift 6.3.3の確認ではない |
+| 入力と保存 | 合成した日英文章・絵文字・架空リンク。UUID専用UserDefaults suiteは試験後にそのsuiteだけ削除 |
+| 外部操作 | 認証済みGitHub経由で非公開リポジトリのmainとレビューを取得、PRを更新。推論・資産取得・Claude起動・記事取得なし |
 
-当初のドラフトは`afc1cb9`を基準にしていた。調査開始時にmainを取得し、追加された問い・答えの実装を読んで、基準を上記へ更新した。open PRは開始時0件。作業コピーには本セッションの未コミットドラフトだけがあり、別AIの作業コピーは操作していない。
+確認した構成は`ReaderSettingsView`、`RSSReaderApp`、`NativeArticleText`、`UnderstandingEditor`、`QuestionEditor`、`ContentRetention`とPRD/Architecture・決定0008/0009。別AIの開発へ変更を加えず、このPRは文書と検証資材に限る。
 
-## 方法とスコープ
+## 方法と結果
 
-- **既存実装の確認**: `ReaderSettingsView`、`RSSReaderApp`、`NativeArticleText`、`UnderstandingEditor`、`QuestionEditor`、`ContentRetention`と、PRD/Architecture・決定0008/0009を確認。
-- **既存の検証を再実行**: 基準commitに対し、本文ビュー・テーマ画面・問い編集・保持の関連試験を実行。
-- **合成プローブ**: 基準commitを`git archive`で一時コピーへ展開し、[プローブのSwiftソース](probes/settings-feasibility.swift)だけをTestsへ追加。製品コードは基準commitのまま。
-- **フォームの描画**: 5カテゴリの`TabView`/grouped `Form`を`NSHostingView`と試験用`NSWindow`へ載せ、カテゴリをプログラムで切り替えて内容をPNGへ描画。外観・編集・AI・保存・キー一覧の5枚を目視確認。
-- **入力の確認**: 合成`TextEditor`のfont変更前後で、同じネイティブビュー・文章・選択範囲・文字サイズを比較。`setMarkedText`で作った変換中テキストは、サイズ変更しない対照と比較。
-- **本文の確認**: 実際の`ArticleTextView`へ108通りのfont/行間/幅を適用し、文章・リンク・引用の字下げ・ヘッダのfontを表明。現在の位置復帰方式の限界を別途測定。
-- **AI**: `SystemLanguageModel.default.availability`と日本語`NLContextualEmbedding.hasAvailableAssets`を読むだけ。モデルを呼ばず、資産の取得要求も出さない。
+PASSは下記の表明範囲だけを指す。実装統合と製品受入を含めない。
 
-これは読書アプリ本体の実操作や、実際の`Settings` sceneの検証ではない。生成PNGはフォーム内容の描画で、ウィンドウのタイトルバーに置かれるカテゴリ操作は画像に含まれない。人がカテゴリを選べること・`⌘,`・最後の面の復元は未確認。
-
-## 結果
-
-PASSは表明した範囲だけの合格であり、製品受入ではない。
-
-| 項目 | 結果 | 確認できたこと・限界 |
+| 項目 | 結果 | 確認した経路・限界 |
 |---|---|---|
-| 基準commitの関連試験 | PASS | UI 17件/3 suite、Core 6件/1 suite。合計23件。本文・テーマ・問いの既存挙動と保持の関連試験で、全テストではない |
-| 合成プローブ | PASS（表明部分） | 3件、最終実行13.696秒、exit 0。下記の位置と変換中テキストは診断出力であり、成功表明には含めない |
-| 5カテゴリのフォーム | PASS（描画・プログラム切替） | 640×480ptで5カテゴリの内容が描画された。フォーム内容を目視確認。実際のカテゴリ操作・Settings sceneは未確認 |
-| 外観・AIの設定値保存 | PASS（部品） | 専用suiteのdark/falseを別のUserDefaultsインスタンスと`AppStorage`から読戻した。別プロセスの再起動・本体への通知は未確認 |
-| 通常のノートfont変更 | PASS（部品） | 16→20→14→18→16pt。ビューの同一性・文章・選択範囲を保持し、fontが更新された。既存の保存Bindingや問いの`TextField`への接続は未確認 |
-| 変換中テキストのfont変更 | FAIL（APIによる代替試験） | サイズを変えず待った対照ではmarked textが残った。20ptへ変更するとmarked rangeが`{3,4}`→`{57,0}`となり、文章も変更前と一致しなかった。実際のIMEの再現ではないが、単純な即時反映で保持できるという根拠は得られなかった |
-| 本文の書式変更 | PASS（属性） | 4サイズ×3行間×3最大幅×3ペイン幅=108通り。文字列・リンク先・引用字下げ・ヘッダfontを保持。フォントを丸ごと書き直さず既存属性を残せる |
-| 本文の同じ文への復帰 | FAIL（現行の位置表現の限界） | 360→1000ptの幅変更。段落7/600pxは同じだが、可視先頭のUTF-16位置は5691→6125、434 code unitの差。段落/ピクセル差の保持を、同じ文字・行の保持とは扱えない |
-| 端末内AIの利用可否 | PASS（この端末） | FoundationModelsはavailable、日本語埋め込み資産は存在。非対応・資産なし・Apple Intelligence無効の端末は未確認 |
-| AIオフと要求中の無効化 | NOT_RUN | 本体のAI実装は基準commitで未実装。トグル値の保存と、呼び出し抑止・遅延応答破棄は別に確認する必要がある |
-| 保存・削除の既存経路 | PASS（関連Core試験） | プレビューの非破壊性、短縮、期限、保存失敗の復旧、テーマ記録の保持/再open。新Settings画面での確認/キャンセル操作は未確認 |
+| 固定commitの既存関連試験 | PASS（初回実行） | UI17件/3 suite、Core6件/1 suite、計23件。本文・テーマ・問い編集・保持。全試験ではない。本体コードは本PRで変更しておらず、この結果を新しい統合試験の代用にはしない |
+| 修正後の合成プローブ | PASS | 5件。最終結果と対照の出力は[結果抜粋](probes/settings-feasibility-results.txt)に保持 |
+| 5カテゴリ | PASS（内容描画のみ） | `TabView`の選択をプログラムで変更して640×480ptの5枚を生成。内容の欠落・はみ出しを目視確認。実際のSettings scene、カテゴリ操作、⌘,、前回の面の復元はNOT_RUN |
+| 通常のノートfont変更 | PASS（合成部品） | 16→20→14→18→16pt。ネイティブビュー同一性、文章、選択範囲、fontを表明。製品の保存Binding・問いTextFieldはNOT_RUN |
+| ネイティブfont変更 | PASS（合成marked text） | `NSTextView.setMarkedText`後にfontだけ変更し、marked range・文章を保持 |
+| SwiftUIとBinding | PASS（同期した条件） | `didChangeText()`でBindingへ通知してからfontを変更するとmarked range `{3,4}`と文章を保持。通知しない条件ではBindingが古いままで再反映され、marked range `{57,0}`・文章不一致となる。後者を実IMEの障害と扱わない |
+| 別ウィンドウへのresponder移動 | PASS（文章保持のみ） | 別NSWindowを作り、編集側のfirst responderを解除して設定側へ移動後にfont変更。文章を保持。実際のkey window切替・日本語入力候補・確定操作は模擬していない |
+| 設定値化した本文 | PASS（実描画経路） | 4サイズ×3行間×3最大幅×3ペイン幅=108。各段落のfont・行間、引用字下げ20pt、リンク先とクリック通知、ヘッダ11pt、本文文字列、幅上限・左右余白を確認。リサイズも設定した幅上限を使う |
+| 設定を無視する対照 | EXPECTED_FAIL | 一時コピーで通常段落だけ16ptへ固定すると、サイズの表明が失敗しexit 1。試験が属性の不変性だけを確認するものではないことを確認。対照変更は復旧後に全5件を再実行 |
+| 読書位置 | 現行方式の限界を確認 | ウィンドウにNSScrollViewを載せ、段落7の長さ774 UTF-16、縦位置80ptが変更前後の段落高936/390pt内に収まることを表明。幅360→1000pt、同じ段落/80ptへ戻って先頭UTF-16が5505→5597。現在の段落表現を否定するものではなく、同じ文字との違いの測定 |
+| AI利用可否 | PASS（この端末） | FoundationModels available、日本語embedding資産あり。利用不可・資産なし・Apple Intelligence無効はNOT_RUN |
+| AIオフの製品挙動 | NOT_RUN | 設定保存、呼出抑止、進行中要求の結果破棄は未接続。仮トグルの保存試験は根拠に使わない |
+| 保存・削除 | PASS（既存関連Core試験のみ） | プレビュー非破壊性、短縮、期限、失敗復旧、テーマ記録保持/再open。新Settingsでの確認・キャンセルはNOT_RUN |
 
-### 診断出力（最終実行）
+本文プローブは試験から属性を書き換えず、[設定値化パッチ](probes/settings-typography.patch)を当てた製品の描画処理を呼ぶ。現行本文は段落ごとに一律fontを生成しており、任意の太字・等幅fontを保持する処理ではない。今回の確認は現行のリンク・引用・ヘッダ契約に限る。未実装の属性保持を主張しない。
 
-```text
-PROBE marked-text baseline after no-font update=true, before={3, 4}, after={57, 0}, sameText=false
-PROBE marked-text preserved=false
-PROBE preferences round-trip: dark, AI off; synthetic suite only
-PROBE typography 108 combinations: text/link/quote/header preserved; not a production settings integration
-PROBE top visible UTF16 index before=5691, after=6125
-PROBE deep offset before=paragraph-7/600.0, after=paragraph-7/600.0
-PROBE FoundationModels availability: available
-PROBE Japanese embedding assets present: true
-```
+フォームの代表例: [読書・編集の内容画像](probes/settings-category-reading.png)。これは画面設計の完成像ではなく、部品の描画確認。タイトルバーのカテゴリ操作は画像外であり、ナビゲーションの証拠には使わない。
 
-ノートのmarked text診断は、入力部品だけを使い、保存処理へ接続していない。製品で入力が消えることを証明したものではなく、提案の反映方法に追加検証が必要なことを示す。
+## 実装へ届く範囲と合流条件
 
-## 実装へ届く変更と並行開発との境界
-
-| 範囲 | 実装時に届く場所 | 合流条件 |
+| 範囲 | 届く場所 | 条件 |
 |---|---|---|
-| 設定画面・外観・キー一覧 | `ReaderSettingsView`、`RSSReaderApp` | 先に画面の分類とラベルを決められる。動作のない仮トグルを完成品として出さない |
-| 本文の文字サイズ/行間/幅 | `NativeArticleText`、`ReaderView`の呼出し、位置復帰、表示設定の保存 | 表示変更で本文を再取得/再既読化しない。通常本文と引用の両方へ届く。文字位置を保つ方式の検証が必要 |
-| ノートの文字サイズ | `QuestionEditor`の問い`TextField`・答え`TextEditor`、`UnderstandingEditor` | 保存Bindingと入力状態を維持する。編集中の反映方式を実機で決める。ノート機能の変更と同じファイルに触れるため実装時には合流が必要 |
-| AI | 設定値と`ThemeAssistant`呼出し側・利用可否検査 | オフ時に埋め込み/生成の両方を呼ばず、進行中の結果を破棄する契約を機能開発側と揃える。今回はAI実装を増やさない |
-| 保存 | 既存`ReaderStore`/`ReaderSettings`/`DeletionPreview` | データの契約は変えない。Settingsの表示だけにして、モデルを画面から直接更新しない |
+| カテゴリ・外観・キー一覧 | `ReaderSettingsView`、`RSSReaderApp` | UI骨格から進められる。実操作・キーボード・最後の面の復元は受入で確認 |
+| 本文の文字サイズ/行間/幅 | `NativeArticleText`、`ReaderView`の呼出側、AppStorage、位置復帰 | 設定値化パッチは実現性の証拠だけ。本文再取得・再既読化を起こさない更新経路は別途確認。文字基準の復帰方式は未決定 |
+| ノート文字サイズ | `QuestionEditor`の問いTextField/答えTextEditor、`UnderstandingEditor` | 保存Binding、実IME、入力先切替、選択、文章保持を確認。同じ編集ファイルを触るため機能開発と合流が必要 |
+| AI | 設定値、`ThemeAssistant`と利用可否検査 | オフ時の埋め込み/生成呼出抑止と遅延応答破棄を機能開発側と揃える |
+| 保存 | 既存ReaderStore / ReaderSettings / DeletionPreview | 既存データ契約を維持。画面からモデルを直接変更しない |
 
-今回のPRは文書とプローブに限るので、別AIの機能実装から切り離せる。**Settingsの本実装すべてが完全に独立するわけではなく、ノート文字サイズとAI無効化の接続には合流が必要。**
+本PRは機能開発から切り離せる。Settingsの本実装すべてが独立するわけではない。本文・ノート・AIは呼出側への接続で合流が必要。
 
-## 再実行
-
-基準commitが存在するこのリポジトリで、次を実行する。`mktemp`が毎回新しいコピーを作る。テストのUserDefaultsは専用suiteだけを使い、本人のFeeederライブラリは開かない。
+## 再実行と保管した証拠
 
 ```sh
-probe_source=$(mktemp -d /private/tmp/feeeder-settings-probe.XXXXXX)
-git archive e9bcd933873fe920fc3751ba417afe561ff2a99c | tar -x -C "$probe_source"
-cp docs/verification/probes/settings-feasibility.swift "$probe_source/Tests/ReaderUITests/SettingsFeasibilityProbe.swift"
-swift test --package-path "$probe_source" --scratch-path "$probe_source/.build" --force-resolved-versions --disable-keychain --disable-netrc --filter SettingsFeasibilityProbe
+bash docs/verification/probes/run-settings-feasibility.sh
 ```
 
-実行したコマンド:
+[実行スクリプト](probes/run-settings-feasibility.sh)は固定commitを`mktemp`へ展開し、パッチと[試験ソース](probes/settings-feasibility.swift)を追加して5件を実行する。各実行のPNG・ログ・ビルド領域は新しい一時ディレクトリに分離し、パスを出力する。本人のFeeederライブラリを開かない。一時ファイルを文書の参照先にせず、結果抜粋と代表画像をリポジトリへ保管した。
 
-```sh
-swift test --scratch-path /private/tmp/feeeder-settings-feasibility-build --force-resolved-versions --disable-keychain --disable-netrc --filter 'NativeArticleTextTests|ContentRetentionTests|ThemeReaderTests'
-swift test --package-path /private/tmp/feeeder-settings-probe-source --scratch-path /private/tmp/feeeder-settings-feasibility-build --force-resolved-versions --disable-keychain --disable-netrc --filter SettingsFeasibilityProbe
-```
+本文の対照は、コピー内の`append(paragraph, size: bodyFontSize, …)`を`size: 16`に置き換え、`--filter parameterizedProductionInstallAndWidth`を実行する。期待結果はexit 1とfontサイズの表明失敗。通常実行へ戻す際はコピーを捨てて上のスクリプトを再実行する。
 
-どちらも最終終了コード0。前者のフィルタは`ThemeReaderTests.swift`に属する`QuestionEditorTests`も含んだ（実際のログで17 UI試験を確認）。後者の108通りではテキスト属性を試験から変更しており、本体に設定の接続を実装した証拠ではない。
+初回のsandbox実行はコンパイルキャッシュ書込みで失敗したため実行権限付きで再実行。再検証中にSwift TestingのCGFloat/Double比較を同じ型へ修正した。保管した結果は修正後のソースに対応する。`git diff --check`とシェル構文確認も実行した。
 
-最初の実行はsandbox内のコンパイルキャッシュ書込みで失敗し、実行権限を付けて再実行した。プローブの最初のビルドはCGFloat/Doubleの比較型不一致で失敗し、CGFloatへ変換して再実行した。最終の結果は修正後のソースに対応する。
+## レビューによる修正
 
-PNG出力は`/private/tmp/feeeder-settings-probe-0.png`〜`4.png`。一時ファイルはPRへ同梱せず、上記のプローブで再生成できる。ローカルログは`/private/tmp/feeeder-settings-baseline.log`と`/private/tmp/feeeder-settings-probe.log`。
+[PR #28のレビュー](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090231489)に対応。
 
-## 未検証・今回実施しないこと
+1. 属性を試験から変更する108通りを廃止し、実描画の設定値化と設定無視の対照へ置換。
+2. 任意fontの保持という主張を撤回。現行のリンク・引用・ヘッダに限定。
+3. font操作、Binding同期、別ウィンドウのresponder操作を分離。IMEの結論と保留推奨を撤回。
+4. ウィンドウに載せて段落内の縦位置で再測定。前回の600ptの数値を根拠から除外。
+5. AIの仮キー保存PASSを除外。
+6. GitHubを非公開・認証済みアクセスへ訂正。
+7. 証拠抜粋と代表画像を同梱し、リポジトリにないログへの参照を削除。
+8. AGENTS.mdの文書マップに未承認ドラフトの場所を追記。
+9. 基本メニュー、本文設定、ノート設定、位置保持の精度を別の採用判断に分離。
+10. PNGとログを実行ごとのディレクトリに分離。
 
-- 本体のSettings scene、`⌘,`、カテゴリの実操作と最後の面の復元、複数ウィンドウ。
-- 実際の日本語IME、VoiceOver、Reduce Motion、コントラスト/透明度のシステム設定、長いノートのスクロール。
-- 本文の文字位置を基準にした復帰方式、画像/引用を含む読書位置の精度、同じ行への復帰。
-- 変更した文字サイズを持つ既存エディタの保存・失敗復旧、問いのTextField、実プロセスの再起動。
-- AI実装との接続、非対応機器・資産なし・Apple Intelligence無効、進行中の無効化。
-- 提案の文字サイズ/行間/幅のPdM比較、数千件・長時間・実データでの体験。
-- macOS 26 / Swift 6.3.3のビルド・実行。本PRは`docs/**`のみなのでCIの自動実行対象外。プローブのソースもdocs配下にある。
-- 製品Releaseビルド、アプリの署名・配布、正式仕様の承認、機能実装、別AIへのメッセージ送信。
+## 残る確認と今回の対象外
 
-既存の[問い・答えの検証記録](2026-10-10-theme-questions.md)と[テーマ画面の検証記録](2026-10-10-theme-screens.md)の未確認事項も、このプローブで解消したとは扱わない。
+- 実際のSettings scene・⌘,・カテゴリ操作/復元・複数ウィンドウのkey window切替。
+- 製品エディタの実日本語IME・問いTextField・保存/失敗復旧・長いノートのスクロール。
+- 同じ文字基準の復帰方式、画像を含む位置、本文再既読化/再取得の抑止。
+- VoiceOver、Reduce Motion、コントラスト/透明度、数千件/長時間の体験、提案値のPdM比較。
+- AI接続、非対応機器・資産なし・進行中の無効化、実プロセス再起動の設定保存。
+- macOS 26 / Swift 6.3.3。変更はAGENTS.mdとdocs配下のみでCI対象外。Release、署名・配布、機能実装、正式仕様の承認、別AIへのメッセージ送信も対象外。
+
+既存の[問い・答え](2026-10-10-theme-questions.md)と[テーマ画面](2026-10-10-theme-screens.md)の未確認事項をこのプローブで解消したとは扱わない。

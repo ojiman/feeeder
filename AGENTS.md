@@ -11,6 +11,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |
 | docs/review-checklist.md | Lens for independent review of a fixed commit. |
 | docs/verification/ | Evidence logs per change. Logs, not specs. |
+| docs/superpowers/specs/ | Unapproved design drafts. The V1 source of truth remains docs/specification.md. |
 | docs/superpowers/plans/ | Historical implementation plans. |
 | Sources/ReaderCore | Models, store, parsing, retention, handoff. No UI. |
 | Sources/RSSReader | SwiftUI/AppKit app. |

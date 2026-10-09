@@ -17,11 +17,9 @@ import ReaderCore
         let state: State
         let defaults: UserDefaults
         @AppStorage var appearance: String
-        @AppStorage var enabled: Bool
         init(state: State, defaults: UserDefaults) {
             self.state = state; self.defaults = defaults
             _appearance = AppStorage(wrappedValue: "system", "appearance", store: defaults)
-            _enabled = AppStorage(wrappedValue: true, "onDeviceSuggestions", store: defaults)
         }
         var body: some View {
             @Bindable var state = state
@@ -35,11 +33,10 @@ import ReaderCore
                     Picker("ノートの文字サイズ", selection: $state.noteSize) {
                         ForEach([14.0, 16, 18, 20], id: \.self) { Text("\(Int($0)) pt").tag($0) }
                     }
-                    TextEditor(text: $state.text).font(.system(size: state.noteSize))
-                        .frame(height: 220).accessibilityLabel("合成ノート")
+                    Text("本文の文字組みと、ノートの文字サイズを設定します。")
                 }.formStyle(.grouped).tabItem { Label("読書・編集", systemImage: "textformat.size") }.tag(1)
                 Form {
-                    Toggle("端末内の提案を使う", isOn: $enabled)
+                    Text("端末内AIの無効化は機能実装との接続が必要です。")
                     Text("このMac内で処理します。自分の答えには自動で書き込みません。")
                 }.formStyle(.grouped).tabItem { Label("端末内AI", systemImage: "sparkles") }.tag(2)
                 Form {
@@ -60,113 +57,168 @@ import ReaderCore
     func settle(_ host: NSView) async throws {
         for _ in 0..<15 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
     }
-    @Test func fiveCategoriesAndEditorUpdate() async throws {
+    func window(_ content: NSView, width: CGFloat = 640) -> NSWindow {
+        let result = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: 480), styleMask: [.titled], backing: .buffered, defer: false)
+        result.isReleasedWhenClosed = false; result.contentView = content
+        return result
+    }
+    struct Note: View {
+        let state: State
+        var body: some View {
+            @Bindable var state = state
+            TextEditor(text: $state.text).font(.system(size: state.noteSize))
+                .frame(width: 640, height: 480).accessibilityLabel("合成ノート")
+        }
+    }
+    @Test func fiveCategoryContentsRender() async throws {
         let suite = "feeeder.settings.probe.\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let state = State()
         let host = NSHostingView(rootView: Preview(state: state, defaults: defaults))
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 480), styleMask: [.titled], backing: .buffered, defer: false)
-        window.isReleasedWhenClosed = false; window.contentView = host
-        defer { window.close() }
-        for category in [0, 1, 2, 3, 4] {
+        let w = window(host); defer { w.close() }
+        let output = try #require(ProcessInfo.processInfo.environment["FEEEDER_SETTINGS_PROBE_OUTPUT"])
+        try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
+        for category in 0..<5 {
             state.category = category; try await settle(host)
-            if let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
-                host.cacheDisplay(in: host.bounds, to: bitmap)
-                try bitmap.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "/private/tmp/feeeder-settings-probe-\(category).png"))
-            }
+            let bitmap = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: bitmap)
+            let data = try #require(bitmap.representation(using: .png, properties: [:]))
+            try data.write(to: URL(fileURLWithPath: output).appendingPathComponent("category-\(category).png"))
         }
-        state.category = 1; try await settle(host)
-        let before = try #require(editor(host))
-        window.makeFirstResponder(before)
-        before.setSelectedRange(NSRange(location: 3, length: 2))
-        let initialText = before.string
+        print("PROBE five category contents rendered; navigation and Settings scene not exercised")
+    }
+    @Test func editorUpdateAndMarkedTextControls() async throws {
+        let state = State()
+        let host = NSHostingView(rootView: Note(state: state))
+        let w = window(host); defer { w.close() }
+        try await settle(host)
+        let text = try #require(editor(host))
+        #expect(w.makeFirstResponder(text))
+        text.setSelectedRange(NSRange(location: 3, length: 2))
+        let initial = text.string
         for size in [20.0, 14, 18, 16] {
             state.noteSize = size; try await settle(host)
-            let after = try #require(editor(host))
-            #expect(after === before)
-            #expect(after.string == initialText && state.text == initialText)
-            #expect(after.selectedRange() == NSRange(location: 3, length: 2))
-            #expect(after.font?.pointSize == CGFloat(size))
+            #expect(editor(host) === text && text.string == initial && state.text == initial)
+            #expect(text.selectedRange() == NSRange(location: 3, length: 2))
+            #expect(text.font?.pointSize == CGFloat(size))
         }
-        before.setMarkedText("にほんご", selectedRange: NSRange(location: 4, length: 0), replacementRange: before.selectedRange())
-        #expect(before.hasMarkedText())
-        try await settle(host)
-        let markedBaseline = before.hasMarkedText()
-        let markedString = before.string, markedRange = before.markedRange()
+        // A native control separates font mutation from SwiftUI/Binding reconciliation.
+        let native = NSTextView(frame: NSRect(x: 0, y: 0, width: 640, height: 480))
+        native.string = initial
+        native.setMarkedText("にほんご", selectedRange: NSRange(location: 4, length: 0), replacementRange: NSRange(location: 3, length: 2))
+        let nativeMarked = native.markedRange(), nativeString = native.string
+        native.font = .systemFont(ofSize: 20)
+        print("PROBE native font-only marked preserved=\(native.markedRange() == nativeMarked && native.string == nativeString)")
+        #expect(native.hasMarkedText() && native.markedRange() == nativeMarked && native.string == nativeString)
+        for notifyBinding in [false, true] {
+            state.text = initial; state.noteSize = 16; try await settle(host)
+            text.setMarkedText("にほんご", selectedRange: NSRange(location: 4, length: 0), replacementRange: NSRange(location: 3, length: 2))
+            if notifyBinding { text.didChangeText() }
+            try await settle(host)
+            let matches = state.text == text.string, marked = text.markedRange(), composed = text.string
+            state.noteSize = 20; try await settle(host)
+            print("PROBE SwiftUI notifyBinding=\(notifyBinding), bindingMatchesBefore=\(matches), markedBefore=\(marked), markedAfter=\(text.markedRange()), textPreserved=\(text.string == composed)")
+            if notifyBinding {
+                #expect(matches && text.markedRange() == marked && text.string == composed)
+            }
+            text.unmarkText()
+        }
+        let settingsHost = NSHostingView(rootView: Text("合成Settings・別ウィンドウ"))
+        let settingsWindow = window(settingsHost); defer { settingsWindow.close() }
+        state.text = initial; state.noteSize = 16; try await settle(host)
+        text.setMarkedText("にほんご", selectedRange: NSRange(location: 4, length: 0), replacementRange: NSRange(location: 3, length: 2))
+        text.didChangeText(); try await settle(host)
+        let beforeText = text.string
+        let resigned = w.makeFirstResponder(nil)
+        #expect(settingsWindow.makeFirstResponder(settingsHost))
         state.noteSize = 20; try await settle(host)
-        let after = try #require(editor(host))
-        print("PROBE marked-text baseline after no-font update=\(markedBaseline), before=\(markedRange), after=\(after.markedRange()), sameText=\(after.string == markedString)")
-        print("PROBE marked-text preserved=\(after.hasMarkedText() && after.markedRange() == markedRange && after.string == markedString)")
-        // API-generated marked text is a diagnostic; it is not a real IME acceptance test.
-        after.unmarkText()
-        defaults.set("dark", forKey: "appearance"); defaults.set(false, forKey: "onDeviceSuggestions")
-        try await settle(host)
-        let recreated = Preview(state: State(), defaults: try #require(UserDefaults(suiteName: suite)))
-        #expect(recreated.appearance == "dark" && recreated.enabled == false)
-        print("PROBE preferences round-trip: dark, AI off; synthetic suite only")
+        print("PROBE separate-window responder resignation=\(resigned), markedAfter=\(text.hasMarkedText()), textPreserved=\(text.string == beforeText)")
+        #expect(resigned && text.string == beforeText)
+        // This does not simulate an actual input method or actual key-window switching.
     }
-    @Test func typographyPreservesAttributesAndMeasuresAnchorLimit() throws {
-        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+    @Test func parameterizedProductionInstallAndWidth() throws {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 480))
         let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+        let w = window(scroll); defer { w.close() }
         let paragraphs = (0..<40).map { "段落\($0)。" + String(repeating: "日本語とEnglishの合成文章を読みます。", count: 35) }
         let linkRange = (paragraphs[7] as NSString).range(of: "English")
         let blocks = paragraphs.enumerated().map { i, text in
             BodyParagraph(text: text, links: i == 7 ? [BodyLink(location: linkRange.location, length: linkRange.length, url: "https://synthetic.example/")] : [], quoteDepth: i == 7 ? 1 : 0)
         }
-        view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約", paragraphs: paragraphs, unavailable: nil, bodyParagraphs: blocks)
-        let original = view.string
-        let body = (original as NSString).range(of: paragraphs.joined(separator: "\n"))
-        #expect(body.location != NSNotFound)
-        let linked = (original as NSString).range(of: paragraphs[7]).location + linkRange.location
-        let headerFont = view.textStorage?.attribute(.font, at: 0, effectiveRange: nil) as? NSFont
-        var combinations = 0
-        for viewport in [360.0, 600, 1000] {
-            for size in [14.0, 16, 18, 20] {
-                for spacing in [4.0, 8, 12] {
-                    for maximum in [560.0, 670, 800] {
-                        view.restore(anchor: "paragraph-7", offset: 23.5)
-                        let anchor = view.readingPosition()
-                        view.textStorage?.addAttribute(.font, value: NSFont.systemFont(ofSize: size), range: body)
-                        view.textStorage?.enumerateAttribute(.paragraphStyle, in: body) { value, range, _ in
-                            let style = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
-                            style.lineSpacing = spacing; view.textStorage?.addAttribute(.paragraphStyle, value: style, range: range)
+        var count = 0
+        for viewport in [CGFloat(360), 600, 1000] {
+            for size in [CGFloat(14), 16, 18, 20] {
+                for spacing in [CGFloat(4), 8, 12] {
+                    for maximum in [CGFloat(560), 670, 800] {
+                        scroll.setFrameSize(NSSize(width: viewport, height: 480))
+                        view.setFrameSize(NSSize(width: scroll.contentSize.width, height: view.frame.height))
+                        view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約", paragraphs: paragraphs, unavailable: nil, bodyParagraphs: blocks,
+                                     bodyFontSize: size, bodyLineSpacing: spacing, maximumBodyWidth: maximum)
+                        let storage = try #require(view.textStorage), container = try #require(view.textContainer)
+                        let expectedWidth = min(maximum, view.frame.width - 84)
+                        #expect(abs(container.containerSize.width - expectedWidth) < 0.01)
+                        #expect(abs(view.textContainerInset.width - max(42, (view.frame.width - expectedWidth) / 2)) < 0.01)
+                        for (i, paragraph) in paragraphs.enumerated() {
+                            let range = (view.string as NSString).range(of: paragraph)
+                            #expect(range.location != NSNotFound)
+                            let font = try #require(storage.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont)
+                            let style = try #require(storage.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle)
+                            #expect(font.pointSize == size && style.lineSpacing == spacing)
+                            #expect(style.headIndent == (i == 7 ? 20 : 0))
                         }
-                        // Force existing layout/anchor cache refresh, then set the proposed maximum width.
-                        view.setFrameSize(NSSize(width: viewport + 1, height: view.frame.height))
-                        view.setFrameSize(NSSize(width: viewport, height: view.frame.height))
-                        view.textContainer?.containerSize.width = max(1, min(maximum, viewport - 84))
-                        view.restore(anchor: anchor.anchor, offset: anchor.offset)
-                        #expect(view.string == original)
-                        #expect(view.textStorage?.attribute(.link, at: linked, effectiveRange: nil) as? URL == URL(string: "https://synthetic.example/"))
-                        #expect((view.textStorage?.attribute(.paragraphStyle, at: linked, effectiveRange: nil) as? NSParagraphStyle)?.headIndent == 20)
-                        #expect(view.textStorage?.attribute(.font, at: 0, effectiveRange: nil) as? NSFont == headerFont)
-                        combinations += 1
+                        let linked = (view.string as NSString).range(of: paragraphs[7]).location + linkRange.location
+                        #expect(storage.attribute(.link, at: linked, effectiveRange: nil) as? URL == URL(string: "https://synthetic.example/"))
+                        var opened: URL?
+                        view.onOpenLink = { opened = $0; return true }
+                        _ = view.textView(view, clickedOnLink: "https://synthetic.example/", at: linked)
+                        #expect(opened?.absoluteString == "https://synthetic.example/")
+                        #expect((storage.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)?.pointSize == 11)
+                        // Resize after install: the production setFrameSize must retain this cap, too.
+                        view.setFrameSize(NSSize(width: 1050, height: view.frame.height))
+                        #expect(container.containerSize.width == maximum)
+                        #expect(view.textContainerInset.width == (1050 - maximum) / 2)
+                        count += 1
                     }
                 }
             }
         }
-        print("PROBE typography \(combinations) combinations: text/link/quote/header preserved; not a production settings integration")
-        view.setFrameSize(NSSize(width: 360, height: view.frame.height))
-        view.restore(anchor: "paragraph-7", offset: 600)
-        let position = view.readingPosition()
-        func topCharacter() -> Int {
-            let manager = view.layoutManager!, container = view.textContainer!
-            let rect = NSRect(x: 0, y: scroll.contentView.bounds.minY - view.textContainerOrigin.y, width: container.containerSize.width, height: 1)
-            let glyphs = manager.glyphRange(forBoundingRect: rect, in: container)
-            return manager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil).location
+        print("PROBE parameterized production install/setFrameSize: \(count) combinations")
+    }
+    @Test func windowBackedReadingPosition() throws {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 360, height: 480))
+        let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+        let w = window(scroll, width: 360); defer { w.close() }
+        let paragraphs = (0..<40).map { "段落\($0)。" + String(repeating: "日本語とEnglishの合成文章を読みます。", count: 35) }
+        view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約", paragraphs: paragraphs, unavailable: nil)
+        let manager = try #require(view.layoutManager), container = try #require(view.textContainer)
+        let range = (view.string as NSString).range(of: paragraphs[7])
+        func paragraphRect() -> NSRect {
+            manager.ensureLayout(for: container)
+            return manager.boundingRect(forGlyphRange: manager.glyphRange(forCharacterRange: range, actualCharacterRange: nil), in: container)
+                .offsetBy(dx: view.textContainerOrigin.x, dy: view.textContainerOrigin.y)
         }
-        let beforeCharacter = topCharacter()
-        view.setFrameSize(NSSize(width: 1000, height: view.frame.height))
-        let resized = view.readingPosition()
-        print("PROBE top visible UTF16 index before=\(beforeCharacter), after=\(topCharacter())")
-        print("PROBE deep offset before=\(position.anchor)/\(position.offset), after=\(resized.anchor)/\(resized.offset)")
+        func topCharacter() -> Int {
+            manager.ensureLayout(for: container)
+            let rect = NSRect(x: 0, y: scroll.contentView.bounds.minY - view.textContainerOrigin.y, width: container.containerSize.width, height: 1)
+            return manager.characterRange(forGlyphRange: manager.glyphRange(forBoundingRect: rect, in: container), actualGlyphRange: nil).location
+        }
+        view.restore(anchor: "paragraph-7", offset: 80)
+        let before = view.readingPosition(), beforeRect = paragraphRect(), first = topCharacter()
+        #expect(before.anchor == "paragraph-7" && before.offset == 80)
+        #expect(beforeRect.height > 80 && first >= range.location && first < NSMaxRange(range))
+        scroll.setFrameSize(NSSize(width: 1000, height: 480))
+        view.setFrameSize(NSSize(width: scroll.contentSize.width, height: view.frame.height))
+        let after = view.readingPosition(), afterRect = paragraphRect(), second = topCharacter()
+        #expect(after.anchor == "paragraph-7" && abs(after.offset - 80) < 0.01)
+        #expect(afterRect.height > 80 && second >= range.location && second < NSMaxRange(range))
+        #expect(first != second)
+        print("PROBE mounted scroll: viewport=\(scroll.contentSize), paragraph UTF16 length=\(range.length), heights=\(beforeRect.height)->\(afterRect.height), anchor=\(before.anchor)/\(before.offset)->\(after.anchor)/\(after.offset), topUTF16=\(first)->\(second)")
     }
     @Test func onDeviceAvailabilityOnly() {
         print("PROBE FoundationModels availability: \(SystemLanguageModel.default.availability)")
         if let embedding = NLContextualEmbedding(language: .japanese) {
             print("PROBE Japanese embedding assets present: \(embedding.hasAvailableAssets)")
-        } else { print("PROBE Japanese embedding unavailable") }
-        // No model inference, asset requests, external handoff or user library access.
+        }
     }
 }
