@@ -98,4 +98,34 @@ import Testing
         defer { finish(inbox) }
         try await settle(inbox.host) { find(NativeArticleList.Table.self, in: inbox.host)?.numberOfRows == 0 }
     }
+
+    @Test func faceSwitchSitsBelowTheToolbarAndChangesBothColumns() async throws {
+        let h = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            try store.addArticle(store.articles[0].id, toTheme: theme.id, at: .now)
+            try store.saveUnderstanding(themeID: theme.id, text: "既存のいまの理解", at: .now)
+        }
+        defer { finish(h) }
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
+        let control = try #require(find(NSSegmentedControl.self, in: h.host))
+        #expect(control.segmentCount == 2)
+        let frame = control.convert(control.bounds, to: nil)
+        #expect(frame.maxY <= h.window.contentLayoutRect.maxY + 0.5, "the switch must not sit under the titlebar or toolbar")
+        control.selectedSegment = 1
+        control.performClick(nil)
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host) == nil }
+        try await settle(h.host) {
+            var found = false
+            func visit(_ view: NSView) {
+                if let text = view as? NSTextView, text.string == "既存のいまの理解" { found = true }
+                view.subviews.forEach(visit)
+            }
+            visit(h.host)
+            return found
+        }
+        let back = try #require(find(NSSegmentedControl.self, in: h.host))
+        back.selectedSegment = 0
+        back.performClick(nil)
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
+    }
 }
