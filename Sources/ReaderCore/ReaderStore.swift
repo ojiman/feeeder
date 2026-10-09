@@ -15,6 +15,11 @@ import SwiftData
     public private(set) var memberships: [FeedMembership] = []
     public private(set) var dailyNotes: [DailyNote] = []
     public private(set) var scraps: [NoteScrap] = []
+    public private(set) var themes: [Theme] = []
+    public private(set) var themeArticles: [ThemeArticle] = []
+    public private(set) var themeQuestions: [ThemeQuestion] = []
+    @ObservationIgnored var themeMembers: [UUID: Set<UUID>] = [:]
+    @ObservationIgnored var articleThemeIDs: [UUID: Set<UUID>] = [:]
     public private(set) var starCount = 0
     @ObservationIgnored var starredIDs: Set<UUID> = []
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
@@ -36,7 +41,8 @@ import SwiftData
 
     public static var schema: Schema {
         Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self,
-                WeeklyNote.self, NoteSource.self, ReaderSettings.self, DailyNote.self, NoteScrap.self])
+                WeeklyNote.self, NoteSource.self, ReaderSettings.self, DailyNote.self, NoteScrap.self,
+                Theme.self, ThemeArticle.self, ThemeQuestion.self])
     }
 
     public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
@@ -83,6 +89,9 @@ import SwiftData
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
         dailyNotes = try context.fetch(FetchDescriptor<DailyNote>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
         scraps = try context.fetch(FetchDescriptor<NoteScrap>(sortBy: [SortDescriptor(\.savedAt)]))
+        themes = try context.fetch(FetchDescriptor<Theme>(sortBy: [SortDescriptor(\.createdAt)]))
+        themeArticles = try context.fetch(FetchDescriptor<ThemeArticle>(sortBy: [SortDescriptor(\.addedAt)]))
+        themeQuestions = try context.fetch(FetchDescriptor<ThemeQuestion>(sortBy: [SortDescriptor(\.createdAt)]))
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
         feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })
         feedArticles = [:]
@@ -100,11 +109,20 @@ import SwiftData
         }
         refreshUnreadCounts()
         refreshStarIndex()
+        refreshThemeIndex()
         needsReload = false
     }
 
     func reloadIfNeeded() throws {
         if needsReload { try reload() }
+    }
+
+    private func refreshThemeIndex() {
+        themeMembers = [:]; articleThemeIDs = [:]
+        for link in themeArticles {
+            themeMembers[link.themeID, default: []].insert(link.articleID)
+            articleThemeIDs[link.articleID, default: []].insert(link.themeID)
+        }
     }
 
     func refreshStarIndex() {
