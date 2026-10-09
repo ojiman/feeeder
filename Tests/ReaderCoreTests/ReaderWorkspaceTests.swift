@@ -39,4 +39,15 @@ struct ReaderWorkspaceTests {
         workspace.rememberReader(third, in: .theme(themeID))
         #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == later.selectedArticleID)
     }
+
+    @Test func questionSelectionIsPerThemeAndDefaultsToUnderstanding() {
+        var workspace = ReaderWorkspaceState()
+        let first = UUID(), second = UUID(), question = UUID()
+        #expect(workspace.questionSelection(of: first) == .understanding)
+        workspace.selectQuestion(.question(question), in: first)
+        #expect(workspace.questionSelection(of: first) == .question(question))
+        #expect(workspace.questionSelection(of: second) == .understanding)
+        workspace.selectQuestion(.understanding, in: first)
+        #expect(workspace.questionSelection(of: first) == .understanding)
+    }
 }

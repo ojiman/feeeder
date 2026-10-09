@@ -200,6 +200,13 @@ extension ReaderStore {
     }
     public var unfiledStarCount: Int { unfiledStarredArticleIDs(keeping: nil).count }
 
+    /// Starts a question from a fixed lens: the lens's draft with the theme's current name. The free lens needs text.
+    @discardableResult public func addQuestion(themeID: UUID, lens: QuestionLens, at: Date) throws -> ThemeQuestion {
+        try reloadIfNeeded()
+        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
+        guard lens != .custom else { throw ThemeError.missingQuestionText }
+        return try addQuestion(themeID: themeID, lens: lens, text: lens.draft(themeName: theme.name), at: at)
+    }
     @discardableResult public func addQuestion(themeID: UUID, lens: QuestionLens, text: String, at: Date) throws -> ThemeQuestion {
         try reloadIfNeeded()
         guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }

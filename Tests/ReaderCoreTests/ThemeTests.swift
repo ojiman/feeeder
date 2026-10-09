@@ -483,4 +483,21 @@ import Testing
         #expect(throws: ThemeError.self) { try store.createTheme(name: "存在しない", adding: UUID(), at: at) }
         #expect(store.themes.count == 1)
     }
+
+    @Test func lensQuestionUsesTheThemeNameAndRejectsTheFreeLens() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "金利と家計", at: at)
+        for lens in QuestionLens.allCases where lens != .custom {
+            let question = try store.addQuestion(themeID: theme.id, lens: lens, at: at.addingTimeInterval(1))
+            #expect(question.lens == lens && question.text == lens.draft(themeName: "金利と家計") && !question.isAnswered)
+            #expect(question.text.contains("「金利と家計」"))
+        }
+        #expect(store.questions(themeID: theme.id).count == 5)
+        #expect(throws: ThemeError.self) { try store.addQuestion(themeID: theme.id, lens: .custom, at: at) }
+        #expect(throws: ThemeError.self) { try store.addQuestion(themeID: UUID(), lens: .assumption, at: at) }
+        try store.renameTheme(id: theme.id, to: "改名後", at: at)
+        let renamed = try store.addQuestion(themeID: theme.id, lens: .condition, at: at.addingTimeInterval(2))
+        #expect(renamed.text.contains("「改名後」"))
+    }
 }
