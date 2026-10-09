@@ -16,7 +16,8 @@ struct QuestionEditor: View {
     @State private var proposing = false
     @State private var proposalDismissed = false
     @State private var round = 0
-    private struct ProposalKey: Hashable { let text: String; let round: Int }
+    @State private var lastProposal: String?
+    private struct ProposalKey: Hashable { let text: String; let themeName: String; let round: Int }
 
     private var question: ThemeQuestion? { store.themeQuestions.first { $0.id == questionID } }
 
@@ -45,14 +46,15 @@ struct QuestionEditor: View {
             .onChange(of: textFocused) { _, focused in if !focused { commitText() } }
             .onDisappear(perform: commitText)
             .onChange(of: question.text) { _, text in if !textFocused { draft = text } }
-            .task(id: ProposalKey(text: question.text, round: round)) {
+            .task(id: ProposalKey(text: question.text, themeName: store.theme(id: themeID)?.name ?? "", round: round)) {
                 proposal = nil
                 guard let suggestions, !proposalDismissed else { proposing = false; return }
                 proposing = true
-                let result = await suggestions.proposeQuestion(for: questionID)
+                let result = await suggestions.proposeQuestion(for: questionID, avoiding: lastProposal)
                 guard !Task.isCancelled else { return }
                 proposing = false
                 proposal = result
+                if let result { lastProposal = result }
             }
             .alert("保存できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("閉じる") { error = nil }
@@ -63,7 +65,8 @@ struct QuestionEditor: View {
     }
 
     @ViewBuilder private var proposalCard: some View {
-        if let proposal, !proposalDismissed {
+        // Shown only while the field still holds the stored template: typing (even uncommitted) hides it.
+        if let proposal, !proposalDismissed, draft.trimmingCharacters(in: .whitespacesAndNewlines) == question?.text.trimmingCharacters(in: .whitespacesAndNewlines) {
             VStack(alignment: .leading, spacing: 6) {
                 Label("AIの案（この Mac の中で作成）", systemImage: "sparkles").font(.caption).foregroundStyle(.secondary)
                 Text(proposal).font(.callout)
@@ -80,7 +83,7 @@ struct QuestionEditor: View {
     }
 
     private func adopt(_ text: String) {
-        do { try store.updateQuestion(id: questionID, text: text, at: .now); proposal = nil } catch { self.error = error.localizedDescription }
+        do { try store.updateQuestion(id: questionID, text: text, at: .now); draft = text; proposal = nil } catch { self.error = error.localizedDescription }
     }
 
     private func evidence(_ question: ThemeQuestion) -> some View {

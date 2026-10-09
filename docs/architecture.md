@@ -53,8 +53,8 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 - **束ねる**: `NLContextualEmbedding`（日本語）で、記事ごとにタイトル＋要約のトークンベクトルの平均を取り、全体の平均を引いて中心化し、コサイン類似度の平均連結で凝集クラスタリングする。初期の閾値は0.15（合成データでの値で、実データでの妥当性は未検証。調整できる前提にする）。近いテーマの提案は、既存テーマの記事との類似度の順にする。ベクトルは保存せず、必要なときに計算する。
   - 実装（PR 6）: `EmbeddingMath`・`ThemeClustering`・`ThemeRanking`（ReaderCore、純粋関数）、`ThemeSuggestionModel`（要求IDで古い応答を捨て、無効のときは呼ばない）、`OnDeviceThemeAssistant`・`ContextualTextEmbedder`（アプリ側）。中心化の基準にライブラリの新しい40件を足す。日本語とラテン文字の言語は別の空間として扱い、空間の違う記事は比べない。1つの空間が6件未満のときは平均を引けないため、その空間の記事は提案の対象から外す。上限・閾値は`SuggestionTuning`に集め、[決定0010](decisions/0010-on-device-suggestion-defaults.md)に記録する。ソースに`requestAssets`が無いことを試験で守る。
-- **名前**: `FoundationModels`のプレーンテキスト応答に、短い指示と`maximumResponseTokens`（24前後）を付ける。先頭の一句だけを使い、「」}」や改行以降を切り捨てる。構造化出力の自由な文字列欄と正規表現ガイドは使わない。
-- **レンズの具体化**: 1回1問。定型の問いとテーマの記事（タイトル＋切り詰めた要約）から60字以内の問いを1つ出させる。失敗・空・異常な長さは捨て、定型文にテーマ名を差し込んだ問いを使う。
+- **名前**: `FoundationModels`のプレーンテキスト応答に、短い指示と`maximumResponseTokens`（実装は32）を付ける。先頭の一句だけを使い、「」}」や改行以降を切り捨てる。構造化出力の自由な文字列欄と正規表現ガイドは使わない。
+- **レンズの具体化**: 1回1問。定型の問いとテーマの記事（タイトル＋切り詰めた要約）から問いを1つ出させる（プロンプトは50文字以内を求め、検査は10〜80文字、出力トークンは90）。失敗・空・異常な長さは捨て、定型文にテーマ名を差し込んだ問いを使う。
   - 実装（PR 7）: 生成は`ThemeAssistant.generate(_:)`（アプリ側は`FoundationModelsGenerator`、`LanguageModelSession`のプレーンテキストと`maximumResponseTokens`）で、10秒の期限（`withDeadline`）で打ち切る。プロンプトは`SuggestionPrompts`（新しい16件・各120文字）、出力は`SuggestionText`で検査し（先頭1行・長さ・問いは疑問で終わるもの）、`ThemeSuggestionModel`が無効化・古い応答・編集済みの問いを捨てる。案は別カードに出し、本人が選ぶまで書き換えない。`GenerationError`は型で受けず、すべての失敗を「案なし」にする。[決定0011](decisions/0011-on-device-generation-defaults.md)。
 - **入力量**: コンテキスト窓は4096トークン（入出力の合計）。1回に渡す記事は約20件までとし、新しい順に切る。要約は切り詰める。
 - **利用可否**: `SystemLanguageModel.default.availability`と埋め込み資産の有無を検査する。資産が無い場合に、アプリが自動で取得要求（通信）を起こさない。利用不可・ガードレールの誤検知・上限超過・取消は「提案なし」として扱い、操作を止めない。

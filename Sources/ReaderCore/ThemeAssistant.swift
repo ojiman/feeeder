@@ -135,7 +135,7 @@ public protocol ThemeAssistant: Sendable {
 
     /// A more specific version of an untouched lens question, or nil. Never for an edited or free question, and
     /// dropped if the question changed while the model was working.
-    public func proposeQuestion(for questionID: UUID) async -> String? {
+    public func proposeQuestion(for questionID: UUID, avoiding previous: String? = nil) async -> String? {
         guard isEnabled(), let assistant, let (question, themeName) = eligibleQuestion(questionID) else { return nil }
         let items = questionItems(themeID: question.themeID)
         guard !items.isEmpty,
@@ -143,7 +143,7 @@ public protocol ThemeAssistant: Sendable {
         do {
             let raw = try await assistant.generate(request)
             guard !Task.isCancelled, isEnabled(), let current = eligibleQuestion(questionID),
-                  current.0.text == question.text, let text = SuggestionText.question(from: raw), text != question.text else { return nil }
+                  current.0.text == question.text, let text = SuggestionText.question(from: raw), text != question.text, text != previous else { return nil }
             return text
         } catch { return nil }
     }

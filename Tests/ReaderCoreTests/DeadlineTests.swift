@@ -25,4 +25,21 @@ struct DeadlineTests {
         task.cancel()
         await #expect(throws: CancellationError.self) { try await task.value }
     }
+
+    @Test func aFastOperationReturnsAtOnceNotAtTheDeadline() async throws {
+        let start = ContinuousClock.now
+        let value = try await withDeadline(5) { 7 }
+        #expect(value == 7 && start.duration(to: .now) < .seconds(1))
+    }
+
+    @Test func anOperationThatIgnoresCancellationStillReleasesTheCallerAtTheDeadline() async {
+        let start = ContinuousClock.now
+        await #expect(throws: DeadlineExceeded.self) {
+            try await withDeadline(0.1) { () async throws -> Int in
+                await withUnsafeContinuation { (_: UnsafeContinuation<Void, Never>) in }     // never resumes, never checks cancellation
+                return 1
+            }
+        }
+        #expect(start.duration(to: .now) < .seconds(2))
+    }
 }

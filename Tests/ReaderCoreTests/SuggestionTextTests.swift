@@ -75,4 +75,14 @@ struct SuggestionTextTests {
         #expect(!QuestionProposalEligibility.isEligible(lens: .custom, text: "", themeName: "A"))
         #expect(!QuestionProposalEligibility.isEligible(lens: .custom, text: "自由な問い", themeName: "A"))
     }
+
+    @Test func namesKeepNumbersApostrophesAndStripMarkdownAndControlCharacters() {
+        #expect(SuggestionText.name(from: "3.11と防災の備え") == "3.11と防災の備え")            // "3." is not a list mark
+        #expect(SuggestionText.name(from: "2. 防災の備え") == "防災の備え")
+        #expect(SuggestionText.name(from: "Apple's AI strategy") == "Apple's AI strategy")
+        #expect(SuggestionText.name(from: "**金利と家計**") == "金利と家計")
+        #expect(SuggestionText.name(from: "【金利と家計】") == "金利と家計")
+        #expect(SuggestionText.name(from: "金利と\u{202E}家計") == "金利と家計")                     // bidi / control characters are dropped
+        #expect(SuggestionText.question(from: "1. 問い: 金利が上がると家計はどう変わるのか。") == "金利が上がると家計はどう変わるのか。")
+    }
 }

@@ -5,16 +5,16 @@ import Foundation
 public enum SuggestionText {
     static let nameLength = 2...24
     static let questionLength = 10...80
-    private static let leadingMarks = try! NSRegularExpression(pattern: #"^\s*(?:(?:テーマ名|名前|タイトル|問い)\s*[:：]\s*|(?:[-・*•]|\d+\s*[.)、．])\s*)"#)
-    private static let wrappers: Set<Character> = ["「", "『", "“", "\"", "'", "「"]
-    private static let closers: Set<Character> = ["」", "』", "”", "\"", "'", "}", "{"]
+    private static let leadingMarks = try! NSRegularExpression(pattern: #"^\s*(?:(?:テーマ名|名前|タイトル|問い)\s*[:：]\s*|(?:[-・•]+|\*+(?!\*)|\d+\s*[.)．]\s+|\d+\s*[、)）])\s*)"#)
+    private static let wrappers: Set<Character> = ["「", "『", "【", "“", "\"", "'", "*"]
+    private static let closers: Set<Character> = ["」", "』", "】", "”", "\"", "}", "{", "*"]
 
     /// A theme name: first line, marks removed, cut before any closing quote or brace, 2–24 characters.
     public static func name(from raw: String) -> String? {
         guard var text = firstLine(of: raw) else { return nil }
         text = String(text.drop(while: { wrappers.contains($0) }))
         if let cut = text.firstIndex(where: { closers.contains($0) }) { text = String(text[..<cut]) }
-        text = text.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "。、．.,:：")))
+        text = text.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "。、．.,:：'")))
         guard nameLength.contains(text.count), !text.contains("{"), !text.contains("}") else { return nil }
         return text
     }
@@ -37,11 +37,14 @@ public enum SuggestionText {
     }
 
     private static func firstLine(of raw: String) -> String? {
-        guard let line = raw.split(whereSeparator: \.isNewline).map({ String($0).trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty }) else { return nil }
-        let range = NSRange(line.startIndex..., in: line)
-        let stripped = leadingMarks.stringByReplacingMatches(in: line, range: range, withTemplate: "")
-        let result = stripped.trimmingCharacters(in: .whitespaces)
-        return result.isEmpty ? nil : result
+        let visible = String(String.UnicodeScalarView(raw.unicodeScalars.filter { $0 == "\n" || $0 == "\r" || ($0.properties.generalCategory != .control && $0.properties.generalCategory != .format) }))
+        guard var line = visible.split(whereSeparator: \.isNewline).map({ String($0).trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty }) else { return nil }
+        for _ in 0..<3 {
+            let stripped = leadingMarks.stringByReplacingMatches(in: line, range: NSRange(line.startIndex..., in: line), withTemplate: "").trimmingCharacters(in: .whitespaces)
+            if stripped == line { break }
+            line = stripped
+        }
+        return line.isEmpty ? nil : line
     }
 }
 

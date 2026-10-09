@@ -408,4 +408,18 @@ actor FakeAssistant: ThemeAssistant {
         await off.refreshAvailability()
         #expect(off.generationAvailability == nil)
     }
+
+    @Test func anotherProposalNeverRepeatsThePreviousOne() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 4)
+        let theme = try store.createTheme(name: "A", adding: [store.articles[0].id, store.articles[1].id], at: at)
+        let question = try store.addQuestion(themeID: theme.id, lens: .condition, at: at)
+        let fake = FakeAssistant()
+        await fake.scriptGeneration(["この条件が変わると、結論はどう変わるのだろうか。", "この条件が変わると、結論はどう変わるのだろうか。"])
+        let suggestions = model(store, fake)
+        let first = await suggestions.proposeQuestion(for: question.id)
+        #expect(first == "この条件が変わると、結論はどう変わるのだろうか。")
+        let repeated = await suggestions.proposeQuestion(for: question.id, avoiding: first)
+        #expect(repeated == nil)
+    }
 }
