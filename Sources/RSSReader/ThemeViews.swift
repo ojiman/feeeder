@@ -16,24 +16,39 @@ struct ThemeFacePicker: View {
     }
 }
 
-/// PR 4 shows only the "いまの理解" row; question rows arrive with PR 5.
+/// The questions face: the theme's "いまの理解" row first, then its questions. Row selection drives the right column.
 struct ThemeQuestionsPane: View {
     @Bindable var store: ReaderStore
     let themeID: UUID
     @Binding var face: ThemeFace
+    @Binding var selection: ThemeQuestionSelection
     private var preview: String {
         let text = store.theme(id: themeID)?.understanding.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return text.isEmpty ? "まだ書かれていません" : text
     }
     var body: some View {
-        List {
+        List(selection: Binding<ThemeQuestionSelection?>(get: { selection }, set: { if let value = $0 { selection = value } })) {
             Label {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("いまの理解").font(.headline)
                     Text(preview).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
             } icon: { Image(systemName: "text.alignleft") }
-                .padding(.vertical, 4)
+                .padding(.vertical, 4).tag(ThemeQuestionSelection.understanding)
+            Section("問い") {
+                ForEach(store.questions(themeID: themeID), id: \.id) { question in
+                    HStack(alignment: .top) {
+                        Image(systemName: question.isAnswered ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(question.isAnswered ? Color.green : Color.secondary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(question.text).lineLimit(2)
+                            Text(question.lens.title).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 3).tag(ThemeQuestionSelection.question(question.id))
+                    .accessibilityElement(children: .combine).accessibilityValue(question.isAnswered ? "回答済み" : "未回答")
+                }
+            }
         }
         .navigationTitle(store.theme(id: themeID)?.name ?? "テーマ")
         .navigationSubtitle("問い")

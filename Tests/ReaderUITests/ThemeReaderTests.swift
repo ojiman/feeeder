@@ -31,6 +31,7 @@ import Testing
         let directory: URL
     }
     private func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
+                         questionSelection: (ReaderStore) -> ThemeQuestionSelection = { _ in .understanding },
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -44,7 +45,7 @@ import Testing
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
             handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialThemeFace: face)
+            initialScope: try scope(store), initialThemeFace: face, initialQuestionSelection: questionSelection(store))
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-theme-reader")
@@ -123,5 +124,27 @@ import Testing
         try await Task.sleep(for: .milliseconds(300))
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 0 }
         try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+    }
+
+    @Test func questionFaceShowsTheSelectedQuestionsAnswer() async throws {
+        let h = try harness(scope: { store in .theme(store.themes[0].id) }, face: .questions,
+                            questionSelection: { store in .question(store.themeQuestions[0].id) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            let question = try store.addQuestion(themeID: theme.id, lens: .assumption, at: .now)
+            try store.saveAnswer(questionID: question.id, answer: "保存済みの自分の答え", at: .now)
+        }
+        defer { finish(h) }
+        try await settle(h.host) { containsText("保存済みの自分の答え", in: h.host) }
+        #expect(!containsText("このテーマについて、いま自分が理解していること", in: h.host))
+    }
+
+    @Test func aMissingQuestionSelectionFallsBackToTheUnderstanding() async throws {
+        let h = try harness(scope: { store in .theme(store.themes[0].id) }, face: .questions,
+                            questionSelection: { _ in .question(UUID()) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            try store.saveUnderstanding(themeID: theme.id, text: "既存のいまの理解", at: .now)
+        }
+        defer { finish(h) }
+        try await settle(h.host) { containsText("既存のいまの理解", in: h.host) }
     }
 }
