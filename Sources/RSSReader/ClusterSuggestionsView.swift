@@ -33,6 +33,8 @@ struct ClusterSuggestionsView: View {
     let onCreated: (String) -> Void
     /// The group being named is kept by its contents, not its position, so a recompute can never retarget it.
     @State private var naming: [UUID]?
+    private enum NameProposal: Equatable { case none, loading, ready(String) }
+    @State private var proposal = NameProposal.none
     @State private var name = ""
     @State private var error: String?
     @FocusState private var nameFocused: Bool
@@ -56,6 +58,14 @@ struct ClusterSuggestionsView: View {
         .onChange(of: model.clusters.groups) { _, groups in
             if let group = naming, !groups.contains(group) { naming = nil; name = "" }
         }
+        .task(id: naming) {
+            proposal = .none
+            guard let group = naming else { return }
+            proposal = .loading
+            let text = await model.proposeName(forArticles: group)
+            guard !Task.isCancelled else { return }
+            proposal = text.map { .ready($0) } ?? .none
+        }
     }
 
     private func card(_ group: [UUID]) -> some View {
@@ -70,6 +80,18 @@ struct ClusterSuggestionsView: View {
                         .onSubmit { create(group) }.accessibilityLabel("テーマの名前")
                     Button("作成") { create(group) }.disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Button("やめる") { naming = nil; name = "" }
+                }
+                switch proposal {
+                case .loading:
+                    HStack(spacing: 6) { ProgressView().controlSize(.mini); Text("名前の案を考え中…").font(.caption).foregroundStyle(.secondary) }
+                case .ready(let text):
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles").foregroundStyle(.orange)
+                        Text("案: \(text)").font(.callout).lineLimit(2)
+                        Spacer()
+                        Button("使う") { name = text }.accessibilityLabel("名前の案「\(text)」を使う")
+                    }
+                case .none: EmptyView()
                 }
             } else {
                 Button("\(group.count)件でテーマにする…") { naming = group; name = ""; nameFocused = true }

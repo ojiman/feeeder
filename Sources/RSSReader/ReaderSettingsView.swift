@@ -97,14 +97,24 @@ struct OnDeviceAISettingsView: View {
     var body: some View {
         Form {
             Toggle("端末内AIの提案を使う", isOn: $enabled)
-            Text("近いテーマ（tキー）とまとまりの提案（未整理のStar）を、この Mac の中だけで計算します。外部へ送らず、アカウントも要りません。答えやいまの理解には何も書き込みません。")
+            Text("近いテーマ（tキー）、まとまりの提案（未整理のStar）、テーマ名と問いの案を、この Mac の中だけで作ります。外部へ送らず、アカウントも要りません。案は別に表示され、自分で選ぶまで何も書き換えません。答えやいまの理解には何も書き込みません。")
                 .font(.caption).foregroundStyle(.secondary)
             LabeledContent("状態") { Text(statusText) }
+            LabeledContent("テーマ名・問いの案") { Text(generationText) }
             Text("言語の資産が端末に無い場合、アプリは自動で取得しません。提案が出ないだけで、ほかの操作は変わりません。")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .formStyle(.grouped).padding()
         .task(id: enabled) { await suggestions.refreshAvailability() }
+    }
+    private var generationText: String {
+        guard enabled else { return "オフ" }
+        return switch suggestions.generationAvailability {
+        case nil: "確認中…"
+        case .available: "使えます"
+        case .assetsMissing: "モデルの準備中です"
+        case .unsupported: "この環境では使えません"
+        }
     }
     private var statusText: String {
         guard enabled else { return "オフ" }

@@ -11,6 +11,12 @@ struct QuestionEditor: View {
     @State private var draft = ""
     @State private var error: String?
     @FocusState private var textFocused: Bool
+    var suggestions: ThemeSuggestionModel? = nil
+    @State private var proposal: String?
+    @State private var proposing = false
+    @State private var proposalDismissed = false
+    @State private var round = 0
+    private struct ProposalKey: Hashable { let text: String; let round: Int }
 
     private var question: ThemeQuestion? { store.themeQuestions.first { $0.id == questionID } }
 
@@ -23,6 +29,7 @@ struct QuestionEditor: View {
                         .font(.title3.weight(.semibold)).lineLimit(1...5)
                         .focused($textFocused).onSubmit(commitText)
                         .accessibilityLabel("問い")
+                    proposalCard
                     Divider()
                     Text("自分の答え").font(.headline)
                     Text("答えは自分の言葉で書きます。AIは書き込みません。").font(.caption).foregroundStyle(.secondary)
@@ -38,12 +45,42 @@ struct QuestionEditor: View {
             .onChange(of: textFocused) { _, focused in if !focused { commitText() } }
             .onDisappear(perform: commitText)
             .onChange(of: question.text) { _, text in if !textFocused { draft = text } }
+            .task(id: ProposalKey(text: question.text, round: round)) {
+                proposal = nil
+                guard let suggestions, !proposalDismissed else { proposing = false; return }
+                proposing = true
+                let result = await suggestions.proposeQuestion(for: questionID)
+                guard !Task.isCancelled else { return }
+                proposing = false
+                proposal = result
+            }
             .alert("保存できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("閉じる") { error = nil }
             } message: { Text(error ?? "") }
         } else {
             ContentUnavailableView("問いが見つかりません", systemImage: "questionmark.circle")
         }
+    }
+
+    @ViewBuilder private var proposalCard: some View {
+        if let proposal, !proposalDismissed {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("AIの案（この Mac の中で作成）", systemImage: "sparkles").font(.caption).foregroundStyle(.secondary)
+                Text(proposal).font(.callout)
+                HStack {
+                    Button("採用") { adopt(proposal) }
+                    Button("別の案") { round += 1 }
+                    Button("閉じる") { proposalDismissed = true }
+                }
+            }
+            .padding(10).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
+        } else if proposing, !proposalDismissed {
+            HStack(spacing: 6) { ProgressView().controlSize(.mini); Text("問いの案を考え中…").font(.caption).foregroundStyle(.secondary) }
+        }
+    }
+
+    private func adopt(_ text: String) {
+        do { try store.updateQuestion(id: questionID, text: text, at: .now); proposal = nil } catch { self.error = error.localizedDescription }
     }
 
     private func evidence(_ question: ThemeQuestion) -> some View {
