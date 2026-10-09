@@ -280,6 +280,10 @@ import Testing
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.deleteQuestion(id: question.id, at: at) }
         #expect(store.questions(themeID: theme.id).count == 1)
+        let themeCount = store.themes.count, linkCount = store.themeArticles.count
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.createTheme(name: "失われる束", adding: [ids[0], ids[1]], at: at) }
+        #expect(store.themes.count == themeCount && store.themeArticles.count == linkCount)
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.removeArticle(ids[1], fromTheme: theme.id, at: at) }
         #expect(store.themeArticleCount(themeID: theme.id) == 2)
@@ -290,6 +294,31 @@ import Testing
         try store.saveAnswer(questionID: question.id, answer: "再試行した答え", at: at)
         let reopened = try ReaderStore(url: library.url, now: at)
         #expect(reopened.themeQuestions.first?.answer == "再試行した答え" && reopened.themeArticles.count == 2)
+    }
+
+    @Test func createThemeFromAGroupAddsEveryArticleInOneSave() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let ids = Array(store.articles.prefix(3).map(\.id))
+        for id in ids { try store.setStar(articleID: id, isStarred: true, at: at) }
+        #expect(store.unfiledStarCount == 3)
+        let theme = try store.createTheme(name: "  金利と家計  ", adding: [ids[0], ids[1], ids[1], ids[2]], at: at)
+        #expect(theme.name == "金利と家計")
+        #expect(store.themeArticleIDs(themeID: theme.id) == store.articleIDs.filter { ids.contains($0) })
+        #expect(store.themeArticleCount(themeID: theme.id) == 3 && store.unfiledStarCount == 0)
+        let link = try #require(store.themeArticles.first { $0.articleID == ids[0] })
+        #expect(link.title == store.article(id: ids[0])?.title)
+    }
+
+    @Test func createThemeFromAGroupRejectsBadInputAndChangesNothing() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let id = store.articles[0].id
+        #expect(throws: ThemeError.self) { try store.createTheme(name: "  ", adding: [id], at: at) }
+        #expect(throws: ThemeError.self) { try store.createTheme(name: "A", adding: [id, UUID()], at: at) }
+        #expect(store.themes.isEmpty && store.themeArticles.isEmpty)
+        let empty = try store.createTheme(name: "空", adding: [UUID](), at: at)
+        #expect(store.themeArticleCount(themeID: empty.id) == 0)
     }
 
     @Test func everythingSurvivesAReopen() throws {
@@ -384,6 +413,9 @@ import Testing
         induceFailedRecovery()
         try store.createTheme(name: "回復後の新規", at: at)
         #expect(store.themes.map(\.name) == ["回復後の新規"])
+        induceFailedRecovery()
+        let grouped = try store.createTheme(name: "束", adding: [ids[3]], at: at)
+        #expect(store.themeArticleCount(themeID: grouped.id) == 1)
     }
 
     @Test func recordKeepsTheTitleAndURLFromTheTimeOfAdding() throws {
