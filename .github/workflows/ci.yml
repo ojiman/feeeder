@@ -23,6 +23,7 @@ defaults:
 jobs:
   verify:
     name: ${{ matrix.job }}
+    # No macOS 27 runner exists yet: this verifies the build floor (26.6), not the support floor (27.0). See docs/decisions/0007.
     runs-on: macos-26
     timeout-minutes: 20
     strategy:

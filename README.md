@@ -1,6 +1,6 @@
 # Feeeder
 
-macOS 26.6以降向けのRSSリーダー。SwiftUI / AppKitで表示し、SwiftDataへ端末内保存します。アカウント・Backend・同期はありません。Star・日次スクラップ・週ノート・フォルダ・画像表示を実装しています。実機受入と最終PdM判断は継続中です。
+macOS 27.0以降向けのRSSリーダー。SwiftUI / AppKitで表示し、SwiftDataへ端末内保存します。アカウント・Backend・同期はありません。Star・日次スクラップ・週ノート・フォルダ・画像表示を実装しています。実機受入と最終PdM判断は継続中です。
 
 ## 起動
 
@@ -68,7 +68,7 @@ bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
 FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-fixture生成先は存在しないディレクトリを指定します。配布済みベータの固定commitで合成DBを作り、新スキーマで開いて保持を検証します。1.0出荷時にはスキーマを`VersionedSchema`として固定し、1.0リリースタグを起点とする保持検証をCIへ組み込みます。テストは合成RSS/HTMLと一時DBを使います。[PRD](docs/specification.md)、[Architecture](docs/architecture.md)、[今回の受入記録](docs/verification/2026-10-07-dogfooding-acceptance.md)に仕様・検証結果・未確認事項を記録しています。macOS 26.6での実機動作、Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。
+fixture生成先は存在しないディレクトリを指定します。配布済みベータの固定commitで合成DBを作り、新スキーマで開いて保持を検証します。1.0出荷時にはスキーマを`VersionedSchema`として固定し、1.0リリースタグを起点とする保持検証をCIへ組み込みます。テストは合成RSS/HTMLと一時DBを使います。[PRD](docs/specification.md)、[Architecture](docs/architecture.md)、[今回の受入記録](docs/verification/2026-10-07-dogfooding-acceptance.md)に仕様・検証結果・未確認事項を記録しています。Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。
 
 ## ライセンス
 

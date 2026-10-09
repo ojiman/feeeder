@@ -1,6 +1,6 @@
 # Feeeder 製品要求仕様書（PRD）
 
-更新日: 2026-10-09
+更新日: 2026-10-10
 
 本書はV1の現行製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/feeeder/pull/6)、実装計画は[PR #7](https://github.com/ojiman/feeeder/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
 
@@ -94,7 +94,7 @@ Star・スクラップは既読日時を変えない。Starは現在の付与状
 
 ## 6. 制約と対象外
 
-- macOS 26.6以降。Backend、アカウント、同期、サーバー側巡回・AI処理、共有ノート、push通知はV1の対象外。
+- macOS 27.0以降（サポート下限。CIのビルド下限は26.6のまま。[決定0007](decisions/0007-support-floor-macos-27.md)）。Backend、アカウント、同期、サーバー側巡回・AI処理、共有ノート、push通知はV1の対象外。
 - 入れ子／空フォルダ、任意期間・任意ノートへのスクラップ、Starからノートへの新しい導線、URLコピー／標準ShareはV1の必須範囲外。旧プロトタイプのLikeとその互換・移行は対象外で、Starは別の新しい関心の印。
 - paywall、購読制、ログイン、captcha、robots制限の回避、全文完全性の保証は行わない。
 - アプリ内BYOK/API生成、Claude Desktop以外への専用連携、AIの自動送信・記録・事実性保証は対象外。

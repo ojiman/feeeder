@@ -38,7 +38,7 @@ bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
 FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-CI runs two jobs (`regression`, `release`) on macOS 26 / Xcode 26.6 / Swift 6.3.3. Changes that touch only `docs/**` or Markdown skip CI, so such a PR shows no checks. The local toolchain may be newer (macOS 27 / Swift 6.4); CI is the reference for the support floor (macOS 26.6).
+CI runs two jobs (`regression`, `release`) on macOS 26 / Xcode 26.6 / Swift 6.3.3. Changes that touch only `docs/**` or Markdown skip CI, so such a PR shows no checks. The local toolchain is macOS 27 / Swift 6.4 and is the only place the support floor (macOS 27.0, decision 0007) is exercised; CI verifies only the build floor (macOS 26.6) because no macOS 27 runner exists yet. Do not use APIs that need the macOS 27 SDK until CI can build them.
 
 ## Starting or resuming work
 
@@ -63,7 +63,7 @@ A new thread starts without the previous one's memory. Rebuild the state from Gi
 2. For a bug, reproduce it with a failing test first, then fix it, and record both results.
 3. Run the checks relevant to the change (tests; the release build when UI or packaging changes; `git diff --check`). Report what passed, what was not run, and the environment (OS, Xcode/Swift) of each result.
 4. For UI changes, also exercise a synthetic app instance with its own data directory. Say which behaviors stay unverified on macOS.
-5. Never turn unverified behavior into PASS without evidence (macOS 26.6 floor, IME, VoiceOver, Reduce Motion, long-running use). List what this change leaves unverified in the PR, and link the existing verification record or issue. Open a new issue (template: "Unverified check") only for items that need ongoing tracking, and only within what the user has allowed, since it is an external write.
+5. Never turn unverified behavior into PASS without evidence (macOS 27.0 support floor, IME, VoiceOver, Reduce Motion, long-running use). List what this change leaves unverified in the PR, and link the existing verification record or issue. Open a new issue (template: "Unverified check") only for items that need ongoing tracking, and only within what the user has allowed, since it is an external write.
 6. A change in product behavior or policy updates the spec/architecture in the same PR and adds a decision record. Do not edit an "approved" header to imply an approval that did not happen.
 7. Never report success for a save or change the user asked for when it did not happen (for example `try?` discarding a save or reload failure, or user-entered text dropped because its target is gone). Legitimate no-ops are fine and should be kept distinct: cancellation, a stale async response after the selection moved, and an optional action with nothing to act on.
 8. Risky changes (store/model, concurrency, external writes) get an independent review of a fixed commit using docs/review-checklist.md. A review that finds nothing lists what it checked and what it did not.

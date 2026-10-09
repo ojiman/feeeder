@@ -7,13 +7,13 @@ labels: ["unverified"]
 
 ## 確認する項目
 
-<!-- 例: macOS 26.6での起動と原文表示 / IME変換中のキー操作 / VoiceOverでのStar操作 -->
+<!-- 例: macOS 27での起動と原文表示 / IME変換中のキー操作 / VoiceOverでのStar操作 -->
 
 ## 関連するPR・機能
 
 ## 環境
 
-<!-- OS、機種、設定（Reduce Motion、VoiceOverなど）。サポート下限の macOS 26.6 で確認するか。 -->
+<!-- OS、機種、設定（Reduce Motion、VoiceOverなど）。サポート下限の macOS 27.0 で確認するか（CIは26のランナーなので、27の挙動は手元の実機で確認する）。 -->
 
 ## 手順
 
