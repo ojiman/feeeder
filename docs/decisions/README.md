@@ -29,12 +29,12 @@
 | [0001](0001-fresh-library-no-prototype-migration.md) | V1は空ライブラリから始める | 有効 |
 | [0002](0002-single-supervised-writer.md) | 実装者は同時に1名 | 有効 |
 | [0003](0003-beta-data-compatibility.md) | ベータ中はデータ互換を保証せず、1.0から保証する | 有効 |
-| [0004](0004-dogfooding-keys-and-scrap.md) | Dogfooding改訂: キー操作・スクラップ・週候補 | 有効 |
+| [0004](0004-dogfooding-keys-and-scrap.md) | Dogfooding改訂: キー操作・スクラップ・週候補 | 一部置換済み（日次・週ノート、スクラップ、週候補は0008） |
 | [0005](0005-v1-product-decisions-2026-10-04.md) | V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開） | 有効 |
 | [0006](0006-original-page-and-sidebar-behavior.md) | 原文表示中の記事選択とサイドバー操作の方針 | 有効 |
 | [0007](0007-support-floor-macos-27.md) | サポート下限をmacOS 27.0にし、ビルド下限は26.6のまま据え置く | 有効 |
-| [0008](0008-theme-centered-notes.md) | ノートをテーマ中心に改める（0004の日次・週ノート部分を置換） | 提案中 |
-| [0009](0009-on-device-ai-principles.md) | AIは端末内の提案に限る | 提案中 |
+| [0008](0008-theme-centered-notes.md) | ノートをテーマ中心に改める（0004の日次・週ノート部分を置換） | 有効 |
+| [0009](0009-on-device-ai-principles.md) | AIは端末内の提案に限る | 有効 |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
