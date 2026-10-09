@@ -1,6 +1,6 @@
 # Feeeder アーキテクチャとエージェント実行ハーネス
 
-更新日: 2026-10-09
+更新日: 2026-10-10
 
 ## 1. 位置づけ
 
@@ -91,7 +91,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 4.6 CI
 
-[Feeeder CI](../.github/workflows/ci.yml)はPR・mainマージ・手動実行を対象に、macOS 26 / Xcode 26.6 / Swift 6.3.3で`regression`と`release`を並列実行する。docs／Markdownのみは自動実行を省略し、Draftのコード変更は実行する。同一PRの旧実行は取消し、main／手動実行は相互に取消さない。必須チェック化する際はdocsのみのPendingを防ぐようpath filterを見直す。
+[Feeeder CI](../.github/workflows/ci.yml)はPR・mainマージ・手動実行を対象に、macOS 26 / Xcode 26.6 / Swift 6.3.3で`regression`と`release`を並列実行する。macOS 27のランナーがまだ無いため、CIが検証するのはビルド下限（26.6）で、サポート下限（27.0）の挙動はローカルのmacOS 27だけで確認する（[決定0007](decisions/0007-support-floor-macos-27.md)）。docs／Markdownのみは自動実行を省略し、Draftのコード変更は実行する。同一PRの旧実行は取消し、main／手動実行は相互に取消さない。必須チェック化する際はdocsのみのPendingを防ぐようpath filterを見直す。
 
 `regression`はCore/UI、同じ版の保存／再open、保存／再読み込み失敗と復旧を検証する。`release`はad hoc署名したアプリを組立て、ZIP再圧縮・展開後に署名を検証する。Developer ID署名・公証・自動Release公開はしない。checkout commit（PRは合成merge commit）・PR head・環境・所要時間・失敗ログをartifactへ7日間保存する。CIに修正Agentは置かない。
 
@@ -106,7 +106,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 | [Dogfooding受入](verification/2026-10-07-dogfooding-acceptance.md) | Star・日次／週・画像・保存の改修結果 |
 | [読書UI追加受入](verification/2026-10-07-feed-polish.md) | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
 
-実サイトの抽出品質、macOS 26.6実機、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、タイムゾーン変更時の使い勝手、30日の保持で週の振り返りに足りるか、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
+実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、タイムゾーン変更時の使い勝手、30日の保持で週の振り返りに足りるか、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
 
 ## 6. 読書UI・画像の実装契約
 
