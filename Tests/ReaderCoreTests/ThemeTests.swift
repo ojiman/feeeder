@@ -272,6 +272,9 @@ import Testing
         #expect(throws: (any Error).self) { try store.addQuestion(themeID: theme.id, lens: .custom, text: "失われる問い", at: at) }
         #expect(store.questions(themeID: theme.id).count == 1)
         gate.failNext = true
+        #expect(throws: (any Error).self) { try store.addQuestion(themeID: theme.id, lens: .assumption, at: at) }
+        #expect(store.questions(themeID: theme.id).count == 1)
+        gate.failNext = true
         #expect(throws: (any Error).self) { try store.updateQuestion(id: question.id, text: "失われる文", at: at) }
         #expect(store.themeQuestions.first { $0.id == question.id }?.text == "問い")
         gate.failNext = true
@@ -352,6 +355,14 @@ import Testing
         induceFailedRecovery()
         try store.addQuestion(themeID: themeID, lens: .condition, text: "二つ目の問い", at: at.addingTimeInterval(1))
         #expect(store.questions(themeID: themeID).count == 2)
+        // A rename that fails together with its recovery must not leak its unsaved name into a lens draft.
+        gate.failSave = true; gate.failReload = true
+        #expect(throws: (any Error).self) { try store.renameTheme(id: themeID, to: "保存されなかった名前", at: at) }
+        gate.failSave = false; gate.failReload = false
+        let drafted = try store.addQuestion(themeID: themeID, lens: .assumption, at: at.addingTimeInterval(2))
+        #expect(drafted.text.contains("「新しい名前」") && !drafted.text.contains("保存されなかった名前") && store.questions(themeID: themeID).count == 3)
+        induceFailedRecovery()
+        try store.deleteQuestion(id: drafted.id, at: at)
         induceFailedRecovery()
         try store.updateQuestion(id: firstQuestionID, text: "新しい問い", at: at)
         #expect(question()?.text == "新しい問い")

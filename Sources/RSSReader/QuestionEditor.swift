@@ -36,6 +36,7 @@ struct QuestionEditor: View {
             .background(Color(nsColor: .textBackgroundColor))
             .onAppear { draft = question.text }
             .onChange(of: textFocused) { _, focused in if !focused { commitText() } }
+            .onDisappear(perform: commitText)
             .onChange(of: question.text) { _, text in if !textFocused { draft = text } }
             .alert("保存できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("閉じる") { error = nil }
