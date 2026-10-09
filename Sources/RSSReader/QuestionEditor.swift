@@ -26,7 +26,7 @@ struct QuestionEditor: View {
                     Divider()
                     Text("自分の答え").font(.headline)
                     Text("答えは自分の言葉で書きます。AIは書き込みません。").font(.caption).foregroundStyle(.secondary)
-                    TextEditor(text: Binding(get: { question.answer }, set: saveAnswer))
+                    TextEditor(text: Binding(get: { question.answer }, set: { text in saveAnswer(text) }))
                         .font(.body).frame(minHeight: 180).accessibilityLabel("自分の答え")
                     Divider()
                     evidence(question)

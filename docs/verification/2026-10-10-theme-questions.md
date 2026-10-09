@@ -30,6 +30,10 @@
 - 日本語IME変換中の入力、VoiceOver、複数ウィンドウ、長い答えのスクロール。
 - macOS 26のCIの結果（このPRのCIで確認する）。
 
+## CI（macOS 26 / Swift 6.3.3）
+
+初回のCIで`regression`がコンパイラのクラッシュ（signal 6、`QuestionEditor.swift`のIR生成）で失敗した。原因は、MainActorのメソッド参照を`Binding`のsetterに渡した（`set: saveAnswer`）こと。AGENTS.mdの既知事項（PR #14）と同じで、ローカルのSwift 6.4では再現しない。明示的なクロージャ（`set: { text in saveAnswer(text) }`）に直した。ソース内の他のsetterは確認済みで同じ形は無い。直した後のCI結果はこのPRで確認する。
+
 ## 独立レビュー（opus、固定commit `de69590`）と対応
 
 Critical 0・Important 3。
