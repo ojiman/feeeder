@@ -117,4 +117,52 @@ extension ReaderStore {
         context.delete(theme)
         try save(); try reload()
     }
+
+    @discardableResult public func addArticle(_ articleID: UUID, toTheme themeID: UUID, at: Date) throws -> ThemeArticle {
+        try reloadIfNeeded()
+        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
+        guard let article = article(id: articleID) else { throw ThemeError.missingArticle }
+        if themeMembers[themeID]?.contains(articleID) == true,
+           let existing = themeArticles.first(where: { $0.themeID == themeID && $0.articleID == articleID }) {
+            return existing
+        }
+        let summary = isContentAvailable(article, at: at) ? article.summary.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let link = ThemeArticle(themeID: themeID, articleID: articleID, summary: summary, at: at)
+        context.insert(link)
+        theme.updatedAt = at
+        try save(); try reload()
+        return link
+    }
+    public func removeArticle(_ articleID: UUID, fromTheme themeID: UUID, at: Date) throws {
+        try reloadIfNeeded()
+        guard let link = themeArticles.first(where: { $0.themeID == themeID && $0.articleID == articleID }) else { return }
+        for question in themeQuestions where question.themeID == themeID && question.evidenceArticleIDs.contains(articleID) {
+            question.evidenceArticleIDs.removeAll { $0 == articleID }
+            question.updatedAt = at
+        }
+        context.delete(link)
+        theme(id: themeID)?.updatedAt = at
+        try save(); try reload()
+    }
+
+    public func themeArticleIDs(themeID: UUID) -> [UUID] {
+        _ = themeArticles
+        guard let members = themeMembers[themeID], !members.isEmpty else { return [] }
+        return articleIDs.filter { members.contains($0) }
+    }
+    public func themeArticleCount(themeID: UUID) -> Int {
+        _ = themeArticles
+        return themeMembers[themeID]?.count ?? 0
+    }
+    public func themeIDs(containing articleID: UUID) -> [UUID] {
+        _ = themeArticles
+        guard let ids = articleThemeIDs[articleID] else { return [] }
+        return themes.map(\.id).filter { ids.contains($0) }
+    }
+    /// Starred articles in no theme. `keeping` keeps the current selection visible after it leaves the inbox.
+    public func unfiledStarredArticleIDs(keeping: UUID?) -> [UUID] {
+        _ = starCount; _ = themeArticles
+        return articleIDs.filter { (starredIDs.contains($0) && articleThemeIDs[$0] == nil) || $0 == keeping }
+    }
+    public var unfiledStarCount: Int { unfiledStarredArticleIDs(keeping: nil).count }
 }
