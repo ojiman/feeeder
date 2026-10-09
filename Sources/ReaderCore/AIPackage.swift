@@ -3,7 +3,7 @@ import CryptoKit
 import Observation
 
 public enum AIInputSelection: Hashable, Codable, Sendable {
-    case article(UUID), scrap(String), noteSource(String), themeArticle(String)
+    case article(UUID), themeArticle(String)
 }
 
 public struct AISource: Sendable {
@@ -115,12 +115,6 @@ extension ReaderStore {
             case .article(let id):
                 guard let article = article(id: id), let content = try content(articleID: id, at: at) else { return nil }
                 return AISource(articleID: id, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0) }, content: content)
-            case .scrap(let key):
-                guard let scrap = scraps.first(where: { $0.key == key }) else { return nil }
-                return savedSource(selection: selection, id: scrap.articleID, title: scrap.title, url: scrap.url, summary: scrap.summary, savedAt: scrap.savedAt)
-            case .noteSource(let key):
-                guard let source = noteSources.first(where: { $0.key == key }), let summary = source.summary, let savedAt = source.savedAt else { return nil }
-                return savedSource(selection: selection, id: source.articleID, title: source.title, url: source.url, summary: summary, savedAt: savedAt)
             case .themeArticle(let key):
                 guard let link = themeArticles.first(where: { $0.key == key }) else { return nil }
                 return savedSource(selection: selection, id: link.articleID, title: link.title, url: link.url, summary: link.summary, savedAt: link.addedAt)

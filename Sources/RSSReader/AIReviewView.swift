@@ -115,12 +115,6 @@ struct AIReviewView: View {
             case .article(let id):
                 guard let article = store.article(id: id) else { return nil }
                 return Option(id: selection, articleID: id, title: article.title, coverage: "保持中の記事 · " + (source?.content.coverage.label ?? "本文期限切れ・削除済み、または本文なし"), available: source != nil)
-            case .scrap(let key):
-                guard let scrap = store.scraps.first(where: { $0.key == key }) else { return nil }
-                return Option(id: selection, articleID: scrap.articleID, title: scrap.title, coverage: "保存時のRSS要約 · \(scrap.savedAt.formatted())" + (source == nil ? " · 要約なし" : ""), available: source != nil)
-            case .noteSource(let key):
-                guard let saved = store.noteSources.first(where: { $0.key == key }) else { return nil }
-                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "採用済みRSS要約 · " + (saved.savedAt?.formatted() ?? "保存日時なし") + (source == nil ? " · 要約なし" : ""), available: source != nil)
             case .themeArticle(let key):
                 guard let saved = store.themeArticles.first(where: { $0.key == key }) else { return nil }
                 return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "テーマに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)

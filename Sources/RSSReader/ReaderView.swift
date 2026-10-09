@@ -56,7 +56,6 @@ struct ReaderView: View {
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
-        case .dailyNotes, .weeklyNotes: []
         case .unfiledStars: store.unfiledStarredArticleIDs(keeping: selection)
         case .theme(let id): store.themeArticleIDs(themeID: id, keeping: selection)
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
@@ -69,8 +68,6 @@ struct ReaderView: View {
 
     private var scopeTitle: String {
         switch scope ?? .all {
-        case .dailyNotes: "日次ノート"
-        case .weeklyNotes: "週ノート"
         case .unfiledStars: "未整理のStar"
         case .theme(let id): store.theme(id: id)?.name ?? "テーマ"
         case .folder(let name): name
@@ -99,13 +96,7 @@ struct ReaderView: View {
         } content: {
             workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
-            if scope == .dailyNotes {
-                DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail, aiReview: aiReview, handoff: handoff)
-                    .id(workspace.dailyNoteID)
-            } else if scope == .weeklyNotes {
-                WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .detail)
-                    .id(workspace.weekKey + (workspace.weeklyNoteID?.uuidString ?? ""))
-            } else if case .theme(let id) = scope, workspace.face(of: id) == .questions {
+            if case .theme(let id) = scope, workspace.face(of: id) == .questions {
                 UnderstandingEditor(store: store, themeID: id).id(id)
             } else { ZStack(alignment: .trailing) {
                 detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
@@ -374,9 +365,7 @@ struct ReaderView: View {
     }
 
     @ViewBuilder private var workspaceList: some View {
-        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list, aiReview: aiReview, handoff: handoff).id(workspace.dailyNoteID) }
-        else if scope == .weeklyNotes { WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .list).id(workspace.weekKey) }
-        else if case .theme(let id) = scope, workspace.face(of: id) == .questions {
+        if case .theme(let id) = scope, workspace.face(of: id) == .questions {
             ThemeQuestionsPane(store: store, themeID: id, face: faceBinding(id)).id(id)
         }
         else { articleList.id(scope) }
@@ -452,10 +441,6 @@ struct ReaderView: View {
         } else {
             if originalPage.url != nil { closeOriginal() }
             columnVisibility = .all; listFocused = false
-            if workspace.scope == .dailyNotes, !workspace.dailyOpened {
-                workspace.dailyNoteID = store.dailyNote(containing: .now)?.id
-                workspace.dailyOpened = true
-            }
         }
     }
 

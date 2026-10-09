@@ -9,12 +9,7 @@ import SwiftData
     public private(set) var settings: ReaderSettings?
     public var retentionDays: Int { settings?.retentionDays ?? 30 }
     @ObservationIgnored public var onContentPolicyChanged: (@MainActor () -> Void)?
-    public private(set) var weeks: [WeeklyPeriod] = []
-    public private(set) var notes: [WeeklyNote] = []
-    public private(set) var noteSources: [NoteSource] = []
     public private(set) var memberships: [FeedMembership] = []
-    public private(set) var dailyNotes: [DailyNote] = []
-    public private(set) var scraps: [NoteScrap] = []
     public private(set) var themes: [Theme] = []
     public private(set) var themeArticles: [ThemeArticle] = []
     public private(set) var themeQuestions: [ThemeQuestion] = []
@@ -40,8 +35,7 @@ import SwiftData
     @ObservationIgnored private var needsReload = false
 
     public static var schema: Schema {
-        Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, WeeklyPeriod.self,
-                WeeklyNote.self, NoteSource.self, ReaderSettings.self, DailyNote.self, NoteScrap.self,
+        Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, ReaderSettings.self,
                 Theme.self, ThemeArticle.self, ThemeQuestion.self])
     }
 
@@ -83,12 +77,7 @@ import SwiftData
         settings = try context.fetch(FetchDescriptor<ReaderSettings>()).first
         articles = try context.fetch(FetchDescriptor<Article>(sortBy: [SortDescriptor(\.publishedAt, order: .reverse)]))
         feeds = try context.fetch(FetchDescriptor<Feed>(sortBy: [SortDescriptor(\.title)]))
-        weeks = try context.fetch(FetchDescriptor<WeeklyPeriod>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
-        notes = try context.fetch(FetchDescriptor<WeeklyNote>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
-        noteSources = try context.fetch(FetchDescriptor<NoteSource>())
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
-        dailyNotes = try context.fetch(FetchDescriptor<DailyNote>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
-        scraps = try context.fetch(FetchDescriptor<NoteScrap>(sortBy: [SortDescriptor(\.savedAt)]))
         // Ties on the timestamp break by a stable key, so equal times never reorder between launches.
         themes = try context.fetch(FetchDescriptor<Theme>()).sorted {
             $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt

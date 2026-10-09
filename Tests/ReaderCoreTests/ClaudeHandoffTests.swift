@@ -14,7 +14,8 @@ import Testing
         let at = Date.now
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let id = store.articles[0].id
-        let scrap = try store.scrap(articleID: id, at: at, timeZone: .current)
+        let theme = try store.createTheme(name: "A", at: at)
+        let link = try store.addArticle(id, toTheme: theme.id, at: at)
         let review = AIPackageReview(store: store, now: { at })
         let root = library.directory.appending(path: "handoff")
         try review.build(articleIDs: [id], language: "日本語", at: at)
@@ -23,11 +24,11 @@ import Testing
         var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
         metadata.removeValue(forKey: "selections")
         try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
-        try review.build(selections: [.scrap(scrap.key)], language: "日本語", at: at)
+        try review.build(selections: [.themeArticle(link.key)], language: "日本語", at: at)
         let savedFile = try HandoffFiles.write(try #require(review.package), directory: root)
         try store.deleteContent(articleIDs: [id], at: at)
         let inputs = try HandoffFiles.sourceSelections(directory: root)
-        #expect(Set(inputs) == [.article(id), .scrap(scrap.key)])
+        #expect(Set(inputs) == [.article(id), .themeArticle(link.key)])
         try HandoffFiles.reconcile(directory: root, validInputExpiries: store.availableInputExpiries(selections: inputs, at: at), at: at)
         #expect(!FileManager.default.fileExists(atPath: oldFile.path))
         #expect(FileManager.default.fileExists(atPath: savedFile.path))

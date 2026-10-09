@@ -29,8 +29,8 @@ import Testing
         let feed = try store.importFeed(FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: url), receivedAt: now)
         let article = try #require(store.articles.first)
         try store.markDisplayed(articleID: article.id, at: now)
-        let note = try store.createNote(in: WeekCalendar.range(containing: now, timeZone: TimeZone(identifier: "Asia/Tokyo")!), title: "保存ノート", at: now)
-        try store.saveNote(id: note.id, text: "消えない", at: now)
+        let themeID = try store.createTheme(name: "保存テーマ", at: now).id
+        try store.saveUnderstanding(themeID: themeID, text: "消えない", at: now)
         let refresh = FeedRefreshController(store: store, client: client)
         let replies: [StubURLProtocol.Reply] = [.init(status: 304), .init(status: 401), .init(status: 403),
             .init(error: .timedOut), .init(error: .notConnectedToInternet), .init(data: Data("<rss>".utf8)),
@@ -40,7 +40,7 @@ import Testing
             await refresh.refresh(feedIDs: [feed.id], at: now)
             #expect(article.firstReceivedAt == now && article.firstReadAt == now)
             #expect(try store.content(articleID: article.id, at: now)?.text.contains("本文 & 補足") == true)
-            #expect(store.notes.first?.text == "消えない")
+            #expect(store.theme(id: themeID)?.understanding == "消えない")
         }
     }
 

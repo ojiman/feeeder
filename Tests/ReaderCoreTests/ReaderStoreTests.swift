@@ -83,12 +83,8 @@ struct ReaderStoreTests {
         let parsed = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://feed.example/rss")!)
         let feed = try store.importFeed(parsed, receivedAt: at)
         let article = try #require(store.articles.first)
-        let range = WeekCalendar.range(containing: at, timeZone: TimeZone(identifier: "Asia/Tokyo")!)
-        let note = try store.createNote(in: range, title: "保存済み", at: at)
-        try store.saveNote(id: note.id, text: "残す本文", at: at)
-        let scrap = try store.scrap(articleID: article.id, at: at, timeZone: TimeZone(identifier: "Asia/Tokyo")!)
         let theme = try store.createTheme(name: "保存済み", at: at)
-        try store.addArticle(article.id, toTheme: theme.id, at: at)
+        let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
         let question = try store.addQuestion(themeID: theme.id, lens: .custom, text: "保存済みの問い", at: at)
         failSave = true; failReload = true
         #expect(throws: (any Error).self) { try store.setRead(article, true) }
@@ -106,16 +102,6 @@ struct ReaderStoreTests {
             { try store.moveFeed(id: feed.id, toFolder: "変更") },
             { try store.renameFolder(from: "", to: "変更") },
             { _ = try store.importFeed(parsed, receivedAt: at) },
-            { _ = try store.createNote(in: range, title: "変更", at: at) },
-            { try store.saveNote(id: note.id, text: "捨ててはいけない変更", at: at) },
-            { try store.adoptSources(noteID: note.id, articleIDs: [article.id]) },
-            { try store.adoptScraps(noteID: note.id, scrapKeys: [scrap.key]) },
-            { try store.deleteNote(id: note.id) },
-            { _ = try store.scrap(articleID: article.id, at: at, timeZone: TimeZone(identifier: "Asia/Tokyo")!) },
-            { try store.saveDailyNote(id: scrap.noteID, text: "変更", at: at) },
-            { try store.saveScrapMemo(key: scrap.key, memo: "変更", at: at) },
-            { try store.removeScrap(key: scrap.key) },
-            { try store.deleteDailyNote(id: scrap.noteID) },
             { _ = try store.createTheme(name: "変更", at: at) },
             { try store.renameTheme(id: theme.id, to: "変更", at: at) },
             { try store.saveUnderstanding(themeID: theme.id, text: "捨ててはいけない変更", at: at) },
@@ -133,17 +119,15 @@ struct ReaderStoreTests {
             { try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "変更", coverage: .extracted, sourceURL: parsed.sourceURL), at: at) }
         ]
         for change in changes { #expect(throws: (any Error).self) { try change() } }
-        #expect(throws: (any Error).self) { _ = try store.aiSources(selections: [.scrap(scrap.key)], at: at) }
+        #expect(throws: (any Error).self) { _ = try store.aiSources(selections: [.themeArticle(link.key)], at: at) }
         #expect(saveAttempts == attempts)
         failReload = false
         try store.setRead(article, true)
-        try store.saveNote(id: note.id, text: "再試行した本文", at: at)
         try store.saveUnderstanding(themeID: theme.id, text: "再試行した理解", at: at)
         let reopened = try ReaderStore(url: url, now: at)
         #expect(reopened.article(id: article.id)?.isRead == true)
         #expect(reopened.feed(id: feed.id)?.title == parsed.title && reopened.feed(id: feed.id)?.folder == "")
-        #expect(reopened.notes.first?.text == "再試行した本文")
-        #expect(reopened.dailyNotes.count == 1 && reopened.scraps.first?.memo == "")
+        #expect(reopened.themeArticles.first?.key == link.key)
         #expect(reopened.retentionDays == 30 && reopened.article(id: article.id)?.starredAt == nil)
         #expect(reopened.theme(id: theme.id)?.understanding == "再試行した理解" && reopened.themeQuestions.first?.answer == "")
     }
