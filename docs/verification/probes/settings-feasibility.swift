@@ -164,7 +164,8 @@ import ReaderCore
                             #expect(range.location != NSNotFound)
                             let font = try #require(storage.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont)
                             let style = try #require(storage.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle)
-                            #expect(font.pointSize == size && style.lineSpacing == spacing)
+                            #expect(font.pointSize == size)
+                            #expect(style.lineSpacing == spacing)
                             #expect(style.headIndent == (i == 7 ? 20 : 0))
                         }
                         let linked = (view.string as NSString).range(of: paragraphs[7]).location + linkRange.location
@@ -214,6 +215,59 @@ import ReaderCore
         #expect(afterRect.height > 80 && second >= range.location && second < NSMaxRange(range))
         #expect(first != second)
         print("PROBE mounted scroll: viewport=\(scroll.contentSize), paragraph UTF16 length=\(range.length), heights=\(beforeRect.height)->\(afterRect.height), anchor=\(before.anchor)/\(before.offset)->\(after.anchor)/\(after.offset), topUTF16=\(first)->\(second)")
+    }
+    @Test func liveSizeKeepsTopCharacterSelectionAndDisplayState() async throws {
+        var cases = 0
+        for viewport in [CGFloat(360), 600, 1000] {
+            for start in [0, 7, 20] {
+                let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: viewport, height: 480))
+                let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+                let w = window(scroll, width: viewport); defer { w.close() }
+                let paragraphs = (0..<40).map { "段落\($0)。" + String(repeating: "日本語🙂とEnglishの合成文章を読みます。", count: 35) }
+                let links = paragraphs.enumerated().map { i, text in
+                    BodyParagraph(text: text, links: i == 7 ? [BodyLink(location: 0, length: 3, url: "https://synthetic.example/")] : [], quoteDepth: i == 7 ? 1 : 0)
+                }
+                var begins = 0, displayed = 0
+                view.onDisplayBegin = { begins += 1 }; view.onDisplayed = { displayed += 1 }
+                view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: paragraphs, unavailable: nil, bodyParagraphs: links)
+                view.restore(anchor: "paragraph-\(start)", offset: 8)
+                let manager = try #require(view.layoutManager), container = try #require(view.textContainer)
+                func topLine() -> NSRange {
+                    manager.ensureLayout(for: container)
+                    let point = NSPoint(x: 0, y: scroll.contentView.bounds.minY - view.textContainerOrigin.y)
+                    let glyph = manager.glyphIndex(for: point, in: container)
+                    var glyphs = NSRange()
+                    _ = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: &glyphs)
+                    return manager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
+                }
+                let originalText = view.string
+                view.setSelectedRange(NSRange(location: 3, length: 5))
+                let selection = view.selectedRanges
+                func render() async throws {
+                    let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.visibleRect))
+                    view.cacheDisplay(in: view.visibleRect, to: bitmap)
+                    try await settle(view)
+                }
+                try await render()
+                #expect(begins == 1 && displayed == 1)
+                for size in [CGFloat(20), 14, 18, 16] {
+                    let anchor = topLine().location
+                    view.updateReadingSize(size)
+                    let line = topLine()
+                    #expect(NSLocationInRange(anchor, line))
+                    #expect(view.string == originalText && view.selectedRanges == selection)
+                    #expect(abs(container.containerSize.width - min(670 * size / 16, view.frame.width - 84)) < 0.01)
+                    let quote = (view.string as NSString).range(of: paragraphs[7])
+                    let style = try #require(view.textStorage?.attribute(.paragraphStyle, at: quote.location, effectiveRange: nil) as? NSParagraphStyle)
+                    #expect(style.headIndent == 20 && style.lineSpacing == size / 2)
+                    #expect(view.textStorage?.attribute(.link, at: quote.location, effectiveRange: nil) as? URL == URL(string: "https://synthetic.example/"))
+                    try await render()
+                    #expect(begins == 1 && displayed == 1)
+                    cases += 1
+                }
+            }
+        }
+        print("PROBE live size update: \(cases) cases; prior top-line character remains on top line, selection/text/link/quote preserved; display callbacks stay at one initial pair")
     }
     @Test func onDeviceAvailabilityOnly() {
         print("PROBE FoundationModels availability: \(SystemLanguageModel.default.availability)")

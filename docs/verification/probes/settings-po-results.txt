@@ -1,0 +1,65 @@
+Settings PO follow-up — 2026-10-10 JST
+Status: synthetic feasibility only, PdM approval and product acceptance NOT_DONE.
+Product source: e9bcd933873fe920fc3751ba417afe561ff2a99c
+Environment: macOS 27.0.1 (26A434), Apple Silicon, Xcode 27.0 (27A266a), Swift 6.4 (swiftlang-6.4.0.34.1)
+Reproduce: bash docs/verification/probes/run-settings-feasibility.sh
+Final run: same swift test flags as runner, after restoring all four controls; exit 0.
+Actual Settings scene, actual Japanese IME, real ReaderView/Store integration NOT_RUN.
+
+SHA256 of final inputs (unchanged after final test):
+404e47751e41166b51aa731e5a496c6b8d43910d2720791c4608ce3aeb5b39f2  settings-feasibility.swift
+4f73504f0295f6f720359b20cbe2460d6322767d3f18a87e56e73c59a47df79d  settings-typography.patch
+f87650efc0b78e72a8bb089710be41168d139c825f55954d7e72726d4475d196  settings-live-update.patch
+7f686286e77e966dc774d472a6dab0e8e97f7a6a881c94a744362c3004df4989  run-settings-feasibility.sh
+e98778f8cc1598b2eb4721fa8ee1ece009fdd0424b13fb75fe79334d73d5ea7c  patched NativeArticleText.swift
+Patched source equals baseline reconstructed with committed patches: PASS.
+
+Final run (verbatim excerpt):
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SettingsFeasibilityProbe started.
+◇ Test fiveCategoryContentsRender() started.
+PROBE five category contents rendered; navigation and Settings scene not exercised
+✔ Test fiveCategoryContentsRender() passed after 2.241 seconds.
+◇ Test editorUpdateAndMarkedTextControls() started.
+PROBE native font-only marked preserved=true
+PROBE SwiftUI notifyBinding=false, bindingMatchesBefore=false, markedBefore={3, 4}, markedAfter={57, 0}, textPreserved=false
+PROBE SwiftUI notifyBinding=true, bindingMatchesBefore=true, markedBefore={3, 4}, markedAfter={3, 4}, textPreserved=true
+PROBE separate-window responder resignation=true, markedAfter=true, textPreserved=true
+✔ Test editorUpdateAndMarkedTextControls() passed after 5.130 seconds.
+◇ Test parameterizedProductionInstallAndWidth() started.
+PROBE parameterized production install/setFrameSize: 108 combinations
+✔ Test parameterizedProductionInstallAndWidth() passed after 11.059 seconds.
+◇ Test windowBackedReadingPosition() started.
+PROBE mounted scroll: viewport=(1000.0, 480.0), paragraph UTF16 length=774, heights=936.0->390.0, anchor=paragraph-7/80.0->paragraph-7/80.0, topUTF16=5505->5597
+✔ Test windowBackedReadingPosition() passed after 0.083 seconds.
+◇ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() started.
+PROBE live size update: 36 cases; prior top-line character remains on top line, selection/text/link/quote preserved; display callbacks stay at one initial pair
+✔ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() passed after 19.927 seconds.
+◇ Test onDeviceAvailabilityOnly() started.
+PROBE FoundationModels availability: available
+PROBE Japanese embedding assets present: true
+✔ Test onDeviceAvailabilityOnly() passed after 0.029 seconds.
+✔ Suite SettingsFeasibilityProbe passed after 38.471 seconds.
+✔ Test run with 6 tests in 1 suite passed after 38.471 seconds.
+
+Independent negative controls (one mutation at a time, restored before final run):
+Filter: parameterizedProductionInstallAndWidth; same package/scratch/version flags as runner.
+Mutations are listed in the verification record. Each exit status was 1 (expected).
+
+Control: font
+✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:167:29: Expectation failed: font.pointSize == size
+✘ Test run with 1 test in 1 suite failed after 11.543 seconds with 3240 issues.
+
+Control: spacing
+✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:168:29: Expectation failed: style.lineSpacing == spacing
+✘ Test run with 1 test in 1 suite failed after 13.105 seconds with 2808 issues.
+
+Control: width
+✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:180:25: Expectation failed: container.containerSize.width == maximum
+✘ Test run with 1 test in 1 suite failed after 11.610 seconds with 144 issues.
+
+Control: inset
+✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:181:25: Expectation failed: view.textContainerInset.width == (1050 - maximum) / 2
+✘ Test run with 1 test in 1 suite failed after 11.138 seconds with 108 issues.
