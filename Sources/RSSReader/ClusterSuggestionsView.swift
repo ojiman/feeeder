@@ -31,7 +31,8 @@ struct ClusterSuggestionsView: View {
     @Bindable var store: ReaderStore
     @Bindable var model: ThemeSuggestionModel
     let onCreated: (String) -> Void
-    @State private var naming: Int?
+    /// The group being named is kept by its contents, not its position, so a recompute can never retarget it.
+    @State private var naming: [UUID]?
     @State private var name = ""
     @State private var error: String?
     @FocusState private var nameFocused: Bool
@@ -46,21 +47,24 @@ struct ClusterSuggestionsView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    ForEach(Array(model.clusters.groups.enumerated()), id: \.offset) { index, group in card(index, group) }
+                    ForEach(model.clusters.groups, id: \.self) { group in card(group) }
                 }
             }.frame(maxHeight: 360)
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .padding(14).frame(width: 340)
+        .onChange(of: model.clusters.groups) { _, groups in
+            if let group = naming, !groups.contains(group) { naming = nil; name = "" }
+        }
     }
 
-    private func card(_ index: Int, _ group: [UUID]) -> some View {
+    private func card(_ group: [UUID]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(group.prefix(4), id: \.self) { id in
                 Text(store.article(id: id)?.title ?? "（記事が見つかりません）").lineLimit(1).font(.callout)
             }
             if group.count > 4 { Text("ほか\(group.count - 4)件").font(.caption).foregroundStyle(.secondary) }
-            if naming == index {
+            if naming == group {
                 HStack {
                     TextField("テーマの名前", text: $name).focused($nameFocused)
                         .onSubmit { create(group) }.accessibilityLabel("テーマの名前")
@@ -68,7 +72,7 @@ struct ClusterSuggestionsView: View {
                     Button("やめる") { naming = nil; name = "" }
                 }
             } else {
-                Button("\(group.count)件でテーマにする…") { naming = index; name = ""; nameFocused = true }
+                Button("\(group.count)件でテーマにする…") { naming = group; name = ""; nameFocused = true }
             }
         }
         .padding(10).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
@@ -79,7 +83,6 @@ struct ClusterSuggestionsView: View {
             let theme = try store.createTheme(name: name, adding: group, at: .now)
             error = nil; naming = nil; name = ""
             onCreated("「\(theme.name)」に\(group.count)件を入れました")
-            Task { await model.loadClusters() }
         } catch { self.error = error.localizedDescription }
     }
 }

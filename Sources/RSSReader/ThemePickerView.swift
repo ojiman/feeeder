@@ -51,6 +51,8 @@ struct ThemePickerView: View {
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .padding(14).frame(width: 300)
+        // A pointer over the popover counts as interaction: suggestions that arrive late must not move rows under it.
+        .onContinuousHover { _ in interacted = true }
         .onAppear { fieldFocused = true; highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
         .onChange(of: query) { _, _ in interacted = true; highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
         .task(id: articleID) {
