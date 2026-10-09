@@ -181,6 +181,26 @@ extension ReaderStore {
         try save(); try reload()
         return theme
     }
+    /// Creates the theme and all of its articles in one save, so a failure leaves neither an empty theme nor a partial one.
+    /// Duplicate IDs collapse (order kept); a missing article rejects the whole request.
+    @discardableResult public func createTheme(name: String, adding articleIDs: [UUID], at: Date) throws -> Theme {
+        try reloadIfNeeded()
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw ThemeError.missingName }
+        var seen = Set<UUID>()
+        let unique = articleIDs.filter { seen.insert($0).inserted }
+        let articles = try unique.map { id -> Article in
+            guard let article = article(id: id) else { throw ThemeError.missingArticle }
+            return article
+        }
+        let theme = Theme(name: name, at: at)
+        context.insert(theme)
+        for article in articles {
+            context.insert(ThemeArticle(themeID: theme.id, article: article, summary: recordedSummary(of: article, at: at), at: at))
+        }
+        try save(); try reload()
+        return theme
+    }
     private func recordedSummary(of article: Article, at: Date) -> String {
         isContentAvailable(article, at: at) ? article.summary.trimmingCharacters(in: .whitespacesAndNewlines) : ""
     }

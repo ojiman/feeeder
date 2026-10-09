@@ -8,6 +8,7 @@ struct RSSReaderApp: App {
     @State private var aiReview: AIPackageReview?
     @State private var handoff: ClaudeHandoffController?
     @State private var imageLoader: ReaderImageLoader?
+    @State private var suggestions: ThemeSuggestionModel?
     @State private var startupError: String?
     @State private var lifecycleError: String?
     @Environment(\.scenePhase) private var scenePhase
@@ -36,6 +37,8 @@ struct RSSReaderApp: App {
             _handoff = State(initialValue: handoff)
             let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "Feeeder/Images")
             _imageLoader = State(initialValue: ReaderImageLoader(directory: cache))
+            _suggestions = State(initialValue: ThemeSuggestionModel(store: store, assistant: OnDeviceThemeAssistant(),
+                                                                    isEnabled: { OnDeviceAISetting.isEnabled }))
             _lifecycleError = State(initialValue: handoff.maintenanceError)
         } catch {
             _startupError = State(initialValue: error.localizedDescription)
@@ -45,7 +48,7 @@ struct RSSReaderApp: App {
     var body: some Scene {
         Window("Feeeder", id: "reader") {
             Group {
-                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader) }
+                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader, suggestions: suggestions) }
                 else {
                     ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
                         description: Text(startupError ?? "不明なエラーです。"))
@@ -90,7 +93,7 @@ struct RSSReaderApp: App {
         .defaultSize(width: 1240, height: 810)
         .commands { CommandGroup(replacing: .newItem) {} }
         Settings {
-            if let store { ReaderSettingsView(store: store, appearance: $appearance) }
+            if let store { ReaderSettingsView(store: store, appearance: $appearance, suggestions: suggestions) }
         }
     }
     private func purgeContent() {

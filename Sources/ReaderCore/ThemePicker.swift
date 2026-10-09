@@ -5,7 +5,11 @@ public struct ThemePickerRow: Equatable, Sendable {
     public let kind: Kind
     public let title: String
     public let included: Bool
-    public init(kind: Kind, title: String, included: Bool) { self.kind = kind; self.title = title; self.included = included }
+    /// A "near" theme proposed by the on-device assistant. Only a hint: it never acts by itself.
+    public let suggested: Bool
+    public init(kind: Kind, title: String, included: Bool, suggested: Bool = false) {
+        self.kind = kind; self.title = title; self.included = included; self.suggested = suggested
+    }
 }
 
 public enum ThemePickerAction: Equatable, Sendable { case toggle(UUID), create(String) }
@@ -13,10 +17,21 @@ public enum ThemePickerAction: Equatable, Sendable { case toggle(UUID), create(S
 /// Pure logic for the `t` picker: one text field filters the themes, ↑/↓ move a highlight and Return acts on it,
 /// so adding to an existing theme works from the keyboard alone and typing an existing name never creates a duplicate.
 public enum ThemePicker {
-    public static func rows(themes: [(id: UUID, name: String)], memberOf: Set<UUID>, query: String) -> [ThemePickerRow] {
+    public static func rows(themes: [(id: UUID, name: String)], memberOf: Set<UUID>, query: String, suggested: [UUID] = []) -> [ThemePickerRow] {
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let matching = query.isEmpty ? themes : themes.filter { $0.name.localizedCaseInsensitiveContains(query) }
-        var rows = matching.map { ThemePickerRow(kind: .theme($0.id), title: $0.name, included: memberOf.contains($0.id)) }
+        var order = themes
+        let known = Set(themes.map(\.id))
+        var seen = Set<UUID>()
+        let hints = suggested.filter { known.contains($0) && seen.insert($0).inserted }
+        if query.isEmpty, !hints.isEmpty {
+            let byID = Dictionary(themes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            order = hints.compactMap { byID[$0] } + themes.filter { !seen.contains($0.id) }
+        }
+        let matching = query.isEmpty ? order : order.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        var rows = matching.map {
+            ThemePickerRow(kind: .theme($0.id), title: $0.name, included: memberOf.contains($0.id),
+                           suggested: query.isEmpty && seen.contains($0.id))
+        }
         if !query.isEmpty, !themes.contains(where: { $0.name.localizedCaseInsensitiveCompare(query) == .orderedSame }) {
             rows.append(ThemePickerRow(kind: .create(query), title: "「\(query)」を新しいテーマとして作る", included: false))
         }
