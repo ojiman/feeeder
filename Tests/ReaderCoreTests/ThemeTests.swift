@@ -272,6 +272,9 @@ import Testing
         #expect(throws: (any Error).self) { try store.addQuestion(themeID: theme.id, lens: .custom, text: "失われる問い", at: at) }
         #expect(store.questions(themeID: theme.id).count == 1)
         gate.failNext = true
+        #expect(throws: (any Error).self) { try store.addQuestion(themeID: theme.id, lens: .assumption, at: at) }
+        #expect(store.questions(themeID: theme.id).count == 1)
+        gate.failNext = true
         #expect(throws: (any Error).self) { try store.updateQuestion(id: question.id, text: "失われる文", at: at) }
         #expect(store.themeQuestions.first { $0.id == question.id }?.text == "問い")
         gate.failNext = true
@@ -352,6 +355,14 @@ import Testing
         induceFailedRecovery()
         try store.addQuestion(themeID: themeID, lens: .condition, text: "二つ目の問い", at: at.addingTimeInterval(1))
         #expect(store.questions(themeID: themeID).count == 2)
+        // A rename that fails together with its recovery must not leak its unsaved name into a lens draft.
+        gate.failSave = true; gate.failReload = true
+        #expect(throws: (any Error).self) { try store.renameTheme(id: themeID, to: "保存されなかった名前", at: at) }
+        gate.failSave = false; gate.failReload = false
+        let drafted = try store.addQuestion(themeID: themeID, lens: .assumption, at: at.addingTimeInterval(2))
+        #expect(drafted.text.contains("「新しい名前」") && !drafted.text.contains("保存されなかった名前") && store.questions(themeID: themeID).count == 3)
+        induceFailedRecovery()
+        try store.deleteQuestion(id: drafted.id, at: at)
         induceFailedRecovery()
         try store.updateQuestion(id: firstQuestionID, text: "新しい問い", at: at)
         #expect(question()?.text == "新しい問い")
@@ -482,5 +493,22 @@ import Testing
         #expect(throws: ThemeError.self) { try store.createTheme(name: " ", adding: id, at: at) }
         #expect(throws: ThemeError.self) { try store.createTheme(name: "存在しない", adding: UUID(), at: at) }
         #expect(store.themes.count == 1)
+    }
+
+    @Test func lensQuestionUsesTheThemeNameAndRejectsTheFreeLens() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "金利と家計", at: at)
+        for lens in QuestionLens.allCases where lens != .custom {
+            let question = try store.addQuestion(themeID: theme.id, lens: lens, at: at.addingTimeInterval(1))
+            #expect(question.lens == lens && question.text == lens.draft(themeName: "金利と家計") && !question.isAnswered)
+            #expect(question.text.contains("「金利と家計」"))
+        }
+        #expect(store.questions(themeID: theme.id).count == 5)
+        #expect(throws: ThemeError.self) { try store.addQuestion(themeID: theme.id, lens: .custom, at: at) }
+        #expect(throws: ThemeError.self) { try store.addQuestion(themeID: UUID(), lens: .assumption, at: at) }
+        try store.renameTheme(id: theme.id, to: "改名後", at: at)
+        let renamed = try store.addQuestion(themeID: theme.id, lens: .condition, at: at.addingTimeInterval(2))
+        #expect(renamed.text.contains("「改名後」"))
     }
 }

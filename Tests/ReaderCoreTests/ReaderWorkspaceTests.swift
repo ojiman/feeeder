@@ -39,4 +39,23 @@ struct ReaderWorkspaceTests {
         workspace.rememberReader(third, in: .theme(themeID))
         #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == later.selectedArticleID)
     }
+
+    @Test func questionSelectionIsPerThemeAndDefaultsToUnderstanding() {
+        var workspace = ReaderWorkspaceState()
+        let first = UUID(), second = UUID(), question = UUID()
+        #expect(workspace.questionSelection(of: first) == .understanding)
+        workspace.selectQuestion(.question(question), in: first)
+        #expect(workspace.questionSelection(of: first) == .question(question))
+        #expect(workspace.questionSelection(of: second) == .understanding)
+        workspace.selectQuestion(.understanding, in: first)
+        #expect(workspace.questionSelection(of: first) == .understanding)
+    }
+
+    @Test func aQuestionThatNoLongerExistsFallsBackToTheUnderstanding() {
+        let kept = UUID(), gone = UUID()
+        #expect(ThemeQuestionSelection.question(kept).resolved(existing: [kept]) == .question(kept))
+        #expect(ThemeQuestionSelection.question(gone).resolved(existing: [kept]) == .understanding)
+        #expect(ThemeQuestionSelection.question(gone).resolved(existing: []) == .understanding)
+        #expect(ThemeQuestionSelection.understanding.resolved(existing: [kept]) == .understanding)
+    }
 }

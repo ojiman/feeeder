@@ -31,6 +31,7 @@ import Testing
         let directory: URL
     }
     private func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
+                         questionSelection: (ReaderStore) -> ThemeQuestionSelection = { _ in .understanding },
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -44,7 +45,7 @@ import Testing
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
             handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialThemeFace: face)
+            initialScope: try scope(store), initialThemeFace: face, initialQuestionSelection: questionSelection(store))
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-theme-reader")
@@ -123,5 +124,79 @@ import Testing
         try await Task.sleep(for: .milliseconds(300))
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 0 }
         try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+    }
+
+    @Test func questionFaceShowsTheSelectedQuestionsAnswer() async throws {
+        let h = try harness(scope: { store in .theme(store.themes[0].id) }, face: .questions,
+                            questionSelection: { store in .question(store.themeQuestions[0].id) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            try store.saveUnderstanding(themeID: theme.id, text: "既存のいまの理解", at: .now)
+            let question = try store.addQuestion(themeID: theme.id, lens: .assumption, at: .now)
+            try store.saveAnswer(questionID: question.id, answer: "保存済みの自分の答え", at: .now)
+        }
+        defer { finish(h) }
+        try await settle(h.host) { containsText("保存済みの自分の答え", in: h.host) }
+        #expect(!containsText("既存のいまの理解", in: h.host))
+    }
+
+    @Test func aMissingQuestionSelectionFallsBackToTheUnderstanding() async throws {
+        let h = try harness(scope: { store in .theme(store.themes[0].id) }, face: .questions,
+                            questionSelection: { _ in .question(UUID()) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            try store.saveUnderstanding(themeID: theme.id, text: "既存のいまの理解", at: .now)
+        }
+        defer { finish(h) }
+        try await settle(h.host) { containsText("既存のいまの理解", in: h.host) }
+    }
+}
+
+/// Hosts the editor behind a switch so a test can remove it the way a face switch or a lens choice does.
+@MainActor private final class EditorSwitch: ObservableObject { @Published var shown = true }
+private struct EditorSwitchHost: View {
+    let store: ReaderStore
+    let themeID: UUID
+    let questionID: UUID
+    @ObservedObject var toggle: EditorSwitch
+    var body: some View {
+        if toggle.shown { QuestionEditor(store: store, themeID: themeID, questionID: questionID, onOpenArticle: { _ in }) }
+        else { Text("removed") }
+    }
+}
+
+@Suite(.serialized) @MainActor struct QuestionEditorTests {
+    private func textFields(in view: NSView) -> [NSTextField] {
+        (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap { textFields(in: $0) }
+    }
+    @Test func aQuestionTextEditIsSavedWhenTheEditorIsRemovedWhileStillFocused() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try ReaderStore(url: directory.appendingPathComponent("Reader.store"))
+        let theme = try store.createTheme(name: "A", at: .now)
+        let question = try store.addQuestion(themeID: theme.id, lens: .custom, text: "元の問い", at: .now)
+        let toggle = EditorSwitch()
+        let host = NSHostingView(rootView: EditorSwitchHost(store: store, themeID: theme.id, questionID: question.id, toggle: toggle))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 600), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host
+        defer { window.close() }
+        var field: NSTextField?
+        for _ in 0..<100 {
+            host.layoutSubtreeIfNeeded()
+            field = textFields(in: host).first { $0.stringValue == "元の問い" }
+            if field != nil { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let textField = try #require(field)
+        #expect(window.makeFirstResponder(textField))
+        let editor = try #require(window.fieldEditor(false, for: textField) as? NSTextView)
+        editor.insertText("編集した問い", replacementRange: NSRange(location: 0, length: (editor.string as NSString).length))
+        try await Task.sleep(for: .milliseconds(100))
+        toggle.shown = false
+        for _ in 0..<100 {
+            host.layoutSubtreeIfNeeded()
+            if store.themeQuestions.first?.text == "編集した問い" { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(store.themeQuestions.first?.text == "編集した問い")
     }
 }
