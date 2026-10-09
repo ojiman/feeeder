@@ -118,6 +118,8 @@ struct AIReviewView: View {
             case .themeArticle(let key):
                 guard let saved = store.themeArticles.first(where: { $0.key == key }) else { return nil }
                 return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "テーマに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            case .unresolvable:
+                return nil
             }
         }
     }

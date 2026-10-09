@@ -37,6 +37,26 @@ import Testing
         try HandoffFiles.cleanup(directory: root, at: at.addingTimeInterval(86_400))
         #expect(!FileManager.default.fileExists(atPath: savedFile.path))
     }
+    @Test func legacyScrapMetadataIsDeletedInsteadOfFailingEveryMaintenance() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let id = store.articles[0].id
+        let review = AIPackageReview(store: store, now: { at })
+        let root = library.directory.appending(path: "handoff")
+        try review.build(articleIDs: [id], language: "日本語", at: at)
+        let file = try HandoffFiles.write(try #require(review.package), directory: root)
+        let metadataFile = file.deletingLastPathComponent().appending(path: "metadata.json")
+        // A copy written by beta.3 from a daily/weekly note used the removed `scrap` / `noteSource` selections.
+        var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+        metadata["selections"] = [["scrap": ["_0": "legacy-note:legacy-article"]], ["noteSource": ["_0": "legacy-note:other"]]]
+        try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+        let inputs = try HandoffFiles.sourceSelections(directory: root)
+        #expect(inputs == [.unresolvable])   // the set collapses both legacy entries
+        try HandoffFiles.reconcile(directory: root, validInputExpiries: store.availableInputExpiries(selections: inputs, at: at), at: at)
+        #expect(!FileManager.default.fileExists(atPath: file.deletingLastPathComponent().path))
+        try HandoffFiles.cleanup(directory: root, at: at.addingTimeInterval(10 * 86_400))
+    }
     @Test func interruptedWriteDoesNotBlockExpiredCopiesAndRecoversOwnedFiles() throws {
         let (library, store, review, package, root) = try fixture(); defer { library.cleanup() }
         let expired = try HandoffFiles.write(package, directory: root)

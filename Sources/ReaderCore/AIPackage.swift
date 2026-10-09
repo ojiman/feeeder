@@ -4,6 +4,25 @@ import Observation
 
 public enum AIInputSelection: Hashable, Codable, Sendable {
     case article(UUID), themeArticle(String)
+    /// A selection written by an older version (a daily/weekly-note scrap or adopted source). It can no longer be
+    /// resolved, so the managed copy that contains it is deleted at the next reconcile instead of failing every maintenance pass.
+    case unresolvable
+
+    private enum Stored: Codable { case article(UUID), themeArticle(String), unresolvable }
+    public init(from decoder: Decoder) throws {
+        switch try? Stored(from: decoder) {
+        case .article(let id)?: self = .article(id)
+        case .themeArticle(let key)?: self = .themeArticle(key)
+        default: self = .unresolvable
+        }
+    }
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .article(let id): try Stored.article(id).encode(to: encoder)
+        case .themeArticle(let key): try Stored.themeArticle(key).encode(to: encoder)
+        case .unresolvable: try Stored.unresolvable.encode(to: encoder)
+        }
+    }
 }
 
 public struct AISource: Sendable {
@@ -118,6 +137,8 @@ extension ReaderStore {
             case .themeArticle(let key):
                 guard let link = themeArticles.first(where: { $0.key == key }) else { return nil }
                 return savedSource(selection: selection, id: link.articleID, title: link.title, url: link.url, summary: link.summary, savedAt: link.addedAt)
+            case .unresolvable:
+                return nil
             }
         }
     }
