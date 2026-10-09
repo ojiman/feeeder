@@ -47,7 +47,7 @@ The app is ad hoc signed for local use. It is not signed with a Developer ID and
 
 **Where is my data?** In `~/Library/Application Support/Feeeder/`, with the database in `Reader.store` (plus its `-shm` / `-wal` files).
 
-**Will an update break my library?** During the beta, compatibility between versions is **not guaranteed**: an update can leave the library unreadable, and the app shows an error rather than deleting or recreating it. Back up the `Feeeder` folder before updating. From 1.0 onward, the policy is to preserve saved data across updates.
+**Will an update break my library?** During the beta, compatibility between versions is **not guaranteed**: an update can leave the library unreadable, and the app shows an error rather than deleting or recreating it. Back up the `Feeeder` folder before updating (see the [user guide](docs/user-guide.md#back-up-the-library-by-hand)). From 1.0 onward, the policy is to preserve saved data across updates.
 
 **Does it work without AI?** Yes. All features, including creating and editing themes, questions, and answers, work with AI turned off. If the on-device language assets are not installed, the app does not download them; suggestions simply do not appear.
 
@@ -62,11 +62,11 @@ This is a beta under active development.
 
 ## Documentation
 
-Most documentation is currently in Japanese only.
+The user guide is available in English and Japanese. The other documents are currently in Japanese only.
 
 | | |
 |---|---|
-| [User guide (Japanese)](docs/user-guide.ja.md) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
+| [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are (Japanese) |
