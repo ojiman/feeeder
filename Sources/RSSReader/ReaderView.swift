@@ -451,7 +451,7 @@ struct ReaderView: View {
     @ViewBuilder private func questionsDetail(_ themeID: UUID) -> some View {
         switch effectiveQuestionSelection(themeID) {
         case .understanding: UnderstandingEditor(store: store, themeID: themeID).id(themeID)
-        case .question(let id): QuestionEditor(store: store, themeID: themeID, questionID: id, onOpenArticle: { openArticle($0, in: themeID) }).id(id)
+        case .question(let id): QuestionEditor(store: store, themeID: themeID, questionID: id, onOpenArticle: { openArticle($0, in: themeID) }, suggestions: suggestions).id(id)
         }
     }
     /// "読む": back to the articles face with that article selected.

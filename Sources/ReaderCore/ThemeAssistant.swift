@@ -22,6 +22,10 @@ public protocol ThemeAssistant: Sendable {
     func availability() async -> AssistantAvailability
     func nearestThemes(for item: SuggestionItem, candidates: [ThemeCandidateInput], background: [SuggestionItem]) async throws -> [ThemeMatch]
     func clusters(of items: [SuggestionItem], background: [SuggestionItem]) async throws -> [[UUID]]
+    /// State of the text-generation model, separate from the embedding's. Never starts a download.
+    func generationAvailability() async -> AssistantAvailability
+    /// Plain text from the on-device model. Throws on any failure; callers treat every throw as "no proposal".
+    func generate(_ request: SuggestionPrompts.Request) async throws -> String
 }
 
 /// Asks the assistant for suggestions and hands the screen only answers that are still current: a request ID
@@ -39,6 +43,7 @@ public protocol ThemeAssistant: Sendable {
     public private(set) var clusters = Clusters.empty
     public private(set) var isFindingClusters = false
     public private(set) var availability: AssistantAvailability?
+    public private(set) var generationAvailability: AssistantAvailability?
 
     private let store: ReaderStore
     private let assistant: (any ThemeAssistant)?
@@ -54,10 +59,13 @@ public protocol ThemeAssistant: Sendable {
 
     /// Reads the system's state only while the setting is on; "off" is the setting's own answer.
     public func refreshAvailability() async {
-        guard isEnabled() else { availability = nil; return }
-        guard let assistant else { availability = .unsupported; return }
-        let value = await assistant.availability()
-        availability = isEnabled() ? value : nil
+        guard isEnabled() else { availability = nil; generationAvailability = nil; return }
+        guard let assistant else { availability = .unsupported; generationAvailability = .unsupported; return }
+        let embedding = await assistant.availability()
+        let generation = await assistant.generationAvailability()
+        let on = isEnabled()
+        availability = on ? embedding : nil
+        generationAvailability = on ? generation : nil
     }
 
     public func invalidate() {
@@ -103,6 +111,47 @@ public protocol ThemeAssistant: Sendable {
         } catch {
             if token == clusterToken { clusters = .empty }
         }
+    }
+
+    private func questionItems(themeID: UUID) -> [SuggestionItem] {
+        store.themeArticles.filter { $0.themeID == themeID }
+            .sorted { $0.addedAt != $1.addedAt ? $0.addedAt > $1.addedAt : $0.key < $1.key }
+            .prefix(SuggestionPrompts.maximumItems)
+            .compactMap { Self.item(id: $0.articleID, title: $0.title, summary: $0.summary) }
+    }
+
+    /// A name for a group of articles (newest first), or nil. Any failure, an unusable output, a late answer and a
+    /// switched-off assistant all give nil.
+    public func proposeName(forArticles ids: [UUID]) async -> String? {
+        guard isEnabled(), let assistant else { return nil }
+        let items = ids.compactMap { suggestionItem(for: $0) }
+        guard items.count >= 2 else { return nil }
+        do {
+            let raw = try await assistant.generate(SuggestionPrompts.name(items: items))
+            guard !Task.isCancelled, isEnabled() else { return nil }
+            return SuggestionText.name(from: raw)
+        } catch { return nil }
+    }
+
+    /// A more specific version of an untouched lens question, or nil. Never for an edited or free question, and
+    /// dropped if the question changed while the model was working.
+    public func proposeQuestion(for questionID: UUID, avoiding previous: String? = nil) async -> String? {
+        guard isEnabled(), let assistant, let (question, themeName) = eligibleQuestion(questionID) else { return nil }
+        let items = questionItems(themeID: question.themeID)
+        guard !items.isEmpty,
+              let request = SuggestionPrompts.question(lens: question.lens, template: question.text, themeName: themeName, items: items) else { return nil }
+        do {
+            let raw = try await assistant.generate(request)
+            guard !Task.isCancelled, isEnabled(), let current = eligibleQuestion(questionID),
+                  current.0.text == question.text, let text = SuggestionText.question(from: raw), text != question.text, text != previous else { return nil }
+            return text
+        } catch { return nil }
+    }
+
+    private func eligibleQuestion(_ id: UUID) -> (ThemeQuestion, String)? {
+        guard let question = store.themeQuestions.first(where: { $0.id == id }), let theme = store.theme(id: question.themeID),
+              QuestionProposalEligibility.isEligible(lens: question.lens, text: question.text, themeName: theme.name) else { return nil }
+        return (question, theme.name)
     }
 
     // MARK: Inputs. Only held content and the themes' own records are used; expired text never comes back.

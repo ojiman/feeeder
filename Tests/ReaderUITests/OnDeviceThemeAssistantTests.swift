@@ -23,6 +23,23 @@ private final class KeywordEmbedder: TextEmbedder, @unchecked Sendable {
     }
 }
 
+private final class ScriptedGenerator: TextGenerating, @unchecked Sendable {
+    private let lock = NSLock()
+    private var seen: [SuggestionPrompts.Request] = []
+    var output = "金利と家計"
+    var delay: Duration?
+    var failure: (any Error)?
+    var state = AssistantAvailability.available
+    var requests: [SuggestionPrompts.Request] { lock.withLock { seen } }
+    func availability() async -> AssistantAvailability { state }
+    func generate(_ request: SuggestionPrompts.Request) async throws -> String {
+        lock.withLock { seen.append(request) }
+        if let delay { try await Task.sleep(for: delay) }
+        if let failure { throw failure }
+        return output
+    }
+}
+
 struct OnDeviceThemeAssistantTests {
     func item(_ text: String) -> SuggestionItem { SuggestionItem(id: UUID(), text: text) }
     let background = (0..<4).map { SuggestionItem(id: UUID(), text: "背景 \($0)") }
@@ -75,6 +92,52 @@ struct OnDeviceThemeAssistantTests {
         #expect(ContextualTextEmbedder.route("The central bank raised interest rates again this week")?.0 == .latin)
         #expect(ContextualTextEmbedder.route("")?.0 == nil)
         #expect(ContextualTextEmbedder.route("한국어 기사 제목입니다")?.0 == nil)
+    }
+
+    @Test func generationIsDelegatedUnchangedAndItsStateIsReported() async throws {
+        let generator = ScriptedGenerator()
+        generator.output = "睡眠と体内時計"
+        let assistant = OnDeviceThemeAssistant(embedder: KeywordEmbedder(), generator: generator)
+        let request = SuggestionPrompts.name(items: [item("朝の光"), item("昼寝")])
+        let text = try await assistant.generate(request)
+        #expect(text == "睡眠と体内時計" && generator.requests == [request])
+        generator.state = .assetsMissing
+        #expect(await assistant.generationAvailability() == .assetsMissing)
+        #expect(await OnDeviceThemeAssistant(embedder: KeywordEmbedder(), generator: nil).generationAvailability() == .unsupported)
+    }
+
+    @Test func aSlowOrFailingOrMissingGeneratorThrowsInsteadOfHanging() async {
+        let slow = ScriptedGenerator(); slow.delay = .seconds(30)
+        let assistant = OnDeviceThemeAssistant(embedder: KeywordEmbedder(), generator: slow, generationDeadline: 0.05)
+        let request = SuggestionPrompts.name(items: [item("朝の光"), item("昼寝")])
+        await #expect(throws: DeadlineExceeded.self) { try await assistant.generate(request) }
+        let failing = ScriptedGenerator(); failing.failure = CancellationError()
+        await #expect(throws: (any Error).self) { try await OnDeviceThemeAssistant(embedder: KeywordEmbedder(), generator: failing).generate(request) }
+        await #expect(throws: (any Error).self) { try await OnDeviceThemeAssistant(embedder: KeywordEmbedder(), generator: nil).generate(request) }
+    }
+
+    /// Opt-in: the real on-device model on synthetic topics, printed for the verification record. Quality is judged by a person.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["FEEEDER_RUN_ONDEVICE_AI"] == "1"))
+    func realGenerationSmoke() async throws {
+        let assistant = OnDeviceThemeAssistant()
+        let state = await assistant.generationAvailability()
+        #expect(state == .available)
+        let topics = [
+            ["日銀が政策金利を引き上げ、住宅ローン金利も上昇する見通し", "変動金利型の住宅ローンを組む家計の返済負担が増える", "預金金利の上昇で家計の貯蓄行動はどう変わるか", "インフレと賃金上昇の関係を家計の視点で読む"],
+            ["睡眠の質を上げるための就寝前の習慣", "朝の光を浴びると体内時計が整う", "昼寝の長さと夜の眠りの関係", "カフェインを摂る時間帯が睡眠に与える影響"],
+            ["小型のAIモデルを端末内で動かすための量子化の基本", "ローカルで動く大規模言語モデルの推論最適化", "AIモデルの蒸留で軽量化する手法のまとめ"]
+        ]
+        for titles in topics {
+            let items = titles.map { item($0) }
+            let raw = try? await assistant.generate(SuggestionPrompts.name(items: items))
+            let name = raw.flatMap { SuggestionText.name(from: $0) }
+            print("NAME", raw ?? "(failed)", "→", name ?? "(rejected)")
+            let template = QuestionLens.assumption.draft(themeName: name ?? "テーマ")
+            if let request = SuggestionPrompts.question(lens: .assumption, template: template, themeName: name ?? "テーマ", items: items) {
+                let rawQuestion = try? await assistant.generate(request)
+                print("QUESTION", rawQuestion ?? "(failed)", "→", rawQuestion.flatMap { SuggestionText.question(from: $0) } ?? "(rejected)")
+            }
+        }
     }
 
     @Test func availabilityPassesThrough() async {
