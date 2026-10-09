@@ -85,8 +85,8 @@ import ReaderCore
         let a = URL(string: "https://synthetic.example/a.png")!, b = URL(string: "https://synthetic.example/b.png")!
         first.imageURL = a.absoluteString; second.imageURL = b.absoluteString
         let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
-        cell.configure(first, feed: "合成", iconURL: a, loader: nil, scrapped: false)
-        cell.configure(second, feed: "合成", iconURL: b, loader: nil, scrapped: true)
+        cell.configure(first, feed: "合成", iconURL: a, loader: nil, themed: false)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil, themed: true)
         let stale = NSImage(size: NSSize(width: 10, height: 10))
         cell.completeImage(stale, articleID: first.id, url: a, thumbnail: true)
         cell.completeImage(stale, articleID: first.id, url: a, thumbnail: false)
@@ -96,7 +96,7 @@ import ReaderCore
         cell.completeImage(current, articleID: second.id, url: b, thumbnail: false)
         #expect(cell.thumbnail.image === current && cell.favicon.image === current)
         #expect(cell.frame.height == 96)
-        cell.configure(second, feed: "合成", iconURL: b, loader: nil, scrapped: true)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil, themed: true)
         #expect(cell.thumbnail.image === current)
     }
     @Test func starKeyRoutesWithoutConsumingModifiedInput() throws {
@@ -109,6 +109,20 @@ import ReaderCore
             table.keyDown(with: event)
         }
         #expect(handled == ["s"])
+    }
+    @Test func themeKeyRoutesAndTheOldScrapKeyDoesNot() throws {
+        let table = NativeArticleList.Table()
+        var handled: [String] = []
+        table.keyHandler = { handled.append($0); return true }
+        func press(_ key: String, keyCode: UInt16, flags: NSEvent.ModifierFlags = []) throws {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags,
+                timestamp: 0, windowNumber: 0, context: nil, characters: key, charactersIgnoringModifiers: key, isARepeat: false, keyCode: keyCode))
+            table.keyDown(with: event)
+        }
+        try press("t", keyCode: 17)
+        try press("n", keyCode: 45)
+        try press("t", keyCode: 17, flags: .command)
+        #expect(handled == ["t"])
     }
     @Test func backgroundInsertionAndReorderPreserveSelectedArticleAndTopOffset() {
         let original = (0..<40).map { _ in UUID() }

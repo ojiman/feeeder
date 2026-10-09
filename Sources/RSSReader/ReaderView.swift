@@ -16,7 +16,9 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var saveError: String?
-    @State private var scrapMessage: String?
+    @State private var themeMessage: String?
+    @State private var pickingTheme = false
+    @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     @State private var addingSubscription = false
@@ -24,15 +26,28 @@ struct ReaderView: View {
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
     @State private var folderName = ""
+    @State private var creatingTheme = false
+    @State private var newThemeName = ""
+    @State private var renamingTheme: UUID?
+    @State private var themeName = ""
+    @State private var deletingTheme: UUID?
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
-    init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader) {
+    init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
+         initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader
         _loading = State(initialValue: ArticleLoadingController(store: store))
+        _scope = State(initialValue: initialScope)
+        var initialWorkspace = ReaderWorkspaceState()
+        initialWorkspace.scope = initialScope
+        if case .theme(let id) = initialScope, initialThemeFace != .articles {
+            initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
+        }
+        _workspace = State(initialValue: initialWorkspace)
     }
 
     private var selectedExpiry: Date? {
@@ -42,7 +57,8 @@ struct ReaderView: View {
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
-        case .dailyNotes, .weeklyNotes: []
+        case .unfiledStars: store.unfiledStarredArticleIDs(keeping: selection)
+        case .theme(let id): store.themeArticleIDs(themeID: id, keeping: selection)
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
         case .starred: store.starredArticleIDs(keeping: selection)
@@ -53,8 +69,8 @@ struct ReaderView: View {
 
     private var scopeTitle: String {
         switch scope ?? .all {
-        case .dailyNotes: "日次ノート"
-        case .weeklyNotes: "週ノート"
+        case .unfiledStars: "未整理のStar"
+        case .theme(let id): store.theme(id: id)?.name ?? "テーマ"
         case .folder(let name): name
         case .all: "すべての記事"
         case .unread: "未読"
@@ -66,22 +82,12 @@ struct ReaderView: View {
     var body: some View {
         reader
         .onChange(of: scope) { old, new in
-            if let old, old.isReading {
+            if let old, workspace.isReading(old) {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
             workspace.scope = new ?? .all
-            if workspace.scope.isReading {
-                let restored = workspace.reader(in: workspace.scope)
-                scrollMemory.state = restored; selectArticle(restored.selectedArticleID); listFocused = true
-            } else {
-                if originalPage.url != nil { closeOriginal() }
-                columnVisibility = .all; listFocused = false
-                if new == .dailyNotes, !workspace.dailyOpened {
-                    workspace.dailyNoteID = store.dailyNote(containing: .now)?.id
-                    workspace.dailyOpened = true
-                }
-            }
+            enterScope()
         }
     }
 
@@ -91,12 +97,8 @@ struct ReaderView: View {
         } content: {
             workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
-            if scope == .dailyNotes {
-                DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .detail, aiReview: aiReview, handoff: handoff)
-                    .id(workspace.dailyNoteID)
-            } else if scope == .weeklyNotes {
-                WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .detail)
-                    .id(workspace.weekKey + (workspace.weeklyNoteID?.uuidString ?? ""))
+            if case .theme(let id) = scope, workspace.face(of: id) == .questions {
+                UnderstandingEditor(store: store, themeID: id).id(id)
             } else { ZStack(alignment: .trailing) {
                 detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
                 if let url = originalPage.url, let expectedID = originalPage.articleID {
@@ -113,9 +115,16 @@ struct ReaderView: View {
         .tint(.orange)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                if (scope ?? .all).isReading, let article = selectedArticle {
+                if workspace.isReading(scope ?? .all), let article = selectedArticle {
                     Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
                         .help("Starを切り替える (s)").accessibilityLabel(article.starredAt == nil ? "Starを付ける" : "Starを外す")
+                    Button { perform(.themePicker) } label: {
+                        Image(systemName: store.isInAnyTheme(articleID: article.id) ? "square.stack.fill" : "square.stack")
+                    }
+                    .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
+                    .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
+                        ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 })
+                    }
                     Button(action: openExternal) { Image(systemName: "globe") }
                         .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
                         .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
@@ -133,6 +142,9 @@ struct ReaderView: View {
         .task { try? await imageLoader.prepare(at: .now) }
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
+        }
+        .onChange(of: pickingTheme) { _, open in
+            if !open, originalPage.url == nil { listFocused = pickerRestoresListFocus }
         }
         .onChange(of: selection) { _, id in
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) {
@@ -152,17 +164,17 @@ struct ReaderView: View {
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
-        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.scrap); return .handled }
+        .onKeyPress("t") { guard shortcutsEnabled else { return .ignored }; perform(.themePicker); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
         .sheet(isPresented: $addingSubscription) {
             SubscriptionSheet(store: store) { scope = .feed($0) }
         }
         .overlay(alignment: .bottomTrailing) {
-            if let scrapMessage { Text(scrapMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
+            if let themeMessage { Text(themeMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
         }
-        .task(id: scrapMessage) {
-            guard scrapMessage != nil else { return }
-            do { try await Task.sleep(for: .seconds(2)); scrapMessage = nil } catch {}
+        .task(id: themeMessage) {
+            guard themeMessage != nil else { return }
+            do { try await Task.sleep(for: .seconds(2)); themeMessage = nil } catch {}
         }
         .sheet(item: $editingFeed) { feed in
             SubscriptionSheet(store: store, feed: feed) { _ in }
@@ -204,9 +216,19 @@ struct ReaderView: View {
                 sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
                 sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
             }
-            Section("Notes") {
-                sidebarRow("日次ノート", symbol: "square.and.arrow.down", count: store.dailyNotes.count).tag(LibraryScope.dailyNotes)
-                sidebarRow("週の振り返り", symbol: "square.and.pencil", count: store.notes.count).tag(LibraryScope.weeklyNotes)
+            Section("テーマ") {
+                sidebarRow("未整理のStar", symbol: "tray.full", count: store.unfiledStarCount).tag(LibraryScope.unfiledStars)
+                ForEach(store.themes) { theme in
+                    sidebarRow(theme.name, symbol: "square.stack", count: store.themeArticleCount(themeID: theme.id))
+                        .tag(LibraryScope.theme(theme.id))
+                        .contextMenu {
+                            Button("名前を変更…") { themeName = theme.name; renamingTheme = theme.id }
+                            Button("削除…", role: .destructive) { deletingTheme = theme.id }
+                        }
+                }
+                Button { newThemeName = ""; creatingTheme = true } label: { Label("新しいテーマ", systemImage: "plus") }
+                    .buttonStyle(.plain).foregroundStyle(.secondary).padding(.vertical, 4)
+                    .accessibilityLabel("新しいテーマを作る")
             }
             Section("購読元") {
                 ForEach(grouped[""] ?? []) { feed in subscriptionRow(feed, folders: folders) }
@@ -235,6 +257,31 @@ struct ReaderView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
         }
+        .alert("新しいテーマ", isPresented: $creatingTheme) {
+            TextField("テーマの名前", text: $newThemeName)
+            Button("作成") {
+                let name = newThemeName
+                perform { let theme = try store.createTheme(name: name, at: .now); scope = .theme(theme.id) }
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: { Text("関心のあるテーマの名前を入力します。記事は t キーで入れられます。") }
+        .alert("テーマ名を変更", isPresented: Binding(get: { renamingTheme != nil }, set: { if !$0 { renamingTheme = nil } })) {
+            TextField("テーマの名前", text: $themeName)
+            Button("保存") {
+                guard let id = renamingTheme else { return }
+                let name = themeName
+                perform { try store.renameTheme(id: id, to: name, at: .now) }
+                renamingTheme = nil
+            }
+            Button("キャンセル", role: .cancel) { renamingTheme = nil }
+        }
+        .confirmationDialog("このテーマを削除しますか？", isPresented: Binding(get: { deletingTheme != nil }, set: { if !$0 { deletingTheme = nil } })) {
+            Button("テーマを削除", role: .destructive) {
+                guard let id = deletingTheme else { return }
+                perform { try store.deleteTheme(id: id); if scope == .theme(id) { scope = .all } }
+                deletingTheme = nil
+            }
+        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、問い・答え・いまの理解は消えます。") }
     }
 
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {
@@ -283,35 +330,45 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
-                case "n": perform(.scrap)
+                case "t": perform(.themePicker)
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
                 let feed = store.feed(id: article.feedID)
                 return ImageMetadata.favicon(iconURL: feed?.iconURL, siteURL: feed?.siteURL, sourceURL: feed?.sourceURL)
-            }, scrapped: { todayScrappedIDs.contains($0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
+            }, themed: { store.isInAnyTheme(articleID: $0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
             onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset })
         .focused($listFocused)
         .navigationTitle(scopeTitle)
         .navigationSubtitle("\(visibleArticleIDs.count)件の記事")
         .overlay {
             if visibleArticleIDs.isEmpty {
-                ContentUnavailableView("記事はありません", systemImage: "tray",
+                switch scope ?? .all {
+                case .theme: ContentUnavailableView("記事が入っていません", systemImage: "square.stack",
+                    description: Text("記事を選んで t キーを押すと、このテーマに入れられます。"))
+                case .unfiledStars: ContentUnavailableView("未整理のStarはありません", systemImage: "tray.full",
+                    description: Text("Starを付けた記事のうち、テーマに入っていないものがここに並びます。"))
+                default: ContentUnavailableView("記事はありません", systemImage: "tray",
                     description: Text("購読を追加するか、ほかの一覧を選んでください。"))
+                }
             }
+        }
+        .safeAreaInset(edge: .top) {
+            if case .theme(let id) = scope { ThemeFacePicker(face: faceBinding(id)) }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("n 保存"); Text("b/v 原文") }
+            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("t テーマ"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
         }
     }
 
     @ViewBuilder private var workspaceList: some View {
-        if scope == .dailyNotes { DailyNotesView(store: store, noteID: $workspace.dailyNoteID, pane: .list, aiReview: aiReview, handoff: handoff).id(workspace.dailyNoteID) }
-        else if scope == .weeklyNotes { WeeklyNotesView(store: store, aiReview: aiReview, handoff: handoff, weekKey: $workspace.weekKey, noteID: $workspace.weeklyNoteID, pane: .list).id(workspace.weekKey) }
+        if case .theme(let id) = scope, workspace.face(of: id) == .questions {
+            ThemeQuestionsPane(store: store, themeID: id, face: faceBinding(id)).id(id)
+        }
         else { articleList.id(scope) }
     }
 
@@ -337,11 +394,7 @@ struct ReaderView: View {
         }
     }
 
-    private var todayScrappedIDs: Set<UUID> {
-        guard let id = store.dailyNote(containing: .now)?.id else { return [] }
-        return Set(store.scraps.filter { $0.noteID == id }.map(\.articleID))
-    }
-    private var shortcutsEnabled: Bool { (scope ?? .all).isReading && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || creatingTheme || renamingTheme != nil || pickingTheme, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -366,12 +419,29 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
-        case .scrap:
-            guard let selection else { return }
-            perform {
-                _ = try store.scrap(articleID: selection, at: .now, timeZone: .current)
-                scrapMessage = "当日のノートに保存しました"
-            }
+        case .themePicker:
+            guard selectedArticle != nil, !pickingTheme else { return }
+            pickerRestoresListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
+            pickingTheme = true
+        }
+    }
+
+    private func faceBinding(_ themeID: UUID) -> Binding<ThemeFace> {
+        Binding(get: { workspace.face(of: themeID) }, set: { setFace($0, of: themeID) })
+    }
+    private func setFace(_ face: ThemeFace, of themeID: UUID) {
+        guard workspace.face(of: themeID) != face else { return }
+        scrollMemory.state.select(selection)
+        workspace.switchFace(of: themeID, to: face, rememberingReader: scrollMemory.state)
+        enterScope()
+    }
+    private func enterScope() {
+        if workspace.isReading(workspace.scope) {
+            let restored = workspace.reader(in: workspace.scope)
+            scrollMemory.state = restored; selectArticle(restored.selectedArticleID); listFocused = true
+        } else {
+            if originalPage.url != nil { closeOriginal() }
+            columnVisibility = .all; listFocused = false
         }
     }
 

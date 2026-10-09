@@ -57,27 +57,26 @@ import SwiftData
         _ = try store.importFeed(parsed(), receivedAt: deadline.addingTimeInterval(day))
         #expect(try store.content(articleID: article.id, at: deadline) == nil)
     }
-    @Test func deletionProtectsNotesAndSourcesAcrossReopen() throws {
+    @Test func deletionProtectsThemeRecordsAcrossReopen() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
-        let noteID = try autoreleasepool {
+        let themeID = try autoreleasepool {
             let store = try ReaderStore(url: library.url, now: start)
             let feed = try store.importFeed(parsed(), receivedAt: start)
             let article = try #require(store.articles.first)
             try store.markDisplayed(articleID: article.id, at: start)
-            let range = WeekCalendar.range(containing: start, timeZone: TimeZone(identifier: "Asia/Tokyo")!)
-            let note = try store.createNote(in: range, title: "記録", at: start)
-            try store.saveNote(id: note.id, text: "残すノート", at: start)
-            try store.adoptSources(noteID: note.id, articleIDs: [article.id])
+            let theme = try store.createTheme(name: "記録", at: start)
+            try store.saveUnderstanding(themeID: theme.id, text: "残す理解", at: start)
+            try store.addArticle(article.id, toTheme: theme.id, at: start)
             try store.deleteContent(articleIDs: [article.id], at: start)
             try store.unsubscribe(feed)
             #expect(article.firstReadAt == start && article.firstReceivedAt == start)
             _ = try store.importFeed(parsed(), receivedAt: start.addingTimeInterval(day))
             #expect(try store.content(articleID: article.id, at: start) == nil)
-            return note.id
+            return theme.id
         }
         let reopened = try ReaderStore(url: library.url, now: start.addingTimeInterval(90 * day))
-        #expect(reopened.notes.first { $0.id == noteID }?.text == "残すノート")
-        #expect(reopened.noteSources.first?.url == "https://publisher.example/posts/1")
+        #expect(reopened.theme(id: themeID)?.understanding == "残す理解")
+        #expect(reopened.themeArticles.first?.url == "https://publisher.example/posts/1")
         #expect(reopened.articles.count == 1 && reopened.articles.first?.summary == "")
     }
     @Test func purgeExpiresContentAndNotifiesOnlyForChange() throws {

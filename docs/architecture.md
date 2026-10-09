@@ -19,9 +19,9 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 ### 2.1 保存モデル
 
-保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。実装は段階的で、`Theme`・`ThemeArticle`・`ThemeQuestion`は追加済み（画面は未接続）。置き換えが終わるまで現行の`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`が残る。
+保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。置き換えは完了し、`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
 
-置き換え後の`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル（現在は旧5モデルが残り13モデル）。
+`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
@@ -31,7 +31,7 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 - 「未整理のStar」は、Starが付いていてどの`ThemeArticle`にも無い記事から導く。保存しない。
 - 端末内AIの有効／無効は`AppStorage`で持ち、スキーマを増やさない。埋め込みなどAIの中間結果は保存しない。
 
-新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。旧モデルを外した新スキーマで現行ベータのストアを開けるかは未検証で、置き換えの実装PRの最初に、旧スキーマの合成ストアを新スキーマで開く試験を書く。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
+新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。配布済みのbeta.2・beta.3と、置き換え直前のmainの合成ストアは、旧5モデルを外した新スキーマで開けて、購読・記事・既読・Starを保持し、書き込みと再openもできる（[検証記録](verification/2026-10-10-theme-screens.md)）。このとき旧ノートのデータは、新スキーマで開いた時点でテーブルごと削除され（元に戻せない）、CoreDataが「削除されたモデルのため永続履歴を切り詰める」というログを`error:`として出すが、動作には影響しない。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
 
 ### 2.2 変更と失敗からの復旧
 

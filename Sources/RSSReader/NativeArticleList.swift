@@ -15,7 +15,7 @@ struct NativeArticleList: NSViewRepresentable {
     let onKey: (String) -> Void
     var imageLoader: ReaderImageLoader? = nil
     var iconURL: (Article) -> URL? = { _ in nil }
-    var scrapped: (UUID) -> Bool = { _ in false }
+    var themed: (UUID) -> Bool = { _ in false }
     var initialTopOffset: Double = 0
     var onTopOffset: ((UUID, Double) -> Void)? = nil
 
@@ -63,7 +63,7 @@ struct NativeArticleList: NSViewRepresentable {
         }
         override func keyDown(with event: NSEvent) {
             if event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
-               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n"].contains(key),
+               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "t"].contains(key),
                keyHandler?(key) == true { return }
             super.keyDown(with: event)
         }
@@ -117,7 +117,7 @@ struct NativeArticleList: NSViewRepresentable {
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard parent.ids.indices.contains(row), let article = parent.article(parent.ids[row]) else { return nil }
             let cell = tableView.makeView(withIdentifier: .init("article"), owner: self) as? Cell ?? Cell()
-            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader, scrapped: parent.scrapped(article.id))
+            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader, themed: parent.themed(article.id))
             return cell
         }
         func tableViewSelectionDidChange(_ notification: Notification) {
@@ -196,9 +196,9 @@ struct NativeArticleList: NSViewRepresentable {
         }
         convenience init() { self.init(frame: .zero) }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, scrapped: Bool = false) {
+        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, themed: Bool = false) {
             isRead = article.isRead
-            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (scrapped ? "▣ " : "") + feed
+            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (themed ? "▣ " : "") + feed
             title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
             let published = article.publishedAt

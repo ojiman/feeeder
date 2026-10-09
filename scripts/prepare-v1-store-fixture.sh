@@ -15,7 +15,7 @@ PY
 source_dir=$(mktemp -d /private/tmp/feeeder-v1-source.XXXXXX)
 baseline=${2:-53102cc42ea665b3379ad2a23d842c3186ad9c3e}
 case "$baseline" in
-    53102cc42ea665b3379ad2a23d842c3186ad9c3e|f9db83b49a82947a7031ddf874bc94fcb91ef89d) ;;
+    53102cc42ea665b3379ad2a23d842c3186ad9c3e|f9db83b49a82947a7031ddf874bc94fcb91ef89d|1007dce64ebc5d1c9d7ac6f0b3e05869c8581ba4|215b901ffc3863b3e1afd1e17a76b18101fc0cb6) ;;
     *) echo "Use a tested released V1 commit" >&2; exit 2 ;;
 esac
 git archive "$baseline" | tar -x -C "$source_dir"
@@ -66,7 +66,7 @@ from pathlib import Path
 import sys
 p = Path(sys.argv[1]) / 'Sources/V1Fixture/main.swift'
 s = p.read_text().replace('53102cc42ea665b3379ad2a23d842c3186ad9c3e', sys.argv[2])
-if sys.argv[2] == 'f9db83b49a82947a7031ddf874bc94fcb91ef89d':
+if sys.argv[2] in ('f9db83b49a82947a7031ddf874bc94fcb91ef89d', '1007dce64ebc5d1c9d7ac6f0b3e05869c8581ba4', '215b901ffc3863b3e1afd1e17a76b18101fc0cb6'):
     s = s.replace('let manifest: [String: Any]', 'var manifest: [String: Any]')
     s = s.replace('        try JSONSerialization.data', '''        try store.setStar(articleID: article.id, isStarred: true, at: at)
         let scrap = try store.scrap(articleID: article.id, at: at, timeZone: TimeZone(identifier: "Asia/Tokyo")!)

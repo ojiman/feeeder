@@ -87,7 +87,7 @@ struct AIReviewView: View {
             }
             Text("確認済み: Claude Desktop 2.19675.0 / Pro / Cowork。通常Chatの自動添付は未検証です。Claude側でAttachを確認し、本人が送信してください。送信後に、生成物だけの専用フォルダの読取・変更許可が出る場合があります。処理はcloudで行われ、使用するファイルは端末を離れます。リンク由来の注意表示が出る場合もあります。Coworkを利用できない場合や添付制限時は、コピー・書き出しを選べます。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、ノートへ貼り付け・編集してください。")
+            Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、自分の答えとして貼り付け・編集してください。")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 820, minHeight: 640)
         .onAppear {
@@ -115,12 +115,11 @@ struct AIReviewView: View {
             case .article(let id):
                 guard let article = store.article(id: id) else { return nil }
                 return Option(id: selection, articleID: id, title: article.title, coverage: "保持中の記事 · " + (source?.content.coverage.label ?? "本文期限切れ・削除済み、または本文なし"), available: source != nil)
-            case .scrap(let key):
-                guard let scrap = store.scraps.first(where: { $0.key == key }) else { return nil }
-                return Option(id: selection, articleID: scrap.articleID, title: scrap.title, coverage: "保存時のRSS要約 · \(scrap.savedAt.formatted())" + (source == nil ? " · 要約なし" : ""), available: source != nil)
-            case .noteSource(let key):
-                guard let saved = store.noteSources.first(where: { $0.key == key }) else { return nil }
-                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "採用済みRSS要約 · " + (saved.savedAt?.formatted() ?? "保存日時なし") + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            case .themeArticle(let key):
+                guard let saved = store.themeArticles.first(where: { $0.key == key }) else { return nil }
+                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "テーマに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            case .unresolvable:
+                return nil
             }
         }
     }
