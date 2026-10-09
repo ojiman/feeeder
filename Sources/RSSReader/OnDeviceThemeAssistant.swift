@@ -87,11 +87,21 @@ actor ContextualTextEmbedder: TextEmbedder {
 
 actor OnDeviceThemeAssistant: ThemeAssistant {
     private let embedder: any TextEmbedder
-    init(embedder: any TextEmbedder = ContextualTextEmbedder()) { self.embedder = embedder }
+    private let generator: (any TextGenerating)?
+    private let generationDeadline: Double
+    init(embedder: any TextEmbedder = ContextualTextEmbedder(), generator: (any TextGenerating)? = FoundationModelsGenerator(),
+         generationDeadline: Double = 10) {
+        self.embedder = embedder; self.generator = generator; self.generationDeadline = generationDeadline
+    }
+
+    func generationAvailability() async -> AssistantAvailability { await generator?.availability() ?? .unsupported }
+
+    func generate(_ request: SuggestionPrompts.Request) async throws -> String {
+        guard let generator else { throw CancellationError() }
+        return try await withDeadline(generationDeadline) { try await generator.generate(request) }
+    }
 
     func availability() async -> AssistantAvailability { await embedder.availability() }
-    func generationAvailability() async -> AssistantAvailability { .unsupported }
-    func generate(_ request: SuggestionPrompts.Request) async throws -> String { throw CancellationError() }
 
     func nearestThemes(for item: SuggestionItem, candidates: [ThemeCandidateInput], background: [SuggestionItem]) async throws -> [ThemeMatch] {
         let pool = try await embed([item] + candidates.flatMap(\.members) + background)
