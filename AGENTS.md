@@ -6,6 +6,8 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 
 | Path | Role |
 |---|---|
+| README.md | English public overview: concept, status, how to try it. Derived from the spec; it does not define product behavior. |
+| docs/user-guide.ja.md | Operations, data retention and backup, Claude hand-off, verification steps (Japanese; English version not written yet). |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
 | docs/architecture.md | Technical choices and the four-axis agent harness (§4). |
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |

@@ -1,76 +1,85 @@
 # Feeeder
 
-macOS 27.0以降向けのRSSリーダー。SwiftUI / AppKitで表示し、SwiftDataへ端末内保存します。アカウント・Backend・同期はありません。Star・テーマ（記事を束ね、問いに自分の言葉で答え、「いまの理解」を書く）・フォルダ・画像表示を実装しています。端末内AIの提案（近いテーマ・まとまり・テーマ名・問いの具体化）を実装しています。Claude連携の再接続は順次実装します。実機受入と最終PdM判断は継続中です。
+A fast, keyboard-driven RSS reader for macOS that helps you go from skimming to understanding.
 
-## 起動
+Skim hundreds of articles in a smooth three-column reader. Star what catches your eye. Later, gather those stars into themes, ask yourself questions, and answer them in your own words. Everything stays on your Mac.
 
-XcodeのSwiftツールチェーンで、プロジェクトルートから実行します。SwiftPMが固定版のSwiftSoup 2.13.9を解決します。
+> **Status: beta, pre-release.** Requires macOS 27.0 or later. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
+
+## Why
+
+Most readers stop at "read" and "starred". Stars pile up and are never looked at again. Feeeder keeps the reading fast and adds the step after it: turning what you starred into something you understand.
+
+- **Read fast.** Three columns, Vim-style keys (`j` / `k`), and a UI built so that scrolling and typing do not wait on a reload, a network request, or AI.
+- **Dig deeper later.** Star an article, put it into one or more themes, and write your current understanding of each theme. Pose questions with lenses (question the premise, exceptions and counterarguments, conditions, trade-offs, your own case), answer them yourself, and attach the articles you rely on as evidence.
+- **Keep it yours.** No account, no backend, no sync. Your subscriptions, articles, themes, questions, and answers live in a local database.
+
+## What it does today
+
+- RSS/Atom subscriptions with one level of folders, automatic refresh (on launch, when the app returns, and every 30 minutes while it runs), and offline reading of stored articles.
+- Reading: feed-provided body when available, best-effort extraction otherwise, and the feed summary plus a link to the original when neither is available. It labels which one you are looking at and does not try to bypass access restrictions.
+- Keyboard: `j` / `k` move, `m` read/unread, `s` star, `t` add to a theme, `b` open in your browser, `v` open the original page inside the app, `Esc` back to reading.
+- Themes: group articles, write "current understanding", pose questions, answer them, and link evidence. Unsorted stars are collected in one place.
+- On-device AI suggestions (optional, can be turned off in Settings): nearby themes for an article, suggested groupings of unsorted stars, theme-name ideas, and sharper phrasings of a question. Suggestions run on your Mac only. **AI never writes your answers or your current understanding**, and nothing is applied until you choose it.
+- Images: favicons and article thumbnails, best effort, with a bounded cache.
+- Retention: article bodies are kept for 30 days by default (7 / 30 / 90 / 365 in Settings). What you recorded in themes (title, link, saved summary, your writing) is never deleted automatically.
+
+Claude Desktop hand-off (sending a theme's articles to Claude for you to review and send yourself) is being reconnected and has no entry point in the current build.
+
+## Try it
+
+You need a Mac on macOS 27.0 or later and the Swift toolchain from Xcode.
 
 ```sh
+git clone https://github.com/ojiman/feeeder.git
+cd feeeder
 bash scripts/build-app.sh release
-```
-
-生成される `.build/Feeeder.app` をFinderから開いてください。ad hoc署名されたローカル開発用アプリです。Developer ID署名・公証は行いません。releaseの中間出力は `/private/tmp/feeeder-v1-release`、debugは `/private/tmp/rss-reader-build` に置きます。debug buildは引数を省略できます。
-
-通常起動は空ライブラリから開始します。V1の保存先は `Application Support/Feeeder/Reader.store`。同じ版での再起動では購読・記事・既読日時・Star・テーマを保持します。旧版の日次ノート・週ノート・スクラップは、テーマ中心の版へ移行されず、**この版の初回起動で削除されます（元に戻せません）**。更新前に、下の手順で`Feeeder`フォルダを退避してください（ベータ間の互換は保証しません）。ベータ中はバージョン更新をまたぐデータ保持を保証せず、1.0以降は保証します。旧スキーマのDBは開けない場合があります。初期化がエラーを返した場合は「ライブラリを開けませんでした」と表示し、アプリによる自動削除・作り直しは行いません。非互換スキーマでのSwiftDataの挙動は未検証です。ベータ配布時のリリースノートにもこの制約を記載します。過去のリリースノートの保持検証は、その版での結果であり、以後のベータ間の互換性保証ではありません。プロトタイプのデータ移行はありません。
-
-ベータの更新後に開けず、新しい空ライブラリで使い直す場合は、本人の操作で次のように退避します。この手順自体の実機確認は未実施です。
-
-1. Feeederを⌘Qで終了します。
-2. Finderの「移動 → フォルダへ移動」で `~/Library/Application Support/` を開きます。
-3. `Feeeder`フォルダ全体を、例えば`Feeeder-backup-20261007-2100`へ名前変更して残します。`Reader.store`と、存在する場合の`Reader.store-shm`／`Reader.store-wal`は同じ組として退避し、DBファイルだけを抜き出さないでください。フォルダにはテーマやHandoffの管理データも含まれます。
-4. Feeederを起動すると、新しい`Feeeder`フォルダと空ライブラリを作ります。退避したフォルダは確認が済むまで残してください。退避はデータの変換・復元を保証するものではありません。
-
-合成デモは保存先と挿入を明示して起動します。
-
-```sh
 open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
 ```
 
-`--data-directory <path>` は開発検証用の保存先指定です。`open -n`で新しいインスタンスを起動し、操作前にプロセス引数と合成購読の表示を確認してください。詳細は[AGENTS.md](AGENTS.md)を参照してください。合成デモの `.example` URLに実在ページはありません。実際の購読・記事・テーマをGitへ追加しないでください。
+The last command opens a **separate instance with synthetic subscriptions and its own data directory**, so you can look around without touching a real library. To use it for real, open `.build/Feeeder.app` normally.
 
-## 操作
+The app is ad hoc signed for local use. It is not signed with a Developer ID and not notarized, so a copy that arrives with a quarantine attribute (for example, one saved by a browser) is blocked by macOS until you choose "Open Anyway" in System Settings > Privacy & Security. Building from source, or fetching a CI build with `bash scripts/fetch-ci-app.sh <PR number>` (needs macOS and a signed-in `gh`), avoids the attribute.
 
-- 左はFeeds（すべての記事・未読・Star）／テーマ（未整理のStar・各テーマ）／購読元（フォルダ・購読）の対象切替、中央は記事一覧（テーマでは[記事｜問い]の切り替え）、右は読書、またはテーマの「いまの理解」の編集の3カラム。外観はシステム追従・ライト・ダークから選べます。
-- 左カラム右上の「＋」へRSS/Atom URLを入力し、未分類・既存フォルダを選ぶか、新しいフォルダ名を入力して購読。その右隣が更新ボタンです。手動XMLと合成サンプルも取り込めます。購読の右クリックで名前・1階層フォルダ・移動・解除を操作します。フォルダ選択で配下の記事を集約し、フォルダの右クリックで名前変更・統合ができます。
-- 起動・復帰・稼働中30分ごとに更新し、ツールバーから手動更新できます。通信失敗でも保存済み記事を読み続けられます。
-- 一覧にフォーカスして `j` / `k` で移動、`m` で既読／未読を切り替えます。一覧のスクロールでは既読にせず、本文またはRSS要約の実表示で初回既読日時を記録します。
-- `s`でStarを付け外し、Star一覧から読み返せます。`t`（または右上のアイコン）で、記事を入れるテーマを選びます。既存テーマにチェックして入れる／外す、または新しいテーマを作って入れられ、記事は複数のテーマに入れられます。Starとテーマは独立していて、Starを外してもテーマには残ります。Starが付いてどのテーマにも入っていない記事は、左の「未整理のStar」に並びます。入れた時点のタイトル・URL・保持中のRSS要約をテーマに記録し、全文は複製しません。Starは右上のボタンでも切り替えられます。
-- `b` で外部ブラウザ、`v` でアプリ内の原文、`Esc` で読書へ戻ります。原文閲覧は指定サイトへ通信し、アプリ内ブラウザはログイン状態を保存しません。原文中も`j/k/s/t`を使え、入力欄と修飾キー付きの操作を優先します。
-- 本文抽出はbest effortです。「フィード提供本文」「抽出本文・全文保証なし」「RSS要約のみ」を区別します。取得不可なら要約と原文リンクを残し、制限を回避する取得は行いません。
-- テーマを選ぶと、中央上部の[記事｜問い]で切り替えられます。「記事」は、購読元やフォルダと同じ一覧と読書面です。「問い」には、先頭の「いまの理解」と、このテーマの問いが並びます。「問いを立てる」でレンズ（前提を疑う／例外・反論／成り立つ条件／トレードオフ／自分の場合）を選ぶと、テーマ名を差し込んだ問いの下書きが入り、自由に書くこともできます。問いの文は後から直せ、問いごとに自分の答えを書き、根拠にするテーマ内の記事にチェックを入れ、「読む」で記事へ移れます。答えを書いた問いには印が付きます。問いは右クリックで削除できます（記事は消えません）。答えといまの理解にAIは書き込みません。テーマはサイドバーの「新しいテーマ」で作り、右クリックで名前の変更・削除ができます。削除しても記事とStarは消えません。
-- 端末内AI: `t`の選択では、記事に近い内容のテーマが先頭に並び、「近い」の印が付きます（入力や↑↓を始めたら並びは動きません）。「未整理のStar」を開くと、近い内容の記事をまとめた「まとまりの提案」が出て、そこから名前を付けてテーマを作れます。計算はこのMacの中だけで行い、外部へ送りません。答えやいまの理解には何も書き込みません。Settingsの「端末内AI」で切れます（切るとモデルも呼びません）。言語の資産が端末に無い場合、アプリは自動で取得せず、提案が出ないだけです。
-- 端末内AIの案（テーマ名・問い）: まとまりからテーマを作るとき、名前の入力欄の下に「案: …［使う］」が出ます（入力欄は自動では埋まりません）。レンズから問いを立てると、定型の問いがすぐ入り、しばらくして「AIの案」カードが出て、「採用」を押したときだけ問いが置き換わります（「別の案」「閉じる」もあります）。問いを自分で直すと案は消えます。案は端末内のモデルが作り、10秒で打ち切られ、モデルが使えない・失敗するときは何も出ないだけです。Settingsの「端末内AI」で、状態を見て、切ることができます。
-- 一覧にFaviconと利用可能な記事サムネイル、本文上に画像を表示します。画像はベストエフォートで、取得中・失敗でも表示枠の高さを変えません。キャッシュは64MiB、成功7日・失敗10分、同時取得4件までです。
-- 記事本文・RSS要約は初期30日、Settingsで7 / 30 / 90 / 365日へ変更できます。未読は初回受信、既読は初回既読が起算点。保持短縮・本文一括削除は対象を確認して実行します。テーマの記録（記事のタイトル・リンク・記録した要約、いまの理解、問い・答え・根拠の紐付け）は自動削除しません。Starとテーマへの追加は本文の期限を延長しません。
+## FAQ
 
-## Claude Desktop連携
+**Does it send my data anywhere?** It fetches the feeds you subscribe to, article images and favicons, and original pages when you open them in the in-app view (which does not keep you signed in). The AI suggestions run on-device and send nothing out. There is no backend and no account.
 
-**現在、Claude連携の入口はありません**（テーマからの入口へ付け替え中で、後の更新で復活します）。連携の仕組みは次のとおりです。確認画面で出力言語と出典を選び、保存済みRSS要約と保持中の記事を区別して、省略のない全文・カバー範囲・出典URLをレビューして「Claudeで開く」を操作します。
+**Where is my data?** In `~/Library/Application Support/Feeeder/`, with the database in `Reader.store` (plus its `-shm` / `-wal` files).
 
-確認対象は **Claude Desktop 2.19675.0 / Pro / Cowork**。通常Chatへの自動添付、他版・他プランは未検証です。アプリは短い依頼文とTXTのパスを起動リンクへ渡し、記事本文はTXT内に保持します。
+**Will an update break my library?** During the beta, compatibility between versions is **not guaranteed**: an update can leave the library unreadable, and the app shows an error rather than deleting or recreating it. Back up the `Feeeder` folder before updating. From 1.0 onward, the policy is to preserve saved data across updates.
 
-Claude側の **Attach確認** と **本人による送信** が必要です。送信後に別のフォルダ許可が出る場合があります。この許可はフォルダ内の読取り・変更を可能にし、cloudで使われるファイルは端末を離れます。Feeederは生成パッケージと管理metadataだけを専用フォルダに置きます。リンク由来の依頼文に注意表示が出る場合もあります。起動成功は、添付完了・送信・読取り成功を意味しません。
+**Does it work without AI?** Yes. All features, including creating and editing themes, questions, and answers, work with AI turned off. If the on-device language assets are not installed, the app does not download them; suggestions simply do not appear.
 
-取消・起動失敗時は同じレビュー内容で再試行でき、全文コピー・TXT書き出しも使えます。制限時は1MiB以下のUTF-8分割ファイルを書き出せます。この分割サイズはClaudeの対応上限を示す値ではありません。
+## Status
 
-アプリ管理コピーは生成から24時間まで保持します。保持中の記事を含む場合は元本文の最早期限も上限です。保存済み要約だけの場合は元記事の期限では失効しません。保持短縮・本文削除にも同期します。本人が指定した書き出し先と、Claude側に渡った内容はこの削除の対象外です。返答を読んで自分の答えへ貼り付ける操作は本人が行います。自動送信・返答の自動書込みはありません。
+This is a beta under active development.
 
-## 検証と仕様
+- Final product acceptance on a real Mac is not complete.
+- CI builds and tests on macOS 26.6, which covers only the build floor. The macOS 27.0 support floor is exercised only on the maintainer's local machine. Several behaviors are unverified: input methods (IME), VoiceOver, Reduce Motion, and long-running use. See the [verification records](docs/verification/) for what has and has not been checked.
+- Not yet in this build: Claude Desktop hand-off from themes.
+
+## Documentation
+
+Most documentation is currently in Japanese only.
+
+| | |
+|---|---|
+| [User guide (Japanese)](docs/user-guide.ja.md) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
+| [Specification](docs/specification.md) | Product requirements (Japanese) |
+| [Architecture](docs/architecture.md) | Technical choices (Japanese) |
+| [Decision records](docs/decisions/README.md) | Why things are the way they are (Japanese) |
+| [AGENTS.md](AGENTS.md) | Development workflow, commands, and boundaries |
+
+## Development
 
 ```sh
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+git diff --check
 ```
 
-ベータ中のCIは回帰テストとReleaseビルドの2並列です。`docs/**`またはMarkdownだけの変更ではCIを省略します。CIのZIPはad hoc署名された開発ビルドで、Developer ID署名・公証・自動Release公開を行わず、配布済みベータのZIPとは異なります。CIのビルドをMacで試すときは、ブラウザで保存せず `bash scripts/fetch-ci-app.sh <PR番号>` を使ってください（macOSと、ログイン済みの最近の`gh`が必要です）。ブラウザで保存したファイルには隔離属性が付き、公証のないアプリはビルドのたびにmacOSに止められます。`gh`で取得すると付かず、PRのheadと一致するビルドかを確認し、署名を検証し、合成データ用の起動コマンドを表示します。ブラウザで保存した場合に止められたときは、システム設定の「プライバシーとセキュリティ」から「このまま開く (Open Anyway)」を選んでください。管理者パスワードが必要です。ベータ間の保持検証はCIの対象外で、通常の`swift test`ではfixture未指定の保持試験だけスキップします。手動で検証する場合は次を実行します。
+Tests use only synthetic RSS/HTML and temporary databases. The project is developed with AI coding agents under a single supervised writer; [AGENTS.md](AGENTS.md) describes the workflow and the checks each change must pass.
 
-```sh
-bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
-FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
-```
+## License
 
-fixture生成先は存在しないディレクトリを指定します。配布済みベータの固定commitで合成DBを作り、新スキーマで開いて保持を検証します。1.0出荷時にはスキーマを`VersionedSchema`として固定し、1.0リリースタグを起点とする保持検証をCIへ組み込みます。テストは合成RSS/HTMLと一時DBを使います。[PRD](docs/specification.md)、[Architecture](docs/architecture.md)、[今回の受入記録](docs/verification/2026-10-07-dogfooding-acceptance.md)に仕様・検証結果・未確認事項を記録しています。Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。
-
-## ライセンス
-
-Feeederの著作物は [Apache License 2.0](LICENSE) で公開します。第三者コードの表示は [ThirdPartyNotices.md](ThirdPartyNotices.md) に同梱します。RSS本文、原文ページ、サイトロゴ、外部ライブラリ、サービスは各権利者・規約に従います。個人データ、ログイン情報、キーはrepositoryへ含めません。
+Feeeder is licensed under the [Apache License 2.0](LICENSE). Third-party notices are in [ThirdPartyNotices.md](ThirdPartyNotices.md). Feed content, original pages, site logos, external libraries, and services remain subject to their owners' rights and terms. No personal data, credentials, or keys are included in the repository.
