@@ -4,7 +4,7 @@ A fast, keyboard-driven RSS reader for macOS that helps you go from skimming to 
 
 Skim hundreds of articles in a smooth three-column reader. Star what catches your eye. Later, gather those stars into themes, ask yourself questions, and answer them in your own words. Everything stays on your Mac.
 
-> **Status: beta, pre-release.** Requires macOS 27.0 or later. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
+> **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is currently in Japanese only. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
 
 ## Why
 
@@ -57,6 +57,7 @@ This is a beta under active development.
 
 - Final product acceptance on a real Mac is not complete.
 - CI builds and tests on macOS 26.6, which covers only the build floor. The macOS 27.0 support floor is exercised only on the maintainer's local machine. Several behaviors are unverified: input methods (IME), VoiceOver, Reduce Motion, and long-running use. See the [verification records](docs/verification/) for what has and has not been checked.
+- The app's labels and messages are Japanese only. There is no localization yet.
 - Not yet in this build: Claude Desktop hand-off from themes.
 
 ## Documentation
