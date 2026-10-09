@@ -87,7 +87,7 @@ struct AIReviewView: View {
             }
             Text("確認済み: Claude Desktop 2.19675.0 / Pro / Cowork。通常Chatの自動添付は未検証です。Claude側でAttachを確認し、本人が送信してください。送信後に、生成物だけの専用フォルダの読取・変更許可が出る場合があります。処理はcloudで行われ、使用するファイルは端末を離れます。リンク由来の注意表示が出る場合もあります。Coworkを利用できない場合や添付制限時は、コピー・書き出しを選べます。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、ノートへ貼り付け・編集してください。")
+            Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、自分の答えとして貼り付け・編集してください。")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 820, minHeight: 640)
         .onAppear {
