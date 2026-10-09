@@ -2,7 +2,7 @@ import AppKit
 import ReaderCore
 
 enum ReaderCommand: String {
-    case next = "j", previous = "k", toggleStar = "s", scrap = "n", closeOriginal = "Escape"
+    case next = "j", previous = "k", toggleStar = "s", themePicker = "t", closeOriginal = "Escape"
 }
 
 @MainActor enum ReaderKeyboardCommands {

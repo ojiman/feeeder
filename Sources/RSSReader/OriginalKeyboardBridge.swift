@@ -5,9 +5,9 @@ import WebKit
     static let world = WKContentWorld.world(name: "FeeederReaderKeys")
     private weak var view: WKWebView?
     private let onCommand: (ReaderCommand) -> Void
-    private let allowsScrap: Bool
-    init(allowsScrap: Bool = false, onCommand: @escaping (ReaderCommand) -> Void) {
-        self.allowsScrap = allowsScrap; self.onCommand = onCommand
+    private let allowsThemePicker: Bool
+    init(allowsThemePicker: Bool = false, onCommand: @escaping (ReaderCommand) -> Void) {
+        self.allowsThemePicker = allowsThemePicker; self.onCommand = onCommand
     }
     func install(in view: WKWebView) {
         self.view = view
@@ -15,7 +15,7 @@ import WebKit
         controller.add(self, contentWorld: Self.world, name: "feeederReaderKey")
         let source = """
         (() => {
-          const keys = new Set(\(allowsScrap ? "['j','k','s','n','Escape']" : "['j','k','s','Escape']"));
+          const keys = new Set(\(allowsThemePicker ? "['j','k','s','t','Escape']" : "['j','k','s','Escape']"));
           document.addEventListener('keydown', event => {
             if (!event.isTrusted || event.isComposing || event.keyCode === 229 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || !keys.has(event.key)) return;
             const path = event.composedPath();
@@ -40,7 +40,7 @@ import WebKit
               window.attachedSheet == nil, let responder = window.firstResponder as? NSView,
               responder.isDescendant(of: view), (responder as? NSTextInputClient)?.hasMarkedText() != true,
               let key = message.body as? String, let command = ReaderCommand(rawValue: key),
-              allowsScrap || command != .scrap else { return }
+              allowsThemePicker || command != .themePicker else { return }
         onCommand(command)
     }
 }

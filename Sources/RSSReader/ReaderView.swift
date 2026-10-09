@@ -16,7 +16,9 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var saveError: String?
-    @State private var scrapMessage: String?
+    @State private var themeMessage: String?
+    @State private var pickingTheme = false
+    @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     @State private var addingSubscription = false
@@ -124,6 +126,13 @@ struct ReaderView: View {
                 if workspace.isReading(scope ?? .all), let article = selectedArticle {
                     Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
                         .help("Starを切り替える (s)").accessibilityLabel(article.starredAt == nil ? "Starを付ける" : "Starを外す")
+                    Button { perform(.themePicker) } label: {
+                        Image(systemName: store.isInAnyTheme(articleID: article.id) ? "square.stack.fill" : "square.stack")
+                    }
+                    .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
+                    .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
+                        ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 })
+                    }
                     Button(action: openExternal) { Image(systemName: "globe") }
                         .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
                         .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
@@ -141,6 +150,9 @@ struct ReaderView: View {
         .task { try? await imageLoader.prepare(at: .now) }
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
+        }
+        .onChange(of: pickingTheme) { _, open in
+            if !open, originalPage.url == nil { listFocused = pickerRestoresListFocus }
         }
         .onChange(of: selection) { _, id in
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) {
@@ -160,17 +172,17 @@ struct ReaderView: View {
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
-        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.scrap); return .handled }
+        .onKeyPress("t") { guard shortcutsEnabled else { return .ignored }; perform(.themePicker); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
         .sheet(isPresented: $addingSubscription) {
             SubscriptionSheet(store: store) { scope = .feed($0) }
         }
         .overlay(alignment: .bottomTrailing) {
-            if let scrapMessage { Text(scrapMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
+            if let themeMessage { Text(themeMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
         }
-        .task(id: scrapMessage) {
-            guard scrapMessage != nil else { return }
-            do { try await Task.sleep(for: .seconds(2)); scrapMessage = nil } catch {}
+        .task(id: themeMessage) {
+            guard themeMessage != nil else { return }
+            do { try await Task.sleep(for: .seconds(2)); themeMessage = nil } catch {}
         }
         .sheet(item: $editingFeed) { feed in
             SubscriptionSheet(store: store, feed: feed) { _ in }
@@ -326,13 +338,13 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
-                case "n": perform(.scrap)
+                case "t": perform(.themePicker)
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
                 let feed = store.feed(id: article.feedID)
                 return ImageMetadata.favicon(iconURL: feed?.iconURL, siteURL: feed?.siteURL, sourceURL: feed?.sourceURL)
-            }, scrapped: { todayScrappedIDs.contains($0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
+            }, themed: { store.isInAnyTheme(articleID: $0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
             onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset })
         .focused($listFocused)
         .navigationTitle(scopeTitle)
@@ -355,7 +367,7 @@ struct ReaderView: View {
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("n 保存"); Text("b/v 原文") }
+            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("t テーマ"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
         }
@@ -392,11 +404,7 @@ struct ReaderView: View {
         }
     }
 
-    private var todayScrappedIDs: Set<UUID> {
-        guard let id = store.dailyNote(containing: .now)?.id else { return [] }
-        return Set(store.scraps.filter { $0.noteID == id }.map(\.articleID))
-    }
-    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || creatingTheme || renamingTheme != nil, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || creatingTheme || renamingTheme != nil || pickingTheme, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -421,12 +429,10 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
-        case .scrap:
-            guard let selection else { return }
-            perform {
-                _ = try store.scrap(articleID: selection, at: .now, timeZone: .current)
-                scrapMessage = "当日のノートに保存しました"
-            }
+        case .themePicker:
+            guard selectedArticle != nil, !pickingTheme else { return }
+            pickerRestoresListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
+            pickingTheme = true
         }
     }
 
