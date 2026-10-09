@@ -19,7 +19,7 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 ### 2.1 保存モデル
 
-保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。実装は段階的で、置き換えが終わるまで現行の`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`が残る。
+保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。実装は段階的で、`Theme`・`ThemeArticle`・`ThemeQuestion`は追加済み（画面は未接続）。置き換えが終わるまで現行の`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`が残る。
 
 `ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル。
 
