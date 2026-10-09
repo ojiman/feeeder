@@ -28,7 +28,7 @@
              document.append(NSAttributedString(string: text + "\n", attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: secondary ? NSColor.secondaryLabelColor : NSColor.labelColor, .paragraphStyle: style]))
          }
          append(publisher, size: 11, weight: .medium, secondary: true)
-@@ -64,12 +69,12 @@
+@@ -64,14 +69,14 @@
          for (index, paragraph) in paragraphs.enumerated() {
              let range = NSRange(location: document.length, length: (paragraph as NSString).length)
              paragraphRanges.append(range)
@@ -41,8 +41,11 @@
 -                let style = NSMutableParagraphStyle(); style.lineSpacing = 8; style.paragraphSpacing = 22
 +                let style = NSMutableParagraphStyle(); style.lineSpacing = bodyLineSpacing; style.paragraphSpacing = 22
                  style.headIndent = indent; style.firstLineHeadIndent = indent
-                 document.addAttributes([.paragraphStyle: style, .foregroundColor: NSColor.secondaryLabelColor], range: range)
+-                document.addAttributes([.paragraphStyle: style, .foregroundColor: NSColor.secondaryLabelColor], range: range)
++                document.addAttributes([.paragraphStyle: style, .foregroundColor: NSColor.secondaryLabelColor], range: NSRange(location: range.location, length: range.length + 1))
                  quoteRanges.append((range, indent))
+             }
+             for link in block.links {
 @@ -81,7 +86,7 @@
              }
          }

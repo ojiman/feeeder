@@ -1,65 +1,80 @@
-Settings PO follow-up — 2026-10-10 JST
-Status: synthetic feasibility only, PdM approval and product acceptance NOT_DONE.
+Settings review follow-up — 2026-10-10 JST
+Supersedes results at commit 8148495. Historical results remain in Git.
+Status: synthetic correctness and timing evidence; PdM approval/product acceptance NOT_DONE.
 Product source: e9bcd933873fe920fc3751ba417afe561ff2a99c
 Environment: macOS 27.0.1 (26A434), Apple Silicon, Xcode 27.0 (27A266a), Swift 6.4 (swiftlang-6.4.0.34.1)
+Configuration: Release
 Reproduce: bash docs/verification/probes/run-settings-feasibility.sh
-Final run: same swift test flags as runner, after restoring all four controls; exit 0.
-Actual Settings scene, actual Japanese IME, real ReaderView/Store integration NOT_RUN.
+Final positive run: same swift test flags as runner; exit 0.
+Performance test records time, not a performance acceptance PASS. No latency threshold has been approved.
+Actual Settings scene, actual IME, editor scale/defer logic and ReaderView/Store integration NOT_RUN.
 
-SHA256 of final inputs (unchanged after final test):
-404e47751e41166b51aa731e5a496c6b8d43910d2720791c4608ce3aeb5b39f2  settings-feasibility.swift
-4f73504f0295f6f720359b20cbe2460d6322767d3f18a87e56e73c59a47df79d  settings-typography.patch
-f87650efc0b78e72a8bb089710be41168d139c825f55954d7e72726d4475d196  settings-live-update.patch
-7f686286e77e966dc774d472a6dab0e8e97f7a6a881c94a744362c3004df4989  run-settings-feasibility.sh
-e98778f8cc1598b2eb4721fa8ee1ece009fdd0424b13fb75fe79334d73d5ea7c  patched NativeArticleText.swift
-Patched source equals baseline reconstructed with committed patches: PASS.
+SHA256 of final positive inputs (unchanged after test):
+8665d8b63a97658075e65d4922b91b1801c1f1df7df0207257f8be5b843c322d  settings-feasibility.swift
+6d7788dfc3e12702482c6f3b7d3c149ffc073dca2806f87b75c9f505b579d26c  settings-typography.patch
+004c20e46c4f2e8369da14bd11bed43c061486cca0e86a76dcb00da86f1e419a  settings-live-update.patch
+5e62e1d9f4e32a0b8639746eb95e1a95224ba41368a4dd6ad4645b5a9f2831f9  run-settings-feasibility.sh
+c38311ac6d4db8329c0b784d78ff9f78c061ab6efc053d3742ce608f559e7e5d  patched NativeArticleText.swift
+Patched source and test equal the baseline reconstructed with repository input assets: PASS.
 
-Final run (verbatim excerpt):
+Final positive run (verbatim excerpt):
 ◇ Test run started.
 ↳ Testing Library Version: 2084
 ↳ Target Platform: arm64e-apple-macos14.0
 ◇ Suite SettingsFeasibilityProbe started.
 ◇ Test fiveCategoryContentsRender() started.
 PROBE five category contents rendered; navigation and Settings scene not exercised
-✔ Test fiveCategoryContentsRender() passed after 2.241 seconds.
+✔ Test fiveCategoryContentsRender() passed after 2.185 seconds.
 ◇ Test editorUpdateAndMarkedTextControls() started.
 PROBE native font-only marked preserved=true
 PROBE SwiftUI notifyBinding=false, bindingMatchesBefore=false, markedBefore={3, 4}, markedAfter={57, 0}, textPreserved=false
 PROBE SwiftUI notifyBinding=true, bindingMatchesBefore=true, markedBefore={3, 4}, markedAfter={3, 4}, textPreserved=true
 PROBE separate-window responder resignation=true, markedAfter=true, textPreserved=true
-✔ Test editorUpdateAndMarkedTextControls() passed after 5.130 seconds.
+✔ Test editorUpdateAndMarkedTextControls() passed after 5.171 seconds.
 ◇ Test parameterizedProductionInstallAndWidth() started.
 PROBE parameterized production install/setFrameSize: 108 combinations
-✔ Test parameterizedProductionInstallAndWidth() passed after 11.059 seconds.
+✔ Test parameterizedProductionInstallAndWidth() passed after 10.954 seconds.
 ◇ Test windowBackedReadingPosition() started.
 PROBE mounted scroll: viewport=(1000.0, 480.0), paragraph UTF16 length=774, heights=936.0->390.0, anchor=paragraph-7/80.0->paragraph-7/80.0, topUTF16=5505->5597
-✔ Test windowBackedReadingPosition() passed after 0.083 seconds.
+✔ Test windowBackedReadingPosition() passed after 0.078 seconds.
 ◇ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() started.
 PROBE live size update: 36 cases; prior top-line character remains on top line, selection/text/link/quote preserved; display callbacks stay at one initial pair
-✔ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() passed after 19.927 seconds.
+✔ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() passed after 20.155 seconds.
+◇ Test liveAttributesAndLayoutMatchFreshInstall() started.
+PROBE live/fresh parity: 8 cases, full attributed string/newline fonts/document height/paragraph geometry match
+✔ Test liveAttributesAndLayoutMatchFreshInstall() passed after 0.189 seconds.
+◇ Test longArticleUpdateTiming() started.
+PROBE timing: 200 paragraphs, UTF16=155712, viewport=600.0pt, 20 immediate updates on main actor; first=223.910708ms, median=217.19875ms, p95=288.9465ms, max=361.352041ms; synchronous method only, excludes event queue/draw
+✔ Test longArticleUpdateTiming() passed after 4.798 seconds.
 ◇ Test onDeviceAvailabilityOnly() started.
 PROBE FoundationModels availability: available
 PROBE Japanese embedding assets present: true
-✔ Test onDeviceAvailabilityOnly() passed after 0.029 seconds.
-✔ Suite SettingsFeasibilityProbe passed after 38.471 seconds.
-✔ Test run with 6 tests in 1 suite passed after 38.471 seconds.
+✔ Test onDeviceAvailabilityOnly() passed after 0.015 seconds.
+✔ Suite SettingsFeasibilityProbe passed after 43.550 seconds.
+✔ Test run with 8 tests in 1 suite passed after 43.550 seconds.
 
-Independent negative controls (one mutation at a time, restored before final run):
+Initial-drawing negative controls (one mutation at a time, Release; source restored):
 Filter: parameterizedProductionInstallAndWidth; same package/scratch/version flags as runner.
 Mutations are listed in the verification record. Each exit status was 1 (expected).
 
 Control: font
 ✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:167:29: Expectation failed: font.pointSize == size
-✘ Test run with 1 test in 1 suite failed after 11.543 seconds with 3240 issues.
+✘ Test run with 1 test in 1 suite failed after 11.577 seconds with 3240 issues.
 
 Control: spacing
 ✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:168:29: Expectation failed: style.lineSpacing == spacing
-✘ Test run with 1 test in 1 suite failed after 13.105 seconds with 2808 issues.
+✘ Test run with 1 test in 1 suite failed after 10.855 seconds with 2808 issues.
 
 Control: width
 ✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:180:25: Expectation failed: container.containerSize.width == maximum
-✘ Test run with 1 test in 1 suite failed after 11.610 seconds with 144 issues.
+✘ Test run with 1 test in 1 suite failed after 11.794 seconds with 144 issues.
 
 Control: inset
 ✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:181:25: Expectation failed: view.textContainerInset.width == (1050 - maximum) / 2
-✘ Test run with 1 test in 1 suite failed after 11.138 seconds with 108 issues.
+✘ Test run with 1 test in 1 suite failed after 10.838 seconds with 108 issues.
+
+Position negative control: only scroll(to:) inside updateReadingSize omitted; Release, same final inputs.
+Filter: liveSizeKeepsTopCharacterSelectionAndDisplayState; exit 1 (expected).
+✘ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() recorded an issue at SettingsFeasibilityProbe.swift:258:21: Expectation failed: NSLocationInRange(anchor, line)
+✘ Test run with 1 test in 1 suite failed after 20.038 seconds with 24 issues.
+Source restored after control; SHA256 equals final positive input: PASS.

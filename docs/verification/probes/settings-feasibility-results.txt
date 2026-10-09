@@ -1,3 +1,5 @@
+Historical record at f87bca5; superseded by settings-po-results.txt. Not the current runner output.
+
 Settings feasibility review rerun — 2026-10-10 JST
 Product source: e9bcd933873fe920fc3751ba417afe561ff2a99c
 Environment: macOS 27.0.1 (26A434), Apple Silicon, Xcode 27.0 (27A266a), Swift 6.4 (swiftlang-6.4.0.34.1)

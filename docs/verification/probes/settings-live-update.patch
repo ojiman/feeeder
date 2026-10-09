@@ -1,6 +1,6 @@
 --- a/Sources/RSSReader/NativeArticleText.swift
 +++ b/Sources/RSSReader/NativeArticleText.swift
-@@ -153,6 +153,42 @@
+@@ -153,6 +153,43 @@
          let target = min(max(0, frame.height - scroll.contentSize.height), max(0, base + offset))
          scroll.contentView.scroll(to: NSPoint(x: 0, y: target)); scroll.reflectScrolledClipView(scroll.contentView)
      }
@@ -18,7 +18,8 @@
 +        installing = true
 +        defer { installing = false }
 +        storage.beginEditing()
-+        for range in paragraphRanges {
++        for paragraph in paragraphRanges {
++            let range = NSRange(location: paragraph.location, length: paragraph.length + 1)
 +            storage.addAttribute(.font, value: NSFont.systemFont(ofSize: size), range: range)
 +            let style = (storage.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
 +            style.lineSpacing = size / 2

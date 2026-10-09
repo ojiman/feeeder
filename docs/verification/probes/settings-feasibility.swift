@@ -241,7 +241,8 @@ import ReaderCore
                     return manager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
                 }
                 let originalText = view.string
-                view.setSelectedRange(NSRange(location: 3, length: 5))
+                let selectedBody = (view.string as NSString).range(of: paragraphs[7])
+                view.setSelectedRange(NSRange(location: selectedBody.location, length: 12))
                 let selection = view.selectedRanges
                 func render() async throws {
                     let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.visibleRect))
@@ -268,6 +269,58 @@ import ReaderCore
             }
         }
         print("PROBE live size update: \(cases) cases; prior top-line character remains on top line, selection/text/link/quote preserved; display callbacks stay at one initial pair")
+    }
+    @Test func liveAttributesAndLayoutMatchFreshInstall() throws {
+        var count = 0
+        for viewport in [CGFloat(360), 1000] {
+            for size in [CGFloat(14), 16, 18, 20] {
+                let paragraphs = (0..<12).map { "段落\($0)🙂。" + String(repeating: "日本語 and English。", count: 12) }
+                let blocks = paragraphs.enumerated().map { i, text in BodyParagraph(text: text, links: [], quoteDepth: i == 3 ? 1 : 0) }
+                let live = ArticleTextView(frame: NSRect(x: 0, y: 0, width: viewport, height: 480))
+                let fresh = ArticleTextView(frame: live.frame)
+                let liveScroll = NSScrollView(frame: live.frame), freshScroll = NSScrollView(frame: live.frame)
+                liveScroll.documentView = live; freshScroll.documentView = fresh
+                let lw = window(liveScroll, width: viewport), fw = window(freshScroll, width: viewport)
+                defer { lw.close(); fw.close() }
+                live.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: paragraphs, unavailable: nil, bodyParagraphs: blocks)
+                live.updateReadingSize(size)
+                fresh.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: paragraphs, unavailable: nil, bodyParagraphs: blocks,
+                              bodyFontSize: size, bodyLineSpacing: size / 2, maximumBodyWidth: 670 * size / 16)
+                let a = try #require(live.textStorage), b = try #require(fresh.textStorage)
+                #expect(a.isEqual(to: b))
+                #expect(abs(live.frame.height - fresh.frame.height) < 0.01)
+                for paragraph in paragraphs {
+                    let range = (live.string as NSString).range(of: paragraph)
+                    let newline = NSMaxRange(range)
+                    #expect((a.attribute(.font, at: newline, effectiveRange: nil) as? NSFont)?.pointSize == size)
+                    let lm = try #require(live.layoutManager), fm = try #require(fresh.layoutManager)
+                    let lc = try #require(live.textContainer), fc = try #require(fresh.textContainer)
+                    let lrect = lm.boundingRect(forGlyphRange: lm.glyphRange(forCharacterRange: range, actualCharacterRange: nil), in: lc)
+                    let frect = fm.boundingRect(forGlyphRange: fm.glyphRange(forCharacterRange: range, actualCharacterRange: nil), in: fc)
+                    #expect(lrect == frect)
+                }
+                count += 1
+            }
+        }
+        print("PROBE live/fresh parity: \(count) cases, full attributed string/newline fonts/document height/paragraph geometry match")
+    }
+    @Test func longArticleUpdateTiming() throws {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 480))
+        let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+        let w = window(scroll, width: 600); defer { w.close() }
+        let paragraphs = (0..<200).map { "段落\($0)🙂。" + String(repeating: "日本語とEnglishの合成文章を読みます。", count: 35) }
+        view.install(title: "長い合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: paragraphs, unavailable: nil)
+        view.restore(anchor: "paragraph-100", offset: 8)
+        var samples: [Double] = []
+        for _ in 0..<5 {
+            for size in [CGFloat(20), 14, 18, 16] {
+                let before = DispatchTime.now().uptimeNanoseconds
+                view.updateReadingSize(size)
+                samples.append(Double(DispatchTime.now().uptimeNanoseconds - before) / 1_000_000)
+            }
+        }
+        let sorted = samples.sorted()
+        print("PROBE timing: 200 paragraphs, UTF16=\((view.string as NSString).length), viewport=\(view.frame.width)pt, 20 immediate updates on main actor; first=\(samples[0])ms, median=\(sorted[10])ms, p95=\(sorted[18])ms, max=\(sorted[19])ms; synchronous method only, excludes event queue/draw")
     }
     @Test func onDeviceAvailabilityOnly() {
         print("PROBE FoundationModels availability: \(SystemLanguageModel.default.availability)")
