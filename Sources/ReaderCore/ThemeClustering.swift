@@ -27,6 +27,8 @@ public enum SuggestionTuning {
     public static let maximumClusterItems = 120
     public static let maximumMembersPerTheme = 10
     public static let backgroundItems = 40
+    /// A space with fewer items than this is not averaged (n centered vectors sum to zero, so tiny groups look opposite) and gets no suggestions.
+    public static let minimumItemsPerSpace = 6
     public static let textCharacterLimit = 300
 }
 
@@ -41,7 +43,9 @@ public enum EmbeddingMath {
     }
 
     /// Subtracts each space's mean from its items. Without this every vector points the same way and all
-    /// items look alike (spike §1). Items keep their order; a space with a single item becomes the zero vector.
+    /// items look alike (spike §1). Items keep their order. A space with fewer than
+    /// `SuggestionTuning.minimumItemsPerSpace` items is left out: centered vectors sum to zero, so with a handful
+    /// of items every pair looks opposite and no suggestion would be meaningful.
     public static func centered(_ items: [EmbeddedItem]) -> [EmbeddedItem] {
         var sums: [String: [Float]] = [:], counts: [String: Int] = [:]
         for item in items {
@@ -50,8 +54,9 @@ public enum EmbeddingMath {
             for index in item.vector.indices { sum[index] += item.vector[index] }
             sums[item.space] = sum; counts[item.space, default: 0] += 1
         }
-        return items.map { item in
-            guard let sum = sums[item.space], sum.count == item.vector.count, let count = counts[item.space] else { return item }
+        return items.compactMap { item in
+            guard let sum = sums[item.space], sum.count == item.vector.count, let count = counts[item.space],
+                  count >= SuggestionTuning.minimumItemsPerSpace else { return nil }
             let mean = sum.map { $0 / Float(count) }
             return EmbeddedItem(id: item.id, space: item.space, vector: zip(item.vector, mean).map { $0 - $1 })
         }
