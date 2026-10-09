@@ -97,7 +97,7 @@ Settingsと読書面の⌘+／⌘−／⌘0を同じ値への入口にする。�
 
 既存のSwiftUI Settings、AppStorage、ReaderStoreを使う。新しい設定基盤や保存モデルは作らない。本文はNativeArticleTextとReaderViewの呼出側、ノートはQuestionEditorとUnderstandingEditor、AIはThemeAssistantとの合流が必要。サポート下限macOS 27.0とCIのビルド下限26.6を区別し、27 SDK必須のAPIを前提にしない。
 
-[フィジビリティ記録](../../verification/2026-10-10-settings-feasibility.md)は試作の証拠で、完成した製品統合ではない。3カテゴリの実レイアウト、⌘,、キーボード、VoiceOver、システムアクセシビリティ、AIオフ・一部利用不可、保存キャンセル/失敗を実装後に確認する。採用時には正式PRD・Architectureと決定記録を同じPRで更新する。
+[フィジビリティ記録](../../verification/2026-10-10-settings-feasibility.md)と追加の[ReaderView接続・実キー記録](../../verification/2026-10-10-settings-key-path.md)は一時コピーの証拠で、完成した製品統合ではない。3カテゴリの実レイアウト、⌘,、キーボード、VoiceOver、システムアクセシビリティ、AIオフ・一部利用不可、保存キャンセル/失敗を実装後に確認する。採用時には正式PRD・Architectureと決定記録を同じPRで更新する。
 
 ## 参照
 

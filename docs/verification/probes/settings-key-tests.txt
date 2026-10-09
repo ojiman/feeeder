@@ -1,0 +1,90 @@
+Building for production...
+[Constructing description]
+[Planning deferred tasks]
+[4 / 19] ReaderCoreTests-product
+[6 / 21] RSSReader
+[8 / 23] RSSReader-product
+[14 / 28] RSSReader-product
+[15 / 28] RSSReader-product
+[19 / 29] ReaderUITests-product
+[21 / 31]
+[22 / 31] ReaderUITests-product
+[26 / 30] ReaderUITests-product
+[28 / 30] ReaderUITests-product
+Build complete! (25.73 sec)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SettingsKeyPathProbe started.
+◇ Suite SettingsFeasibilityProbe started.
+◇ Suite NativeArticleTextTests started.
+◇ Test fiveCategoryContentsRender() started.
+◇ Test preferenceReachesDetailWithoutReinstall() started.
+◇ Test nativeListFocusIsRecognizedWithoutSwiftUIFocusState() started.
+◇ Test paragraphPositionSurvivesNativeScrollAndWidthChange() started.
+◇ Test pageMotionFollowsDirectionWithoutReplayingForContentUpdates() started.
+◇ Test headerOnlyViewportDoesNotCountBodyAsDisplayed() started.
+◇ Test viewportResizeRoundTripsPreserveParagraphPositionAutomatically() started.
+◇ Test contentCoverageAppearsOnlyAtTheEnd() started.
+◇ Test namedBodyLinkIsClickableAndQuoteIsIndented() started.
+◇ Test fixedHeroArrivalDoesNotMoveReadingPosition() started.
+◇ Test displayStartPrecedesLayoutWithoutMarkingInvisibleBody() started.
+✔ Test pageMotionFollowsDirectionWithoutReplayingForContentUpdates() passed after 1.413 seconds.
+✔ Test nativeListFocusIsRecognizedWithoutSwiftUIFocusState() passed after 1.413 seconds.
+✔ Test viewportResizeRoundTripsPreserveParagraphPositionAutomatically() passed after 1.466 seconds.
+✔ Test paragraphPositionSurvivesNativeScrollAndWidthChange() passed after 1.466 seconds.
+✔ Test headerOnlyViewportDoesNotCountBodyAsDisplayed() passed after 1.466 seconds.
+✔ Test displayStartPrecedesLayoutWithoutMarkingInvisibleBody() passed after 1.466 seconds.
+✔ Test contentCoverageAppearsOnlyAtTheEnd() passed after 1.466 seconds.
+✔ Test namedBodyLinkIsClickableAndQuoteIsIndented() passed after 1.466 seconds.
+✔ Test fixedHeroArrivalDoesNotMoveReadingPosition() passed after 1.466 seconds.
+✔ Suite NativeArticleTextTests passed after 1.467 seconds.
+PROBE five category contents rendered; navigation and Settings scene not exercised
+✔ Test fiveCategoryContentsRender() passed after 3.743 seconds.
+◇ Test editorUpdateAndMarkedTextControls() started.
+KEYPROBE preference/detail/native path: observed font 20.0; same view/text/selection; install/display once, reload0
+✔ Test preferenceReachesDetailWithoutReinstall() passed after 3.906 seconds.
+◇ Test readerViewDoesNotRereadOrReloadOnSizeChange() started.
+PROBE native font-only marked preserved=true
+PROBE SwiftUI notifyBinding=false, bindingMatchesBefore=false, markedBefore={3, 4}, markedAfter={57, 0}, textPreserved=false
+KEYPROBE ReaderView preference path: unread stays unread, firstRead unchanged, contentRevision unchanged; load/fetch/markDisplayed calls0
+✔ Test readerViewDoesNotRereadOrReloadOnSizeChange() passed after 3.333 seconds.
+◇ Test commandFormsAndResponderBoundaries() started.
+KEYPROBE character forms +/-/0, modifier rejection, upper/lower no-op, native input/marked boundaries checked; physical layouts not simulated
+✔ Test commandFormsAndResponderBoundaries() passed after 0.056 seconds.
+✔ Suite SettingsKeyPathProbe passed after 7.296 seconds.
+PROBE SwiftUI notifyBinding=true, bindingMatchesBefore=true, markedBefore={3, 4}, markedAfter={3, 4}, textPreserved=true
+PROBE separate-window responder resignation=true, markedAfter=true, textPreserved=true
+✔ Test editorUpdateAndMarkedTextControls() passed after 5.616 seconds.
+◇ Test parameterizedProductionInstallAndWidth() started.
+PROBE parameterized production install/setFrameSize: 108 combinations
+✔ Test parameterizedProductionInstallAndWidth() passed after 13.639 seconds.
+◇ Test windowBackedReadingPosition() started.
+PROBE mounted scroll: viewport=(1000.0, 480.0), paragraph UTF16 length=774, heights=936.0->390.0, anchor=paragraph-7/80.0->paragraph-7/80.0, topUTF16=5505->5597
+✔ Test windowBackedReadingPosition() passed after 0.114 seconds.
+◇ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() started.
+PROBE live size update: 36 cases; prior top-line character remains on top line, selection/text/link/quote preserved; display callbacks stay at one initial pair
+✔ Test liveSizeKeepsTopCharacterSelectionAndDisplayState() passed after 20.408 seconds.
+◇ Test liveAttributesAndLayoutMatchFreshInstall() started.
+PROBE live/fresh parity: 8 cases, full attributed string/newline fonts/document height/paragraph geometry match
+✔ Test liveAttributesAndLayoutMatchFreshInstall() passed after 0.200 seconds.
+◇ Test longArticleUpdateTiming() started.
+PROBE timing: 200 paragraphs, UTF16=155712, viewport=600.0pt, 20 immediate updates on main actor; first=269.984ms, median=260.303584ms, p95=342.118917ms, max=362.085041ms; synchronous method only, excludes event queue/draw
+✔ Test longArticleUpdateTiming() passed after 5.608 seconds.
+◇ Test updateCostScalesWithArticleLength() started.
+PROBE scaling: paragraphs=3, UTF16=2351, install=3.1ms, update median=3.1ms max=3.5ms, update per 1k UTF16=1.30ms; synchronous method only
+PROBE scaling: paragraphs=10, UTF16=7790, install=9.6ms, update median=9.8ms max=10.5ms, update per 1k UTF16=1.26ms; synchronous method only
+PROBE scaling: paragraphs=30, UTF16=23350, install=32.4ms, update median=34.2ms max=41.6ms, update per 1k UTF16=1.46ms; synchronous method only
+PROBE scaling: paragraphs=100, UTF16=77810, install=89.8ms, update median=104.4ms max=107.6ms, update per 1k UTF16=1.34ms; synchronous method only
+PROBE scaling: paragraphs=200, UTF16=155710, install=185.1ms, update median=229.0ms max=527.0ms, update per 1k UTF16=1.47ms; synchronous method only
+✔ Test updateCostScalesWithArticleLength() passed after 5.552 seconds.
+◇ Test windowedLayoutCannotKeepTheReadingPosition() started.
+PROBE windowed layout: paragraphs=50, attributes+window layout=74.0ms, estimated y=6916, exact y=20069, error=13153pt
+PROBE windowed layout: paragraphs=200, attributes+window layout=619.2ms, estimated y=19670, exact y=79844, error=60174pt
+✔ Test windowedLayoutCannotKeepTheReadingPosition() passed after 1.274 seconds.
+◇ Test onDeviceAvailabilityOnly() started.
+PROBE FoundationModels availability: available
+PROBE Japanese embedding assets present: true
+✔ Test onDeviceAvailabilityOnly() passed after 0.119 seconds.
+✔ Suite SettingsFeasibilityProbe passed after 56.280 seconds.
+✔ Test run with 22 tests in 3 suites passed after 56.280 seconds.

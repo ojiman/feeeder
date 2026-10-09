@@ -1,0 +1,25 @@
+Temporary ReaderView integration; macOS 27.0.1 / Xcode 27.0 / Swift 6.4 / arm64 / Release
+Production baseline e9bcd933873fe920fc3751ba417afe561ff2a99c; PO evidence baseline 26fb8ff
+ABC input source; visible CPU draw completion, not display presentation
+All 15 drawn samples: top character / selection / firstRead retained; install/load/fetch/markDisplayed deltas zero
+Key hold 800ms generated no repeat events; repeat backlog NOT_RUN
+UTF16 | n | event-to-draw min/median/max ms | update min/median/max ms
+2069 | 4 | 13.05/15.48/15.70 | 4.62/5.35/6.86
+20235 | 2 | 68.68/70.10/71.52 | 55.39/57.82/60.25
+134749 | 9 | 306.29/322.99/383.17 | 295.56/308.13/369.78
+Viewport: 727 x 733 pt; 30/200 paragraphs scrolled into body
+accepted=15, drawn=15, no-op=5, ignored=42; ignored includes re-delivery, not 42 physical keys
+Fixture source SHA256:
+6d7788dfc3e12702482c6f3b7d3c149ffc073dca2806f87b75c9f505b579d26c  settings-typography.patch
+004c20e46c4f2e8369da14bd11bed43c061486cca0e86a76dcb00da86f1e419a  settings-live-update.patch
+250deeb530efb38932ad1d08b588533f2797fe8d19eee31c5f495fd1da35c3bf  settings-key-path.patch
+3e42ad9a7b0a4135280e6786a6043126b907d48a53907a32d7cd57585e5c9d6b  settings-key-path.swift
+5e2f0f3b1af4632456dfc05bf1e7f8dda0785e7386b1168f6281300786ded8b4  settings-key-bridge.swift
+963c1049475f17fe57e19e180c71d3f7d5044b6c1da434c16fcc73859c9b05f5  settings-feasibility.swift
+dfef1831b0ddef0a2ec62be41f0c210676a58955e202b1ca9e15268bb964d41a  settings-key-original.html
+
+RED before integration (Release, same fixed baseline + first two patches):
+Expectation failed: font.pointSize == 20; observed font.pointSize 16.0; 1 test failed.
+GREEN after integration: 22 tests in 3 suites passed; see settings-key-tests.txt.
+Repro runner: independent archive + 3 patches; Release build84.78s, 22 tests passed53.812s; unsigned synthetic bundle/unique identifier prepared.
+Local HTTP server self-check: fixture bytes match; document links and bash -n PASS.
