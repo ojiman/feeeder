@@ -16,6 +16,27 @@ actor FakeAssistant: ThemeAssistant {
     private(set) var availabilityCalls = 0
     private var parked: [UUID: CheckedContinuation<Void, Never>] = [:]
     private var parkedClusters: CheckedContinuation<Void, Never>?
+    private var generated: [String] = []
+    private var generationFailure: (any Error)?
+    private var generationAvailabilityValue = AssistantAvailability.available
+    private var holdGeneration = false
+    private var parkedGeneration: CheckedContinuation<Void, Never>?
+    private(set) var generateCalls: [SuggestionPrompts.Request] = []
+    private(set) var generationAvailabilityCalls = 0
+
+    func scriptGeneration(_ outputs: [String] = [], failure: (any Error)? = nil, hold: Bool = false, availability: AssistantAvailability = .available) {
+        generated = outputs; generationFailure = failure; holdGeneration = hold; generationAvailabilityValue = availability
+    }
+    var generationParked: Bool { parkedGeneration != nil }
+    func releaseGeneration() { parkedGeneration?.resume(); parkedGeneration = nil }
+
+    func generationAvailability() async -> AssistantAvailability { generationAvailabilityCalls += 1; return generationAvailabilityValue }
+    func generate(_ request: SuggestionPrompts.Request) async throws -> String {
+        generateCalls.append(request)
+        if holdGeneration { await withCheckedContinuation { parkedGeneration = $0 } }
+        if let generationFailure { throw generationFailure }
+        return generated.isEmpty ? "" : generated.removeFirst()
+    }
 
     func script(nearest: [UUID: [ThemeMatch]] = [:], groups: [[UUID]] = [], failure: (any Error)? = nil, hold: Bool = false,
                 availability: AssistantAvailability = .available) {
@@ -267,5 +288,124 @@ actor FakeAssistant: ThemeAssistant {
         let suggestions = model(store, fake)
         await suggestions.refreshAvailability()
         #expect(suggestions.availability == .assetsMissing)
+    }
+
+    @Test func aNameIsProposedFromTheGroupsArticlesAndJunkIsCleaned() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 20)
+        let ids = store.articles.map(\.id)
+        let fake = FakeAssistant()
+        await fake.scriptGeneration(["「住宅ローンの金利変動と家計の負担」}」この記事は…"])
+        let suggestions = model(store, fake)
+        let name = await suggestions.proposeName(forArticles: Array(ids.prefix(18)))
+        #expect(name == "住宅ローンの金利変動と家計の負担")
+        let calls = await fake.generateCalls
+        let lines = calls[0].prompt.split(separator: "\n").filter { $0.hasPrefix("- ") }
+        #expect(lines.count == SuggestionPrompts.maximumItems && lines.first == "- 記事 0 要約 0")
+        #expect(await suggestions.proposeName(forArticles: [ids[0]]) == nil)          // one article is not a group
+        let after = await fake.generateCalls
+        #expect(after.count == 1)
+    }
+
+    @Test func aBrokenNameOrAFailureOrADisabledSwitchGivesNoProposalAndNoCall() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 4)
+        let ids = Array(store.articles.map(\.id).prefix(3))
+        let fake = FakeAssistant()
+        await fake.scriptGeneration([""])
+        let suggestions = model(store, fake)
+        #expect(await suggestions.proposeName(forArticles: ids) == nil)               // empty output
+        await fake.scriptGeneration(failure: Boom())
+        #expect(await suggestions.proposeName(forArticles: ids) == nil)               // guardrail / overflow / anything
+        await fake.scriptGeneration(["金利と家計"])
+        let off = model(store, fake, enabled: false)
+        #expect(await off.proposeName(forArticles: ids) == nil)
+        await off.refreshAvailability()
+        let (calls, availabilityCalls) = (await fake.generateCalls, await fake.generationAvailabilityCalls)
+        #expect(calls.count == 2 && availabilityCalls == 0)                           // the disabled model called nothing
+        #expect(await model(store, nil).proposeName(forArticles: ids) == nil)
+    }
+
+    @Test func aProposalThatArrivesAfterTheSwitchWasTurnedOffIsDropped() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 4)
+        let ids = Array(store.articles.map(\.id).prefix(3))
+        let fake = FakeAssistant()
+        await fake.scriptGeneration(["金利と家計"], hold: true)
+        let enabled = SuggestionSwitch()
+        let suggestions = ThemeSuggestionModel(store: store, assistant: fake, isEnabled: { enabled.on }, now: { self.at })
+        let task = Task { await suggestions.proposeName(forArticles: ids) }
+        try await waitUntil { await fake.generationParked }
+        enabled.on = false
+        await fake.releaseGeneration()
+        #expect(await task.value == nil)
+    }
+
+    @Test func aQuestionProposalUsesTheThemesRecordedArticlesAndTheTemplate() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 30)
+        let ids = store.articles.map(\.id)
+        let theme = try store.createTheme(name: "金利と家計", at: at)
+        for (offset, id) in ids[5..<25].enumerated() { try store.addArticle(id, toTheme: theme.id, at: at.addingTimeInterval(Double(offset))) }
+        let question = try store.addQuestion(themeID: theme.id, lens: .tradeoff, at: at)
+        let fake = FakeAssistant()
+        await fake.scriptGeneration(["住宅ローンを組む家計は、金利上昇と引き換えに何を手放すのか。"])
+        let suggestions = model(store, fake)
+        let proposal = await suggestions.proposeQuestion(for: question.id)
+        #expect(proposal == "住宅ローンを組む家計は、金利上昇と引き換えに何を手放すのか。")
+        let request = try #require(await fake.generateCalls.first)
+        #expect(request.prompt.contains(question.text) && request.prompt.contains("テーマ: 金利と家計"))
+        let lines = request.prompt.split(separator: "\n").filter { $0.hasPrefix("- ") }
+        #expect(lines.count == SuggestionPrompts.maximumItems && lines.first == "- 記事 24 要約 24")      // newest additions first
+    }
+
+    @Test func noQuestionProposalForAnEditedAFreeOrAMissingQuestionOrAnUnchangedAnswer() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 4)
+        let theme = try store.createTheme(name: "A", adding: [store.articles[0].id, store.articles[1].id], at: at)
+        let edited = try store.addQuestion(themeID: theme.id, lens: .assumption, at: at)
+        try store.updateQuestion(id: edited.id, text: "自分で直した問いです、どうなるか。", at: at)
+        let free = try store.addQuestion(themeID: theme.id, lens: .custom, text: "自由な問いをここに書きます。", at: at)
+        let plain = try store.addQuestion(themeID: theme.id, lens: .exception, at: at)
+        let fake = FakeAssistant()
+        let suggestions = model(store, fake)
+        await fake.scriptGeneration(["自分で直した問いです、どうなるか。"])
+        #expect(await suggestions.proposeQuestion(for: edited.id) == nil)
+        #expect(await suggestions.proposeQuestion(for: free.id) == nil)
+        #expect(await suggestions.proposeQuestion(for: UUID()) == nil)
+        let untouched = await fake.generateCalls
+        #expect(untouched.isEmpty)
+        await fake.scriptGeneration([plain.text])                                        // the model just repeats the template
+        #expect(await suggestions.proposeQuestion(for: plain.id) == nil)
+        await fake.scriptGeneration(["これは問いではなく、記事の要約です。"])
+        #expect(await suggestions.proposeQuestion(for: plain.id) == nil)                 // not a question
+    }
+
+    @Test func aQuestionProposalIsDroppedWhenTheQuestionWasEditedWhileWaiting() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 4)
+        let theme = try store.createTheme(name: "A", adding: [store.articles[0].id, store.articles[1].id], at: at)
+        let question = try store.addQuestion(themeID: theme.id, lens: .condition, at: at)
+        let fake = FakeAssistant()
+        await fake.scriptGeneration(["この条件が変わると、結論はどう変わるのだろうか。"], hold: true)
+        let suggestions = model(store, fake)
+        let task = Task { await suggestions.proposeQuestion(for: question.id) }
+        try await waitUntil { await fake.generationParked }
+        try store.updateQuestion(id: question.id, text: "本人が書き直した問いはこちらです。", at: at)
+        await fake.releaseGeneration()
+        #expect(await task.value == nil)
+    }
+
+    @Test func generationAvailabilityIsReportedOnlyWhileEnabled() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try makeStore(library, articles: 1)
+        let fake = FakeAssistant()
+        await fake.scriptGeneration(availability: .assetsMissing)
+        let suggestions = model(store, fake)
+        await suggestions.refreshAvailability()
+        #expect(suggestions.generationAvailability == .assetsMissing)
+        let off = model(store, fake, enabled: false)
+        await off.refreshAvailability()
+        #expect(off.generationAvailability == nil)
     }
 }

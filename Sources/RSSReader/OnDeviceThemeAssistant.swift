@@ -90,6 +90,8 @@ actor OnDeviceThemeAssistant: ThemeAssistant {
     init(embedder: any TextEmbedder = ContextualTextEmbedder()) { self.embedder = embedder }
 
     func availability() async -> AssistantAvailability { await embedder.availability() }
+    func generationAvailability() async -> AssistantAvailability { .unsupported }
+    func generate(_ request: SuggestionPrompts.Request) async throws -> String { throw CancellationError() }
 
     func nearestThemes(for item: SuggestionItem, candidates: [ThemeCandidateInput], background: [SuggestionItem]) async throws -> [ThemeMatch] {
         let pool = try await embed([item] + candidates.flatMap(\.members) + background)
