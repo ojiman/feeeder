@@ -89,9 +89,16 @@ import SwiftData
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
         dailyNotes = try context.fetch(FetchDescriptor<DailyNote>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
         scraps = try context.fetch(FetchDescriptor<NoteScrap>(sortBy: [SortDescriptor(\.savedAt)]))
-        themes = try context.fetch(FetchDescriptor<Theme>(sortBy: [SortDescriptor(\.createdAt)]))
-        themeArticles = try context.fetch(FetchDescriptor<ThemeArticle>(sortBy: [SortDescriptor(\.addedAt)]))
-        themeQuestions = try context.fetch(FetchDescriptor<ThemeQuestion>(sortBy: [SortDescriptor(\.createdAt)]))
+        // Ties on the timestamp break by a stable key, so equal times never reorder between launches.
+        themes = try context.fetch(FetchDescriptor<Theme>()).sorted {
+            $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
+        }
+        themeArticles = try context.fetch(FetchDescriptor<ThemeArticle>()).sorted {
+            $0.addedAt == $1.addedAt ? $0.key < $1.key : $0.addedAt < $1.addedAt
+        }
+        themeQuestions = try context.fetch(FetchDescriptor<ThemeQuestion>()).sorted {
+            $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
+        }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
         feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })
         feedArticles = [:]

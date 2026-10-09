@@ -83,6 +83,7 @@ import Testing
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let article = store.articles[0]; article.summary = "合成RSS要約"
+        article.originalURL = "https://synthetic.example/article"
         let (id, title, url) = (article.id, article.title, article.originalURL)
         let theme = try store.createTheme(name: "A", at: at)
         try store.addArticle(id, toTheme: theme.id, at: at)
@@ -93,6 +94,7 @@ import Testing
         let reopened = try ReaderStore(url: library.url, now: later)
         let link = try #require(reopened.themeArticles.first)
         #expect(link.summary == "合成RSS要約" && link.articleID == id)
+        #expect(link.title == title && link.url == url)
         #expect(reopened.article(id: id)?.title == title && reopened.article(id: id)?.originalURL == url)
     }
 
@@ -169,7 +171,7 @@ import Testing
         #expect(second.text == "言い換えた問い")
         #expect(throws: ThemeError.self) { try store.updateQuestion(id: second.id, text: " ", at: at) }
         #expect(second.text == "言い換えた問い")
-        try store.deleteQuestion(id: second.id)
+        try store.deleteQuestion(id: second.id, at: at)
         #expect(store.questions(themeID: theme.id).map(\.id) == [question.id])
     }
 
@@ -179,7 +181,7 @@ import Testing
         #expect(throws: ThemeError.self) { try store.addQuestion(themeID: UUID(), lens: .custom, text: "問い", at: at) }
         try store.saveAnswer(questionID: UUID(), answer: "書けない", at: at)
         try store.setEvidence(questionID: UUID(), articleIDs: [], at: at)
-        try store.deleteQuestion(id: UUID())
+        try store.deleteQuestion(id: UUID(), at: at)
         #expect(store.themeQuestions.isEmpty)
     }
 
@@ -263,6 +265,18 @@ import Testing
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.setEvidence(questionID: question.id, articleIDs: [ids[0]], at: at) }
         #expect(store.themeQuestions.first { $0.id == question.id }?.evidenceArticleIDs == [ids[0], ids[1]])
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.renameTheme(id: theme.id, to: "失われる名前", at: at) }
+        #expect(store.theme(id: theme.id)?.name == "成功")
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.addQuestion(themeID: theme.id, lens: .custom, text: "失われる問い", at: at) }
+        #expect(store.questions(themeID: theme.id).count == 1)
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.updateQuestion(id: question.id, text: "失われる文", at: at) }
+        #expect(store.themeQuestions.first { $0.id == question.id }?.text == "問い")
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.deleteQuestion(id: question.id, at: at) }
+        #expect(store.questions(themeID: theme.id).count == 1)
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.removeArticle(ids[1], fromTheme: theme.id, at: at) }
         #expect(store.themeArticleCount(themeID: theme.id) == 2)
@@ -351,7 +365,7 @@ import Testing
         try store.removeArticle(ids[0], fromTheme: themeID, at: at)
         #expect(store.themeArticleCount(themeID: themeID) == 2 && question()?.evidenceArticleIDs.isEmpty == true)
         induceFailedRecovery()
-        try store.deleteQuestion(id: firstQuestionID)
+        try store.deleteQuestion(id: firstQuestionID, at: at)
         #expect(store.questions(themeID: themeID).count == 1)
         induceFailedRecovery()
         try store.deleteTheme(id: themeID)
@@ -359,5 +373,59 @@ import Testing
         induceFailedRecovery()
         try store.createTheme(name: "回復後の新規", at: at)
         #expect(store.themes.map(\.name) == ["回復後の新規"])
+    }
+
+    @Test func recordKeepsTheTitleAndURLFromTheTimeOfAdding() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]
+        article.title = "追加時のタイトル"; article.originalURL = "https://synthetic.example/a"
+        let theme = try store.createTheme(name: "A", at: at)
+        let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
+        #expect(link.title == "追加時のタイトル" && link.url == "https://synthetic.example/a")
+        article.title = "再取得で変わったタイトル"; article.originalURL = "https://synthetic.example/b"
+        try store.setStar(articleID: article.id, isStarred: true, at: at)
+        let repeated = try store.addArticle(article.id, toTheme: theme.id, at: at.addingTimeInterval(5))
+        #expect(repeated.title == "追加時のタイトル" && repeated.url == "https://synthetic.example/a")
+        let reopened = try ReaderStore(url: library.url, now: at)
+        let kept = try #require(reopened.themeArticles.first)
+        #expect(kept.title == "追加時のタイトル" && kept.url == "https://synthetic.example/a")
+    }
+
+    @Test func anyChangeInsideAThemeBumpsItsUpdatedAt() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]
+        let theme = try store.createTheme(name: "A", at: at)
+        func updatedAt() -> Date? { store.theme(id: theme.id)?.updatedAt }
+        func later(_ seconds: Double) -> Date { at.addingTimeInterval(seconds) }
+        try store.addArticle(article.id, toTheme: theme.id, at: later(1)); #expect(updatedAt() == later(1))
+        let question = try store.addQuestion(themeID: theme.id, lens: .custom, text: "問い", at: later(2)); #expect(updatedAt() == later(2))
+        try store.updateQuestion(id: question.id, text: "言い換えた問い", at: later(3)); #expect(updatedAt() == later(3))
+        try store.saveAnswer(questionID: question.id, answer: "答え", at: later(4)); #expect(updatedAt() == later(4))
+        try store.setEvidence(questionID: question.id, articleIDs: [article.id], at: later(5)); #expect(updatedAt() == later(5))
+        try store.removeArticle(article.id, fromTheme: theme.id, at: later(6)); #expect(updatedAt() == later(6))
+        try store.deleteQuestion(id: question.id, at: later(7)); #expect(updatedAt() == later(7))
+        try store.deleteQuestion(id: question.id, at: later(8)); #expect(updatedAt() == later(7))
+    }
+
+    @Test func equalTimestampsKeepADeterministicOrder() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        try autoreleasepool {
+            let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+            let ids = store.articles.map(\.id)
+            for index in 0..<8 {
+                let theme = try store.createTheme(name: "T\(index)", at: at)
+                for id in ids.prefix(3) { try store.addArticle(id, toTheme: theme.id, at: at) }
+                for _ in 0..<2 { try store.addQuestion(themeID: theme.id, lens: .custom, text: "問い", at: at) }
+            }
+        }
+        let reopened = try ReaderStore(url: library.url, now: at)
+        let themeOrder = reopened.themes.map(\.id.uuidString)
+        #expect(themeOrder == themeOrder.sorted())
+        let linkOrder = reopened.themeArticles.map { "\($0.addedAt.timeIntervalSince1970)|\($0.key)" }
+        #expect(linkOrder == linkOrder.sorted())
+        let questionOrder = reopened.themeQuestions.map { "\($0.createdAt.timeIntervalSince1970)|\($0.id.uuidString)" }
+        #expect(questionOrder == questionOrder.sorted())
     }
 }

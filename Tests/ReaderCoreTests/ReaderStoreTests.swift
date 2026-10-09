@@ -125,7 +125,7 @@ struct ReaderStoreTests {
             { try store.updateQuestion(id: question.id, text: "変更", at: at) },
             { try store.saveAnswer(questionID: question.id, answer: "捨ててはいけない変更", at: at) },
             { try store.setEvidence(questionID: question.id, articleIDs: [article.id], at: at) },
-            { try store.deleteQuestion(id: question.id) },
+            { try store.deleteQuestion(id: question.id, at: at) },
             { try store.deleteTheme(id: theme.id) },
             { try store.applyRetention(days: 7, at: at) },
             { try store.deleteContent(articleIDs: [article.id], at: at) },

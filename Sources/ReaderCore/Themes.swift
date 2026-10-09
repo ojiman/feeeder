@@ -2,13 +2,12 @@ import Foundation
 import SwiftData
 
 public enum ThemeError: LocalizedError {
-    case missingName, missingTheme, missingArticle, missingQuestion, missingQuestionText
+    case missingName, missingTheme, missingArticle, missingQuestionText
     public var errorDescription: String? {
         switch self {
         case .missingName: "テーマの名前を入力してください。"
         case .missingTheme: "テーマが見つかりません。"
         case .missingArticle: "記事が見つかりません。"
-        case .missingQuestion: "問いが見つかりません。"
         case .missingQuestionText: "問いの文を入力してください。"
         }
     }
@@ -57,11 +56,15 @@ public enum QuestionLens: String, CaseIterable, Sendable {
     @Attribute(.unique) public var key: String
     public var themeID: UUID
     public var articleID: UUID
+    /// Title, original URL and RSS summary as they were when the article joined the theme.
+    public var title: String
+    public var url: String?
     public var summary: String
     public var addedAt: Date
-    public init(themeID: UUID, articleID: UUID, summary: String, at: Date) {
-        key = themeID.uuidString + ":" + articleID.uuidString
-        self.themeID = themeID; self.articleID = articleID; self.summary = summary; addedAt = at
+    public init(themeID: UUID, article: Article, summary: String, at: Date) {
+        key = themeID.uuidString + ":" + article.id.uuidString
+        self.themeID = themeID; articleID = article.id; title = article.title; url = article.originalURL
+        self.summary = summary; addedAt = at
     }
 }
 
@@ -127,7 +130,7 @@ extension ReaderStore {
             return existing
         }
         let summary = isContentAvailable(article, at: at) ? article.summary.trimmingCharacters(in: .whitespacesAndNewlines) : ""
-        let link = ThemeArticle(themeID: themeID, articleID: articleID, summary: summary, at: at)
+        let link = ThemeArticle(themeID: themeID, article: article, summary: summary, at: at)
         context.insert(link)
         theme.updatedAt = at
         try save(); try reload()
@@ -182,12 +185,14 @@ extension ReaderStore {
             $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
         }
     }
+    /// Commit-only: the text is trimmed and blank text throws. Do not call it on every keystroke.
     public func updateQuestion(id: UUID, text: String, at: Date) throws {
         try reloadIfNeeded()
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw ThemeError.missingQuestionText }
         guard let question = themeQuestions.first(where: { $0.id == id }), question.text != text else { return }
         question.text = text; question.updatedAt = at
+        theme(id: question.themeID)?.updatedAt = at
         try save()
     }
     /// Typing path: saves without reloading. The answer is stored exactly as typed.
@@ -195,6 +200,7 @@ extension ReaderStore {
         try reloadIfNeeded()
         guard let question = themeQuestions.first(where: { $0.id == questionID }), question.answer != answer else { return }
         question.answer = answer; question.updatedAt = at
+        theme(id: question.themeID)?.updatedAt = at
         try save()
     }
     public func setEvidence(questionID: UUID, articleIDs: [UUID], at: Date) throws {
@@ -205,11 +211,13 @@ extension ReaderStore {
         let evidence = articleIDs.filter { members.contains($0) && seen.insert($0).inserted }
         guard evidence != question.evidenceArticleIDs else { return }
         question.evidenceArticleIDs = evidence; question.updatedAt = at
+        theme(id: question.themeID)?.updatedAt = at
         try save()
     }
-    public func deleteQuestion(id: UUID) throws {
+    public func deleteQuestion(id: UUID, at: Date) throws {
         try reloadIfNeeded()
         guard let question = themeQuestions.first(where: { $0.id == id }) else { return }
+        theme(id: question.themeID)?.updatedAt = at
         context.delete(question)
         try save(); try reload()
     }
