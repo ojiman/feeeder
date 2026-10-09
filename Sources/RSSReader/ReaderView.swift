@@ -9,6 +9,8 @@ struct ReaderView: View {
     @Bindable var aiReview: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
     let imageLoader: ReaderImageLoader
+    let suggestions: ThemeSuggestionModel?
+    @AppStorage(OnDeviceAISetting.key) private var aiEnabled = true
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
@@ -38,9 +40,9 @@ struct ReaderView: View {
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles,
-         initialQuestionSelection: ThemeQuestionSelection = .understanding) {
+         initialQuestionSelection: ThemeQuestionSelection = .understanding, suggestions: ThemeSuggestionModel? = nil) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
-        self.imageLoader = imageLoader
+        self.imageLoader = imageLoader; self.suggestions = suggestions
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
@@ -125,7 +127,7 @@ struct ReaderView: View {
                     }
                     .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
                     .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
-                        ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 })
+                        ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }, suggestions: suggestions)
                     }
                     Button(action: openExternal) { Image(systemName: "globe") }
                         .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
@@ -142,6 +144,14 @@ struct ReaderView: View {
             } catch { /* Selection changes cancel the old article's deadline. */ }
         }
         .task { try? await imageLoader.prepare(at: .now) }
+        .task(id: ClusterTrigger(active: scope == .unfiledStars && aiEnabled, count: store.unfiledStarCount)) {
+            guard let suggestions else { return }
+            guard scope == .unfiledStars, aiEnabled else { suggestions.invalidateClusters(); return }
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            await suggestions.loadClusters()
+        }
+        .onChange(of: aiEnabled) { _, on in if !on { suggestions?.invalidate() } }
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
         }
@@ -357,6 +367,9 @@ struct ReaderView: View {
         }
         .safeAreaInset(edge: .top) {
             if case .theme(let id) = scope { ThemeFacePicker(face: faceBinding(id)) }
+            else if scope == .unfiledStars, aiEnabled, let suggestions, !suggestions.clusters.groups.isEmpty {
+                ClusterSuggestionBar(store: store, model: suggestions, onCreated: { themeMessage = $0 })
+            }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
@@ -479,3 +492,5 @@ struct ReaderView: View {
         do { try operation() } catch { saveError = error.localizedDescription }
     }
 }
+
+private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }

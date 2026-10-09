@@ -4,6 +4,7 @@ import ReaderCore
 struct ReaderSettingsView: View {
     @Bindable var store: ReaderStore
     @Binding var appearance: String
+    var suggestions: ThemeSuggestionModel? = nil
     @State private var days = 30
     @State private var pendingDays: Int?
     @State private var deletingAll = false
@@ -24,6 +25,10 @@ struct ReaderSettingsView: View {
                 .tabItem { Label("外観", systemImage: "circle.lefthalf.filled") }
             storage
                 .tabItem { Label("保存", systemImage: "externaldrive") }
+            if let suggestions {
+                OnDeviceAISettingsView(suggestions: suggestions)
+                    .tabItem { Label("端末内AI", systemImage: "sparkles") }
+            }
         }.frame(width: 520, height: 340)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         .onAppear { days = store.retentionDays }
@@ -76,5 +81,38 @@ struct ReaderSettingsView: View {
     private func cancel() { preview = nil; pendingDays = nil; deletingAll = false; days = store.retentionDays }
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { self.error = error.localizedDescription; days = store.retentionDays }
+    }
+}
+
+/// One place for the switch's key and default, shared by Settings, the reader and the model.
+enum OnDeviceAISetting {
+    static let key = "onDeviceAIEnabled"
+    static var isEnabled: Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
+}
+
+struct OnDeviceAISettingsView: View {
+    @Bindable var suggestions: ThemeSuggestionModel
+    @AppStorage(OnDeviceAISetting.key) private var enabled = true
+
+    var body: some View {
+        Form {
+            Toggle("端末内AIの提案を使う", isOn: $enabled)
+            Text("近いテーマ（tキー）とまとまりの提案（未整理のStar）を、この Mac の中だけで計算します。外部へ送らず、アカウントも要りません。答えやいまの理解には何も書き込みません。")
+                .font(.caption).foregroundStyle(.secondary)
+            LabeledContent("状態") { Text(statusText) }
+            Text("言語の資産が端末に無い場合、アプリは自動で取得しません。提案が出ないだけで、ほかの操作は変わりません。")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped).padding()
+        .task(id: enabled) { await suggestions.refreshAvailability() }
+    }
+    private var statusText: String {
+        guard enabled else { return "オフ" }
+        return switch suggestions.availability {
+        case nil: "確認中…"
+        case .available: "使えます"
+        case .assetsMissing: "端末に言語の資産がありません"
+        case .unsupported: "この環境では使えません"
+        }
     }
 }
