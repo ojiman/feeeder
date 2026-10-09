@@ -322,6 +322,65 @@ import ReaderCore
         let sorted = samples.sorted()
         print("PROBE timing: 200 paragraphs, UTF16=\((view.string as NSString).length), viewport=\(view.frame.width)pt, 20 immediate updates on main actor; first=\(samples[0])ms, median=\(sorted[10])ms, p95=\(sorted[18])ms, max=\(sorted[19])ms; synchronous method only, excludes event queue/draw")
     }
+    // Records how the synchronous update cost scales with article length and how it compares with install().
+    // It records times only: no latency budget has been approved, so nothing here asserts a threshold.
+    @Test func updateCostScalesWithArticleLength() throws {
+        func milliseconds(since start: UInt64) -> Double { Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000 }
+        for count in [3, 10, 30, 100, 200] {
+            let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 480))
+            let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+            let w = window(scroll, width: 600); defer { w.close() }
+            let paragraphs = (0..<count).map { "段落\($0)🙂。" + String(repeating: "日本語とEnglishの合成文章を読みます。", count: 35) }
+            let installStart = DispatchTime.now().uptimeNanoseconds
+            view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: paragraphs, unavailable: nil)
+            let install = milliseconds(since: installStart)
+            view.restore(anchor: "paragraph-\(count / 2)", offset: 8)
+            var samples: [Double] = []
+            for _ in 0..<3 {
+                for size in [CGFloat(20), 14, 18, 16] {
+                    let start = DispatchTime.now().uptimeNanoseconds
+                    view.updateReadingSize(size)
+                    samples.append(milliseconds(since: start))
+                }
+            }
+            let sorted = samples.sorted(), characters = (view.string as NSString).length
+            let median = sorted[sorted.count / 2]
+            print("PROBE scaling: paragraphs=\(count), UTF16=\(characters), install=\(String(format: "%.1f", install))ms, update median=\(String(format: "%.1f", median))ms max=\(String(format: "%.1f", sorted[sorted.count - 1]))ms, update per 1k UTF16=\(String(format: "%.2f", median * 1000 / Double(characters)))ms; synchronous method only")
+        }
+    }
+    // Negative result: laying out only a window around the top character (non-contiguous layout) is fast, but the
+    // character's y position is an estimate until the preceding text is laid out, so it cannot keep the reading position.
+    @Test func windowedLayoutCannotKeepTheReadingPosition() throws {
+        for count in [50, 200] {
+            let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 480))
+            let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+            let w = window(scroll, width: 600); defer { w.close() }
+            let paragraphs = (0..<count).map { "段落\($0)🙂。" + String(repeating: "日本語とEnglishの合成文章を読みます。", count: 35) }
+            view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: paragraphs, unavailable: nil)
+            let manager = try #require(view.layoutManager), container = try #require(view.textContainer), storage = try #require(view.textStorage)
+            manager.allowsNonContiguousLayout = true
+            view.restore(anchor: "paragraph-\(count / 2)", offset: 8)
+            let point = NSPoint(x: 0, y: scroll.contentView.bounds.minY - view.textContainerOrigin.y)
+            let character = manager.characterIndexForGlyph(at: manager.glyphIndex(for: point, in: container))
+            let size: CGFloat = 20
+            let text = view.string as NSString
+            let start = DispatchTime.now().uptimeNanoseconds
+            storage.beginEditing()
+            for paragraph in paragraphs {
+                let found = text.range(of: paragraph), range = NSRange(location: found.location, length: found.length + 1)
+                storage.addAttribute(.font, value: NSFont.systemFont(ofSize: size), range: range)
+            }
+            storage.endEditing()
+            container.containerSize.width = min(670 * size / 16, view.frame.width - 84)
+            let from = max(0, character - 3000)
+            manager.ensureLayout(forCharacterRange: NSRange(location: from, length: min(9000, text.length - from)))
+            let windowMilliseconds = Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
+            let estimated = manager.lineFragmentRect(forGlyphAt: manager.glyphIndexForCharacter(at: character), effectiveRange: nil).minY
+            manager.ensureLayout(for: container)
+            let exact = manager.lineFragmentRect(forGlyphAt: manager.glyphIndexForCharacter(at: character), effectiveRange: nil).minY
+            print("PROBE windowed layout: paragraphs=\(count), attributes+window layout=\(String(format: "%.1f", windowMilliseconds))ms, estimated y=\(Int(estimated)), exact y=\(Int(exact)), error=\(Int(exact - estimated))pt")
+        }
+    }
     @Test func onDeviceAvailabilityOnly() {
         print("PROBE FoundationModels availability: \(SystemLanguageModel.default.availability)")
         if let embedding = NLContextualEmbedding(language: .japanese) {
