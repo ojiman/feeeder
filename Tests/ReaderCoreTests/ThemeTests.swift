@@ -598,4 +598,26 @@ import Testing
         #expect(throws: ThemeError.self) { try store.updateTheme(id: UUID(), name: "Name", goal: "Goal", at: at) }
         #expect(theme.name == "New name" && theme.goal.isEmpty)                         // a rejected edit changes nothing
     }
+
+    @Test func aNameOnlyChangeIsSavedAndCountedAsAChange() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "Old", goal: "Same goal", at: at)
+        try store.updateTheme(id: theme.id, name: "Other", goal: "Same goal", at: at.addingTimeInterval(5))
+        #expect(theme.name == "Other" && theme.goal == "Same goal" && theme.updatedAt == at.addingTimeInterval(5))
+        try store.updateTheme(id: theme.id, name: "Other", goal: "Changed goal", at: at.addingTimeInterval(6))   // a goal-only change
+        #expect(theme.name == "Other" && theme.goal == "Changed goal" && theme.updatedAt == at.addingTimeInterval(6))
+    }
+
+    @Test func theLimitIsCheckedAfterTrimmingAndTheCounterMeasuresTheSameThing() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let padded = "  " + String(repeating: "学", count: Theme.goalLimit) + " \n "
+        #expect(Theme.goalLength(padded) == Theme.goalLimit)                         // what the sheet's counter shows
+        #expect(try store.createTheme(name: "A", goal: padded, at: at).goal.count == Theme.goalLimit)
+        #expect(Theme.goalLength(String(repeating: "学", count: Theme.goalLimit + 1)) == Theme.goalLimit + 1)
+        #expect(throws: ThemeError.goalTooLong) { try store.createTheme(name: "B", goal: String(repeating: "学", count: Theme.goalLimit + 1), at: at) }
+        #expect(throws: ThemeError.missingName) { try store.updateTheme(id: UUID(), name: " ", goal: "x", at: at) }
+        #expect(throws: ThemeError.missingTheme) { try store.updateTheme(id: UUID(), name: "N", goal: "x", at: at) }
+    }
 }

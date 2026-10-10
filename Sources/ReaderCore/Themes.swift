@@ -44,6 +44,8 @@ public enum QuestionLens: String, CaseIterable, Sendable {
 
 @Model public final class Theme {
     public static let goalLimit = 200
+    /// How long a goal is once saved (trimmed, line breaks as spaces), in characters. The sheet's counter uses this too.
+    public static func goalLength(_ text: String) -> Int { SingleLineText.name(text).count }
     @Attribute(.unique) public var id: UUID
     public var name: String
     /// What the person wants to learn in this theme: plain text, one paragraph, at most `goalLimit` characters, may be empty.
@@ -104,7 +106,7 @@ extension ReaderStore {
     /// The goal as it is saved: line breaks become spaces and the ends are trimmed. Never cut: too long is an error.
     private static func normalizedGoal(_ text: String) throws -> String {
         let goal = SingleLineText.name(text)
-        guard goal.count <= Theme.goalLimit else { throw ThemeError.goalTooLong }
+        guard Theme.goalLength(goal) <= Theme.goalLimit else { throw ThemeError.goalTooLong }
         return goal
     }
 

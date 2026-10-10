@@ -141,6 +141,6 @@ struct ThemeGoalStrip: View {
             .font(.caption).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }
         .buttonStyle(.plain).padding(.horizontal, 12).padding(.bottom, 8).background(.bar)
-        .accessibilityLabel(goal.isEmpty ? "学習ゴールを書く" : "学習ゴール: \(goal)")
+        .accessibilityLabel(goal.isEmpty ? "学習ゴールを書く" : "学習ゴール: \(goal)").accessibilityHint("名前とゴールを編集")
     }
 }

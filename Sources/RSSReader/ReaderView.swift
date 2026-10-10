@@ -418,7 +418,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil  || pickingTheme, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil || pickingTheme, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
