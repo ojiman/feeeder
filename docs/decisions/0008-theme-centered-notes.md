@@ -1,6 +1,6 @@
 # 0008 ノートをテーマ中心に改める（0004を置換）
 
-- 状態: 有効（[PR #21](https://github.com/ojiman/feeeder/pull/21)のマージでPdM承認）
+- 状態: 一部置換済み（問い・レンズ・答え・根拠は[0013](0013-goal-and-note-for-themes.md)で置換。テーマ中心・Star・未整理のStarの部分は有効）。承認: [PR #21](https://github.com/ojiman/feeeder/pull/21)のマージでPdM承認
 - 日付: 2026-10-10
 - 決定者: 本人（PdM）。内容は本人の指示による
 

@@ -33,11 +33,12 @@
 | [0005](0005-v1-product-decisions-2026-10-04.md) | V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開） | 有効 |
 | [0006](0006-original-page-and-sidebar-behavior.md) | 原文表示中の記事選択とサイドバー操作の方針 | 有効 |
 | [0007](0007-support-floor-macos-27.md) | サポート下限をmacOS 27.0にし、ビルド下限は26.6のまま据え置く | 有効 |
-| [0008](0008-theme-centered-notes.md) | ノートをテーマ中心に改める（0004の日次・週ノート部分を置換） | 有効 |
+| [0008](0008-theme-centered-notes.md) | ノートをテーマ中心に改める（0004の日次・週ノート部分を置換） | 一部置換済み（問い・答えは0013） |
 | [0009](0009-on-device-ai-principles.md) | AIは端末内の提案に限る | 有効 |
 | [0010](0010-on-device-suggestion-defaults.md) | 端末内の提案（近いテーマ・まとまり）の既定 | 有効 |
 | [0011](0011-on-device-generation-defaults.md) | 端末内の生成（テーマ名の案・問いの具体化）の既定 | 有効 |
-| [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid |
+| [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid (the questions and answers switches change under 0013) |
+| [0013](0013-goal-and-note-for-themes.md) | A learning goal and one note per theme (replaces questions and answers of 0008) | valid |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
