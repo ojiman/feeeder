@@ -31,11 +31,12 @@ struct ThemeNotePane: View {
     @Bindable var store: ReaderStore
     let themeID: UUID
     @Binding var face: ThemeFace
+    @Binding var selection: TextSelection?
     let sidebarFolded: Bool
     let onToggleSidebar: () -> Void
     let onEditGoal: () -> Void
     var body: some View {
-        NoteEditor(store: store, themeID: themeID)
+        NoteEditor(store: store, themeID: themeID, selection: $selection)
             .navigationTitle(store.theme(id: themeID)?.name ?? "テーマ")
             .navigationSubtitle("ノート")
             .safeAreaInset(edge: .top) { VStack(spacing: 0) { ThemeFacePicker(face: $face, onToggleSidebar: onToggleSidebar, sidebarFolded: sidebarFolded); ThemeGoalStrip(goal: store.theme(id: themeID)?.goal ?? "", onEdit: onEditGoal) } }

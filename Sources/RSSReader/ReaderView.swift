@@ -18,6 +18,8 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var noteLayout = NoteLayout()
+    /// Where the cursor was in each theme's note. In memory only: it is restored after a face round trip, not after a restart.
+    @State private var noteSelections: [UUID: TextSelection] = [:]
     @State private var saveError: String?
     @State private var themeMessage: String?
     @State private var pickingTheme = false
@@ -117,7 +119,7 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
+            workspaceList.navigationSplitViewColumnWidth(min: onNoteFace ? 320 : 280, ideal: onNoteFace ? 460 : 400, max: onNoteFace ? 800 : 640)
         } detail: {
             VStack(spacing: 0) {
                 if case .theme(let id) = scope, onNoteFace { readerTopBar(id) }
@@ -396,7 +398,7 @@ struct ReaderView: View {
 
     @ViewBuilder private var workspaceList: some View {
         if case .theme(let id) = scope, workspace.face(of: id) == .note {
-            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
+            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), selection: noteSelectionBinding(id), sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
     }
@@ -481,6 +483,9 @@ struct ReaderView: View {
     private var onNoteFace: Bool {
         if case .theme(let id) = scope { return workspace.face(of: id) == .note }
         return false
+    }
+    private func noteSelectionBinding(_ themeID: UUID) -> Binding<TextSelection?> {
+        Binding(get: { noteSelections[themeID] }, set: { value in noteSelections[themeID] = value })
     }
     private func toggleSidebar() {
         noteLayout.toggleSidebar()

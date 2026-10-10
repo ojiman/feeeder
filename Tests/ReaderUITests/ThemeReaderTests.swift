@@ -193,4 +193,29 @@ import Testing
         next.performClick(nil)
         try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
     }
+
+    private func noteTextView(in view: NSView) -> NSTextView? {
+        if let text = view as? NSTextView, text.isEditable { return text }
+        return view.subviews.lazy.compactMap { noteTextView(in: $0) }.first
+    }
+
+    @Test func theNotesSelectionComesBackAfterAFaceRoundTrip() async throws {
+        let h = try noteFaceHarness()
+        defer { finish(h) }
+        h.window.makeKeyAndOrderFront(nil)
+        try await settle(h.host) { noteTextView(in: h.host) != nil }
+        let text = try #require(noteTextView(in: h.host))
+        h.window.makeFirstResponder(text)
+        text.setSelectedRange(NSRange(location: 2, length: 3))
+        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
+        let control = try #require(find(NSSegmentedControl.self, in: h.host))
+        control.selectedSegment = 0; control.performClick(nil)
+        try await settle(h.host) { noteTextView(in: h.host) == nil && find(NativeArticleList.Table.self, in: h.host) != nil }
+        let back = try #require(find(NSSegmentedControl.self, in: h.host))
+        back.selectedSegment = 1; back.performClick(nil)
+        try await settle(h.host) { noteTextView(in: h.host) != nil }
+        let restored = try #require(noteTextView(in: h.host))
+        h.window.makeFirstResponder(restored)
+        try await settle(h.host) { restored.selectedRange() == NSRange(location: 2, length: 3) }
+    }
 }
