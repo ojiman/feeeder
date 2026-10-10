@@ -3,8 +3,8 @@
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-11
 - Decider: the owner (PdM, the investor) asked for the simpler product after dogfooding the N6 build, answered the open questions in chat, and delegated the remaining product decisions to the Product Owner (the agent): "decide them in line with the Unagi Reader concept". The points marked "PO" are the Product Owner's decisions. Merging this PR records the owner's approval.
-- Replaces: the theme model of [0008](0008-theme-centered-notes.md) and [0013](0013-goal-and-note-for-themes.md) in part (the goal, the name, the theme picker, the theme suggestions), [0016](0016-note-actions.md) (note actions).
-- Refines: [0012](0012-claude-handoff-from-themes.md) and [0018](0018-handoff-goal-note.md) (the hand-off becomes a function of a note), [0015](0015-article-summary-details.md) (the summary goes straight to a note), [0017](0017-note-beside-the-article.md) (the layout stays; it gets fixes).
+- Replaces: the theme model of 0008 (Git history) and 0013 (Git history) in part (the goal, the name, the theme picker, the theme suggestions), 0016 (Git history) (note actions).
+- Refines: [0012](0012-claude-handoff-from-themes.md) and 0018 (Git history) (the hand-off becomes a function of a note), [0015](0015-article-summary-details.md) (the summary goes straight to a note), [0017](0017-note-beside-the-article.md) (the layout stays; it gets fixes).
 
 ## Background
 

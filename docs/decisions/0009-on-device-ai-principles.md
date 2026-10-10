@@ -8,7 +8,7 @@
 
 本人の説明（会話での発言の要約）: 理解を深める工程でAIに手伝わせたい。アプリ内のBYOK（自分のAPIキー）も案として挙がったが、読書履歴や関心のテーマが外に出ることを利用者が警戒するのではないか。端末内のFoundationModelsを使うのがよい。対応OSは27以上でよい（[0007](0007-support-floor-macos-27.md)）。
 
-検証した事実（[spike](../verification/2026-10-10-on-device-ai-spike.md)。合成データのみ）:
+検証した事実（spike（Git履歴）。合成データのみ）:
 
 - 端末内モデルは日本語を含めて利用でき、コンテキスト窓は4096トークン（1件あたり約57トークン）。
 - LLMに一括でテーマ分けさせると純度0.57、1件ずつ振り分けさせると全件が1テーマになった。日本語の文脈埋め込みで機械的に束ねると、閾値0.15で純度0.97だった。
@@ -41,5 +41,5 @@
 ## 出典
 
 - 本人の指示（2026-10-10の開発セッション）
-- [端末内AIのspike](../verification/2026-10-10-on-device-ai-spike.md)
+- 端末内AIのspike（Git履歴）
 - Appleの公式説明（[WWDC25](https://developer.apple.com/videos/play/wwdc2025/286/)、[Apple Newsroom](https://www.apple.com/newsroom/2025/09/apples-foundation-models-framework-unlocks-new-intelligent-app-experiences/)）。費用がかからないという点はAppleの説明であり、独立した検証ではない

@@ -29,23 +29,17 @@
 | [0001](0001-fresh-library-no-prototype-migration.md) | V1は空ライブラリから始める | 有効 |
 | [0002](0002-single-supervised-writer.md) | 実装者は同時に1名 | 有効 |
 | [0003](0003-beta-data-compatibility.md) | ベータ中はデータ互換を保証せず、1.0から保証する | 有効 |
-| [0004](0004-dogfooding-keys-and-scrap.md) | Dogfooding改訂: キー操作・スクラップ・週候補 | 一部置換済み（日次・週ノート、スクラップ、週候補は0008） |
 | [0005](0005-v1-product-decisions-2026-10-04.md) | V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開） | 有効 |
 | [0006](0006-original-page-and-sidebar-behavior.md) | 原文表示中の記事選択とサイドバー操作の方針 | 有効 |
 | [0007](0007-support-floor-macos-27.md) | サポート下限をmacOS 27.0にし、ビルド下限は26.6のまま据え置く | 有効 |
-| [0008](0008-theme-centered-notes.md) | ノートをテーマ中心に改める（0004の日次・週ノート部分を置換） | 一部置換済み（問い・答えは0013） |
 | [0009](0009-on-device-ai-principles.md) | AIは端末内の提案に限る | 有効 |
-| [0010](0010-on-device-suggestion-defaults.md) | 端末内の提案（近いテーマ・まとまり）の既定 | 有効 |
-| [0011](0011-on-device-generation-defaults.md) | 端末内の生成（テーマ名の案・問いの具体化）の既定 | 有効 |
 | [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid in part; replaced by 0019 |
-| [0013](0013-goal-and-note-for-themes.md) | A learning goal and one note per theme (replaces questions and answers of 0008) | replaced in part by 0019 |
-| [0014](0014-note-migration-format.md) | The note migration: format, what stays, what pauses | valid (approved by merging the N2 plan) |
 | [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid in part; refined by 0019 |
-| [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | replaced by 0019 |
 | [0017](0017-note-beside-the-article.md) | The note beside the article | refined by 0019 |
-| [0018](0018-handoff-goal-note.md) | Claude hand-off with the goal and the note | replaced in part by 0019 |
 | [0019](0019-v1-simplification-notes.md) | V1 simplification: notes replace themes | valid (approved by merging the PR that adds it) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
+
+置き換わった記録（0004、0008、0010、0011、0013、0014、0016、0018）は、2026-10のprune PRで作業ツリーから外しました。内容と来歴はGit履歴にあります（`git log --follow -- docs/decisions/<ファイル名>`）。
 
 0004〜0006の承認根拠は各出典のマージ済みPRです。転記によって新しい承認待ちを作りません。現行の契約はPRD／Architectureを読み、理由・承認の来歴が必要なときに該当記録を参照します。

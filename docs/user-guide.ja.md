@@ -79,4 +79,4 @@ bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
 FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-fixture生成先は存在しないディレクトリを指定します。配布済みベータの固定commitで合成DBを作り、新スキーマで開いて保持を検証します。1.0出荷時にはスキーマを`VersionedSchema`として固定し、1.0リリースタグを起点とする保持検証をCIへ組み込みます。テストは合成RSS/HTMLと一時DBを使います。[PRD](specification.md)、[Architecture](architecture.md)、[今回の受入記録](verification/2026-10-07-dogfooding-acceptance.md)に仕様・検証結果・未確認事項を記録しています。Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。
+fixture生成先は存在しないディレクトリを指定します。配布済みベータの固定commitで合成DBを作り、新スキーマで開いて保持を検証します。1.0出荷時にはスキーマを`VersionedSchema`として固定し、1.0リリースタグを起点とする保持検証をCIへ組み込みます。テストは合成RSS/HTMLと一時DBを使います。[PRD](specification.md)、[Architecture](architecture.md)、今回の受入記録（Git履歴）に仕様・検証結果・未確認事項を記録しています。Reeder Classicを参考にした操作感のPdM判断、V1全体の受入は未完了です。

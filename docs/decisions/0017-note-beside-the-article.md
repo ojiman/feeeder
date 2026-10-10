@@ -3,7 +3,7 @@
 - Status: refined by [0019](0019-v1-simplification-notes.md) (the layout stays; the panel opens at once, is resizable, and the sidebar folds only when the window is narrow)
 - Date: 2026-10-10
 - Decider: the owner (PdM) proposed the screen after trying the note face (N2 to N5). The Product Owner (the agent) compared options and recommended; the PdM chose.
-- Replaces: point 4 (the screen) of [decision 0013](0013-goal-and-note-for-themes.md). Its other points stand. The screens built in N3 (the note in the middle column, the reader's top bar, the 「原文｜AI要約」 switch) are replaced by L1 in [the roadmap, Part 1d](../superpowers/plans/2026-10-10-theme-notes.md).
+- Replaces: point 4 (the screen) of decision 0013（Git履歴）. Its other points stand. The screens built in N3 (the note in the middle column, the reader's top bar, the 「原文｜AI要約」 switch) are replaced by L1 in the roadmap, Part 1d（Git履歴）.
 
 ## Background
 
@@ -31,4 +31,4 @@ With the note in the middle column the article list disappears, so moving betwee
 ## Sources
 
 - The PdM's description of the screen (2026-10-10) and the answers to three questions: the inspector, the look only first, and the review on request with an optional update, after an experiment.
-- [Decision 0013](0013-goal-and-note-for-themes.md), [0015](0015-article-summary-details.md), [0016](0016-note-actions.md), and [the AI experiment](../verification/2026-10-10-note-ai-experiment.md).
+- Decision 0013 (Git history), [0015](0015-article-summary-details.md), 0016 (Git history), and the AI experiment (Git history).

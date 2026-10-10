@@ -185,4 +185,4 @@ FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-
 
 The fixture directory must not exist yet. The script builds a synthetic database with a fixed commit of a released beta, opens it with the new schema, and checks that the data is kept. When 1.0 ships, the schema will be frozen as `VersionedSchema`, and a check that starts from the 1.0 release tag will be added to CI.
 
-Tests use synthetic RSS and HTML and temporary databases. The [specification](specification.md), the [architecture](architecture.md), and the [latest acceptance record](verification/2026-10-07-dogfooding-acceptance.md) hold the requirements, the results, and the open items. The final acceptance of the whole V1, and the product owner's decision on the feel of the controls, are not finished.
+Tests use synthetic RSS and HTML and temporary databases. The [specification](specification.md), the [architecture](architecture.md), and the latest acceptance record (Git history) hold the requirements, the results, and the open items. The final acceptance of the whole V1, and the product owner's decision on the feel of the controls, are not finished.
