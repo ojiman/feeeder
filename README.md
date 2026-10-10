@@ -2,7 +2,7 @@
 
 A fast, keyboard-driven RSS reader for macOS that helps you go from skimming to understanding.
 
-Skim hundreds of articles in a smooth three-column reader. Star what catches your eye. Later, gather those stars into themes, ask yourself questions, and answer them in your own words. Everything stays on your Mac.
+Skim hundreds of articles in a smooth three-column reader. Star what catches your eye. Later, gather those stars into themes, state what you want to learn, and write your own note. Everything stays on your Mac.
 
 > **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is currently in Japanese only; a language setting is planned before the public release. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
 
@@ -11,20 +11,20 @@ Skim hundreds of articles in a smooth three-column reader. Star what catches you
 Most readers stop at "read" and "starred". Stars pile up and are never looked at again. Feeeder keeps the reading fast and adds the step after it: turning what you starred into something you understand.
 
 - **Read fast.** Three columns, Vim-style keys (`j` / `k`), and a UI built so that scrolling and typing do not wait on a reload, a network request, or AI.
-- **Dig deeper later.** Star an article, put it into one or more themes, and write your current understanding of each theme. Pose questions with lenses (question the premise, exceptions and counterarguments, conditions, trade-offs, your own case), answer them yourself, and attach the articles you rely on as evidence.
-- **Keep it yours.** No account, no backend, no sync. Your subscriptions, articles, themes, questions, and answers live in a local database.
+- **Dig deeper later.** Star an article, put it into one or more themes, and write what you want to learn (a goal) and keep one plain-text note per theme in your own words.
+- **Keep it yours.** No account, no backend, no sync. Your subscriptions, articles, themes, and notes live in a local database.
 
 ## What it does today
 
 - RSS/Atom subscriptions with one level of folders, automatic refresh (on launch, when the app returns, and every 30 minutes while it runs), and offline reading of stored articles.
 - Reading: feed-provided body when available, best-effort extraction otherwise, and the feed summary plus a link to the original when neither is available. It labels which one you are looking at and does not try to bypass access restrictions.
 - Keyboard: `j` / `k` move, `m` read/unread, `s` star, `t` add to a theme, `b` open in your browser, `v` open the original page inside the app, `Esc` back to reading.
-- Themes: group articles, write "current understanding", pose questions, answer them, and link evidence. Unsorted stars are collected in one place.
-- On-device AI suggestions (optional, can be turned off in Settings): nearby themes for an article, suggested groupings of unsorted stars, theme-name ideas, and sharper phrasings of a question. Suggestions run on your Mac only. **AI never writes your answers or your current understanding**, and nothing is applied until you choose it.
+- Themes: group articles, write a learning goal and one note per theme. Unsorted stars are collected in one place. Questions and answers from earlier versions move into the note the first time this version opens your library.
+- On-device AI suggestions (optional, can be turned off in Settings): nearby themes for an article, suggested groupings of unsorted stars, and theme-name ideas. Suggestions run on your Mac only. **AI never writes your note**, and nothing is applied until you choose it.
 - Images: favicons and article thumbnails, best effort, with a bounded cache.
 - Retention: article bodies are kept for 30 days by default (7 / 30 / 90 / 365 in Settings). What you recorded in themes (title, link, saved summary, your writing) is never deleted automatically.
 
-Claude Desktop hand-off: from a theme, a toolbar button 「Claudeで開く…」 (Open in Claude…) opens a review screen. You choose the sources, the output language, whether to include the theme's questions, and whether to include your own answers (off by default). You see the exact text first, confirm the attachment in Claude, and send it yourself. Nothing is sent automatically.
+Claude Desktop hand-off: from a theme, a toolbar button 「Claudeで開く…」 (Open in Claude…) opens a review screen. You choose the sources and the output language. (The theme's note can not be included yet; that comes in a later version.) You see the exact text first, confirm the attachment in Claude, and send it yourself. Nothing is sent automatically.
 
 ## Try it
 
@@ -49,7 +49,7 @@ The app is ad hoc signed for local use. It is not signed with a Developer ID and
 
 **Will an update break my library?** During the beta, compatibility between versions is **not guaranteed**: an update can leave the library unreadable, and the app shows an error rather than deleting or recreating it. Back up the `Feeeder` folder before updating (see the [user guide](docs/user-guide.md#back-up-the-library-by-hand)). From 1.0 onward, the policy is to preserve saved data across updates.
 
-**Does it work without AI?** Yes. All features, including creating and editing themes, questions, and answers, work with AI turned off. If the on-device language assets are not installed, the app does not download them; suggestions simply do not appear.
+**Does it work without AI?** Yes. All features, including creating and editing themes and notes, work with AI turned off. If the on-device language assets are not installed, the app does not download them; suggestions simply do not appear.
 
 ## Status
 

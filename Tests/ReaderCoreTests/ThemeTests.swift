@@ -225,6 +225,42 @@ import Testing
         #expect(reopened.themes.map(\.id) == [second.id] && reopened.themeQuestions.count == 1)
     }
 
+    @Test func aNoteIsStoredExactlyAsTypedAndKeptAfterReopen() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let text = "# 見出し\r\n  本文の行  \n\n- 箇条書き\n"
+        let themeID = try {
+            let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+            let theme = try store.createTheme(name: "Note", at: at)
+            try store.saveNote(themeID: theme.id, text: text, at: at.addingTimeInterval(3))
+            #expect(theme.note == text && theme.updatedAt == at.addingTimeInterval(3))
+            let stamp = theme.updatedAt
+            try store.saveNote(themeID: theme.id, text: text, at: at.addingTimeInterval(9))      // no change, no new stamp
+            #expect(theme.updatedAt == stamp)
+            return theme.id
+        }()
+        #expect(try ReaderStore(url: library.url, now: at).theme(id: themeID)?.note == text)
+    }
+
+    @Test func savingANoteForAMissingThemeIsAnErrorNotASilentDrop() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        #expect(throws: ThemeError.self) { try store.saveNote(themeID: UUID(), text: "書いたこと", at: at) }
+        let theme = try store.createTheme(name: "Gone", at: at)
+        try store.deleteTheme(id: theme.id)
+        #expect(throws: ThemeError.self) { try store.saveNote(themeID: theme.id, text: "消えたテーマへ", at: at) }
+    }
+
+    @Test func aLongNoteSavesAndItsTimeIsRecorded() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "Long", at: at)
+        let long = String(repeating: "長いノートの一行です。\n", count: 10_000)                 // about 100,000 characters
+        let start = ContinuousClock.now
+        try store.saveNote(themeID: theme.id, text: long, at: at)
+        print("note-save 100k characters:", ContinuousClock.now - start)                       // recorded in the verification file, not a gate
+        #expect(theme.note.count == long.count)
+    }
+
     final class SaveGate { var failNext = false }
 
     private func gatedStore(_ library: TestLibrary, _ gate: SaveGate) throws -> ReaderStore {
@@ -262,6 +298,15 @@ import Testing
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.saveUnderstanding(themeID: theme.id, text: "失われる理解", at: at) }
         #expect(store.theme(id: theme.id)?.understanding == "")
+        gate.failNext = true
+        #expect(throws: (any Error).self) { try store.saveNote(themeID: theme.id, text: "失われるノート", at: at) }
+        #expect(store.theme(id: theme.id)?.note == "")
+        try store.saveNote(themeID: theme.id, text: "再試行のノート", at: at)
+        #expect(store.theme(id: theme.id)?.note == "再試行のノート")
+        gate.failNext = true
+        let beforeMigration = store.themeQuestions.count
+        #expect(throws: (any Error).self) { try store.migrateLegacyThemeContent(at: at) }
+        #expect(store.themeQuestions.count == beforeMigration && store.theme(id: theme.id)?.note == "再試行のノート")
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.setEvidence(questionID: question.id, articleIDs: [ids[0]], at: at) }
         #expect(store.themeQuestions.first { $0.id == question.id }?.evidenceArticleIDs == [ids[0], ids[1]])
@@ -388,6 +433,9 @@ import Testing
         try store.saveUnderstanding(themeID: themeID, text: "新しい理解", at: at)
         #expect(store.theme(id: themeID)?.understanding == "新しい理解")
         induceFailedRecovery()
+        try store.saveNote(themeID: themeID, text: "回復後のノート", at: at)
+        #expect(store.theme(id: themeID)?.note == "回復後のノート")
+        induceFailedRecovery()
         try store.addArticle(ids[2], toTheme: themeID, at: at)
         #expect(store.themeArticleCount(themeID: themeID) == 3)
         induceFailedRecovery()
@@ -428,6 +476,10 @@ import Testing
         induceFailedRecovery()
         let withGoal = try store.createTheme(name: "ゴールつき", goal: "回復後のゴール", at: at)
         #expect(store.theme(id: withGoal.id)?.goal == "回復後のゴール")
+        try store.addQuestion(themeID: withGoal.id, lens: .custom, text: "移行する問い", at: at)
+        induceFailedRecovery()
+        #expect(try store.migrateLegacyThemeContent(at: at).themes == 1)
+        #expect(store.theme(id: withGoal.id)?.note == "# 移行する問い\n")
     }
 
     @Test func recordKeepsTheTitleAndURLFromTheTimeOfAdding() throws {

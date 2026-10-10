@@ -50,6 +50,9 @@ public enum QuestionLens: String, CaseIterable, Sendable {
     public var name: String
     /// What the person wants to learn in this theme: plain text, one paragraph, at most `goalLimit` characters, may be empty.
     public var goal: String = ""
+    /// The theme's one note: plain text, `#` lines are headings. Stored exactly as typed; no length limit.
+    public var note: String = ""
+    /// Retired by the note (decision 0013). Kept in the schema until the cleanup so an unmigrated library still opens; the migration empties it.
     public var understanding: String
     public var createdAt: Date
     public var updatedAt: Date
@@ -147,6 +150,14 @@ extension ReaderStore {
         try reloadIfNeeded()
         guard let theme = theme(id: themeID), theme.understanding != text else { return }
         theme.understanding = text; theme.updatedAt = at
+        try save()
+    }
+    /// Typing path: saves without reloading so the editor is not rebuilt on every change. The text is stored exactly as typed.
+    public func saveNote(themeID: UUID, text: String, at: Date) throws {
+        try reloadIfNeeded()
+        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
+        guard theme.note != text else { return }
+        theme.note = text; theme.updatedAt = at
         try save()
     }
     public func deleteTheme(id: UUID) throws {

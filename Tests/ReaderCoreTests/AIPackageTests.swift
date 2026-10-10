@@ -224,6 +224,16 @@ import Testing
         #expect(throws: (any Error).self) { try review.validated(at: at) }
     }
 
+    @Test func aReviewBuiltFromOldQuestionsBecomesInvalidAfterTheyMoveIntoTheNote() throws {
+        let at = Date.now
+        let (library, store, theme, link, _, _) = try themeFixture(at); defer { library.cleanup() }
+        let review = AIPackageReview(store: store, now: { at })
+        try review.build(selections: [.themeArticle(link.key)], theme: AIThemeRequest(themeID: theme.id, includeQuestions: true, includeAnswers: true), language: "English", at: at)
+        _ = try review.validated(at: at)
+        try store.migrateLegacyThemeContent(at: at)
+        #expect(throws: (any Error).self) { try review.validated(at: at) }
+    }
+
     @Test func anAnswerIsNotWatchedWhenAnswersAreNotIncluded() throws {
         let at = Date.now
         let (library, store, theme, link, answered, _) = try themeFixture(at); defer { library.cleanup() }

@@ -39,6 +39,7 @@
 | [0011](0011-on-device-generation-defaults.md) | 端末内の生成（テーマ名の案・問いの具体化）の既定 | 有効 |
 | [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid (the questions and answers switches change under 0013) |
 | [0013](0013-goal-and-note-for-themes.md) | A learning goal and one note per theme (replaces questions and answers of 0008) | valid |
+| [0014](0014-note-migration-format.md) | The note migration: format, what stays, what pauses | valid (approved by merging the N2 plan) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
