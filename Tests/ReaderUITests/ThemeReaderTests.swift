@@ -484,6 +484,9 @@ private struct StubAssistant: ThemeAssistant {
         defer { t.finish(h) }
         try await t.settle(h.host) { t.panelButtons(in: h).count >= 2 }                    // the chevrons are there
         pumpRunLoop(0.3)
+        let width = h.window.contentView?.bounds.width ?? 1_240
+        let narrow = t.buttons(in: h.host).filter { !($0 is NSPopUpButton) }.map { $0.convert($0.bounds, to: nil) }.filter { $0.minX > width - 420 && $0.width > 0 && $0.width <= 20 }
+        #expect(!narrow.isEmpty)                                                          // the lookup works: the chevrons are found
         #expect(reviewButton(h) == nil)
     }
 }

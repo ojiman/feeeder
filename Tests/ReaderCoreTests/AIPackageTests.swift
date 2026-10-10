@@ -210,6 +210,9 @@ import Testing
         #expect(throws: (any Error).self) { try review.validated(at: at.addingTimeInterval(86_401)) }
         try review.build(selections: [], theme: request(theme, note: false), language: "English", at: at)    // the goal alone is enough too
         #expect(review.package?.sources.isEmpty == true)
+        let goalOnly = try #require(review.package?.text)
+        #expect(!goalOnly.contains("記事データを使い") && !goalOnly.contains("ノートで既にできていること") && goalOnly.contains("学習ゴールに照らして"))   // no request about articles or a note that are not there
+        #expect(AIPackageError.empty.localizedDescription.contains("ゴール"))                      // the message does not insist on an article
     }
 
     @Test func aReviewBecomesInvalidWhenWhatItContainsChanges() throws {
