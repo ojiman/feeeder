@@ -17,6 +17,7 @@ struct ReaderView: View {
     @State private var pageForward = true
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var noteLayout = NoteLayout()
     @State private var saveError: String?
     @State private var themeMessage: String?
     @State private var pickingTheme = false
@@ -49,6 +50,10 @@ struct ReaderView: View {
             initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
         }
         _workspace = State(initialValue: initialWorkspace)
+        if case .theme(let id) = initialScope, initialWorkspace.face(of: id) == .note {
+            var layout = NoteLayout(); layout.enterNoteFace()
+            _noteLayout = State(initialValue: layout); _columnVisibility = State(initialValue: .doubleColumn)
+        }
     }
 
     private var selectedExpiry: Date? {
@@ -90,6 +95,16 @@ struct ReaderView: View {
 
     var body: some View {
         reader
+
+        .onChange(of: onNoteFace) { _, on in
+            if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
+            applyColumns()
+        }
+        .onChange(of: columnVisibility) { _, visibility in
+            // The window may change the columns by itself; keep the layout in step (only while on the note face).
+            guard onNoteFace else { return }
+            noteLayout.follow(visibility == .all ? .all : .doubleColumn)
+        }
         .onChange(of: scope) { old, new in
             if let old {
                 scrollMemory.state.select(selection)
@@ -388,7 +403,7 @@ struct ReaderView: View {
 
     @ViewBuilder private var workspaceList: some View {
         if case .theme(let id) = scope, workspace.face(of: id) == .note {
-            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
+            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
     }
@@ -447,6 +462,19 @@ struct ReaderView: View {
         }
     }
 
+    private var onNoteFace: Bool {
+        if case .theme(let id) = scope { return workspace.face(of: id) == .note }
+        return false
+    }
+    private func toggleSidebar() {
+        noteLayout.toggleSidebar()
+        applyColumns()
+    }
+    private func applyColumns() {
+        let target: NavigationSplitViewVisibility = noteLayout.columns == .all ? .all : .doubleColumn
+        guard columnVisibility != target else { return }
+        withAnimation(reduceMotion ? nil : .default) { columnVisibility = target }
+    }
     private func faceBinding(_ themeID: UUID) -> Binding<ThemeFace> {
         Binding(get: { workspace.face(of: themeID) }, set: { setFace($0, of: themeID) })
     }
