@@ -24,7 +24,7 @@ Most readers stop at "read" and "starred". Stars pile up and are never looked at
 - Images: favicons and article thumbnails, best effort, with a bounded cache.
 - Retention: article bodies are kept for 30 days by default (7 / 30 / 90 / 365 in Settings). What you recorded in themes (title, link, saved summary, your writing) is never deleted automatically.
 
-Claude Desktop hand-off (sending a theme's articles to Claude for you to review and send yourself) is being reconnected and has no entry point in the current build.
+Claude Desktop hand-off: from a theme, a toolbar button 「Claudeで開く…」 (Open in Claude…) opens a review screen. You choose the sources, the output language, whether to include the theme's questions, and whether to include your own answers (off by default). You see the exact text first, confirm the attachment in Claude, and send it yourself. Nothing is sent automatically.
 
 ## Try it
 
@@ -58,7 +58,6 @@ This is a beta under active development.
 - Final product acceptance on a real Mac is not complete.
 - CI builds and tests on macOS 26.6, which covers only the build floor. The macOS 27.0 support floor is exercised only on the maintainer's local machine. Several behaviors are unverified: input methods (IME), VoiceOver, Reduce Motion, and long-running use. See the [verification records](docs/verification/) for what has and has not been checked.
 - The app's labels and messages are Japanese only today. A language setting is planned before the public release, but it is not implemented yet.
-- Not yet in this build: Claude Desktop hand-off from themes.
 
 ## Documentation
 

@@ -62,7 +62,9 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 3.2 Claudeハンドオフ
 
-テーマからのレビューで、テーマに記録した要約（`themeArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、問いと自分の答えを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。実装は段階的で、置き換えの間は入口が無く、テーマからの入口へ付け替える。
+テーマからのレビューで、テーマに記録した要約（`themeArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、問いと自分の答えを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。入口はテーマ画面のツールバーのボタン。
+
+**テーマの内容（PR 8）**: パッケージは任意で`AIThemeContext`（テーマ名・問い・レンズ・本人の答え・根拠の記事のタイトルとURL）を持ち、本文に`BEGIN_THEME`〜`END_THEME`、`BEGIN_QUESTION`〜`END_QUESTION`（IDつき）として入る。答えは本人がオンにしたときだけ入る（初期はオフ）。利用者の文章・記事本文はデータで、マーカーに似た行があってもそのまま保持する。`AIPackageReview.reconcile`は`aiThemeContext`で現在の内容を作り直し、確認時と等しくなければ`changed`にする。管理コピーのmetadataは`themeID`と`questionIDs`（任意項目なので旧コピーも読める）を持ち、テーマ・問い・出典のいずれかが削除されたら、`deleteTheme`／`removeArticle`／`deleteQuestion`が呼ぶ`onContentPolicyChanged`経由の整理でコピーを削除する。答えの編集ではコピーを削除しない（時点のスナップショット。24時間の期限は変わらない）。[決定0012](decisions/0012-claude-handoff-from-themes.md)。
 
 `ClaudeLink`は[公式案内](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link)にある`claude://cowork/new`の`q`へ短い依頼文、`file`へ生成TXTの絶対パスをURLエンコードして渡す。本文はUTF-8 TXT内に置き、起動URLへ詰め込まない（`q`は約14,000文字で切り詰められる）。通常Chatが利用者の希望だが、自動添付は未検証のため現行経路はCowork。通常Chat用の起動リンクに未文書化のファイル添付パラメータがあるとは仮定せず、推測したパラメータを実装しない。起動処理とパッケージ生成は分離する。
 
