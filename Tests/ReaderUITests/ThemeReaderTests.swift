@@ -300,6 +300,27 @@ private struct StubAssistant: ThemeAssistant {
         try await t.settle(h.host) { theme.note == "前の文章" && noteView(h)?.string == "前の文章" }
     }
 
+    /// The card is tall in a narrow panel. It must not push the panel's own header (or the rest of the window) out of view:
+    /// the chevrons stay where they were, inside the window.
+    @Test func aLongSummaryCardDoesNotPushThePanelOutOfTheWindow() async throws {
+        let long = String(repeating: "これは長い要約の文です。", count: 12)
+        let (h, model) = try make(answer: long)
+        defer { t.finish(h) }
+        try await showFirstArticle(h)
+        try await t.settle(h.host) { t.panelButtons(in: h)[2].isEnabled }
+        let before = t.panelButtons(in: h)[0].convert(t.panelButtons(in: h)[0].bounds, to: nil)
+        t.panelButtons(in: h)[2].performClick(nil)
+        await waitFor(model, h) { if case .ready = $0 { return true } else { return false } }
+        try await t.settle(h.host) { t.panelButtons(in: h).count == 6 }
+        pumpRunLoop(0.3)
+        let height = h.window.contentView?.bounds.height ?? 800
+        let chevron = t.panelButtons(in: h)[0].convert(t.panelButtons(in: h)[0].bounds, to: nil)
+        #expect(abs(chevron.minY - before.minY) < 1, "the header moved by \(chevron.minY - before.minY)")
+        #expect(chevron.maxY <= height && chevron.minY >= 0)
+        let buttons = t.panelButtons(in: h).map { $0.convert($0.bounds, to: nil) }
+        #expect(buttons.allSatisfy { $0.minY >= 0 && $0.maxY <= height }, "a button is outside the window")
+    }
+
     @Test func aFailureOffersToTryAgainAndMovingToAnotherArticleClearsTheCard() async throws {
         let (h, model) = try make(answer: nil)
         defer { t.finish(h) }
@@ -374,6 +395,22 @@ private struct StubAssistant: ThemeAssistant {
         try await t.settle(off.host) { noteView(off) != nil }
         pumpRunLoop(0.2)
         #expect(bottomRow(off).isEmpty)
+    }
+
+    /// Same rule as for the summary card: a tall card must not push the panel's header or the window's content out of view.
+    @Test func aLongRewriteCardDoesNotPushThePanelOutOfTheWindow() async throws {
+        let (h, model) = try make(answer: String(repeating: "これは長い書き直しの文です。", count: 14))
+        defer { t.finish(h) }
+        try await t.settle(h.host) { bottomRow(h).count == 2 && t.panelButtons(in: h).count >= 2 }
+        try placeCursor(h, in: "元の文章")
+        let before = t.panelButtons(in: h)[0].convert(t.panelButtons(in: h)[0].bounds, to: nil)
+        try #require(bottomRow(h).first).performClick(nil)                               // わかりやすく
+        await waitForCard(model, h)
+        pumpRunLoop(0.3)
+        let height = h.window.contentView?.bounds.height ?? 800
+        let after = t.panelButtons(in: h).map { $0.convert($0.bounds, to: nil) }
+        #expect(abs((after.first?.minY ?? -1) - before.minY) < 1, "the header moved")
+        #expect(after.allSatisfy { $0.minY >= 0 && $0.maxY <= height }, "a button is outside the window")
     }
 
     @Test func aRewriteReplacesOnlyTheSectionsTextAndUndoBringsItBack() async throws {

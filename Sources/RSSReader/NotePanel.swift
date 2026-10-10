@@ -30,7 +30,12 @@ struct NotePanel: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            if aiEnabled, let summaries { NoteSummarySection(model: summaries, article: article, adopted: summaryAdopted, onRequest: onSummarize, onAdopt: onAdoptSummary) }
+            if aiEnabled, let summaries {
+                // The card keeps the height its text needs; the editor below takes what is left. (A text with `fixedSize` here once made the
+                // panel's minimum height larger than the window, which pushed the whole window's content up.)
+                NoteSummarySection(model: summaries, article: article, adopted: summaryAdopted, onRequest: onSummarize, onAdopt: onAdoptSummary)
+                    .layoutPriority(1)
+            }
             NoteEditor(store: store, themeID: themeID, selection: $selection)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -109,7 +114,7 @@ struct NoteSummarySection: View {
         case .ready(let summary):
             VStack(alignment: .leading, spacing: 6) {
                 Label("AIによる要約", systemImage: "sparkles").font(.caption.weight(.semibold))
-                Text(summary.text).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                Text(summary.text).font(.callout).textSelection(.enabled)
                 if summary.wasCut { Text("長い記事のため、最初の約3,000文字から要約しました。").font(.caption).foregroundStyle(.secondary) }
                 if summary.fromThemeSummary { Text("テーマに記録したRSS要約から作りました。").font(.caption).foregroundStyle(.secondary) }
                 Text("AIによる案です。誤りを含むことがあります。原文で確かめてください。採用は ⌘Z で戻せます。").font(.caption).foregroundStyle(.secondary)

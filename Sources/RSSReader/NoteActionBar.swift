@@ -60,7 +60,7 @@ struct NoteActionPanel: View {
         case .ready(let card):
             VStack(alignment: .leading, spacing: 6) {
                 Text(card.action == .clearer ? "AIによる書き直しの案" : "AIによる要点の案").font(.caption.weight(.semibold))
-                Text(card.answer).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                Text(card.answer).font(.callout).textSelection(.enabled)
                 if card.wasCut { Text("長い文章のため、最初の約1,300文字から作りました。").font(.caption).foregroundStyle(.secondary) }
                 Text(card.action == .clearer ? "AIによる案です。誤りを含むことがあります。元の文章は ⌘Z で戻せます。" : "AIによる案です。誤りを含むことがあります。")
                     .font(.caption).foregroundStyle(.secondary)
