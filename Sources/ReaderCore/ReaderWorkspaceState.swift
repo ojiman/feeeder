@@ -13,18 +13,13 @@ public struct ReaderWorkspaceState {
     private var themeFaces: [UUID: ThemeFace] = [:]
     public init() {}
     public func face(of themeID: UUID) -> ThemeFace { themeFaces[themeID] ?? .articles }
-    /// A theme's note face is not a reading surface: j/k, the article list and scroll memory do not apply.
-    public func isReading(_ scope: ReaderWorkspaceScope) -> Bool {
-        if case .theme(let id) = scope { return face(of: id) == .articles }
-        return true
-    }
     public mutating func rememberReader(_ state: ReaderSelectionState, in scope: ReaderWorkspaceScope) {
-        guard isReading(scope) else { return }
         readers[scope] = state
     }
-    /// Leaving the articles face saves the reader first; leaving the note face never overwrites it.
+    /// A theme's two faces share one reader (the selected article and the scroll memory), so an article chosen on the note face
+    /// is still the one shown after going back to the articles face. Leaving either face saves it.
     public mutating func switchFace(of themeID: UUID, to face: ThemeFace, rememberingReader state: ReaderSelectionState) {
-        if self.face(of: themeID) == .articles { readers[.theme(themeID)] = state }
+        readers[.theme(themeID)] = state
         themeFaces[themeID] = face
     }
     public func reader(in scope: ReaderWorkspaceScope) -> ReaderSelectionState { readers[scope] ?? ReaderSelectionState() }

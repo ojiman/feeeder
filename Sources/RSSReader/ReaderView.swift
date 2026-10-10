@@ -91,7 +91,7 @@ struct ReaderView: View {
     var body: some View {
         reader
         .onChange(of: scope) { old, new in
-            if let old, workspace.isReading(old) {
+            if let old {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
@@ -131,7 +131,7 @@ struct ReaderView: View {
             // Always present, disabled when no article is open. If these buttons came and went with the selection,
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
-                let article = workspace.isReading(scope ?? .all) ? selectedArticle : nil
+                let article = selectedArticle
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
@@ -415,7 +415,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil || pickingTheme, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil || pickingTheme, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -457,13 +457,10 @@ struct ReaderView: View {
         enterScope()
     }
     private func enterScope() {
-        if workspace.isReading(workspace.scope) {
-            let restored = workspace.reader(in: workspace.scope)
-            scrollMemory.state = restored; selectArticle(restored.selectedArticleID); listFocused = true
-        } else {
-            if originalPage.url != nil { closeOriginal() }
-            columnVisibility = .all; listFocused = false
-        }
+        let restored = workspace.reader(in: workspace.scope)
+        scrollMemory.state = restored; selectArticle(restored.selectedArticleID)
+        // The note face has no article list: the focus stays where the person puts it (the note, the reader).
+        if case .theme(let id) = workspace.scope, workspace.face(of: id) == .note { listFocused = false } else { listFocused = true }
     }
 
     private func move(_ offset: Int) {
