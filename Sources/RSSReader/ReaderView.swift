@@ -20,12 +20,11 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var noteLayout = NoteLayout()
-    @State private var paneMode = ReaderPaneMode.original
     /// The note editor's text view, for edits that can be undone with ⌘Z.
     @State private var noteHandle = NoteTextHandle()
     /// The summary that was adopted into the note, so its button reads 「採用しました」 until a new summary is made.
     @State private var adoptedSummary: ArticleSummaryModel.Summary?
-    /// Where the cursor was in each theme's note. In memory only: it is restored after a face round trip, not after a restart.
+    /// Where the cursor was in each theme's note. In memory only: it is restored when the note is closed and opened again, not after a restart.
     @State private var noteSelections: [UUID: TextSelection] = [:]
     @State private var saveError: String?
     @State private var themeMessage: String?
@@ -47,7 +46,7 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles,
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false,
          suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil, noteActions: NoteActionModel? = nil,
          defaults: UserDefaults = .standard) {
         _aiEnabled = AppStorage(wrappedValue: true, OnDeviceAISetting.key, store: defaults)   // tests pass their own store
@@ -58,11 +57,8 @@ struct ReaderView: View {
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
         initialWorkspace.scope = initialScope
-        if case .theme(let id) = initialScope, initialThemeFace != .articles {
-            initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
-        }
+        if case .theme(let id) = initialScope, initialNoteOpen { initialWorkspace.setNote(open: true, of: id) }
         _workspace = State(initialValue: initialWorkspace)
-
     }
 
     private var selectedExpiry: Date? {
@@ -104,20 +100,17 @@ struct ReaderView: View {
 
     var body: some View {
         reader
-        .onAppear { if onNoteFace { noteLayout.enterNoteFace(); applyColumns() } }
+        .onAppear { if noteOpen { noteLayout.noteOpened(); applyColumns() } }
         .onChange(of: selection) { _, _ in summaries?.reset(); adoptedSummary = nil }
-        .onChange(of: showsSummary) { _, shown in
-            if shown { if originalPage.url != nil { closeOriginal() } } else { summaries?.reset(); adoptedSummary = nil }
-        }
-        .onChange(of: aiEnabled) { _, on in if !on { noteActions?.reset() } }
-        .onChange(of: onNoteFace) { _, on in
-            noteActions?.reset()
-            if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
+        .onChange(of: aiEnabled) { _, on in if !on { noteActions?.reset(); summaries?.reset() } }
+        .onChange(of: noteOpen) { _, open in
+            noteActions?.reset(); summaries?.reset(); adoptedSummary = nil
+            if open { noteLayout.noteOpened() } else { noteLayout.noteClosed() }
             applyColumns()
         }
         .onChange(of: columnVisibility) { _, visibility in
-            // The window may change the columns by itself; keep the layout in step (only while on the note face).
-            guard onNoteFace else { return }
+            // The window may change the columns by itself; keep the layout in step (only while the note is open).
+            guard noteOpen else { return }
             noteLayout.follow(visibility == .all ? .all : .doubleColumn)
         }
         .onChange(of: scope) { old, new in
@@ -135,16 +128,14 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            workspaceList.navigationSplitViewColumnWidth(min: onNoteFace ? 320 : 280, ideal: onNoteFace ? 460 : 400, max: onNoteFace ? 800 : 640)
+            articleList.id(scope).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
-            VStack(spacing: 0) {
-                if case .theme(let id) = scope, onNoteFace { readerTopBar(id) }
-                readerColumn
-            }
-            .frame(minWidth: 360)
+            originalColumn.frame(minWidth: 360)
+                .inspector(isPresented: noteOpenBinding) { notePanel }
+                .inspectorColumnWidth(min: 300, ideal: 380, max: 640)
         }
         .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 930, minHeight: 600)
+        .frame(minWidth: 960, minHeight: 600)
         .tint(.orange)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -158,6 +149,10 @@ struct ReaderView: View {
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
                 let article = selectedArticle
+                Button { toggleNote() } label: { Image(systemName: noteOpen ? "note.text.badge.plus" : "note.text") }
+                    .keyboardShortcut("i", modifiers: [.option, .command])
+                    .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
+                    .disabled(themeScopeID == nil)
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
@@ -209,8 +204,6 @@ struct ReaderView: View {
             if let id = selection { await loading.load(articleID: id) }
             else { loading.clear() }
         }
-        .onKeyPress("j") { guard onNoteFace, shortcutsEnabled else { return .ignored }; move(1); return .handled }   // the articles face has its own on the list
-        .onKeyPress("k") { guard onNoteFace, shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled
@@ -396,10 +389,16 @@ struct ReaderView: View {
         }
         .safeAreaInset(edge: .top) {
             if case .theme(let id) = scope {
-                VStack(spacing: 0) {
-                    ThemeFacePicker(face: faceBinding(id))
+                HStack(spacing: 0) {
+                    // While the note is open the sidebar is folded; this button brings it back (and folds it again).
+                    if noteOpen {
+                        Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
+                            .buttonStyle(.borderless).padding(.leading, 12)
+                            .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
+                            .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
+                    }
                     ThemeGoalStrip(goal: store.theme(id: id)?.goal ?? "", onEdit: { themeEditor = ThemeEditorTarget(themeID: id) })
-                }
+                }.background(.bar)
             }
             else if scope == .unfiledStars, aiEnabled, let suggestions, !suggestions.clusters.groups.isEmpty {
                 ClusterSuggestionBar(store: store, model: suggestions, onCreated: { themeMessage = $0 })
@@ -414,48 +413,36 @@ struct ReaderView: View {
         }
     }
 
-    @ViewBuilder private var workspaceList: some View {
-        if case .theme(let id) = scope, workspace.face(of: id) == .note {
-            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), selection: noteSelectionBinding(id), noteActions: noteActions, handle: noteHandle, aiEnabled: aiEnabled,
-                          onAdopted: { range in DispatchQueue.main.async { noteHandle.textView?.setSelectedRange(range) } }, onError: { saveError = $0 }, sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
-        }
-        else { articleList.id(scope) }
+    /// The note beside the reader (the inspector). It is there only inside a theme.
+    @ViewBuilder private var notePanel: some View {
+        if let id = themeScopeID {
+            NotePanel(store: store, themeID: id, selection: noteSelectionBinding(id), handle: noteHandle, aiEnabled: aiEnabled,
+                      noteActions: noteActions, summaries: summaries, article: selectedArticle,
+                      summaryAdopted: { if case .ready(let value) = summaries?.state, value == adoptedSummary { return true }; return false }(),
+                      canPrevious: ThemeArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
+                      canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
+                      onPrevious: { guard panelMayMove else { return }; perform(.previous) },
+                      onNext: { guard panelMayMove else { return }; perform(.next) },
+                      onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) },
+                      onSummarize: { if let article = selectedArticle { adoptedSummary = nil; summaries?.request(articleID: article.id, themeID: id) } },
+                      onAdoptSummary: { summary in if let article = selectedArticle { adopt(summary, article: article, themeID: id) } },
+                      onNoteAdopted: { range in DispatchQueue.main.async { noteHandle.textView?.setSelectedRange(range) } },
+                      onError: { saveError = $0 })
+            .id(id)
+        } else { EmptyView() }
     }
 
-    /// The reader, with the original page sliding over it.
-    @ViewBuilder private var readerColumn: some View {
-        if showsSummary, let summaries, case .theme(let themeID) = scope {
-            summaryPane(summaries, themeID: themeID)
-        } else { originalColumn }
-    }
-
-    /// The summary card replaces the article only on the note face, with AI on, when the person chose 「AI要約」.
-    private var showsSummary: Bool { onNoteFace && aiEnabled && paneMode == .summary }
-
-    @ViewBuilder private func summaryPane(_ summaries: ArticleSummaryModel, themeID: UUID) -> some View {
-        if let article = selectedArticle {
-            // A summary made for another article is never shown or adopted here, whatever the model still holds.
-            let shown: ArticleSummaryModel.State = { if case .ready(let value) = summaries.state, value.articleID != article.id { return .idle }; return summaries.state }()
-            let ready: ArticleSummaryModel.Summary? = { if case .ready(let value) = shown { return value }; return nil }()
-            ArticleSummaryCard(state: shown, articleTitle: article.title, adopted: ready != nil && ready == adoptedSummary,
-                               onRequest: { adoptedSummary = nil; summaries.request(articleID: article.id, themeID: themeID) },
-                               onCancel: { summaries.cancel() },
-                               onAdopt: { adopt($0, article: article, themeID: themeID) },
-                               onShowOriginal: { paneMode = .original })
-        } else {
-            VStack(spacing: 10) {
-                Label("AIによる要約", systemImage: "sparkles").font(.headline)
-                Text("上のバーで記事を選ぶと、ここで要約を頼めます。").font(.callout).foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(nsColor: .textBackgroundColor))
-        }
+    /// Not while Japanese text is being composed, and not while the theme picker is open (it belongs to the article that is shown).
+    private var panelMayMove: Bool {
+        !pickingTheme && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
     }
 
     private func adopt(_ summary: ArticleSummaryModel.Summary, article: Article, themeID: UUID) {
         guard summary.articleID == article.id else { return }
         guard let theme = store.theme(id: themeID) else { saveError = "テーマが見つかりません。"; return }
         let note = theme.note
-        let selectionEnd = noteHandle.selectedRange.map { NSMaxRange($0) } ?? noteSelectionEnd(themeID, in: note)
+        // No selection recorded (the note was never clicked in) means the end of the note, not the start the text view starts at.
+        let selectionEnd = noteSelections[themeID] == nil ? nil : (noteHandle.selectedRange.map { NSMaxRange($0) } ?? noteSelectionEnd(themeID, in: note))
         let result = NoteInsertion.adopted(summary: summary.text, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0)?.absoluteString },
                                            into: note, selectionEndUTF16: selectionEnd)
         do {
@@ -499,21 +486,6 @@ struct ReaderView: View {
         }.clipped()
     }
 
-    /// Not while Japanese text is being composed, and not while the theme picker is open (it belongs to the article that is shown).
-    private var topBarMayMove: Bool {
-        !pickingTheme && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
-    }
-
-    private func readerTopBar(_ themeID: UUID) -> some View {
-        ReaderTopBar(entries: store.themeArticleEntries(themeID: themeID, selection: selection),
-                     canPrevious: ThemeArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
-                     canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
-                     onPrevious: { guard topBarMayMove else { return }; perform(.previous) },
-                     onNext: { guard topBarMayMove else { return }; perform(.next) },
-                     onChoose: { id in if id != selection { ReaderPerformance.selectionStarted(id) }; selectArticle(id) },
-                     showsSummarySwitch: aiEnabled && summaries != nil, mode: $paneMode)
-    }
-
     @ViewBuilder private var detail: some View {
         if let article = selectedArticle {
             ArticleDetailView(article: article, content: displayedContent?.articleID == article.id ? displayedContent : nil,
@@ -542,7 +514,7 @@ struct ReaderView: View {
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
     }
     private func openOriginal() {
-        guard originalPage.url == nil, !showsSummary, let article = selectedArticle, let url = article.originalURL else { return }   // not behind the summary card
+        guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
     }
@@ -568,9 +540,17 @@ struct ReaderView: View {
         }
     }
 
-    private var onNoteFace: Bool {
-        if case .theme(let id) = scope { return workspace.face(of: id) == .note }
-        return false
+    private var themeScopeID: UUID? {
+        if case .theme(let id) = scope { return id }
+        return nil
+    }
+    private var noteOpen: Bool { themeScopeID.map { workspace.isNoteOpen(of: $0) } ?? false }
+    private var noteOpenBinding: Binding<Bool> {
+        Binding(get: { noteOpen }, set: { open in if let id = themeScopeID { workspace.setNote(open: open, of: id) } })
+    }
+    private func toggleNote() {
+        guard let id = themeScopeID else { return }
+        workspace.setNote(open: !workspace.isNoteOpen(of: id), of: id)
     }
     private func noteSelectionBinding(_ themeID: UUID) -> Binding<TextSelection?> {
         Binding(get: { noteSelections[themeID] }, set: { value in noteSelections[themeID] = value })
@@ -584,20 +564,10 @@ struct ReaderView: View {
         guard columnVisibility != target else { return }
         withAnimation(reduceMotion ? nil : .default) { columnVisibility = target }
     }
-    private func faceBinding(_ themeID: UUID) -> Binding<ThemeFace> {
-        Binding(get: { workspace.face(of: themeID) }, set: { setFace($0, of: themeID) })
-    }
-    private func setFace(_ face: ThemeFace, of themeID: UUID) {
-        guard workspace.face(of: themeID) != face else { return }
-        scrollMemory.state.select(selection)
-        workspace.switchFace(of: themeID, to: face, rememberingReader: scrollMemory.state)
-        enterScope()
-    }
     private func enterScope() {
         let restored = workspace.reader(in: workspace.scope)
         scrollMemory.state = restored; selectArticle(restored.selectedArticleID)
-        // The note face has no article list: the focus stays where the person puts it (the note, the reader).
-        if case .theme(let id) = workspace.scope, workspace.face(of: id) == .note { listFocused = false } else { listFocused = true }
+        listFocused = true
     }
 
     private func move(_ offset: Int) {
