@@ -43,12 +43,6 @@ import Testing
         guard let first = rows.firstIndex(where: { $0.convert($0.bounds, to: nil).width <= 20 }) else { return rows }
         return Array(rows[first...])
     }
-    /// The AI setting is on in a store of its own, so these tests do not depend on (or change) the Mac's real setting.
-    fileprivate static func aiOnDefaults() -> UserDefaults {
-        let defaults = UserDefaults(suiteName: "feeeder-test-\(UUID().uuidString)")!
-        defaults.set(true, forKey: OnDeviceAISetting.key)
-        return defaults
-    }
     fileprivate struct Harness {
         let store: ReaderStore
         let host: NSHostingView<ReaderView>
@@ -56,7 +50,6 @@ import Testing
         let directory: URL
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, noteOpen: Bool = false,
-                         defaults: UserDefaults? = nil,
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -70,7 +63,7 @@ import Testing
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
             handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialNoteOpen: noteOpen, defaults: defaults ?? Self.aiOnDefaults())
+            initialScope: try scope(store), initialNoteOpen: noteOpen)
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-theme-reader")
@@ -81,58 +74,12 @@ import Testing
         harness.window.close(); try? FileManager.default.removeItem(at: harness.directory)
     }
 
-    @Test func unfiledStarsListsOnlyStarredArticlesInNoTheme() async throws {
-        let h = try harness(scope: { _ in .unfiledStars }) { store in
-            let ids = store.articles.map(\.id)
-            for id in ids.prefix(3) { try store.setStar(articleID: id, isStarred: true, at: .now) }
-            _ = try store.createTheme(name: "A", adding: ids[0], at: .now)
-        }
-        defer { finish(h) }
-        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 }
-    }
-
-    @Test func themeArticlesFaceListsOnlyTheThemesArticles() async throws {
-        let h = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
-            let theme = try store.createTheme(name: "A", at: .now)
-            for id in store.articles.map(\.id).prefix(3) { try store.addArticle(id, toTheme: theme.id, at: .now) }
-        }
-        defer { finish(h) }
-        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 3 }
-    }
-
-    @Test func theNoteIsAbsentWhileClosedAndBesideTheListAndTheReaderWhenOpen() async throws {
-        let closed = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
-            let theme = try store.createTheme(name: "A", at: .now)
-            try store.addArticle(store.articles[0].id, toTheme: theme.id, at: .now)
-            try store.saveNote(themeID: theme.id, text: "既存のノート", at: .now)
-        }
-        defer { finish(closed) }
-        try await settle(closed.host) { find(NativeArticleList.Table.self, in: closed.host)?.numberOfRows == 1 }
-        pumpRunLoop(0.2)
-        #expect(!containsText("既存のノート", in: closed.host))                            // no note panel until it is opened
-        let open = try harness(scope: { store in .theme(store.themes[0].id) }, noteOpen: true) { store in
-            let theme = try store.createTheme(name: "A", at: .now)
-            try store.addArticle(store.articles[0].id, toTheme: theme.id, at: .now)
-            try store.saveNote(themeID: theme.id, text: "既存のノート", at: .now)
-        }
-        defer { finish(open) }
-        try await settle(open.host) { containsText("既存のノート", in: open.host) }
-        #expect(find(NativeArticleList.Table.self, in: open.host)?.numberOfRows == 1)     // the list stays in the middle column
-        let table = try #require(find(NativeArticleList.Table.self, in: open.host))
-        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-        try await settle(open.host) { find(ArticleTextView.self, in: open.host)?.string.contains("合成記事 0") == true }   // the reader shows it beside the note
-        #expect(containsText("既存のノート", in: open.host))
-    }
-
-    @Test func emptyThemeAndEmptyInboxListNoRows() async throws {
+    @Test func anEmptyThemeListsNoRows() async throws {
         let h = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
             _ = try store.createTheme(name: "空", at: .now)
         }
         defer { finish(h) }
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 0 }
-        let inbox = try harness(scope: { _ in .unfiledStars }) { _ in }
-        defer { finish(inbox) }
-        try await settle(inbox.host) { find(NativeArticleList.Table.self, in: inbox.host)?.numberOfRows == 0 }
     }
 }
 

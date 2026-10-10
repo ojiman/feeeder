@@ -11,7 +11,7 @@ struct ReaderWorkspaceTests {
         workspace.rememberReader(reader, in: .unread)
         workspace.scope = .theme(themeID)
         workspace.setNote(open: true, of: themeID)
-        workspace.scope = .unfiledStars
+        workspace.scope = .starred
         workspace.scope = .unread
         let restored = workspace.reader(in: .unread)
         #expect(restored.selectedArticleID == article && restored.listScrollAnchor == top)

@@ -11,14 +11,10 @@ struct ThemePickerView: View {
     @State private var highlighted: Int?
     @State private var error: String?
     @FocusState private var fieldFocused: Bool
-    var suggestions: ThemeSuggestionModel? = nil
-    @State private var suggestedIDs: [UUID] = []
-    /// Once the person types, moves the highlight or acts, late suggestions no longer reorder the rows under them.
-    @State private var interacted = false
 
     private var memberOf: Set<UUID> { Set(store.themeIDs(containing: articleID)) }
     private var rows: [ThemePickerRow] {
-        ThemePicker.rows(themes: store.themes.map { ($0.id, $0.name) }, memberOf: memberOf, query: query, suggested: suggestedIDs)
+        ThemePicker.rows(themes: store.themes.map { ($0.id, $0.name) }, memberOf: memberOf, query: query)
     }
 
     var body: some View {
@@ -32,8 +28,8 @@ struct ThemePickerView: View {
                           let action = ThemePicker.explicitAction(rows: rows, query: query) else { return .ignored }
                     run(action); return .handled
                 }
-                .onKeyPress(.upArrow) { interacted = true; highlighted = ThemePicker.move(highlighted, by: -1, count: rows.count); return .handled }
-                .onKeyPress(.downArrow) { interacted = true; highlighted = ThemePicker.move(highlighted, by: 1, count: rows.count); return .handled }
+                .onKeyPress(.upArrow) { highlighted = ThemePicker.move(highlighted, by: -1, count: rows.count); return .handled }
+                .onKeyPress(.downArrow) { highlighted = ThemePicker.move(highlighted, by: 1, count: rows.count); return .handled }
                 .accessibilityLabel("テーマを探す、または新しい名前")
             if rows.isEmpty {
                 Text("まだテーマがありません。名前を入力すると、新しく作ってこの記事を入れられます。")
@@ -51,17 +47,8 @@ struct ThemePickerView: View {
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .padding(14).frame(width: 300)
-        // A pointer over the popover counts as interaction: suggestions that arrive late must not move rows under it.
-        .onContinuousHover { _ in interacted = true }
         .onAppear { fieldFocused = true; highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
-        .onChange(of: query) { _, _ in interacted = true; highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
-        .task(id: articleID) {
-            guard let suggestions else { return }
-            await suggestions.loadNearest(for: articleID)
-            guard !Task.isCancelled, !interacted, suggestions.nearestArticleID == articleID else { return }
-            suggestedIDs = suggestions.nearestThemes.map(\.themeID)
-            highlighted = ThemePicker.defaultHighlight(rows: rows, query: query)
-        }
+        .onChange(of: query) { _, _ in highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
     }
 
     private func rowView(_ row: ThemePickerRow, highlighted: Bool) -> some View {
@@ -74,10 +61,6 @@ struct ThemePickerView: View {
             HStack {
                 Image(systemName: symbol).foregroundStyle(row.included ? Color.orange : Color.secondary)
                 Text(row.title).lineLimit(1)
-                if row.suggested {
-                    Text("近い").font(.caption2.weight(.semibold)).foregroundStyle(.orange)
-                        .padding(.horizontal, 5).padding(.vertical, 1).background(Color.orange.opacity(0.15), in: Capsule())
-                }
                 Spacer()
             }
             .contentShape(Rectangle()).padding(.vertical, 3).padding(.horizontal, 4)
@@ -85,7 +68,7 @@ struct ThemePickerView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(row.title)
-        .accessibilityValue((row.included ? "入っています" : "入っていません") + (row.suggested ? "、近いテーマ" : ""))
+        .accessibilityValue(row.included ? "入っています" : "入っていません")
     }
 
     private func perform(for row: ThemePickerRow) {
@@ -99,7 +82,6 @@ struct ThemePickerView: View {
         run(action)
     }
     private func run(_ action: ThemePickerAction) {
-        interacted = true
         do {
             switch action {
             case .toggle(let id):

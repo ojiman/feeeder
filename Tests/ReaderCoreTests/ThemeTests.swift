@@ -113,22 +113,6 @@ import Testing
         #expect(store.themeIDs(containing: a.id) == [theme.id])
     }
 
-    @Test func unfiledStarsAreStarredArticlesInNoTheme() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-        let ids = store.articles.map(\.id)
-        for id in ids.prefix(3) { try store.setStar(articleID: id, isStarred: true, at: at) }
-        #expect(store.unfiledStarredArticleIDs(keeping: nil) == Array(ids.prefix(3)) && store.unfiledStarCount == 3)
-        let theme = try store.createTheme(name: "A", at: at)
-        try store.addArticle(ids[0], toTheme: theme.id, at: at)
-        #expect(store.unfiledStarredArticleIDs(keeping: nil) == [ids[1], ids[2]])
-        try store.setStar(articleID: ids[1], isStarred: false, at: at)
-        #expect(store.unfiledStarredArticleIDs(keeping: ids[1]) == [ids[1], ids[2]])
-        #expect(store.unfiledStarredArticleIDs(keeping: nil) == [ids[2]])
-        try store.removeArticle(ids[0], fromTheme: theme.id, at: at)
-        #expect(store.unfiledStarredArticleIDs(keeping: nil) == [ids[0], ids[2]])
-    }
-
     @Test func oneArticleCanBelongToSeveralThemes() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
@@ -352,11 +336,10 @@ import Testing
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let ids = Array(store.articles.prefix(3).map(\.id))
         for id in ids { try store.setStar(articleID: id, isStarred: true, at: at) }
-        #expect(store.unfiledStarCount == 3)
         let theme = try store.createTheme(name: "  金利と家計  ", adding: [ids[0], ids[1], ids[1], ids[2]], at: at)
         #expect(theme.name == "金利と家計")
         #expect(store.themeArticleIDs(themeID: theme.id) == store.articleIDs.filter { ids.contains($0) })
-        #expect(store.themeArticleCount(themeID: theme.id) == 3 && store.unfiledStarCount == 0)
+        #expect(store.themeArticleCount(themeID: theme.id) == 3)
         let link = try #require(store.themeArticles.first { $0.articleID == ids[0] })
         #expect(link.title == store.article(id: ids[0])?.title)
     }

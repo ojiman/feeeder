@@ -265,12 +265,6 @@ extension ReaderStore {
         guard let ids = articleThemeIDs[articleID] else { return [] }
         return themes.map(\.id).filter { ids.contains($0) }
     }
-    /// Starred articles in no theme. `keeping` keeps the current selection visible after it leaves the inbox.
-    public func unfiledStarredArticleIDs(keeping: UUID?) -> [UUID] {
-        _ = starCount; _ = themeArticles
-        return articleIDs.filter { (starredIDs.contains($0) && articleThemeIDs[$0] == nil) || $0 == keeping }
-    }
-    public var unfiledStarCount: Int { unfiledStarredArticleIDs(keeping: nil).count }
 
     /// Starts a question from a fixed lens: the lens's draft with the theme's current name. The free lens needs text.
     @discardableResult public func addQuestion(themeID: UUID, lens: QuestionLens, at: Date) throws -> ThemeQuestion {

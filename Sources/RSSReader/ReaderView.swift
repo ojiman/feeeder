@@ -9,8 +9,6 @@ struct ReaderView: View {
     @Bindable var aiReview: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
     let imageLoader: ReaderImageLoader
-    let suggestions: ThemeSuggestionModel?
-    @AppStorage private var aiEnabled: Bool
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
@@ -39,11 +37,9 @@ struct ReaderView: View {
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false,
-         suggestions: ThemeSuggestionModel? = nil,
-         defaults: UserDefaults = .standard) {
-        _aiEnabled = AppStorage(wrappedValue: true, OnDeviceAISetting.key, store: defaults)   // tests pass their own store
+         ) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
-        self.imageLoader = imageLoader; self.suggestions = suggestions
+        self.imageLoader = imageLoader
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
@@ -80,7 +76,6 @@ struct ReaderView: View {
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
-        case .unfiledStars: store.unfiledStarredArticleIDs(keeping: selection)
         case .theme(let id): store.themeArticleIDs(themeID: id, keeping: selection)
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
@@ -92,7 +87,6 @@ struct ReaderView: View {
 
     private var scopeTitle: String {
         switch scope ?? .all {
-        case .unfiledStars: "未整理のStar"
         case .theme(let id): store.theme(id: id)?.name ?? "テーマ"
         case .folder(let name): name
         case .all: "すべての記事"
@@ -163,7 +157,7 @@ struct ReaderView: View {
                 .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
                 .disabled(article == nil)
                 .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
-                    if let article { ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }, suggestions: suggestions) }
+                    if let article { ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }) }
                 }
                 Button(action: openExternal) { Image(systemName: "globe") }
                     .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
@@ -179,14 +173,6 @@ struct ReaderView: View {
             } catch { /* Selection changes cancel the old article's deadline. */ }
         }
         .task { try? await imageLoader.prepare(at: .now) }
-        .task(id: ClusterTrigger(active: scope == .unfiledStars && aiEnabled, count: store.unfiledStarCount)) {
-            guard let suggestions else { return }
-            guard scope == .unfiledStars, aiEnabled else { suggestions.invalidateClusters(); return }
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            await suggestions.loadClusters()
-        }
-        .onChange(of: aiEnabled) { _, on in if !on { suggestions?.invalidate() } }
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
         }
@@ -266,7 +252,6 @@ struct ReaderView: View {
                 sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
             }
             Section("テーマ") {
-                sidebarRow("未整理のStar", symbol: "tray.full", count: store.unfiledStarCount).tag(LibraryScope.unfiledStars)
                 ForEach(store.themes) { theme in
                     sidebarRow(theme.name, symbol: "square.stack", count: store.themeArticleCount(themeID: theme.id))
                         .tag(LibraryScope.theme(theme.id))
@@ -381,8 +366,6 @@ struct ReaderView: View {
                 switch scope ?? .all {
                 case .theme: ContentUnavailableView("記事が入っていません", systemImage: "square.stack",
                     description: Text("記事を選んで t キーを押すと、このテーマに入れられます。"))
-                case .unfiledStars: ContentUnavailableView("未整理のStarはありません", systemImage: "tray.full",
-                    description: Text("Starを付けた記事のうち、テーマに入っていないものがここに並びます。"))
                 default: ContentUnavailableView("記事はありません", systemImage: "tray",
                     description: Text("購読を追加するか、ほかの一覧を選んでください。"))
                 }
@@ -400,9 +383,6 @@ struct ReaderView: View {
                     }
                     ThemeGoalStrip(goal: store.theme(id: id)?.goal ?? "", onEdit: { themeEditor = ThemeEditorTarget(themeID: id) })
                 }.background(.bar)
-            }
-            else if scope == .unfiledStars, aiEnabled, let suggestions, !suggestions.clusters.groups.isEmpty {
-                ClusterSuggestionBar(store: store, model: suggestions, onCreated: { themeMessage = $0 })
             }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
@@ -540,8 +520,6 @@ struct ReaderView: View {
         do { try operation() } catch { saveError = error.localizedDescription }
     }
 }
-
-private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }
 
 /// The theme a review sheet was opened for, kept for the sheet's life even if the selection moves.
 private struct ThemeSheet: Identifiable { let id: UUID; var fromNotePanel = false }
