@@ -58,4 +58,13 @@ struct ArticleSummaryPromptTests {
         #expect(ArticleSummaryPrompt.clean(" \n\u{200B} ") == nil && ArticleSummaryPrompt.clean("") == nil)
         #expect(ArticleSummaryPrompt.clean(String(repeating: "あ", count: 2_000))?.count == 1_200)
     }
+
+    @Test func aLongTitleIsCutAndTheJoinerOfAnEmojiSequenceSurvivesCleaning() throws {
+        let long = try #require(ArticleSummaryPrompt.make(title: String(repeating: "題", count: 500), text: "本文"))
+        let titleLine = String(long.request.prompt.split(separator: "\n", maxSplits: 1)[0])
+        #expect(titleLine == "タイトル: " + String(repeating: "題", count: ArticleSummaryPrompt.titleLimit))
+        let family = "家族👨‍👩‍👧の話。"
+        #expect(ArticleSummaryPrompt.clean(family) == family)                          // the zero width joiner is kept
+        #expect(ArticleSummaryPrompt.clean("見え\u{200B}ない") == "見えない")             // other invisible characters still go
+    }
 }

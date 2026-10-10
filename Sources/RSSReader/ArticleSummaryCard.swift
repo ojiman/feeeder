@@ -52,7 +52,7 @@ struct ArticleSummaryCard: View {
                 if summary.fromThemeSummary { Text("テーマに記録したRSS要約から作りました。").font(.caption).foregroundStyle(.secondary) }
                 Text("誤りを含むことがあります。原文で確かめてください。").font(.caption).foregroundStyle(.secondary)
                 HStack {
-                    Button(adopted ? "採用しました" : "ノートに採用") { onAdopt(summary) }.disabled(adopted).keyboardShortcut(.defaultAction)
+                    Button(adopted ? "採用しました" : "ノートに採用") { onAdopt(summary) }.disabled(adopted)
                     Button("作り直す", action: onRequest)
                 }
             }

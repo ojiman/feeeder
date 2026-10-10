@@ -118,6 +118,7 @@ struct ReaderView: View {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
+            summaries?.reset(); adoptedSummary = nil          // a summary belongs to the theme it was made in
             workspace.scope = new ?? .all
             enterScope()
         }
@@ -425,8 +426,10 @@ struct ReaderView: View {
 
     @ViewBuilder private func summaryPane(_ summaries: ArticleSummaryModel, themeID: UUID) -> some View {
         if let article = selectedArticle {
-            let ready: ArticleSummaryModel.Summary? = { if case .ready(let value) = summaries.state, value.articleID == article.id { return value }; return nil }()
-            ArticleSummaryCard(state: summaries.state, articleTitle: article.title, adopted: ready != nil && ready == adoptedSummary,
+            // A summary made for another article is never shown or adopted here, whatever the model still holds.
+            let shown: ArticleSummaryModel.State = { if case .ready(let value) = summaries.state, value.articleID != article.id { return .idle }; return summaries.state }()
+            let ready: ArticleSummaryModel.Summary? = { if case .ready(let value) = shown { return value }; return nil }()
+            ArticleSummaryCard(state: shown, articleTitle: article.title, adopted: ready != nil && ready == adoptedSummary,
                                onRequest: { adoptedSummary = nil; summaries.request(articleID: article.id, themeID: themeID) },
                                onCancel: { summaries.cancel() },
                                onAdopt: { adopt($0, article: article, themeID: themeID) },
@@ -441,6 +444,7 @@ struct ReaderView: View {
     }
 
     private func adopt(_ summary: ArticleSummaryModel.Summary, article: Article, themeID: UUID) {
+        guard summary.articleID == article.id else { return }
         guard let theme = store.theme(id: themeID) else { saveError = "テーマが見つかりません。"; return }
         let note = theme.note
         let result = NoteInsertion.adopted(summary: summary.text, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0)?.absoluteString },
@@ -453,12 +457,17 @@ struct ReaderView: View {
         } catch { saveError = error.localizedDescription }
     }
 
+    /// An index from an older copy of the note can lie past its end; `utf16Offset(in:)` traps on that, so it is checked first.
+    private func safeUTF16Offset(_ index: String.Index, in note: String) -> Int? {
+        index <= note.endIndex ? index.utf16Offset(in: note) : nil
+    }
+
     /// The end of the person's selection in the note (or the cursor), as a UTF-16 offset; the end of the note when there is none.
     private func noteSelectionEnd(_ themeID: UUID, in note: String) -> Int? {
         guard let selection = noteSelections[themeID] else { return nil }
         switch selection.indices {
-        case .selection(let range): return min(range.upperBound.utf16Offset(in: note), note.utf16.count)
-        case .multiSelection(let set): return set.ranges.last.map { min($0.upperBound.utf16Offset(in: note), note.utf16.count) }
+        case .selection(let range): return safeUTF16Offset(range.upperBound, in: note)
+        case .multiSelection(let set): return set.ranges.last.flatMap { safeUTF16Offset($0.upperBound, in: note) }
         @unknown default: return nil
         }
     }
@@ -519,7 +528,7 @@ struct ReaderView: View {
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
     }
     private func openOriginal() {
-        guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
+        guard originalPage.url == nil, !showsSummary, let article = selectedArticle, let url = article.originalURL else { return }   // not behind the summary card
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
     }

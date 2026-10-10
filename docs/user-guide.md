@@ -118,7 +118,7 @@ Select a theme. Use the switch [記事｜ノート] (Articles | Note) at the top
 
 ## 4. On-device AI
 
-The AI features run on your Mac only. Nothing is sent out. They never write into your note. You can turn them off in Settings under 「端末内AI」 (On-device AI). When they are off, the app does not call the model. You can also see their state there.
+The AI features run on your Mac only. Nothing is sent out. They never write into your note, except a summary that you adopt yourself. You can turn them off in Settings under 「端末内AI」 (On-device AI). When they are off, the app does not call the model. You can also see their state there.
 
 If the language assets are not on your Mac, the app does not download them. Suggestions just do not appear.
 

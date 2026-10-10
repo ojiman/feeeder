@@ -289,26 +289,43 @@ private struct StubAssistant: ThemeAssistant {
     }
 
     @Test func openingTheSummaryAsksForNothingAndTheLinkGoesBackToTheArticle() async throws {
-        let (h, model) = try make()
+        let enabled = EnabledSwitch()
+        let (h, model) = try make(enabled: enabled)
         defer { t.finish(h) }
         try await openFirstArticleAndSummary(h)
         try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host) == nil && showOriginalLink(in: h.host) != nil }   // the card replaced the article
         #expect(model.state == .idle)                                                  // opening the summary asks for nothing
         let theme = h.store.themes[0]
         #expect(theme.note == "前の文章")                                               // and writes nothing
+        // Leave the model in a state that is not `.idle` (the setting is off, so it answers at once without a call).
+        enabled.on = false
+        model.request(articleID: h.store.articles[0].id, themeID: theme.id)
+        #expect(model.state == .unavailable(.disabled))
         try #require(showOriginalLink(in: h.host)).performClick(nil)
         try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
-        #expect(segmented(labelled: "原文", in: h.host)?.selectedSegment == 0 && model.state == .idle)
+        #expect(segmented(labelled: "原文", in: h.host)?.selectedSegment == 0)
+        #expect(model.state == .idle)                                                  // going back to the article cleared it
     }
 
-    @Test func movingToAnotherArticleKeepsTheSwitchWhereThePersonPutIt() async throws {
-        let (h, model) = try make()
+    @Test func movingToAnotherArticleKeepsTheSwitchAndClearsTheModel() async throws {
+        let enabled = EnabledSwitch()
+        let (h, model) = try make(enabled: enabled)
         defer { t.finish(h) }
         try await openFirstArticleAndSummary(h)
         try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host) == nil }
+        enabled.on = false
+        model.request(articleID: h.store.articles[0].id, themeID: h.store.themes[0].id)
+        #expect(model.state == .unavailable(.disabled))                                // not idle before the move
         t.topBar(in: h.host)?.next.performClick(nil)                                    // another article
         try await t.settle(h.host) { t.topBar(in: h.host)?.menu.title == "合成記事 1" }
         #expect(segmented(labelled: "原文", in: h.host)?.selectedSegment == 1)         // the switch stays on 「AI要約」
         #expect(t.find(ArticleTextView.self, in: h.host) == nil && model.state == .idle)
+    }
+
+    @Test func theSwitchIsShownWhenOnDeviceAIIsOn() async throws {
+        let (h, _) = try make()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.topBar(in: h.host) != nil }
+        #expect(segmented(labelled: "原文", in: h.host) != nil)
     }
 }
