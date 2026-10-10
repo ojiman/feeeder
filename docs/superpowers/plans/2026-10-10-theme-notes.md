@@ -150,6 +150,22 @@ The work runs beside the PdM's real-device check (stage A) and PR 9. A bug from 
 
 ---
 
+# Part 1d: The note beside the article (decision 0017)
+
+Added on 2026-10-10 after the PdM tried the note face (N2 to N5) and proposed a different screen: the article list stays in the middle, the article is on the right, and the note opens beside the article as a panel with a calm, Claude-app-like AI area. [Decision 0017](../../decisions/0017-note-beside-the-article.md) records it and replaces the screen part of decision 0013 (point 4). The data (goal, note, migration) and the AI rules are unchanged.
+
+| PR | Theme | Scope | Verification |
+|---|---|---|---|
+| L1 | The note as an inspector | The face switch, the reader's top bar and the 「原文｜AI要約」 switch are removed. The middle column is always the article list (a theme shows its articles, with the goal on top). The right column is the reader, and the note opens beside it as the standard inspector (toolbar button and `⌥⌘I`). Opening it folds the sidebar (N3's rule). The summary moves into the note panel as a button 「記事から要約する」. The note actions (N5) stay under the editor. [Detailed plan](2026-10-10-note-inspector.md) | The N3 to N5 behaviors still hold in the new layout (tests moved, not dropped). A real window check by the PdM. |
+| L2 | The note looks like a document | The editor shows `#` lines as headings and list lines as lists (a styled display; the saved text is unchanged). Real WYSIWYG (bold, italic buttons, a new storage format) is not part of it. | IME stays intact; the saved text is byte for byte what was typed. |
+| L3 | Experiment: review against the goal | No product code. On synthetic goals and notes, measure how useful an on-device "review the note against the goal" comment is (several prompts, time, quality). The PdM reads it. | Same as the N4/N5 experiment record. |
+| L4 | The review panel | After L3, if the quality is enough: a quiet card area in the note panel (states: working, current, out of date, unavailable). Updated when the person asks, or, if they turn it on in Settings, once after typing stops (never when the note did not change). If the quality is not enough, the Claude hand-off (N6) is the place for a review. | The N4/N5 rules: a late or stale answer never shows; AI off means no call. |
+| L5 | System Writing Tools | Turn on the system Writing Tools (proofread, rewrite, summarize) in the note editor where the Mac supports them. | Behavior on a real Mac; they are not under the app's control. |
+
+Order: L1, then L2 and L3 in either order, then L4, then L5. N6 (the hand-off with the goal and the note) is independent of L1 to L5 and can go before or after them.
+
+---
+
 # 第2部 PR 3: テーマの保存基盤
 
 **ブランチ**: `claude/theme-store`（`main`から切る）。**検証コマンド**（以降の各Taskで使う）: `swift test --scratch-path /private/tmp/feeeder-dogfooding-build --filter ThemeTests`。
