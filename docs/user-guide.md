@@ -103,7 +103,7 @@ Focus the article list, then use these keys:
 - Press `t` (or use the icon at the top right) to choose the themes for an article. Check existing themes to add the article or remove it. You can also create a new theme and add the article to it. An article can be in many themes.
 - A Star and a theme are separate. If you remove the Star, the article stays in its themes. A starred article that is in no theme appears under 「未整理のStar」 (Unsorted Stars) on the left.
 - When you add an article to a theme, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
-- Create a theme with 「新しいテーマ」 (New theme) in the sidebar. Right-click a theme to rename or delete it. Deleting a theme does not delete its articles or Stars.
+- Create a theme with 「新しいテーマ」 (New theme) in the sidebar. The sheet asks for a name and, if you want, a learning goal (what you want to learn in this theme, up to 200 characters). The goal is shown under the face switch at the top of the theme; click it, or right-click the theme and choose 「名前とゴールを編集…」 (Edit Name and Goal…), to change the name or the goal. Right-click a theme to edit or delete it. Deleting a theme does not delete its articles or Stars.
 
 ### Questions and answers in a theme
 

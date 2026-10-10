@@ -29,10 +29,7 @@ struct ReaderView: View {
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
     @State private var folderName = ""
-    @State private var creatingTheme = false
-    @State private var newThemeName = ""
-    @State private var renamingTheme: UUID?
-    @State private var themeName = ""
+    @State private var themeEditor: ThemeEditorTarget?
     @State private var deletingTheme: UUID?
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
@@ -253,11 +250,11 @@ struct ReaderView: View {
                     sidebarRow(theme.name, symbol: "square.stack", count: store.themeArticleCount(themeID: theme.id))
                         .tag(LibraryScope.theme(theme.id))
                         .contextMenu {
-                            Button("名前を変更…") { themeName = theme.name; renamingTheme = theme.id }
+                            Button("名前とゴールを編集…") { themeEditor = ThemeEditorTarget(themeID: theme.id) }
                             Button("削除…", role: .destructive) { deletingTheme = theme.id }
                         }
                 }
-                Button { newThemeName = ""; creatingTheme = true } label: { Label("新しいテーマ", systemImage: "plus") }
+                Button { themeEditor = ThemeEditorTarget(themeID: nil) } label: { Label("新しいテーマ", systemImage: "plus") }
                     .buttonStyle(.plain).foregroundStyle(.secondary).padding(.vertical, 4)
                     .accessibilityLabel("新しいテーマを作る")
             }
@@ -291,23 +288,8 @@ struct ReaderView: View {
         .sheet(item: $reviewingTheme) { sheet in
             AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: sheet.id), themeID: sheet.id)
         }
-        .alert("新しいテーマ", isPresented: $creatingTheme) {
-            TextField("テーマの名前", text: $newThemeName.singleLine())
-            Button("作成") {
-                let name = newThemeName
-                perform { let theme = try store.createTheme(name: name, at: .now); scope = .theme(theme.id) }
-            }
-            Button("キャンセル", role: .cancel) {}
-        } message: { Text("関心のあるテーマの名前を入力します。記事は t キーで入れられます。") }
-        .alert("テーマ名を変更", isPresented: Binding(get: { renamingTheme != nil }, set: { if !$0 { renamingTheme = nil } })) {
-            TextField("テーマの名前", text: $themeName.singleLine())
-            Button("保存") {
-                guard let id = renamingTheme else { return }
-                let name = themeName
-                perform { try store.renameTheme(id: id, to: name, at: .now) }
-                renamingTheme = nil
-            }
-            Button("キャンセル", role: .cancel) { renamingTheme = nil }
+        .sheet(item: $themeEditor) { target in
+            ThemeEditorSheet(store: store, themeID: target.themeID) { scope = .theme($0) }
         }
         .confirmationDialog("このテーマを削除しますか？", isPresented: Binding(get: { deletingTheme != nil }, set: { if !$0 { deletingTheme = nil } })) {
             Button("テーマを削除", role: .destructive) {
@@ -388,7 +370,12 @@ struct ReaderView: View {
             }
         }
         .safeAreaInset(edge: .top) {
-            if case .theme(let id) = scope { ThemeFacePicker(face: faceBinding(id)) }
+            if case .theme(let id) = scope {
+                VStack(spacing: 0) {
+                    ThemeFacePicker(face: faceBinding(id))
+                    ThemeGoalStrip(goal: store.theme(id: id)?.goal ?? "", onEdit: { themeEditor = ThemeEditorTarget(themeID: id) })
+                }
+            }
             else if scope == .unfiledStars, aiEnabled, let suggestions, !suggestions.clusters.groups.isEmpty {
                 ClusterSuggestionBar(store: store, model: suggestions, onCreated: { themeMessage = $0 })
             }
@@ -404,7 +391,7 @@ struct ReaderView: View {
 
     @ViewBuilder private var workspaceList: some View {
         if case .theme(let id) = scope, workspace.face(of: id) == .questions {
-            ThemeQuestionsPane(store: store, themeID: id, face: faceBinding(id), selection: questionSelectionBinding(id)).id(id)
+            ThemeQuestionsPane(store: store, themeID: id, face: faceBinding(id), selection: questionSelectionBinding(id), onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
     }
@@ -431,7 +418,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || creatingTheme || renamingTheme != nil || pickingTheme, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil || pickingTheme, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -519,3 +506,5 @@ private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }
 
 /// The theme a review sheet was opened for, kept for the sheet's life even if the selection moves.
 private struct ThemeSheet: Identifiable { let id: UUID }
+
+private struct ThemeEditorTarget: Identifiable { let id = UUID(); let themeID: UUID? }

@@ -22,6 +22,7 @@ struct ThemeQuestionsPane: View {
     let themeID: UUID
     @Binding var face: ThemeFace
     @Binding var selection: ThemeQuestionSelection
+    var onEditGoal: () -> Void = {}
     @State private var choosingLens = false
     @State private var writingQuestion = false
     @State private var customText = ""
@@ -58,7 +59,7 @@ struct ThemeQuestionsPane: View {
         }
         .navigationTitle(store.theme(id: themeID)?.name ?? "テーマ")
         .navigationSubtitle("問い")
-        .safeAreaInset(edge: .top) { ThemeFacePicker(face: $face) }
+        .safeAreaInset(edge: .top) { VStack(spacing: 0) { ThemeFacePicker(face: $face); ThemeGoalStrip(goal: store.theme(id: themeID)?.goal ?? "", onEdit: onEditGoal) } }
         .safeAreaInset(edge: .bottom) {
             Button { choosingLens = true } label: { Label("問いを立てる", systemImage: "plus").frame(maxWidth: .infinity) }
                 .buttonStyle(.bordered).padding(10).background(.bar)
@@ -124,5 +125,22 @@ struct UnderstandingEditor: View {
         } else {
             ContentUnavailableView("テーマが見つかりません", systemImage: "questionmark.folder")
         }
+    }
+}
+
+/// The theme's goal under the face switch. An empty goal is a quiet invitation to write one.
+struct ThemeGoalStrip: View {
+    let goal: String
+    let onEdit: () -> Void
+    var body: some View {
+        Button(action: onEdit) {
+            Group {
+                if goal.isEmpty { Text("ゴールを書く…").foregroundStyle(.tertiary) }
+                else { Text(goal).foregroundStyle(.secondary).lineLimit(2) }
+            }
+            .font(.caption).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).padding(.horizontal, 12).padding(.bottom, 8).background(.bar)
+        .accessibilityLabel(goal.isEmpty ? "学習ゴールを書く" : "学習ゴール: \(goal)").accessibilityHint("名前とゴールを編集")
     }
 }

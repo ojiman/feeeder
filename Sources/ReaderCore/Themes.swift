@@ -2,13 +2,14 @@ import Foundation
 import SwiftData
 
 public enum ThemeError: LocalizedError {
-    case missingName, missingTheme, missingArticle, missingQuestionText
+    case missingName, missingTheme, missingArticle, missingQuestionText, goalTooLong
     public var errorDescription: String? {
         switch self {
         case .missingName: "テーマの名前を入力してください。"
         case .missingTheme: "テーマが見つかりません。"
         case .missingArticle: "記事が見つかりません。"
         case .missingQuestionText: "問いの文を入力してください。"
+        case .goalTooLong: "ゴールは\(Theme.goalLimit)文字までです。短くしてください。"
         }
     }
 }
@@ -42,8 +43,13 @@ public enum QuestionLens: String, CaseIterable, Sendable {
 }
 
 @Model public final class Theme {
+    public static let goalLimit = 200
+    /// How long a goal is once saved (trimmed, line breaks as spaces), in characters. The sheet's counter uses this too.
+    public static func goalLength(_ text: String) -> Int { SingleLineText.name(text).count }
     @Attribute(.unique) public var id: UUID
     public var name: String
+    /// What the person wants to learn in this theme: plain text, one paragraph, at most `goalLimit` characters, may be empty.
+    public var goal: String = ""
     public var understanding: String
     public var createdAt: Date
     public var updatedAt: Date
@@ -97,6 +103,37 @@ extension ReaderStore {
         try save(); try reload()
         return theme
     }
+    /// The goal as it is saved: line breaks become spaces and the ends are trimmed. Never cut: too long is an error.
+    private static func normalizedGoal(_ text: String) throws -> String {
+        let goal = SingleLineText.name(text)
+        guard Theme.goalLength(goal) <= Theme.goalLimit else { throw ThemeError.goalTooLong }
+        return goal
+    }
+
+    @discardableResult public func createTheme(name: String, goal: String, at: Date) throws -> Theme {
+        try reloadIfNeeded()
+        let name = SingleLineText.name(name)
+        guard !name.isEmpty else { throw ThemeError.missingName }
+        let goal = try Self.normalizedGoal(goal)
+        let theme = Theme(name: name, at: at)
+        theme.goal = goal
+        context.insert(theme)
+        try save(); try reload()
+        return theme
+    }
+
+    /// Changes the name and the goal in one save. A blank name, a too long goal, or an unknown theme changes nothing.
+    public func updateTheme(id: UUID, name: String, goal: String, at: Date) throws {
+        try reloadIfNeeded()
+        let name = SingleLineText.name(name)
+        guard !name.isEmpty else { throw ThemeError.missingName }
+        let goal = try Self.normalizedGoal(goal)
+        guard let theme = theme(id: id) else { throw ThemeError.missingTheme }
+        guard theme.name != name || theme.goal != goal else { return }
+        theme.name = name; theme.goal = goal; theme.updatedAt = at
+        try save(); try reload()
+    }
+
     public func renameTheme(id: UUID, to name: String, at: Date) throws {
         try reloadIfNeeded()
         let name = SingleLineText.name(name)
