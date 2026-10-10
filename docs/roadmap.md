@@ -10,7 +10,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 
 | Stage | What | Needs from the PdM |
 |---|---|---|
-| S1 | Notes: rename; no goal and no name (title from the first line); remove the suggestions, the note actions, the summary card in the panel and the article hand-off; the panel opens at once, is resizable and remembers its width; the sidebar folds only when the window is narrow. The picker and `t` stay as the only way to link an article until S2. | Merging the plan. |
+| S1 | Two PRs ([plan](superpowers/plans/2026-10-11-s1-notes.md)): **S1a** removes the goal, questions, suggestions, note actions and summary card; **S1b** renames and fixes the layout. Notes: rename; no goal and no name (title from the first line); remove the suggestions, the note actions, the summary card in the panel and the article hand-off; the panel opens at once, is resizable and remembers its width; the sidebar folds only when the window is narrow. The picker and `t` stay as the only way to link an article until S2. | Merging the plan. |
 | S2 | 「ノートに要約を送る」 (button, menu, `n`), the automatic link and its removal, the summary settings, the AI mark and 「取り消す」. Removes the picker and `t`. | Merging the plan. |
 | S3 | Claude from the note: the share-style button in the note panel, the note-only package. | Merging the plan. |
 | S4 | Clean up: dead code and tests (article packages and sources, theme assistant parts, the migration code, old settings), then the architecture and the user guides. | Merging the plan. |
