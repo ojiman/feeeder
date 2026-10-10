@@ -45,7 +45,7 @@ import Testing
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let missing = UUID()
-        try store.renameTheme(id: missing, to: "存在しない", at: at)
+        #expect(throws: ThemeError.missingTheme) { try store.renameTheme(id: missing, to: "存在しない", at: at) }   // never a silent drop
         #expect(throws: (any Error).self) { try store.saveNote(themeID: missing, text: "書けない", at: at) }   // never a silent drop
         try store.deleteTheme(id: missing)
         #expect(store.themes.isEmpty)

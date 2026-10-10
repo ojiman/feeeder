@@ -31,7 +31,6 @@ struct RSSReaderApp: App {
             store.onContentPolicyChanged = { [weak store, weak handoff] in
                 if let store { handoff?.reconcile(with: store, at: .now) }
             }
-            // Questions and answers move into the notes (decision 0013). A failure does not stop the app: nothing was removed.
             handoff.reconcile(with: store, at: .now)
             _aiReview = State(initialValue: review)
             _handoff = State(initialValue: handoff)

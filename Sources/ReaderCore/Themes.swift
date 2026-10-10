@@ -56,10 +56,12 @@ extension ReaderStore {
         try reloadIfNeeded()
         let name = SingleLineText.name(name)
         guard !name.isEmpty else { throw ThemeError.missingName }
-        guard let theme = theme(id: id), theme.name != name else { return }
+        guard let theme = theme(id: id) else { throw ThemeError.missingTheme }
+        guard theme.name != name else { return }
         theme.name = name; theme.updatedAt = at
         try save(); try reload()
     }
+    /// The typing path: the note is saved as it is, once per change. An unknown theme is an error, never a silent drop.
     public func saveNote(themeID: UUID, text: String, at: Date) throws {
         try reloadIfNeeded()
         guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }

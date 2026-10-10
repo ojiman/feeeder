@@ -74,6 +74,39 @@ import Testing
         harness.window.close(); try? FileManager.default.removeItem(at: harness.directory)
     }
 
+    @Test func theNoteIsAbsentWhileClosedAndBesideTheListAndTheReaderWhenOpen() async throws {
+        let closed = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            try store.addArticle(store.articles[0].id, toTheme: theme.id, at: .now)
+            try store.saveNote(themeID: theme.id, text: "既存のノート", at: .now)
+        }
+        defer { finish(closed) }
+        try await settle(closed.host) { find(NativeArticleList.Table.self, in: closed.host)?.numberOfRows == 1 }
+        pumpRunLoop(0.2)
+        #expect(!containsText("既存のノート", in: closed.host))                            // no note panel until it is opened
+        let open = try harness(scope: { store in .theme(store.themes[0].id) }, noteOpen: true) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            try store.addArticle(store.articles[0].id, toTheme: theme.id, at: .now)
+            try store.saveNote(themeID: theme.id, text: "既存のノート", at: .now)
+        }
+        defer { finish(open) }
+        try await settle(open.host) { containsText("既存のノート", in: open.host) }
+        let table = try #require(find(NativeArticleList.Table.self, in: open.host))
+        #expect(table.numberOfRows == 1)                                                  // the list stays in the middle column
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+        try await settle(open.host) { find(ArticleTextView.self, in: open.host)?.string.contains("合成記事 0") == true }   // the reader shows it beside the note
+        #expect(containsText("既存のノート", in: open.host))
+    }
+
+    @Test func aThemeListsOnlyItsOwnArticlesWithTheNoteClosed() async throws {
+        let h = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            for id in store.articles.map(\.id).prefix(3) { try store.addArticle(id, toTheme: theme.id, at: .now) }
+        }
+        defer { finish(h) }
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 3 }   // 4 articles exist, 3 are in the theme
+    }
+
     @Test func anEmptyThemeListsNoRows() async throws {
         let h = try harness(scope: { store in .theme(store.themes[0].id) }) { store in
             _ = try store.createTheme(name: "空", at: .now)

@@ -33,6 +33,7 @@ A normal start begins with an empty library. The library is stored in `Applicati
 - Release notes for beta versions will state this limit. A check that data survived in one past version does not promise the same for later beta versions.
 - There is no migration of data from the earlier prototype.
 - **The daily notes, weekly notes, and scraps of the older version are not moved to the theme-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
+- **The learning goal, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes with them, are not carried over. They are dropped the first time this version starts, and this cannot be undone.** Your theme names, notes and recorded articles stay. Back up the `Feeeder` folder first (see the steps below).
 
 ### Back up the library by hand
 
@@ -109,7 +110,7 @@ Focus the article list, then use these keys:
 
 Select a theme. The middle column shows its articles and the right column shows the article you select. Press the note button in the toolbar, or `⌥⌘I`, to open the note beside the article (press it again to close it). The button is greyed out outside a theme.
 
-- The note is the one document of this theme. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. Opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. The app remembers for each theme whether its note is open while the app is running (a theme starts with its note closed). Your cursor in the note is kept when you close and reopen it (not after you quit the app).
+- The note is the one document of this theme. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. Opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. The app remembers for each theme whether its note is open while the app is running (a theme starts with its note closed).
 - The top of the note panel shows the theme's name and two small arrows for the previous and next article.
 - Keys: `j` and `k` move between articles in the list, and `s`, `t`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 - **The AI never writes into your note.**

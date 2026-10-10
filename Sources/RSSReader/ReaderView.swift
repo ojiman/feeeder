@@ -36,8 +36,7 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false,
-         ) {
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader
         _loading = State(initialValue: ArticleLoadingController(store: store))
@@ -301,7 +300,7 @@ struct ReaderView: View {
                 perform { try store.deleteTheme(id: id); if scope == .theme(id) { scope = .all } }
                 deletingTheme = nil
             }
-        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、学習ゴールとノートは消えます。") }
+        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、ノートは消えます。") }
     }
 
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {

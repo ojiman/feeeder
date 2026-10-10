@@ -63,7 +63,7 @@ struct ReaderSettingsView: View {
             }
             Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("テーマの記録（記事のタイトル・リンク・記録した要約、学習ゴール、ノート）は自動削除しません。")
+            Text("テーマの記録（記事のタイトル・リンク・記録した要約、ノート）は自動削除しません。")
             Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
                 perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
             }

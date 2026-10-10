@@ -28,7 +28,7 @@ struct NotePanel: View {
                 Spacer(minLength: 0)
                 if let onAskReview {
                     Button("Claudeでレビューを頼む", systemImage: "paperplane", action: onAskReview)
-                        .help("ゴールとノートを、確認したうえで Claude へ渡して、ノートのレビューを頼みます")
+                        .help("ノートを、確認したうえで Claude へ渡して、レビューを頼みます")
                 }
                 Button(action: onPrevious) { Image(systemName: "chevron.up") }
                     .keyboardShortcut(.upArrow, modifiers: [.option, .command])

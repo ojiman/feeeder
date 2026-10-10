@@ -2,7 +2,7 @@ import SwiftUI
 import ReaderCore
 
 /// The theme's one note. Plain text; a line that starts with `#` is a heading. Saved as it is typed, exactly as typed.
-/// Nothing but the person writes here: the AI only offers cards the person adopts (decision 0013).
+/// Nothing but the person writes here (decision 0019: a summary the person sends is the only text that arrives from elsewhere).
 struct NoteEditor: View {
     @Bindable var store: ReaderStore
     let themeID: UUID
