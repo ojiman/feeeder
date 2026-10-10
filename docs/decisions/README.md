@@ -37,13 +37,14 @@
 | [0009](0009-on-device-ai-principles.md) | AIは端末内の提案に限る | 有効 |
 | [0010](0010-on-device-suggestion-defaults.md) | 端末内の提案（近いテーマ・まとまり）の既定 | 有効 |
 | [0011](0011-on-device-generation-defaults.md) | 端末内の生成（テーマ名の案・問いの具体化）の既定 | 有効 |
-| [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid (the questions and answers switches change under 0013) |
-| [0013](0013-goal-and-note-for-themes.md) | A learning goal and one note per theme (replaces questions and answers of 0008) | valid |
+| [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid in part; replaced by 0019 |
+| [0013](0013-goal-and-note-for-themes.md) | A learning goal and one note per theme (replaces questions and answers of 0008) | replaced in part by 0019 |
 | [0014](0014-note-migration-format.md) | The note migration: format, what stays, what pauses | valid (approved by merging the N2 plan) |
-| [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid (approved by merging the N4 plan) |
-| [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | valid (approved by merging the N5 plan) |
-| [0017](0017-note-beside-the-article.md) | The note beside the article | valid (approved by merging the PR that adds it) |
-| [0018](0018-handoff-goal-note.md) | Claude hand-off with the goal and the note | valid (approved by merging the N6 plan) |
+| [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid in part; refined by 0019 |
+| [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | replaced by 0019 |
+| [0017](0017-note-beside-the-article.md) | The note beside the article | replaced by 0019 |
+| [0018](0018-handoff-goal-note.md) | Claude hand-off with the goal and the note | replaced in part by 0019 |
+| [0019](0019-v1-simplification-notes.md) | V1 simplification: notes replace themes | valid (approved by merging the PR that adds it) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

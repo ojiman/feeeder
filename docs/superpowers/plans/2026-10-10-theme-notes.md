@@ -69,6 +69,19 @@ Status when added: PR 3 to PR 8 are merged. The Settings draft ([draft](../specs
 
 Merging the PR that adds this part approves the order and gates below as a plan. It does not approve the Settings proposal, the rename details, or the beta. Each of those has its own PdM decision, listed below.
 
+## V1 simplification (decision 0019, 2026-10-11)
+
+After dogfooding the N6 build, the PdM simplified V1: notes replace themes; no goal; no link between an article and a note; one button sends an article's summary to a note; Claude is a function of the note. This section **replaces** the order of work in the rest of this file where they differ. The new stages S1 to S5 are in [decision 0019](../../decisions/0019-v1-simplification-notes.md); each gets its own plan PR and implementation PR.
+
+| Item in this file | Now |
+|---|---|
+| L2 (styled editor look) | Becomes S5 (light styling of headings and lists). |
+| L4, L5 (question panel, Writing Tools) | Dropped. |
+| N2b (delete unreachable question code) | Part of S4 (clean up). |
+| PR 9 (reading size), PR 10 (editor size) | Stay as candidates. PR 10 applies to the note editor after S1. |
+| Stage A (real-device check) | Continues. Its checklist items about themes, goals, questions and the old Claude entries are void; check the stages as they land. |
+| Stage D (rename to Unagi Reader), F (beta preparation) | Continue after S3. |
+
 ## How the stages fit together
 
 The PdM's real-device check is the most important next step, so it runs first and does not wait for any PR. Settings work that does not depend on the theme screens runs beside it. Work that depends on screens, keys, or rules that feedback may still change waits until the first round of feedback is closed, so it is not built twice. The rename goes between PRs, because it touches many files. Beta distribution does not wait for PR 9. Documents and probes keep growing slowly under the proportion rules in AGENTS.md and are pruned once, in stage G, before the 1.0 acceptance.

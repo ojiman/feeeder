@@ -1,6 +1,6 @@
 # 0013 A learning goal and one note per theme
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: replaced in part by [0019](0019-v1-simplification-notes.md) (the goal, the theme records, and the theme as a concept; the idea of one plain-text note stays)
 - Date: 2026-10-10
 - Decider: the owner (PdM). The direction comes from the PdM's idea in the 2026-10-10 dogfooding discussion. The Product Owner (the agent) proposed the screen, the AI budget, and the migration. The PdM chose them.
 - Replaces: the questions, lenses, answers, and evidence parts of [decision 0008](0008-theme-centered-notes.md). Parts of [0011](0011-on-device-generation-defaults.md) (question proposals) and [0012](0012-claude-handoff-from-themes.md) (the questions and answers switches) change when the work below lands.

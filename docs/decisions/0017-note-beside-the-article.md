@@ -1,6 +1,6 @@
 # 0017 The note beside the article
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: replaced by [0019](0019-v1-simplification-notes.md) (the note is a column of its own, not an inspector next to the article)
 - Date: 2026-10-10
 - Decider: the owner (PdM) proposed the screen after trying the note face (N2 to N5). The Product Owner (the agent) compared options and recommended; the PdM chose.
 - Replaces: point 4 (the screen) of [decision 0013](0013-goal-and-note-for-themes.md). Its other points stand. The screens built in N3 (the note in the middle column, the reader's top bar, the 「原文｜AI要約」 switch) are replaced by L1 in [the roadmap, Part 1d](../superpowers/plans/2026-10-10-theme-notes.md).

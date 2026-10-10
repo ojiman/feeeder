@@ -2,7 +2,9 @@
 
 A fast, keyboard-driven RSS reader for macOS that helps you go from skimming to understanding.
 
-Skim hundreds of articles in a smooth three-column reader. Star what catches your eye. Later, gather those stars into themes, state what you want to learn, and write your own note. Everything stays on your Mac.
+Skim hundreds of articles in a smooth three-column reader. Send an AI summary of an article you care about to a note, and write the rest in your own words. Everything stays on your Mac.
+
+> **Direction (decision 0019).** V1 is being simplified: themes, goals and the AI suggestions give way to plain Markdown notes, one button that sends an article's summary to a note, and Claude as a function of the note. The list under "What it does today" describes the current build; it changes as the stages in [decision 0019](docs/decisions/0019-v1-simplification-notes.md) are merged. The target is in [the specification](docs/specification.md).
 
 > **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is currently in Japanese only; a language setting is planned before the public release. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
 

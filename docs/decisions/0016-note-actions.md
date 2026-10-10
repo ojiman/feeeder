@@ -1,6 +1,6 @@
 # 0016 Note actions: two actions, their limits, and how an adopt is undone
 
-- Status: valid (approved by the PdM when the plan PR that proposes it was merged)
+- Status: replaced by [0019](0019-v1-simplification-notes.md) (the note actions are removed)
 - Date: 2026-10-10
 - Decider: the owner (PdM) approved the N5 plan, [2026-10-10-note-actions.md](../superpowers/plans/2026-10-10-note-actions.md). The Product Owner (the agent) proposed the points.
 - Builds on: [decision 0013](0013-goal-and-note-for-themes.md) (points 5 and 6). Replaces point 5 of [0015](0015-article-summary-details.md) ("no undo promise"): an adopted summary can now be undone too.

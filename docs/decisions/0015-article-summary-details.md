@@ -1,6 +1,6 @@
 # 0015 The article summary: budget, insertion point, and limits
 
-- Status: valid (approved by the PdM when the plan PR that proposes it was merged)
+- Status: valid in part; refined by [0019](0019-v1-simplification-notes.md) (the summary is sent straight to a note; the input budget and the source line stay)
 - Date: 2026-10-10
 - Decider: the owner (PdM) approved the N4 plan, [2026-10-10-ai-summary.md](../superpowers/plans/2026-10-10-ai-summary.md). The Product Owner (the agent) proposed the points.
 - Builds on: [decision 0013](0013-goal-and-note-for-themes.md) (points 5 and 6) and [0009](0009-on-device-ai-principles.md). It refines 0013 where the two differ (see 1 and 2).

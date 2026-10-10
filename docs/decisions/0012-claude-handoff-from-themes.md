@@ -1,6 +1,6 @@
 # 0012 Claude hand-off from themes
 
-- Status: valid (approved by the PdM when the PR 8 plan, [#36](https://github.com/ojiman/feeeder/pull/36), was merged)
+- Status: valid in part; replaced by [0019](0019-v1-simplification-notes.md) (the hand-off is now a function of a note, with no articles and no goal)
 - Date: 2026-10-10
 - Decider: the owner (PdM). The choices below are the implementation choices listed at the top of the plan.
 
