@@ -16,6 +16,8 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var noteLayout = NoteLayout()
+    /// The window's width, for the rule that folds the sidebar only in a narrow window (`NoteLayout.foldBelow`).
+    @State private var windowWidth: Double = 0
     @State private var saveError: String?
     @State private var noteMessage: String?
     @State private var pickingNote = false
@@ -96,9 +98,14 @@ struct ReaderView: View {
 
     var body: some View {
         reader
-        .onAppear { if noteOpen { noteLayout.noteOpened(); applyColumns() } }
+        .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
+            windowWidth = width
+            guard noteOpen else { return }
+            noteLayout.windowWidthChanged(to: width); applyColumns()
+        }
+        .onAppear { if noteOpen { noteLayout.noteOpened(windowWidth: windowWidth); applyColumns() } }
         .onChange(of: noteOpen) { _, open in
-            if open { noteLayout.noteOpened() } else { noteLayout.noteClosed() }
+            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed() }
             applyColumns()
         }
         .onChange(of: columnVisibility) { _, visibility in
