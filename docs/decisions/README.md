@@ -42,6 +42,7 @@
 | [0014](0014-note-migration-format.md) | The note migration: format, what stays, what pauses | valid (approved by merging the N2 plan) |
 | [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid (approved by merging the N4 plan) |
 | [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | valid (approved by merging the N5 plan) |
+| [0017](0017-note-beside-the-article.md) | The note beside the article | valid (approved by merging the PR that adds it) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
