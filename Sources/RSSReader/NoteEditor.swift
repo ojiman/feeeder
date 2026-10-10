@@ -6,12 +6,13 @@ import ReaderCore
 struct NoteEditor: View {
     @Bindable var store: ReaderStore
     let themeID: UUID
+    @Binding var selection: TextSelection?
     @State private var error: String?
     var body: some View {
         if let theme = store.theme(id: themeID) {
             TextEditor(text: Binding(get: { theme.note }, set: { text in
-                do { try store.saveNote(themeID: themeID, text: text, at: .now) } catch { self.error = error.localizedDescription }
-            }))
+                do { try store.saveNote(themeID: themeID, text: text, at: .now) } catch { self.selection = nil; self.error = error.localizedDescription }
+            }), selection: $selection)
             .font(.body).accessibilityLabel("ノート")
             .scrollContentBackground(.hidden)
             .padding(.horizontal, 16).padding(.vertical, 12)

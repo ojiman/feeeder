@@ -17,6 +17,9 @@ struct ReaderView: View {
     @State private var pageForward = true
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var noteLayout = NoteLayout()
+    /// Where the cursor was in each theme's note. In memory only: it is restored after a face round trip, not after a restart.
+    @State private var noteSelections: [UUID: TextSelection] = [:]
     @State private var saveError: String?
     @State private var themeMessage: String?
     @State private var pickingTheme = false
@@ -49,6 +52,7 @@ struct ReaderView: View {
             initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
         }
         _workspace = State(initialValue: initialWorkspace)
+
     }
 
     private var selectedExpiry: Date? {
@@ -90,8 +94,18 @@ struct ReaderView: View {
 
     var body: some View {
         reader
+        .onAppear { if onNoteFace { noteLayout.enterNoteFace(); applyColumns() } }
+        .onChange(of: onNoteFace) { _, on in
+            if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
+            applyColumns()
+        }
+        .onChange(of: columnVisibility) { _, visibility in
+            // The window may change the columns by itself; keep the layout in step (only while on the note face).
+            guard onNoteFace else { return }
+            noteLayout.follow(visibility == .all ? .all : .doubleColumn)
+        }
         .onChange(of: scope) { old, new in
-            if let old, workspace.isReading(old) {
+            if let old {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
@@ -104,18 +118,13 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
+            workspaceList.navigationSplitViewColumnWidth(min: onNoteFace ? 320 : 280, ideal: onNoteFace ? 460 : 400, max: onNoteFace ? 800 : 640)
         } detail: {
-            ZStack(alignment: .trailing) {
-                detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
-                if let url = originalPage.url, let expectedID = originalPage.articleID {
-                    OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
-                        guard selection == expectedID, originalPage.articleID == expectedID else { return }
-                        perform(command)
-                    })
-                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
-                }
-            }.clipped().frame(minWidth: 360)
+            VStack(spacing: 0) {
+                if case .theme(let id) = scope, onNoteFace { readerTopBar(id) }
+                readerColumn
+            }
+            .frame(minWidth: 360)
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 930, minHeight: 600)
@@ -131,7 +140,7 @@ struct ReaderView: View {
             // Always present, disabled when no article is open. If these buttons came and went with the selection,
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
-                let article = workspace.isReading(scope ?? .all) ? selectedArticle : nil
+                let article = selectedArticle
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
@@ -183,6 +192,8 @@ struct ReaderView: View {
             if let id = selection { await loading.load(articleID: id) }
             else { loading.clear() }
         }
+        .onKeyPress("j") { guard onNoteFace, shortcutsEnabled else { return .ignored }; move(1); return .handled }   // the articles face has its own on the list
+        .onKeyPress("k") { guard onNoteFace, shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled
@@ -388,9 +399,37 @@ struct ReaderView: View {
 
     @ViewBuilder private var workspaceList: some View {
         if case .theme(let id) = scope, workspace.face(of: id) == .note {
-            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
+            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), selection: noteSelectionBinding(id), sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
+    }
+
+    /// The reader, with the original page sliding over it.
+    private var readerColumn: some View {
+        ZStack(alignment: .trailing) {
+            detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
+            if let url = originalPage.url, let expectedID = originalPage.articleID {
+                OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
+                    guard selection == expectedID, originalPage.articleID == expectedID else { return }
+                    perform(command)
+                })
+                    .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
+            }
+        }.clipped()
+    }
+
+    /// Not while Japanese text is being composed, and not while the theme picker is open (it belongs to the article that is shown).
+    private var topBarMayMove: Bool {
+        !pickingTheme && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
+    }
+
+    private func readerTopBar(_ themeID: UUID) -> some View {
+        ReaderTopBar(entries: store.themeArticleEntries(themeID: themeID, selection: selection),
+                     canPrevious: ThemeArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
+                     canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
+                     onPrevious: { guard topBarMayMove else { return }; perform(.previous) },
+                     onNext: { guard topBarMayMove else { return }; perform(.next) },
+                     onChoose: { id in if id != selection { ReaderPerformance.selectionStarted(id) }; selectArticle(id) })
     }
 
     @ViewBuilder private var detail: some View {
@@ -415,7 +454,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { workspace.isReading(scope ?? .all) && ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil || pickingTheme, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || themeEditor != nil || pickingTheme, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -447,6 +486,22 @@ struct ReaderView: View {
         }
     }
 
+    private var onNoteFace: Bool {
+        if case .theme(let id) = scope { return workspace.face(of: id) == .note }
+        return false
+    }
+    private func noteSelectionBinding(_ themeID: UUID) -> Binding<TextSelection?> {
+        Binding(get: { noteSelections[themeID] }, set: { value in noteSelections[themeID] = value })
+    }
+    private func toggleSidebar() {
+        noteLayout.toggleSidebar()
+        applyColumns()
+    }
+    private func applyColumns() {
+        let target: NavigationSplitViewVisibility = noteLayout.columns == .all ? .all : .doubleColumn
+        guard columnVisibility != target else { return }
+        withAnimation(reduceMotion ? nil : .default) { columnVisibility = target }
+    }
     private func faceBinding(_ themeID: UUID) -> Binding<ThemeFace> {
         Binding(get: { workspace.face(of: themeID) }, set: { setFace($0, of: themeID) })
     }
@@ -457,13 +512,10 @@ struct ReaderView: View {
         enterScope()
     }
     private func enterScope() {
-        if workspace.isReading(workspace.scope) {
-            let restored = workspace.reader(in: workspace.scope)
-            scrollMemory.state = restored; selectArticle(restored.selectedArticleID); listFocused = true
-        } else {
-            if originalPage.url != nil { closeOriginal() }
-            columnVisibility = .all; listFocused = false
-        }
+        let restored = workspace.reader(in: workspace.scope)
+        scrollMemory.state = restored; selectArticle(restored.selectedArticleID)
+        // The note face has no article list: the focus stays where the person puts it (the note, the reader).
+        if case .theme(let id) = workspace.scope, workspace.face(of: id) == .note { listFocused = false } else { listFocused = true }
     }
 
     private func move(_ offset: Int) {

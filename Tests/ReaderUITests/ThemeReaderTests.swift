@@ -5,14 +5,14 @@ import Testing
 @testable import RSSReader
 
 @Suite(.serialized) @MainActor struct ThemeReaderTests {
-    private struct NoLauncher: ClaudeLaunching {
+    fileprivate struct NoLauncher: ClaudeLaunching {
         func open(_ url: URL) async throws { throw HandoffError.launchFailed }
     }
-    private func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
+    fileprivate func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
         if let result = view as? T { return result }
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
     }
-    private func settle(_ host: NSView, until ready: @MainActor () -> Bool) async throws {
+    fileprivate func settle(_ host: NSView, until ready: @MainActor () -> Bool) async throws {
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
             if ready() { return }
@@ -20,17 +20,28 @@ import Testing
         }
         #expect(ready(), "Synthetic reader did not reach the expected state")
     }
-    private func containsText(_ text: String, in view: NSView) -> Bool {
+    fileprivate func containsText(_ text: String, in view: NSView) -> Bool {
         if let field = view as? NSTextView, field.string == text { return true }
         return view.subviews.contains { containsText(text, in: $0) }
     }
-    private struct Harness {
+    fileprivate func buttons(in view: NSView) -> [NSButton] {
+        (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap { buttons(in: $0) }
+    }
+    /// The reader's top bar: the last two plain buttons in the tree are previous and next (the menu is a pop-up button; the sidebar
+    /// button is earlier, in the middle column). SwiftUI gives these buttons no label or tool tip that AppKit can read.
+    fileprivate func topBar(in view: NSView) -> (previous: NSButton, next: NSButton, menu: NSPopUpButton)? {
+        let all = buttons(in: view)
+        let plain = all.filter { !($0 is NSPopUpButton) }
+        guard plain.count >= 2, let menu = all.compactMap({ $0 as? NSPopUpButton }).first else { return nil }
+        return (plain[plain.count - 2], plain[plain.count - 1], menu)
+    }
+    fileprivate struct Harness {
         let store: ReaderStore
         let host: NSHostingView<ReaderView>
         let window: NSWindow
         let directory: URL
     }
-    private func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
+    fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -51,7 +62,7 @@ import Testing
         window.contentView = host
         return Harness(store: store, host: host, window: window, directory: directory)
     }
-    private func finish(_ harness: Harness) {
+    fileprivate func finish(_ harness: Harness) {
         harness.window.close(); try? FileManager.default.removeItem(at: harness.directory)
     }
 
@@ -125,5 +136,91 @@ import Testing
         try await Task.sleep(for: .milliseconds(300))
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 0 }
         try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+    }
+}
+
+/// The note face of a theme (N3). A suite of its own: see docs/verification/2026-10-10-theme-two-panes.md for why.
+@Suite(.serialized) @MainActor struct NoteFaceTests {
+    private let t = ThemeReaderTests()
+
+    private func noteFaceHarness() throws -> ThemeReaderTests.Harness {
+        try t.harness(scope: { store in .theme(store.themes[0].id) }, face: .note) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            for index in 0..<3 { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
+            try store.saveNote(themeID: theme.id, text: "ノートの本文", at: .now)
+        }
+    }
+
+    @Test func theTopBarMovesBetweenTheThemesArticlesFromTheNoteFace() async throws {
+        let h = try noteFaceHarness()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.containsText("ノートの本文", in: h.host) && t.topBar(in: h.host) != nil }
+        let next = try #require(t.topBar(in: h.host)).next
+        next.performClick(nil)                                   // nothing shown: next opens the first
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        let previous = try #require(t.topBar(in: h.host)).previous
+        try await t.settle(h.host) { !previous.isEnabled }              // at the first article
+        next.performClick(nil)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+        next.performClick(nil)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 2") == true }
+        try await t.settle(h.host) { !next.isEnabled }                  // at the last article
+        #expect(t.containsText("ノートの本文", in: h.host))                            // the note stayed
+    }
+
+    @Test func theArticleChosenOnTheNoteFaceIsTheOneTheArticlesFaceShows() async throws {
+        let h = try noteFaceHarness()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.topBar(in: h.host) != nil }
+        let next = try #require(t.topBar(in: h.host)).next
+        next.performClick(nil); try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        next.performClick(nil); try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+        let control = try #require(t.find(NSSegmentedControl.self, in: h.host))
+        control.selectedSegment = 0
+        control.performClick(nil)
+        try await t.settle(h.host) { t.find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 3 }
+        try await t.settle(h.host) { t.find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 1 }
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+    }
+
+    @Test func aShownArticleThatLeftTheThemeDoesNotBreakTheTopBar() async throws {
+        let h = try noteFaceHarness()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.topBar(in: h.host) != nil }
+        let next = try #require(t.topBar(in: h.host)).next
+        next.performClick(nil)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        let themeID = h.store.themes[0].id
+        try h.store.removeArticle(h.store.articles[0].id, fromTheme: themeID, at: .now)
+        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }   // let the update land
+        #expect(t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true)   // still shown
+        #expect(t.topBar(in: h.host) != nil)
+        next.performClick(nil)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+    }
+
+    fileprivate func noteTextView(in view: NSView) -> NSTextView? {
+        if let text = view as? NSTextView, text.isEditable { return text }
+        return view.subviews.lazy.compactMap { noteTextView(in: $0) }.first
+    }
+
+    @Test func theNotesSelectionComesBackAfterAFaceRoundTrip() async throws {
+        let h = try noteFaceHarness()
+        defer { t.finish(h) }
+        h.window.makeKeyAndOrderFront(nil)
+        try await t.settle(h.host) { noteTextView(in: h.host) != nil }
+        let text = try #require(noteTextView(in: h.host))
+        h.window.makeFirstResponder(text)
+        text.setSelectedRange(NSRange(location: 2, length: 3))
+        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
+        let control = try #require(t.find(NSSegmentedControl.self, in: h.host))
+        control.selectedSegment = 0; control.performClick(nil)
+        try await t.settle(h.host) { noteTextView(in: h.host) == nil && t.find(NativeArticleList.Table.self, in: h.host) != nil }
+        let back = try #require(t.find(NSSegmentedControl.self, in: h.host))
+        back.selectedSegment = 1; back.performClick(nil)
+        try await t.settle(h.host) { noteTextView(in: h.host) != nil }
+        let restored = try #require(noteTextView(in: h.host))
+        h.window.makeFirstResponder(restored)
+        try await t.settle(h.host) { restored.selectedRange() == NSRange(location: 2, length: 3) }
     }
 }

@@ -19,24 +19,26 @@ struct ReaderWorkspaceTests {
         #expect(workspace.face(of: themeID) == .note)
         #expect(workspace.reader(in: .all).selectedArticleID == nil)
     }
-    @Test func themeFacesGateReadingAndKeepTheSavedReader() {
+    @Test func bothFacesOfAThemeShareOneReader() {
         var workspace = ReaderWorkspaceState()
         let themeID = UUID(), other = UUID()
-        #expect(workspace.face(of: themeID) == .articles && workspace.isReading(.theme(themeID)))
-        #expect(workspace.isReading(.unfiledStars) && workspace.isReading(.all))
-        let article = UUID()
-        var reader = ReaderSelectionState(); reader.select(article)
+        #expect(workspace.face(of: themeID) == .articles)
+        let first = UUID(), second = UUID()
+        var reader = ReaderSelectionState(); reader.select(first)
         workspace.switchFace(of: themeID, to: .note, rememberingReader: reader)
-        #expect(workspace.face(of: themeID) == .note && !workspace.isReading(.theme(themeID)))
-        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == article)
-        #expect(workspace.face(of: other) == .articles)
-        var later = ReaderSelectionState(); later.select(UUID())
-        workspace.switchFace(of: themeID, to: .articles, rememberingReader: later)
-        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == article)
-        #expect(workspace.isReading(.theme(themeID)))
+        #expect(workspace.face(of: themeID) == .note && workspace.face(of: other) == .articles)
+        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == first)
+        // The article chosen on the note face is the one the articles face shows after going back.
+        var chosen = ReaderSelectionState(); chosen.select(second)
+        chosen.recordScroll(articleID: second, anchor: "p-3", offset: 120)
+        workspace.rememberReader(chosen, in: .theme(themeID))
+        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == second)
+        workspace.switchFace(of: themeID, to: .articles, rememberingReader: chosen)
+        let restored = workspace.reader(in: .theme(themeID))
+        #expect(restored.selectedArticleID == second && restored.scrollOffsets[second] == 120 && restored.scrollAnchors[second] == "p-3")
+        // And back again: leaving the articles face saves it as before.
+        var later = ReaderSelectionState(); later.select(first)
         workspace.switchFace(of: themeID, to: .note, rememberingReader: later)
-        var third = ReaderSelectionState(); third.select(UUID())
-        workspace.rememberReader(third, in: .theme(themeID))
-        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == later.selectedArticleID)
+        #expect(workspace.reader(in: .theme(themeID)).selectedArticleID == first)
     }
 }

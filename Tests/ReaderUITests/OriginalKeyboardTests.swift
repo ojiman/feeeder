@@ -147,3 +147,26 @@ import Testing
         if let key = message.body as? String, let command = ReaderCommand(rawValue: key) { commands.append(command) }
     }
 }
+
+@MainActor struct ShortcutResponderTests {
+    @Test func onlyAnEditableTextViewOrAFieldCountsAsTextInput() {
+        let note = NSTextView(); note.isEditable = true
+        let reader = NSTextView(); reader.isEditable = false; reader.isSelectable = true
+        #expect(ReaderKeyboardCommands.isTextInput(note))
+        #expect(!ReaderKeyboardCommands.isTextInput(reader))
+        #expect(ReaderKeyboardCommands.isTextInput(NSTextField()))
+        #expect(!ReaderKeyboardCommands.isTextInput(NSTableView()))
+        #expect(!ReaderKeyboardCommands.isTextInput(nil))
+    }
+    @Test func markedTextInTheNoteBlocksEveryShortcut() {
+        let note = NSTextView(); note.isEditable = true
+        #expect(!ReaderKeyboardCommands.hasMarkedText(note))
+        note.setMarkedText("にほん", selectedRange: NSRange(location: 3, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(ReaderKeyboardCommands.hasMarkedText(note))
+        #expect(!ReaderShortcutPolicy.permits(textInput: ReaderKeyboardCommands.isTextInput(note), markedText: ReaderKeyboardCommands.hasMarkedText(note), sheet: false, originalPage: false))
+    }
+    @Test func theReadOnlyReaderDoesNotBlockShortcuts() {
+        let reader = NSTextView(); reader.isEditable = false
+        #expect(ReaderShortcutPolicy.permits(textInput: ReaderKeyboardCommands.isTextInput(reader), markedText: ReaderKeyboardCommands.hasMarkedText(reader), sheet: false, originalPage: false))
+    }
+}

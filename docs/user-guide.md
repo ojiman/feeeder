@@ -66,7 +66,7 @@ The window has three columns. In Settings you can choose the appearance: follow 
 |---|---|
 | Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Themes (未整理のStar unsorted stars, and each theme), and Sources (folders and subscriptions). |
 | Middle | The list of articles. For a theme, a switch at the top chooses [記事｜ノート] (Articles \| Note). |
-| Right | The article. On the note face it keeps showing the article you selected last. |
+| Right | The article. On the note face a bar above it has previous and next buttons and a menu of the theme's articles. |
 
 ### Subscriptions and folders
 
@@ -110,7 +110,8 @@ Focus the article list, then use these keys:
 Select a theme. Use the switch [記事｜ノート] (Articles | Note) at the top of the middle column.
 
 - **Articles** shows the same list and reading view as a source or a folder.
-- **Note** shows the one note of this theme in the middle column. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. The right column keeps showing the article you selected last, so you can read while you write. On this face `j` and `k` do not move between articles; switch to 「記事」 for that. (A version with previous and next buttons on this face comes later.)
+- **Note** shows the one note of this theme in the middle column. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. When you open the note, the sidebar folds away to give room. The small button at the left of the switch shows it again or folds it again; when you go back to 「記事」 it is shown again. The right column shows an article, so you can read while you write. A bar above it has previous and next buttons and a menu of all the articles of the theme (choose one to open it). Your cursor in the note is kept when you switch to 「記事」 and back (not after you quit the app).
+- Keys: `j` and `k` move between articles, and `s`, `t`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 - **The AI never writes into your note.**
 
 **Questions and answers from an older version.** Earlier versions had questions with lenses, answers, evidence articles, and 「いまの理解」 (Current understanding). The first time this version opens your library, the app moves them into the note of each theme: the old 「いまの理解」 text first, then for each question a heading line `# <question>`, your answer under it, and the line `根拠の記事:` (Evidence articles:) with a list of the article titles and links. The app checks that the note contains all of your old text. Then it saves the notes and removes the old records in one step. It tells you once with a message, 「ノートにまとめました」. The name of the lens, the "answered" mark, and the dates of questions are not kept. If something goes wrong, nothing is removed. The app says so and tries again at the next start; you can also choose 「再試行」 (Retry). **Before you start this version for the first time, copy the whole `Feeeder` folder** (see "Back up the library by hand" above), because this change cannot be undone.
