@@ -90,7 +90,7 @@ extension ReaderStore {
 
     @discardableResult public func createTheme(name: String, at: Date) throws -> Theme {
         try reloadIfNeeded()
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = SingleLineText.name(name)
         guard !name.isEmpty else { throw ThemeError.missingName }
         let theme = Theme(name: name, at: at)
         context.insert(theme)
@@ -99,7 +99,7 @@ extension ReaderStore {
     }
     public func renameTheme(id: UUID, to name: String, at: Date) throws {
         try reloadIfNeeded()
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = SingleLineText.name(name)
         guard !name.isEmpty else { throw ThemeError.missingName }
         guard let theme = theme(id: id), theme.name != name else { return }
         theme.name = name; theme.updatedAt = at
@@ -176,7 +176,7 @@ extension ReaderStore {
     /// Creates the theme and its first article in one save, so a failure never leaves an empty new theme behind.
     @discardableResult public func createTheme(name: String, adding articleID: UUID, at: Date) throws -> Theme {
         try reloadIfNeeded()
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = SingleLineText.name(name)
         guard !name.isEmpty else { throw ThemeError.missingName }
         guard let article = article(id: articleID) else { throw ThemeError.missingArticle }
         let theme = Theme(name: name, at: at)
@@ -189,7 +189,7 @@ extension ReaderStore {
     /// Duplicate IDs collapse (order kept); a missing article rejects the whole request.
     @discardableResult public func createTheme(name: String, adding articleIDs: [UUID], at: Date) throws -> Theme {
         try reloadIfNeeded()
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = SingleLineText.name(name)
         guard !name.isEmpty else { throw ThemeError.missingName }
         var seen = Set<UUID>()
         let unique = articleIDs.filter { seen.insert($0).inserted }

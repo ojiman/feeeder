@@ -162,7 +162,7 @@ import SwiftData
         feed.iconURL = parsed.iconURL?.absoluteString ?? feed.iconURL
         if !feed.customTitle { feed.title = parsed.title }
         do {
-            if let folder { feed.folder = folder.trimmingCharacters(in: .whitespacesAndNewlines) }
+            if let folder { feed.folder = SingleLineText.name(folder) }
             var contentRemoved = false
             var allArticles = articles
             var allMemberships = memberships
@@ -207,9 +207,9 @@ import SwiftData
     public func updateSubscription(_ feed: Feed, title: String, folder: String) throws {
         try reloadIfNeeded()
         guard let feed = self.feed(id: feed.id) else { return }
-        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = SingleLineText.name(title)
         guard !title.isEmpty else { throw FeedImportError.missingTitle }
-        feed.title = title; feed.folder = folder.trimmingCharacters(in: .whitespacesAndNewlines); feed.customTitle = true
+        feed.title = title; feed.folder = SingleLineText.name(folder); feed.customTitle = true
         try save(); try reload()
     }
 
