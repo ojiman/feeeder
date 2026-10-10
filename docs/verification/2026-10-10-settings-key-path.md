@@ -1,64 +1,71 @@
-# Settings: ReaderView接続とキー入力の一時検証
+# Settings: ReaderView Integration and Key-Input Probe
 
-更新日: 2026-10-10（日本時間）。**未承認の推奨案の検証記録。製品統合・性能受入ではない。**
+Updated: 2026-10-10 (Japan time). **Evidence for an unapproved recommendation. This is not product integration or performance acceptance.**
 
-[POの担当者向け依頼](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090875330)を対象に、ReaderView → ArticleDetailView → NSViewRepresentable → `updateReadingSize()`を一時コピーへ接続した。正式SPEC・Architecture・製品ソースは変更しない。別途開発中のAI機能を取り込まず、POの性能分解と不採用判断は維持する。
+This follows the [PO's hand-off](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090875330) by connecting a temporary copy from ReaderView → ArticleDetailView → NSViewRepresentable → `updateReadingSize()`. It does not change the formal SPEC, Architecture, or product source. It does not include the separately developed AI feature. The PO's performance decomposition and rejection of the viewport shortcut remain unchanged.
 
-## 結論と担当範囲
+## Conclusion and scope
 
-接続試験3件、既存本文試験9件、POプローブ10件の計22件がReleaseで成功した。合成アプリへの実ウィンドウ入力では、⌘+／⌘−／⌘0が開いている本文を更新し、上端文字・選択・初回既読日時を保持した。15回の描画更新でinstall／load／fetch／markDisplayedの呼出し増分はすべて0。上限・下限・既定値での5回は値を変えないno-opだった。
+Twenty-two Release tests passed: 3 integration tests, 9 existing article-text tests, and 10 PO probes. With synthetic articles and a real app window, Command-plus/minus/zero updated the open text and retained the visible top character, selection, and first-read date. Ten drawn updates added zero calls to install, load, fetch, or mark-as-read. Three commands at a size limit or at the default value were no-ops.
 
-**私の判断は、本文接続の実現性を確認できたが、即時更新の製品採用は引き続き未受入。** 約13.5万UTF-16の本文では入力から描画処理終了まで306〜383msかかった。主な時間を同期レイアウトが占め、接続してもPOの長さ依存は解消しなかった。PdMには長さ別の時間予算と、長文で許容するかキー解放時に1回適用するかの判断が必要。キー解放案は今回実装・検証していない。
+**My judgment: the article-text connection is feasible, but immediate updates are not accepted for product use yet.** A synthetic article of about 135,000 UTF-16 units took 306–383 ms from the input event to completion of the CPU draw callback. Synchronous layout accounts for most of the time, so the PO's length dependency remains after wiring the caller. The PdM must set budgets by article length and decide whether very long articles update immediately or once on key release. The key-release option was not implemented or tested.
 
-## 環境・再現入力
+## Environment and synthetic inputs
 
-- macOS 27.0.1 (26A434)、Xcode 27.0 (27A266a)、Apple Swift 6.4、arm64、Release。
-- PO記録を確認したHEAD: `26fb8ff071f11ef6cd1554d1e11be6b1c280ebd2`。一時製品ソースは既存プローブと同じ `e9bcd933873fe920fc3751ba417afe561ff2a99c` に固定。
-- 既存の初期描画／ライブ更新パッチに[接続パッチ](probes/settings-key-path.patch)、[キー橋渡し・計測](probes/settings-key-bridge.swift)、[接続試験](probes/settings-key-path.swift)を追加。製品の通常UserDefaultsとは異なるsuiteを使用。
-- 合成本文3／30／200段落。35回繰返す日本語・英語・絵文字の段落。UTF-16はヘッダ込み2069／20235／134749。POの性能分解とは文章が異なるため絶対時間を直接比較しない。
-- 本文領域幅727pt、スクロール領域高733pt。30段落は3ページ、200段落は20ページ下へ移動した位置から操作。選択範囲の非空保持は接続試験で確認し、UI測定では空の選択を保持。
-- Bundle ID `jp.ojiman.Feeeder.SettingsProbe.7i7mlun7` の未署名ローカルコピー。PID 58600の起動引数が `--data-directory /private/tmp/feeeder-settings-keys-7i7mlun7/data-final --seed-demo` を含み、画面の合成6記事と一致することを操作前に確認した。利用者のライブラリ・既存設定に接続していない。
-- 原文は[ローカルHTML](probes/settings-key-original.html)を127.0.0.1のHTTPサーバーで表示。外部記事取得・AI推論・Claude起動なし。終了後に検証アプリとサーバーを停止。
+- macOS 27.0.1 (26A434), Xcode 27.0 (27A266a), Apple Swift 6.4, arm64, Release.
+- The latest PO review was on commit `dc01fd823628bc22990a1bc5319b3ca2964d626a`. The branch includes `origin/main` through `9a9e831`; the temporary product source remains pinned to `e9bcd933873fe920fc3751ba417afe561ff2a99c` to keep the synthetic probe baseline stable and isolated from separate feature work.
+- Added the [integration patch](probes/settings-key-path.patch), [key bridge and measurement](probes/settings-key-bridge.swift), and [integration tests](probes/settings-key-path.swift) to the existing initial-render/live-update patches. The probe uses a dedicated defaults suite, separate from normal app settings.
+- Synthetic articles contain 3, 30, or 200 paragraphs of repeated Japanese, English, and emoji. UTF-16 lengths including the headings are 2,069 / 20,235 / 134,749. The text differs from the PO timing input, so absolute measurements are not directly comparable.
+- Text viewport: 727 × 733 pt. The 30-paragraph article was scrolled down three pages and the 200-paragraph article twenty pages before operating the controls. The integration test also retained a non-empty selection; UI timing records used an empty selection.
+- Launched an unsigned local copy with bundle ID `jp.ojiman.Feeeder.SettingsProbe.KRSfXc`. Before interacting, verified PID 8419's arguments included `--data-directory /private/tmp/feeeder-settings-keys.KRSfXc/data-ui --seed-demo`, and that the window showed six synthetic articles. The user's library and normal preferences were not used.
+- The original page was a local [HTML fixture](probes/settings-key-original.html) served from 127.0.0.1. No external article, AI inference, or Claude hand-off was used. The probe app and server were stopped afterwards.
 
-## 接続の検証
+## Integration checks
 
-| 確認 | 結果と範囲 |
+| Check | Result and scope |
 |---|---|
-| Detail → nativeの接続 | PASS。先にfont20ptの表明が16ptで失敗するREDを確認後、接続を追加。同じArticleTextView・文字列・非空選択を保持。表示開始／表示完了は初回各1、再取得0 |
-| ReaderView全体 | PASS。合成Storeで一度表示した記事を未読へ戻し、設定変更後も未読・初回既読日時・contentRevisionを保持。load／fetch／markDisplayedの呼出し0。font20ptへ更新 |
-| キー判定の試験 | PASS。+／=／−／0、Shift、Control／Optionの拒否、4段階の上下限、編集可能NSTextView／NSTextField／marked textの拒否。marked textはテスト用responderによる論理判定で、実IMEではない |
-| 実ウィンドウ入力 | PASS（限定）。CUAによるmacOSウィンドウ入力で更新し、実際のNSEvent情報を保存。ABC入力ソース。⌘+と⌘=のCUA指定はともにkeyCode24、characters `=`、ignoringModifiers `+`、Command+Shiftとなった。異なる物理キー2種類を実測した意味ではない |
-| 購読追加sheet | PASS（限定）。合成文字列を入力後、3キーで本文設定が変わらず文字列も保持。キャンセルし、購読操作は実行しない。sheetが別keyWindowなので本文monitorは計測しない |
-| 原文WebView | PASS（限定）。原文表示中は本文設定を変更しない。input／textarea／contenteditableのそれぞれに座標クリックでフォーカス・文字入力を確認して3キーを操作、入力を保持。42 ignored記録はイベントの再配送を含み、42物理操作ではない |
-| 長押し／連打 | 一部のみ。200段落で800msの長押しを行ったがNSEvent.isARepeatはすべてfalse。短い単発入力の上下限no-opは確認できたが、実キー反復の待ち行列・解放時処理はNOT_RUN |
+| Detail to native text | PASS. First observed a RED failure: font remained 16 pt when the test expected 20 pt. After wiring, the same ArticleTextView, text, and non-empty selection remained; display-start/displayed callbacks stayed at one each; reload count was zero. |
+| Full ReaderView | PASS. In a synthetic Store, an article was marked unread before changing size. It remained unread with the same first-read date and content revision. Additional load/fetch/mark-as-read calls were zero, and body font became 20 pt. |
+| Saved scroll position after reflow | PASS after review fix. After size change, the saved `ReaderScrollMemory` anchor/offset matches `readingPosition()`. Restoring that saved value places the same top character in the viewport. The earlier version did not refresh the saved value; the PO reproduced about 140 px of return-position drift. |
+| Command predicate and responder rules | PASS. Tests `+`, `=`, `-`, `0`, Shift, rejection of Control/Option, size bounds, editable NSTextView/NSTextField allowance, and rejection while `hasMarkedText()` is true. The marked-text responder is synthetic; this is not a real IME test. |
+| Actual window input | PASS, limited. CUA sent commands to the macOS app window and the probe recorded NSEvent data. The active source was ABC. CUA's `super+plus` and `super+equal` both arrived as keyCode 24, characters `=`, ignoringModifiers `+`, with Command+Shift. This does not prove behavior for two different physical keys. |
+| Add-subscription sheet | PASS, limited. After typing synthetic text, the three commands left the text and article size unchanged. The sheet was cancelled; no subscription was added. A sheet is a separate key window, so the article monitor is not measured there. |
+| Original-page WebView | PASS, limited. While the original page was open, article size stayed unchanged. Each of input, textarea, and contenteditable received focus by coordinate click; text entry and the three commands preserved input. The 24 `ignored` records include event re-delivery; they are not a count of physical key presses. |
+| Hold and repeat | Partial. Physical key repeat and apply-on-key-release were NOT RUN in the latest run. The earlier probe held the key for 800 ms and received no `NSEvent.isARepeat` event; this is not evidence for physical repeat behavior. |
 
-textareaのAXクリックではフォーカスが移らず、合成入力の`t`／`s`が既存のテーマ／Star操作に届いた。保存せずポップオーバーを閉じ、座標クリック後のフォーカスと入力を確認して再検証した。この前段の操作は本文サイズ更新の成功件数に含めない。検証データのStar状態は初期状態とは異なる。AXクリックだけを編集開始の証拠にしない。
+An accessibility click on the textarea did not focus it; synthetic `t`/`s` input reached existing theme/Star actions. The popover was closed without saving and the test was repeated after coordinate clicks confirmed focus and text. The preliminary attempt is excluded from the successful input checks. The synthetic library's Star state differs from its initial seed.
 
-## 入力から描画までの記録
+## Input-to-draw measurements
 
-| 本文UTF-16 | 描画更新数 | 入力→描画処理終了 ms 最小／中央値／最大 | updateReadingSize ms 最小／中央値／最大 |
+| Article UTF-16 units | Drawn updates | Event to CPU draw completion, min / median / max ms | `updateReadingSize()`, min / median / max ms |
 |---:|---:|---:|---:|
-| 2069 | 4 | 13.05／15.48／15.70 | 4.62／5.35／6.86 |
-| 20235 | 2 | 68.68／70.10／71.52 | 55.39／57.82／60.25 |
-| 134749 | 9 | 306.29／322.99／383.17 | 295.56／308.13／369.78 |
+| 2,069 | 2 | 11.54 / 16.66 / 21.79 | 5.62 / 5.66 / 5.69 |
+| 20,235 | 2 | 59.93 / 67.38 / 74.82 | 47.89 / 54.29 / 60.69 |
+| 134,749 | 6 | 306.05 / 317.60 / 340.42 | 294.58 / 306.77 / 323.18 |
 
-NSEvent.timestamp → representable更新直前 → update終了 → NSTextView.drawのsuper呼出し終了を計測。最後はCPU側の描画処理終了であり、GPU present・画面走査・人が見えるまでの時間ではない。JSON書込み・文字位置の計測など診断負荷を含む。少数の単発サンプルで、安定したSLOやp95を推定しない。性能PASS／FAILの閾値は未設定。
+The probe measures `NSEvent.timestamp` to just before the representable update, through the end of `NSTextView.draw`'s `super` call. The latest 47-record file contains 10 accepted/drawn updates, 3 no-ops, and 24 ignored events; the ignored events were recorded while the original WebView was active. This is CPU-side draw completion, not GPU presentation, scan-out, or time to a visible pixel. Diagnostic logging and visible-character measurement add overhead. These few single-key samples do not estimate a stable SLO or p95. There is no performance pass/fail threshold.
 
-[結果と入力ハッシュ](probes/settings-key-results.txt)、[全キー記録](probes/settings-key-events.json)、[22試験ログ](probes/settings-key-tests.txt)を保存。描画15件すべてで上端文字保持・選択保持・初回既読日時一致・4種の呼出し増分0を機械的に照合した。これは合成接続の証拠で、将来の製品実装全体へ自動的に引き継がない。
+See [raw results and input hashes](probes/settings-key-results.txt), [all key records](probes/settings-key-events.json), and [22-test log](probes/settings-key-tests.txt). All 10 drawn records were checked mechanically for retained top character, selection, matching first-read timestamps, and zero deltas across four call counters. This is evidence for the synthetic connection, not a guarantee for a future product implementation.
 
-## 再実行
+## Key command approach for the product
+
+The probe uses an `NSEvent` local monitor only to measure the input-to-update path. It compares event characters and consumes a handled event, so it does not provide visible menu commands, menu search, VoiceOver discovery, or disabled states at size limits. Do not carry this monitor into the product.
+
+The proposed product approach is standard View-menu commands for 「文字を大きく」(Increase Text Size), 「文字を小さく」(Decrease Text Size), and 「実際のサイズ」(Actual Size), with macOS key equivalents. This lets the system resolve keyboard layouts and work through menu visibility, accessibility, responder routing, and command validation. Verify JIS and other input sources in the product before acceptance.
+
+## Reproduction
 
 ```sh
 bash docs/verification/probes/run-settings-key-path.sh
 ```
 
-[スクリプト](probes/run-settings-key-path.sh)は固定ソースから一時コピーを作り、3パッチを適用して22試験を実行し、固有Bundle IDの未署名合成アプリとHTMLを準備する。起動・UI操作は自動実行しない。表示されたパスを `probe_source` に代入し、別ターミナルで次を起動する。
+The [runner](probes/run-settings-key-path.sh) creates a separate copy from the fixed source, applies three patches, runs 22 tests, and prepares an unsigned synthetic app and HTML fixture. It does not launch the UI. Use the printed path as `probe_source`; start the server in another terminal:
 
 ```sh
 python3 -u docs/verification/probes/serve-settings-original.py "$probe_source"
 ```
 
-別ターミナルで起動する。新しいdataディレクトリとsuiteを使い、既存の検証結果を上書きしない。
+In another terminal, use a new data directory and defaults suite. Do not overwrite prior output.
 
 ```sh
 probe_port=$(cat "$probe_source/port.txt")
@@ -70,8 +77,8 @@ open -n "$probe_source/Feeeder Settings Probe.app" --args \
 pgrep -fl RSSReader
 ```
 
-起動引数と合成6記事を確認してから、本文3／30／200段落、+／−／0、上下限、購読sheet、原文の本文・3入力部品を操作する。終了時は検証アプリだけを⌘Qし、サーバーのターミナルをCtrl+Cで終了する。スクリプトの再生成・22試験・アプリ準備も別の一時ディレクトリで再確認した。
+Verify the launch arguments and six synthetic articles before interaction. Operate on 3/30/200-paragraph articles with plus/minus/zero and size limits, then test the add-subscription sheet and the original-page body plus its three input controls. Quit only the probe app with Command-Q and stop the server with Control-C. The runner was also regenerated and its 22 tests and app preparation were verified in a new temporary directory.
 
-## 残る判断・未確認
+## Remaining decisions and unverified behavior
 
-PdMの長さ別時間予算と極端な長文の扱いが未決定。物理JIS配列／日本語IME／実キー反復、ノート編集への倍率接続・変換中保留、設定再起動保存、画像や末尾・空白位置、実記事の長さ分布、3カテゴリ完成画面、VoiceOver・Reduce Motion・長時間利用、CI環境macOS26／Swift6.3.3は未確認。製品統合の際には正式SPEC・Architecture・決定記録と、これらの受入結果を別途更新する。
+The PdM has not set length-specific time budgets or chosen behavior for very long articles. The physical JIS layout, real Japanese IME, physical key repeat, note-editor scale connection and composition deferral, preference persistence across relaunch, image/end/gap positions, real article-length distribution, finished three-category screen, VoiceOver, Reduce Motion, long-running use, and macOS 26 / Swift 6.3.3 remain unverified. Product implementation must update the formal SPEC, Architecture, and decision record together with its acceptance evidence.

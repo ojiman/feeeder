@@ -21,10 +21,11 @@ import ReaderCore
         let paragraphs = (0..<30).map { "合成段落\($0)。" + String(repeating: "日本語とEnglish🙂を読みます。", count: 30) }
         let content = ArticleContent(articleID: article.id, text: paragraphs.joined(separator: "\n\n"), summary: "", coverage: .extracted, originalURL: nil)
         let imageLoader = ReaderImageLoader(directory: URL(fileURLWithPath: NSTemporaryDirectory()).appending(path: "settings-key-images-\(UUID())"))
+        let memory = ReaderScrollMemory()
         var begins = 0, displayed = 0, reloads = 0
         func detail() -> ArticleDetailView {
             ArticleDetailView(article: article, content: content, expiry: .now.addingTimeInterval(86400), loading: false, updateAvailable: false, error: nil,
-                              initialAnchor: "paragraph-7", initialOffset: 8, onScroll: { _, _ in }, onInteraction: {}, onUpdate: {}, onReload: { reloads += 1 }, onDisplayBegin: { begins += 1 }, onDisplayed: { displayed += 1 }, imageLoader: imageLoader)
+                              initialAnchor: "paragraph-7", initialOffset: 300, onScroll: { anchor, offset in memory.state.recordScroll(articleID: article.id, anchor: anchor, offset: offset) }, onInteraction: {}, onUpdate: {}, onReload: { reloads += 1 }, onDisplayBegin: { begins += 1 }, onDisplayed: { displayed += 1 }, imageLoader: imageLoader)
         }
         let host = NSHostingView(rootView: detail())
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 480), styleMask: [.titled], backing: .buffered, defer: false)
@@ -39,6 +40,7 @@ import ReaderCore
         let initial = view.string
         let selected = NSRange(location: (initial as NSString).range(of: paragraphs[7]).location, length: 12)
         view.setSelectedRange(selected)
+        view.recordScroll()
         defaults.set(20, forKey: "readingSize")
         host.rootView = detail()
         try await settle(host); try await draw()
@@ -47,7 +49,15 @@ import ReaderCore
         #expect(font.pointSize == 20)
         #expect(native(host) === view && view.string == initial && view.selectedRange() == selected)
         #expect(begins == 1 && displayed == 1 && reloads == 0)
-        print("KEYPROBE preference/detail/native path: observed font \(font.pointSize); same view/text/selection; install/display once, reload0")
+        let savedAnchor = try #require(memory.state.scrollAnchors[article.id])
+        let savedOffset = try #require(memory.state.scrollOffsets[article.id])
+        let actualPosition = view.readingPosition()
+        #expect(savedAnchor == actualPosition.anchor && abs(savedOffset - actualPosition.offset) < 0.5)
+        let visibleCharacter = topCharacter(view)
+        view.restore(anchor: savedAnchor, offset: savedOffset)
+        try await settle(host); try await draw()
+        #expect(topCharacter(view) == visibleCharacter)
+        print("KEYPROBE detail path: font \(font.pointSize), same view/text/selection; stored position matches and restores top character; display callbacks once, reload0")
     }
     @Test func readerViewDoesNotRereadOrReloadOnSizeChange() async throws {
         let suite = try #require(ProcessInfo.processInfo.environment["FEEEDER_SETTINGS_PROBE_SUITE"])
@@ -94,6 +104,12 @@ import ReaderCore
         print("KEYPROBE ReaderView preference path: unread stays unread, firstRead unchanged, contentRevision unchanged; load/fetch/markDisplayed calls0")
     }
     struct NoLaunch: ClaudeLaunching { func open(_ url: URL) async throws { Issue.record("Unexpected external handoff") } }
+    func topCharacter(_ view: ArticleTextView) -> Int {
+        let manager = view.layoutManager!, container = view.textContainer!
+        let y = max(0, view.visibleRect.minY - view.textContainerOrigin.y)
+        let glyph = manager.glyphIndex(for: NSPoint(x: 0, y: y), in: container)
+        return manager.characterIndexForGlyph(at: glyph)
+    }
     @Test func commandFormsAndResponderBoundaries() {
         func event(_ chars: String, _ flags: NSEvent.ModifierFlags) -> NSEvent {
             NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: 0, context: nil, characters: chars, charactersIgnoringModifiers: chars, isARepeat: false, keyCode: 0)!
@@ -107,13 +123,11 @@ import ReaderCore
         #expect(SettingsKeyProbe.next(20, command: 1) == 20 && SettingsKeyProbe.next(14, command: -1) == 14)
         #expect(SettingsKeyProbe.next(20, command: 0) == 16)
         let input = NSTextView(); input.isEditable = true
-        #expect(!SettingsKeyProbe.permitted(input))
-        input.isEditable = false
         #expect(SettingsKeyProbe.permitted(input))
+        #expect(SettingsKeyProbe.permitted(NSTextField()))
         let marked = MarkedResponder(); marked.isEditable = false
         #expect(!SettingsKeyProbe.permitted(marked))
-        #expect(!SettingsKeyProbe.permitted(NSTextField()))
-        print("KEYPROBE character forms +/-/0, modifier rejection, upper/lower no-op, native input/marked boundaries checked; physical layouts not simulated")
+        print("KEYPROBE command forms, modifier rejection, size limits, editable responder allowance, and marked-text guard checked; physical layouts not simulated")
     }
 
     final class MarkedResponder: NSTextView { override func hasMarkedText() -> Bool { true } }

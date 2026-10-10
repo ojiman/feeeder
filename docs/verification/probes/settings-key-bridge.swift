@@ -1,7 +1,6 @@
 // Temporary synthetic integration only. Not a product settings implementation.
 import AppKit
 import SwiftUI
-import WebKit
 
 @MainActor enum SettingsKeyProbe {
     static let sizes: [Double] = [14, 16, 18, 20]
@@ -21,15 +20,7 @@ import WebKit
         return nil
     }
     static func permitted(_ responder: NSResponder?) -> Bool {
-        if (responder as? NSTextInputClient)?.hasMarkedText() == true { return false }
-        if let text = responder as? NSTextView, text.isEditable { return false }
-        if responder is NSTextField { return false }
-        var view = responder as? NSView
-        while let current = view {
-            if current is WKWebView { return false }
-            view = current.superview
-        }
-        return true
+        (responder as? NSTextInputClient)?.hasMarkedText() != true
     }
     static func next(_ current: Double, command: Int) -> Double {
         if command == 0 { return 16 }

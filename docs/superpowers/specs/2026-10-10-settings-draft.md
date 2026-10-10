@@ -1,106 +1,108 @@
-# Feeeder Settings メニュードラフト
+# Feeeder Settings Menu Draft
 
-更新日: 2026-10-10（日本時間）。**未承認の推奨案。** POのコメントは推奨であり、PdM承認ではない。正式なPRD・Architecture・承認済み決定を置き換えない。本PRは文書と検証資材で、機能実装ではない。
+Updated: 2026-10-10 (Japan time). **Unapproved recommendation.** PO comments are recommendations, not PdM approval. This does not replace the formal PRD, Architecture, or approved decisions. This PR contains documents and verification probes, not a product implementation.
 
-## 1. 目的と前提
+## 1. Purpose and assumptions
 
-設定を調整しなくても読み始められ、必要なときだけ読みやすさ・AI・保存を制御できることを目指す。Feeederの中心は「集める→読む→Starで拾う→テーマ・問いで理解する」。Settingsはその作業の前に一度整える程度の薄い画面とする。
+Feeeder should be ready to read without setup. Users can adjust readability, AI, and retention when needed. The main flow is collect → read → save with Star → understand through themes and questions. Settings should remain a small screen users visit occasionally.
 
-[PRD](../../specification.md)、[Architecture](../../architecture.md)、決定0008/0009、現行コードと[POコメント](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090440369)を踏まえ、初案の5カテゴリから3カテゴリへ縮小した。初案の本文組版・ノート別サイズ・プレビュー・参照一覧をまとめて採用する案は、この未承認案で置換する。
+This draft follows the [PRD](../../specification.md), [Architecture](../../architecture.md), decisions 0008/0009, current code, and [PO comments](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090440369). It reduces the first five-category draft to three categories. It replaces the first proposal to group article typography, separate note sizing, previews, and shortcut reference into the same settings area.
 
-製品ソースの検証基準は`e9bcd933873fe920fc3751ba417afe561ff2a99c`。並行開発のAI実装への接続は別途合流が必要。製品名の変更、同期、アカウント、依存追加は扱わない。
+The fixed product source for the probes is `e9bcd933873fe920fc3751ba417afe561ff2a99c`. Integration with the separately developed AI implementation remains a later merge point. Product renaming, sync, accounts, and added dependencies are outside this proposal.
 
-## 2. 推奨する3カテゴリ
+## 2. Recommended categories
 
-| カテゴリ | 項目・既定値案 | 判断理由 |
+| Category | Proposed item and default | Reason |
 |---|---|---|
-| 表示 | 外観: システム／ライト／ダーク。既定システム | 現行の3択を維持。外観1項目だけの独立カテゴリを作らない |
-| 表示 | 文字の大きさ: 小さめ／標準／大きめ／特大。既定は標準 | 記事本文とノート編集の1倍率設定。標準時の既存の大きさと階層を維持する |
-| 端末内AI | 提案を使う: オン／オフ。既定オン | 決定0009の既存契約。手動のテーマ・問い・答えはオフでも使える |
-| 保存 | 記事本文・RSS要約の保持期間: 7／30／90／365日。既定30日 | 現行の保存契約を維持 |
-| 保存 | 記事本文・RSS要約をすべて削除…: 確認付き | 破壊的な操作を通常の選択から区切り、件数・影響・復元不可を示す |
+| Appearance | Appearance: System / Light / Dark; default System | Keep the existing three options without creating a category for one item. |
+| Appearance | Reading size: Small / Standard / Large / Extra Large; default Standard | One scale for article text and note editing, while retaining the existing size hierarchy at Standard. |
+| On-device AI | Use suggestions: On / Off; default On | Existing contract in decision 0009. Manual themes, questions, and answers remain usable when off. |
+| Storage | Retain article body and RSS summary: 7 / 30 / 90 / 365 days; default 30 days | Keep the current retention contract. |
+| Storage | Delete all article bodies and RSS summaries: confirmation required | Separate destructive action from normal choices and show counts, impact, and that recovery is unavailable. |
 
-macOS標準のカテゴリ切替とグループ化フォームを使う。入口はアプリメニューと⌘,、最後のカテゴリを復元する。画面枠の独自実装を増やさない。通常の設定に保存/適用ボタンは置かず、破壊的な変更だけ確認する。
+Use the standard macOS category switcher and grouped forms. Open Settings from the app menu or with Command-comma, and restore the last category. Avoid a custom window frame. Ordinary settings apply as changed; only destructive actions require confirmation.
 
-AIの状態は1行で「確認中」「利用可能」「一部利用不可（理由）」「利用不可（理由）」「オフ」と表示する。埋め込みと生成の状態は内部では区別し、片方だけ使えるときに全機能を利用不可と表示しない。確認は非同期で、Settingsを開く動作を待たせない。
+Show AI status in one line: “Checking,” “Available,” “Partly unavailable (reason),” “Unavailable (reason),” or “Off.” Track embedding and generation availability separately internally so that partial availability is not presented as total failure. Check asynchronously so opening Settings stays responsive.
 
-AI説明は次の2文を候補とする。
+Proposed AI explanation:
 
-> 提案はこのMac内で処理します。自分の答えと「いまの理解」へ自動で書き込むことはありません。
+> Suggestions are processed on this Mac. They never write automatically to your answers or “current understanding.”
 
-Claudeへの依頼はテーマの確認画面で説明する。AIオフでは埋め込み・生成を呼ばず、進行中の結果を後から表示しない。利用不可を理由に本人のオン/オフ選択を勝手に変更しない。
+Explain Claude hand-off in the theme confirmation screen. When AI is off, do not start embedding or generation, and do not show a result that arrives later. Unavailability must not change the user's On/Off choice.
 
-## 3. 文字サイズの反映と受入条件
+## 3. Reading size behavior and acceptance
 
-### 記事本文
+### Article text
 
-Settingsと読書面の⌘+／⌘−／⌘0を同じ値への入口にする。⌘0は文字サイズの既定値へ戻すだけで、外観・保持・AIをリセットしない。キーの正確な割当、キーボード配列、入力欄・原文WebViewとの衝突は実装時に確認する。入力中の通常キー契約は変えない。上限/下限でさらに操作したときは値を変更せず、不要な再レイアウトを行わない。
+Settings and reading-surface commands should change the same value. Command-plus increases size, Command-minus decreases it, and Command-zero restores the default size. Resetting size must not reset appearance, retention, or AI.
 
-対象は通常の本文とRSS要約。原文Webページへ適用しない。見出し・出典・日時は固定の階層を維持する。
+Production commands should be standard items in the View menu, with key equivalents assigned to “Increase Text Size,” “Decrease Text Size,” and “Actual Size.” Proposed Japanese labels are 「文字を大きく」(Increase Text Size), 「文字を小さく」(Decrease Text Size), and 「実際のサイズ」(Actual Size). The system menu and responder chain should handle keyboard-layout resolution, menu visibility, accessibility, and disabled states at the size limits. The low-level event monitor in the synthetic probe is measurement tooling only; it is not the proposed product command implementation. Verify the actual key equivalents with JIS and other input sources before product acceptance.
 
-行間と最大幅は独立した設定として出さない。試作では追加行間`size / 2`、最大幅`670 × size / 16`を候補にした。標準16ptで現行8pt/670ptと一致するが、この比例式が日本語・英語で快適かは未確認。特に狭いペインでは幅を広げられず、1行の文字数一定を保証できない。実機比較で調整し、式そのものを承認済み仕様にしない。
+Apply size to article bodies and RSS summaries, not original web pages. Keep headings, publisher, and date at their current hierarchy. Do not change normal typing behavior. At a size limit, further commands leave the value unchanged and do not trigger layout work.
 
-**位置保持と更新時の応答性は文字サイズ機能の採用条件。** 変更前に画面上端に見えていた文字が、再組版後も上端行に含まれることを目標とする。再改行で行頭が変わり得るため、UTF-16の行頭位置の完全一致は要求しない。画面末尾でスクロールが制限される場合、画像・見出し・段落間の空白が上端にある場合は、実機で許容する復帰を決める。既存の原文から戻る契約や保存される位置表現を、この試作だけで変更しない。
+Do not expose line spacing or maximum width as separate settings. The probe used additional line spacing `size / 2` and maximum width `670 × size / 16`. These match the current 8 pt and 670 pt at Standard 16 pt, but the proportional scale has not been judged for Japanese and English readability. Narrow panes cannot expand, so the same line length is not guaranteed. Tune with device testing; keep the formula unapproved.
 
-更新時間は記事の長さにほぼ比例し、同じ記事を開く時間と同程度だった（約1.2〜2.4ms/千文字。極端に長い200段落・約15.6万文字で0.2〜0.35秒、約2.3万文字で約30〜55ms）。位置を保つには上端の文字の手前まで全部を組む必要があり、周辺だけ先に組む近道は位置を保てなかった。したがって「長さに関係なく滑らか」とは言えず、**長さ別の許容値をPdMが決めること**を採用条件に加える。極端に長い記事は、そのまま許容する／キーを離すまで待って1回だけ適用する、のいずれかを選ぶ。連打は4段階の上下限で最大3回の再レイアウトに収まる。許容値の決定前に、実際の記事の長さの分布と、イベント待ち・描画を含む実際のキー操作での応答を測る。
+**Position retention and response time are acceptance conditions.** Text visible at the top before a change should remain in the top line after reflow. Exact UTF-16 line-start equality is not required because wrapping can change. The saved reading position must also be refreshed after reflow so that returning from the original page or revisiting the article restores the same visible text. Decide acceptable behavior on device for end-of-article clamping and when an image, heading, or paragraph gap is at the top. This probe does not redefine the stored position format.
 
-表示変更は記事の再取得・再既読化・内容の書換えの契機にしない。選択した文字、リンク、引用を維持する。既存`install()`の再呼出しは表示開始通知・既読化状態・選択に副作用があるため、開いている記事には別の表示更新経路を使う。
+Update time grows roughly with article length and is close to the time to open the same article (about 1.2–2.4 ms per 1,000 UTF-16 characters). A very long 200-paragraph article of about 156,000 characters took 0.2–0.35 seconds; about 23,000 characters took around 30–55 ms. These values are records, not acceptance thresholds. Laying out content before the top text is necessary to preserve its position; laying out only nearby text did not preserve it. The PdM must set time budgets by article length before performance can pass. Choose whether very long articles update immediately or wait until the key is released and apply once. Four size choices limit effective increases/decreases to three layout updates before reaching a bound. Measure the distribution of real article lengths and key-to-draw response before deciding.
 
-### ノート編集
+A size change must not trigger another article fetch, mark an unread article as read, or rewrite content. Preserve selection, links, and quotes. Do not reuse `install()` for an open article: it has side effects on display notifications, first-read state, and selection. Use a separate update path and update the saved scroll position after it finishes.
 
-同じ倍率設定を問い文・自分の答え・いまの理解へ使う。本文16ptをすべてのエディタへ一律適用する案は採らず、標準時の現行の大きさと階層を維持する。ノートの名前や見出し・出典・レンズ選択肢は固定の階層を保つ。
+### Note editing
 
-| 対象 | 標準の基準 | 設定値への対応 |
+Use the same scale for questions, the user's answers, and “current understanding.” Do not force every note editor to 16 pt. At Standard, preserve the current text size and hierarchy. Keep theme names, headings, publisher, and lens choices at their current hierarchy.
+
+| Content | Standard baseline | Proposed scale behavior |
 |---|---|---|
-| 記事本文・RSS要約 | 16pt、regular | 16 × 倍率。14／16／18／20pt |
-| 自分の答え・いまの理解 | 現在の`.body`、regular | 現行の解決済みfontサイズ × 倍率。標準で`.body`の見た目を保持 |
-| 問い文 | 現在の`.title3.weight(.semibold)` | 現行title3の解決済みfontサイズ × 倍率、semiboldを保持 |
+| Article body and RSS summary | 16 pt, regular | 14 / 16 / 18 / 20 pt |
+| User answer and current understanding | Current `.body`, regular | Scale the resolved current `.body` font size; preserve its current appearance at Standard. |
+| Question text | Current `.title3.weight(.semibold)` | Scale the resolved current title3 font size and preserve semibold. |
 
-倍率候補は0.875／1／1.125／1.25。`.body`を固定13ptと断定せず、製品の現行エディタで基準fontを確認して対応を実装する。標準のノートを16ptへ拡大する仕様変更は提案しない。実際のエディタへの倍率適用と視覚階層の比較は未検証。
+Scale factors are 0.875 / 1 / 1.125 / 1.25. Do not assume `.body` is always exactly 13 pt; confirm the current editor's resolved font and implement from that baseline. Do not propose changing Standard notes to 16 pt. Applying the scale to real editors and comparing visual hierarchy remains unverified.
 
-**通常は開いている編集面にも即時反映し、IME変換中だけ保留する**未承認案へ改訂する。変換中かは実際の入力部品の`hasMarkedText()`で判断し、保留中に複数変更された場合は最新値だけ保持する。確定・キャンセルでmarked textがなくなった後、既存のビュー・文章・保存Binding・選択を維持して反映する。変換を強制確定して反映しない。新しく開くエディタには最新値を使う。
+The unapproved recommendation is to apply changes immediately to open editors during normal input and defer them only while an IME marked-text composition is active. Detect composition with `hasMarkedText()` on the actual input control. If several changes arrive during composition, keep only the latest. Apply it after composition ends or is cancelled, preserving the existing view, text, save binding, and selection. New editors use the latest value. Never force composition to commit as a side effect.
 
-反映保留中は「文字の大きさは変換終了後に反映」と分かる状態を示す。Settingsと、ノート編集面での⌘+／⌘−／⌘0も同じ設定を変える入口とする。日本語IMEの入力・候補操作を奪わないキー割当と、確定後に必ず保留を解消する経路を受入で確認する。SwiftUIだけで実際のmarked textを検出・監視できることは未確認で、ネイティブ入力部品との橋渡しが必要になり得る。今回の本文ビュー試作はこのノート経路を実装していない。
+While an update is pending, show that reading size will apply after composition. Settings and the same three commands in note editing change the shared value. Verify that Japanese input and candidate navigation remain intact, and that the pending update always resolves after composition. SwiftUI's ability to observe marked text is unverified; a native input bridge may be needed. The article-text probe does not implement note integration.
 
-合成marked textの結果はBinding通知の有無で異なった。手動`didChangeText()`も、別NSWindowのfirst responder操作も実IMEの再現ではない。即時反映の安全性は**未確定**。変換中の保留を推奨するが、実IMEと保存の受入を不要にはしない。
+Synthetic marked-text results changed depending on whether the test manually notified the binding. Calling `didChangeText()` by hand or changing the first responder in a separate window does not reproduce real IME behavior. Safe immediate update remains **unconfirmed**. Deferring during composition is the recommendation, but it does not remove the need for real IME, save, and failure testing.
 
-## 4. 保存の説明と境界
+## 4. Retention explanation and boundaries
 
-本文保持の説明案:
+Proposed article-retention text:
 
-> 未読の記事は初回受信から、読んだ記事は初回既読から数えます。Starやテーマへの追加では、元記事の本文期限を延長しません。
+> For unread articles, the period starts at first receipt. For read articles, it starts when they were first marked read. Starring or adding an article to a theme does not extend the original body's retention period.
 
-> テーマの名前・問い・答え・いまの理解、記録した要約・記事のURLは自動削除しません。元記事の本文が期限切れでも、残った記録と原文リンクを使えます。
+> Theme names, questions, answers, current understanding, saved summaries, and article URLs are never deleted automatically. If an original body expires, saved notes and the source link remain.
 
-短縮/一括削除では本文件数、要約件数、推定削減量、残る記録、復元不可を示す。既存DeletionPreview / ReaderStoreを使い、キャンセルでは保存済みの値へ戻す。失敗を成功扱いにしない。推定削減量をライブラリ全体の容量と表示しない。
+Before shortening retention or deleting all bodies, show body and summary counts, estimated space recovered, what remains, and that deletion cannot be undone. Reuse `DeletionPreview` and `ReaderStore`. Cancellation must leave saved values intact; failures must not be reported as success. Do not present estimated recovered space as the entire library size.
 
-テーマ記事の本文も保持する案には検討価値があるが、既存の保存契約を変える別の製品判断。本PRでは採用・試作しない。検討の開始自体をPdMが別途判断する。将来採用された場合に保存カテゴリの説明をその決定と同時に改訂する。
+Retaining bodies for articles in themes may be worth considering, but it changes the existing storage contract. It is a separate product decision and is not proposed or prototyped here. The PdM should decide separately whether to explore it. If adopted later, update the Storage explanation with that decision.
 
-## 5. 今回追加しないもの
+## 5. Excluded from this proposal
 
-- 行間・本文幅・ノート別サイズの個別設定、サンプル記事、独立したリセットボタン。必要性が確認されるまで増やさない。
-- Settings内のショートカット一覧。参照用一覧はヘルプメニューへ移す案。キー再割当機構は作らない。
-- 保存間隔・自動保存のオン/オフ。確実な保存と失敗表示は品質の契約として扱う。
-- レンズ編集、AIモデル/プロンプト/閾値/APIキー、ノート保持期限、削除確認の省略。
-- テーマの再発見・検索の設定や機能。今回のSettings検証から開発へ広げない。
-- OSと重複するReduce Motion、コントラスト、透明度等の設定。システム設定を尊重する。
+- Separate settings for line spacing, article width, or note-specific size; sample article; standalone reset button. Add no controls until a need is shown.
+- A shortcut list inside Settings. Put a reference list in Help. Do not build key remapping.
+- Auto-save interval or an auto-save toggle. Reliable saving and visible failures are product contracts.
+- Lens editing; AI model, prompt, threshold, or API key; note retention period; removing delete confirmation.
+- Theme rediscovery or search features. Do not expand this Settings investigation into feature work.
+- App settings that duplicate Reduce Motion, contrast, or transparency controls provided by macOS. Respect the system settings.
 
-## 6. 採用判断と実装への合流
+## 6. Decisions and implementation hand-off
 
-| 判断単位 | 推奨 | 残る条件 |
+| Decision | Recommendation | Remaining condition |
 |---|---|---|
-| 3カテゴリと項目の縮小 | 採用候補 | PdM判断、実際のSettings操作・状態表示 |
-| 文字サイズ1設定と読書面の入口 | 採用候補 | 本文の副作用のない更新と位置保持、キー衝突・配列、設定保存、長さ別の更新時間の許容値（PdM決定）と極端に長い記事の扱い |
-| ノートの通常即時反映・IME変換中だけ保留 | 採用候補 | 既存エディタとの合流、基準fontの対応、marked textの監視/保留解消、実IME・保存・失敗復旧 |
-| 文字基準の位置保持 | 採用条件の候補 | 試作結果に加え、末尾・画像・空白・実機UXで許容精度を決める |
-| テーマ記事の本文保持 | 本PR対象外 | 別の決定記録を検討するかPdMが判断 |
+| Three categories and reduced item set | Candidate | PdM decision; exercise the actual Settings scene and status display. |
+| One reading-size value and reading-surface entry points | Candidate | Side-effect-free update, visible and saved position retention, menu-key behavior, persistence, PdM time budgets by article length, and a choice for very long articles. |
+| Immediate note updates with deferral during IME composition | Candidate | Integration with current editors, resolved font baselines, marked-text monitoring and deferral, real IME, save, and failure recovery. |
+| Position retention by visible text | Candidate acceptance condition | Test end-of-document, images, gaps, and acceptable precision on device. |
+| Retaining themed article bodies | Out of scope | PdM decides whether to create a separate decision record. |
 
-既存のSwiftUI Settings、AppStorage、ReaderStoreを使う。新しい設定基盤や保存モデルは作らない。本文はNativeArticleTextとReaderViewの呼出側、ノートはQuestionEditorとUnderstandingEditor、AIはThemeAssistantとの合流が必要。サポート下限macOS 27.0とCIのビルド下限26.6を区別し、27 SDK必須のAPIを前提にしない。
+Use the existing SwiftUI Settings, AppStorage, and ReaderStore. Add no settings framework or storage model. Article text needs integration between NativeArticleText and its ReaderView caller. Notes need QuestionEditor and UnderstandingEditor. AI needs ThemeAssistant. Keep the macOS 27.0 support floor separate from the CI build floor of 26.6, and do not require APIs from the macOS 27 SDK.
 
-[フィジビリティ記録](../../verification/2026-10-10-settings-feasibility.md)と追加の[ReaderView接続・実キー記録](../../verification/2026-10-10-settings-key-path.md)は一時コピーの証拠で、完成した製品統合ではない。3カテゴリの実レイアウト、⌘,、キーボード、VoiceOver、システムアクセシビリティ、AIオフ・一部利用不可、保存キャンセル/失敗を実装後に確認する。採用時には正式PRD・Architectureと決定記録を同じPRで更新する。
+The [feasibility record](../../verification/2026-10-10-settings-feasibility.md) and [ReaderView/key-input record](../../verification/2026-10-10-settings-key-path.md) are evidence from a temporary copy, not a completed product integration. After implementation, verify the three-category layout, Command-comma, View menu commands, VoiceOver, system accessibility settings, AI-off and partial availability, and save cancellation/failure. If adopted, update the formal PRD, Architecture, and decision record in the same PR.
 
-## 参照
+## References
 
-- [PRD](../../specification.md)、[Architecture](../../architecture.md)
-- [決定0008](../../decisions/0008-theme-centered-notes.md)、[決定0009](../../decisions/0009-on-device-ai-principles.md)
-- [Apple Settings HIG](https://developer.apple.com/design/human-interface-guidelines/settings)。カテゴリ数・値・反映方式はFeeederの提案で、Apple指定値ではない。
+- [PRD](../../specification.md), [Architecture](../../architecture.md)
+- [Decision 0008](../../decisions/0008-theme-centered-notes.md), [Decision 0009](../../decisions/0009-on-device-ai-principles.md)
+- [Apple Settings HIG](https://developer.apple.com/design/human-interface-guidelines/settings). Category count, values, and update behavior here are Feeeder proposals, not Apple requirements.

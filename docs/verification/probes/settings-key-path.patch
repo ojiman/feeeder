@@ -63,7 +63,7 @@
          var bodyParagraphs: [BodyParagraph]?
          nonisolated(unsafe) var observer: NSObjectProtocol?
          var restoring = false
-@@ -308,11 +314,21 @@
+@@ -308,11 +314,22 @@
              text.configureHero(context.coordinator.hero)
          } else { text.configureHero(nil); context.coordinator.hero = nil }
          if reduceMotion { scroll.layer?.removeAnimation(forKey: "article-motion") }
@@ -76,6 +76,7 @@
 +            SettingsKeyProbe.updated()
 +            context.coordinator.readingSize = readingSize
 +            context.coordinator.restoring = false
++            text.recordScroll()
 +            return
 +        }
 +        context.coordinator.readingSize = readingSize

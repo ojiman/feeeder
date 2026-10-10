@@ -1,130 +1,128 @@
-# Settings メニュードラフトのフィジビリティ検証
+# Settings Menu Feasibility Verification
 
-更新日: 2026-10-10（日本時間）。状態: 未承認の設計案と一時コピーの試作。製品受入・仕様承認ではない。
+Updated: 2026-10-10 (Japan time). Status: unapproved design recommendation and temporary-copy probes. This is not product acceptance or specification approval.
 
-対象: [3カテゴリに縮小したSettingsドラフト](../superpowers/specs/2026-10-10-settings-draft.md)。製品コード・保存モデル・依存・正式PRD/Architectureは変更していない。
+Scope: the [reduced three-category Settings draft](../superpowers/specs/2026-10-10-settings-draft.md). No product source, storage model, dependency, formal PRD, or Architecture was changed by this probe work.
 
-## 現時点の結論
+## Current conclusion
 
-**3カテゴリ・文字サイズ1設定を未承認の推奨案とする。本文を再インストールしないサイズ更新と、上端の文字を含む行への復帰は、合成本文ビューの36ケースで成立した。更新時間は記事の長さに比例し、記事を開く時間と同程度。極端に長い記事（約15.6万文字）では0.2秒以上かかるため、長さごとの許容値をPdMが決めるまで性能は未受入。一時コピーでReaderViewへの接続を追加確認したが、製品統合・性能受入は未完了。**
+**Recommend the three-category menu and one reading-size setting as an unapproved proposal.** A separate update path changed the article text size without reinstalling the text and retained the character in the top visible line across 36 synthetic cases. Update time grows with article length and is close to the time to open the same article. A very long article of about 156,000 characters took over 0.2 seconds, so performance remains unaccepted until the PdM sets budgets by length. The ReaderView path was connected in a temporary copy and verified; product integration and performance acceptance remain incomplete.
 
-- 初期描画の設定値化は108通りで確認したが、それだけでは開いている記事の即時更新を証明できない。既存`install()`は表示開始通知、初回表示状態の初期化、全文属性の再生成を行うため、今回は別の`updateReadingSize()`を試作した。
-- 更新では既存の本文範囲のfont・行間とレイアウト幅だけを変え、本文文字列を再設定しない。変更前の上端行の文字位置と行内の縦差を取り、変更後の同じ文字が属する行へ戻す。選択範囲も保持する。
-- 成立した判定は「変更前の上端行の文字が、変更後の上端行に含まれる」。再改行で行頭が変わるため、先頭UTF-16位置の完全一致ではない。末尾でスクロール制限がかかる場合や、画像・空白が上端にある場合は未検証。
-- 更新時間は記事の長さにほぼ比例し、同じ記事を開く`install()`とほぼ同じ時間だった（下の「性能制約の切り分け」）。200段落（約15.6万UTF-16文字）では約0.2〜0.35秒の同期処理で、これは極端に長い記事の値。23千文字で約30〜55ms、7.8千文字で約10〜20ms。ただし数値の受入上限は未決定で、測定試験の成功を性能受入と区別する。位置を保つ更新は文字の手前まで全部を組む必要があり、一部だけ先に組む近道は位置を保てなかった。
-- 比例行間`size / 2`、最大幅`670 × size / 16`は試作の入力値。広いペインでの1行の長さを調整する案で、狭いペインで文字数一定を保証しない。読みやすさの実機評価は未実施。
-- ノートは共通倍率を通常即時反映し、変換中だけ保留する未承認案。標準では現行body/title3の大きさと階層を保ち、ノートを一律16ptへ変更しない。実際の入力部品のmarked text監視・保留解消・保存には未接続。合成marked textは手動Binding通知の有無で結果が異なり、実IMEの即時反映は**未確定**。別NSWindowのresponder移動後もmarked textは残ったため、変換確定を模擬した証拠にはしない。
+- The initial rendering probe covered 108 combinations, but it does not prove safe updates to an open article. Existing `install()` sends display notifications, initializes first-read state, and regenerates all text attributes. The probe therefore added a separate `updateReadingSize()` path.
+- The update changes font, line spacing, and layout width on existing text ranges without resetting the article string. It captures the visible top character and its vertical offset, then restores that character after reflow. Selection also remains unchanged.
+- The assertion is that a character from the old top line appears in the new top line. Exact UTF-16 line-start equality is not required because wrapping changes. Behavior near the end of a document, or with an image or blank gap at the top, remains unverified.
+- Update time grows roughly with article length and is close to `install()` for the same article. A 200-paragraph article of about 156,000 UTF-16 characters required roughly 0.2–0.35 seconds of synchronous work. About 23,000 characters took around 30–55 ms; about 7,800 characters took around 10–20 ms. These are observations, not performance thresholds. Laying out all text before the top character was necessary to preserve position. Laying out a nearby window did not preserve it.
+- Proportional line spacing `size / 2` and maximum width `670 × size / 16` are probe inputs. They adjust line length in wide panes, but do not keep a constant number of characters per line in narrow panes. Readability on actual devices has not been evaluated.
+- Notes are proposed to update immediately in normal editing and defer only during IME composition. At Standard, preserve current `.body` and `title3` size and hierarchy; do not force notes to 16 pt. Marked-text monitoring, deferral, and save behavior are not integrated with the real editors. Synthetic results differed depending on whether the test manually notified the binding; a responder change in another window did not simulate IME completion. Real IME behavior remains **unconfirmed**.
 
-## 基準と環境
+## Baseline and environment
 
-| 項目 | 値 |
+| Item | Value |
 |---|---|
-| 固定した製品ソース | `e9bcd933873fe920fc3751ba417afe561ff2a99c` |
-| 作業ブランチ | `codex/settings-feasibility`、Draft PR #28 |
-| OS / CPU | macOS 27.0.1 (26A434)、Apple Silicon |
-| Xcode / Swift | Xcode 27.0 (27A266a)、Swift 6.4 (swiftlang-6.4.0.34.1) |
-| 入力 | 合成した日英文章・絵文字・架空リンク。本人のライブラリは開かない |
-| 外部操作 | 認証済みGitHub経由で非公開リポジトリのレビューを確認、PR更新。記事取得・AI推論・資産取得・Claude起動なし |
+| Fixed product source | `e9bcd933873fe920fc3751ba417afe561ff2a99c` |
+| Work branch | `codex/settings-feasibility`, PR #28 |
+| OS / CPU | macOS 27.0.1 (26A434), Apple Silicon |
+| Xcode / Swift | Xcode 27.0 (27A266a), Swift 6.4 (swiftlang-6.4.0.34.1) |
+| Input | Synthetic Japanese and English text, emoji, and fictional links. The user's library was not opened. |
+| External actions | Read private-repository review comments and updated the PR through authenticated GitHub. No article fetching, AI inference, model asset retrieval, or Claude launch. |
 
-`ReaderSettingsView`、`RSSReaderApp`、`NativeArticleText`、`QuestionEditor`、テーマのUnderstandingEditor、保持処理とPRD/Architecture・決定0008/0009を参照した。現行本文の呼出側はsignature変更時だけinstallする。文字サイズの変更をsignatureへ単純に追加するだけでは本試作の安全な経路へ接続できない。
+The work read `ReaderSettingsView`, `RSSReaderApp`, `NativeArticleText`, `QuestionEditor`, `UnderstandingEditor`, retention code, the PRD, Architecture, and decisions 0008/0009. The current caller installs text when its signature changes. Adding size to that signature alone does not provide the safe update path used in the probe.
 
-## 試作と表明範囲
+## Probe results and limits
 
-[初期描画用パッチ](probes/settings-typography.patch)と[表示更新用パッチ](probes/settings-live-update.patch)は一時コピーへだけ適用する。製品のソースディレクトリは本PRで変更しない。
+The [initial-render patch](probes/settings-typography.patch), [live-update patch](probes/settings-live-update.patch), and [ReaderView/key-path patch](probes/settings-key-path.patch) apply only to a temporary copy. No production source is changed by this PR.
 
-| 確認 | 結果 | 表明範囲 |
+| Check | Result | Evidence scope |
 |---|---|---|
-| 最新の合成プローブ | PASS | Release構成で10件。[最新結果抜粋](probes/settings-po-results.txt)。コミットするパッチと同じ入力で実行 |
-| 初期描画の設定値化 | PASS | 4サイズ×3行間×3最大幅×3ペイン幅=108。installとsetFrameSize経由でfont・通常/引用行間・幅上限・左右余白・リンク先/通知・ヘッダを確認 |
-| 個別の設定無視対照 | EXPECTED_FAIL | font、行間、幅上限、左右余白を別々に無視すると各表明で失敗。fontと行間の式も分離し、短絡で未評価になることを避けた |
-| 本文のライブサイズ更新 | PASS（36ケース） | 3ペイン幅360/600/1000pt×3開始段落0/7/20×4更新20/14/18/16pt。ウィンドウに載せたNSScrollViewで旧上端行の文字が新上端行に含まれることを表明 |
-| 更新時の本文状態 | PASS（同36ケース） | 本文文字列、選択範囲、リンク、引用字下げ/行間を保持。幅は比例式/ペインの上限と一致 |
-| 更新時の表示通知 | PASS（同36ケース） | bitmap描画と非同期通知を処理して、onDisplayBegin / onDisplayedは各1回の初回通知から増えない。installの初回表示状態をリセットしない |
-| ライブ/新規描画の一致 | PASS（8ケース） | 2幅×4サイズで、改行を含む全文属性・改行font・文書高・各段落の描画範囲が一致。通常段落と引用を含む |
-| 文字位置の復帰を外す対照 | EXPECTED_FAIL | updateReadingSize内のscroll(to:)だけを除くと、上端行の旧文字保持の表明が失敗 |
-| 長い記事の更新時間 | 性能受入は未決定（記録のみ） | 200段落、サイズ20/14/18/16ptを5巡、待ち時間を入れず20回更新。Release/main actor上の同期メソッドの時間。実行ごとに中央値は210〜351msと機械の負荷で変わる（558e8b2時点は217ms/p95 289ms/最大361ms）。イベント待ち・描画を含む実キー連打ではない |
-| 長さと所要時間の関係 | 比例を確認（記録のみ） | 3/10/30/100/200段落（2.4千〜15.6万UTF-16）で、更新時間はおよそ1.2〜2.4ms/千文字。同じ記事の`install()`の0.9〜1.2倍で、記事を開く時間と同程度。絶対値は負荷で約2倍動くが、比と比例は安定 |
-| 窓内だけ先に組む近道 | 不採用（位置を保てない） | 非連続レイアウトで上端の文字の周辺だけ組むと速いが、文字のy位置は推定で、全体を組んだ正しい位置と13千〜60千pt違った。属性更新も非連続では遅くなった。位置保持が採用条件なので、文字の手前までの全レイアウトは省けない |
-| 既存の段落/縦差復帰 | 限界を確認 | 幅360→1000pt、段落7/80ptを保持しても先頭文字5505→5597。変更前後の段落高936/390pt内に80ptが収まることを確認。新方式の文字サイズ更新とは別の測定 |
-| フォーム描画 | PASS（旧5カテゴリの骨格のみ） | 640×480ptの仮文言とPickerの描画。全提案項目のはみ出し確認ではない。[旧代表画像](probes/settings-category-reading.png)は縮小案の完成画面ではない。3カテゴリの実フォームはNOT_RUN |
-| 合成エディタ | 条件付きPASS | 通常のfont変更は文章・選択を保持。marked textは手動didChangeTextでBinding同期した場合に保持。実IMEと製品への接続はNOT_RUN |
-| AI利用可否 | PASS（この端末） | FoundationModels available、日本語embedding資産あり。非対応/一部不可・オフの製品挙動はNOT_RUN |
+| Latest synthetic probe before ReaderView wiring | PASS | 10 Release tests. [Latest result excerpt](probes/settings-po-results.txt); same inputs as the committed probe assets. |
+| Configurable initial rendering | PASS | 4 sizes × 3 line spacings × 3 maximum widths × 3 pane widths = 108. Checks font, body/quote line spacing, width limit, margins, link targets/notifications, and headings through `install()` and `setFrameSize()`. |
+| Isolated ignored-setting controls | EXPECTED_FAIL | Ignoring font, line spacing, width limit, or margins individually fails its assertion. Font and line-spacing formulas are checked independently so short-circuiting cannot hide a failure. |
+| Live article-size update | PASS (36 cases) | Three pane widths (360/600/1000 pt) × three starting paragraphs (0/7/20) × four target sizes (20/14/18/16 pt). A window-hosted `NSScrollView` verifies that an old top-line character appears in the new top line. |
+| Article state during update | PASS (same 36 cases) | Text, selection, links, quote indentation/spacing, proportional width, and width limit remain consistent. |
+| Display callbacks during update | PASS (same 36 cases) | Bitmap drawing and async callbacks are processed. `onDisplayBegin` and `onDisplayed` remain at their initial single calls; `install()` does not reset first-display state. |
+| Live and fresh rendering match | PASS (8 cases) | Two widths × four sizes. Full attributes including newlines, document height, and paragraph drawing ranges match for ordinary text and quotes. |
+| Control with position restoration removed | EXPECTED_FAIL | Removing only `scroll(to:)` from `updateReadingSize()` fails the old top-character assertion. |
+| Long-article update time | Performance not accepted; record only | 20 synchronous Release updates across five cycles of 20/14/18/16 pt on a 200-paragraph article. Median varies from 210–351 ms with machine load; at commit `558e8b2`, median/p95/max were 217/289/361 ms. This excludes event wait and drawing. |
+| Length and time relationship | Proportional; record only | 3/10/30/100/200 paragraphs (about 2,400–156,000 UTF-16 units), roughly 1.2–2.4 ms per 1,000 characters. Update was 0.9–1.2× `install()` for the same article. Absolute time varied by about 2× with load; ratio and length relationship were stable in the recorded runs. |
+| Window-only layout shortcut | Rejected; position not retained | Laying out text only around the viewport was faster, but its estimated y position differed by 13,000–60,000 pt from full layout. Discontinuous attribute updates were also slower. If position retention remains a requirement, preceding text cannot be skipped with this method. |
+| Existing paragraph-plus-offset restoration | Limitation observed | At width 360→1000 pt, paragraph 7 and 80 pt offset restored the first character from 5505 to 5597. The 80 pt offset remained within the old/new paragraph heights of 936/390 pt. This is separate from the new character-size update. |
+| Settings form rendering | PASS for an old five-category skeleton only | Placeholder text and a picker rendered at 640×480 pt. This is not a complete overflow check. The [old representative image](probes/settings-category-reading.png) is not the reduced design. The actual three-category form is NOT RUN. |
+| Synthetic editor | Conditional PASS | Ordinary font changes retained text and selection. Marked text remained only when the test manually called `didChangeText()` to sync the binding. Real IME and product integration are NOT RUN. |
+| On-device AI availability | PASS on this machine | FoundationModels was available and Japanese embedding assets were present. Unsupported, partial, and Off product behavior is NOT RUN. |
 
-ライブ更新の試作自体は読み込み・ネットワーク・Storeを呼ばない。追加の[ReaderView接続・実キー検証](2026-10-10-settings-key-path.md)では一時コピーの呼出側まで接続し、合成Storeで再取得・再既読化の呼出しが増えないことを確認した。製品ソースへの統合と受入は未完了で、画像のレイアウト、末尾や空白位置、実IME・ノート接続などは引き続き未確認。
+The live update itself calls no loading, network, or Store path. The additional [ReaderView connection and key-input verification](2026-10-10-settings-key-path.md) wired a temporary copy through the caller and confirmed no additional fetch or mark-as-read calls with a synthetic Store. Product integration and acceptance remain incomplete. Image layout, end-of-article and gap restoration, real IME, and note integration remain unverified.
 
-試作は段落範囲に末尾の改行1文字を含めて更新する。初期描画の引用の段落属性も改行まで適用し、更新後と新規描画を一致させた。
+The probe includes the final newline in paragraph ranges for font and paragraph attributes. Initial quote styling also includes the newline, matching new rendering. The probe covers only the current paragraph-font contract; it does not claim to preserve arbitrary bold or monospaced font runs that the product does not currently implement.
 
-試作は現行の段落font契約に限る。現行で実装されていない任意の太字・等幅runの保持は主張しない。本文なし/期限切れ表示へのライブ更新は未検証。
+## Earlier review history and PO findings
 
-## 以前の記録とPO再レビューへの対応
+The initial fixed-commit tests had 17 UI tests across three suites and 6 Core tests in one suite, 23 total. The [earlier result excerpt](probes/settings-feasibility-results.txt) belongs to commit `f87bca5`; it is historical and does not replace current integration evidence. The earlier five-category proposal and 108 arbitrary settings combinations are investigation history, not the recommended settings count.
 
-初回の固定commit関連試験はUI17件/3 suite、Core6件/1 suite、計23件。[前回結果抜粋](probes/settings-feasibility-results.txt)はcommit `f87bca5`時点の試験で、最新統合の代用ではない。前回の5カテゴリ案と108通りの任意設定は調査の履歴で、今回採用を推奨する設定数ではない。
+The [first review](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090231489) raised 10 points. Follow-up work corrected the rendering path, private-GitHub wording, removed the AI placeholder-key PASS, kept evidence in the repository, added the draft to the documentation map, split product decisions, and isolated per-run outputs.
 
-[初回レビュー](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090231489)の10項目では、実描画経路、private GitHubの記述、AI仮キーPASS除外、証拠同梱、AGENTSの文書地図、採用判断の分割、実行ごとの出力分離を修正した。
+The [PO review](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090440369) raised five points. Follow-up work separated initial rendering from live updates, limited claims to the article view, split font and spacing assertions, kept real IME unconfirmed, labeled the old form as a skeleton, and stored input hashes with the final probe assets. The earlier whitespace-normalization result remains historical.
 
-[PO再レビュー](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090440369)の5項目への今回の対応:
+The PO proposal to use three small categories, one reading-size setting, note composition deferral, and a Help shortcut reference is reflected in the unapproved draft. Retaining article bodies for theme entries changes an existing storage contract and remains a separate decision outside this PR.
 
-1. 初期描画とライブ更新を区別し、installとは別の試作を測定。結論の範囲を本文ビュー単体へ限定。
-2. font/行間の表明を分離。行間・幅上限・余白も個別の設定無視対照を追加。
-3. 実IMEの反映は未確定と記述。手動Binding同期、marked textが残るresponder操作を実入力と扱わない。
-4. 旧フォーム描画は仮の骨格と明記。今回の3カテゴリ完成画面の証拠には使わない。
-5. 最終実行の後に入力パッチを変更しない。入力SHA256と結果を最新記録へ保持。前回の空白正規化は過去の記録に留める。
+## Performance analysis and recommendation
 
-POの製品提案はPdM未承認。薄い3カテゴリ、文字サイズ1設定、ノートの反映規則、ヘルプへの一覧配置を推奨案へ反映した。テーマ記事の本文保持は既存保存契約を変える別件として、本PRから分離した。
+The PO decomposed the previously reported 217 ms median, 289 ms p95, and 361 ms maximum for 200 paragraphs:
 
-## 性能制約の切り分け
+1. **Full layout dominates.** A one-off timing run outside the repository found full layout (`ensureLayout` in `layoutDocument()`) at about 84%, attribute changes at about 15%, and position search/scroll/selection restoration under 1 ms.
+2. **The time is close to opening the article.** `install()` uses the same full `layoutDocument()`. For the same article, `install()` took 170–277 ms and update took 210–324 ms (0.9–1.2×). The size change costs about as much as opening that article; it is not a separate fixed penalty.
+3. **Time grows with article length.** About 1.2–2.4 ms per 1,000 UTF-16 units, with about 2× machine-load variation. Two hundred paragraphs (156,000 characters) are much longer than a typical article. About 23,000 characters took 30–55 ms; 78,000 took 95–155 ms. Real article-length distribution is not measured.
+4. **A shortcut did not preserve position.** Laying out text only near the top character estimated its y position 13,000–60,000 pt away from full layout. The position is unknown until preceding text is laid out. This method cannot skip full layout while preserving the current position.
+5. **Repeated increases have a bound.** Four size steps mean no more than three effective increments or decrements before a limit. The measured 20 alternating updates are a stress input rather than a likely key sequence.
 
-担当者の報告「200段落で中央値217ms、p95 289ms、最大361ms」について、PO側で原因と長さ依存を切り分けた。
+**Recommendation: keep performance as an open acceptance condition.** The current update does not have a length-independent response time, though it costs about as much as opening the same article. The PdM should set budgets by article length (for example, within 100 ms through about 50,000 characters and up to article-open time above that) after measuring real article lengths. The PdM should also choose whether very long articles update immediately or wait until the key is released and apply once. A larger text-layout redesign, such as adopting a viewport-only TextKit 2 layout, is a separate product decision and outside this PR.
 
-1. **時間の大半は全文レイアウト。** リポジトリ外の一時計測（`updateReadingSize`を区間に分けた計測）では、200段落で全文レイアウト（`layoutDocument()`内の`ensureLayout`）が約84%、属性の書換えが約15%、位置の探索・scroll・選択の復元は1ms未満だった。
-2. **記事を開く時間と同程度。** 既存の`install()`も同じ`layoutDocument()`で全文を組む。同じ記事で、`install()`は170〜277ms、更新は210〜324ms（比0.9〜1.2倍）。つまり文字サイズ変更のコストは、その記事を開くコストとほぼ同じで、文字サイズ機能に固有の遅さではない。
-3. **長さにほぼ比例する。** およそ1.2〜2.4ms/千UTF-16文字（機械の負荷で約2倍動く）。200段落（15.6万文字）は実際の記事よりかなり長い。23千文字で約30〜55ms、78千文字で約95〜155ms。実際の記事の長さの分布は未測定なので、実記事での確認が必要。
-4. **近道は位置を保てなかった。** 上端の文字の周辺だけ組む方法は、文字のy位置が13千〜60千pt違った。上の文字の手前が組まれていないと位置が確定しないため、位置保持を採用条件にする限り全文レイアウトは省けない。
-5. **連打の回数には上限がある。** 設定値は4段階で、上限・下限での操作は値も表示も変えない案にしている。⌘+を押し続けても最大3回の再レイアウトで止まる。測定の「20回連続で別サイズ」は、実際には起こせない最悪値。
+## Response to the latest review
 
-**判断（PO推奨・PdM未承認）。** 現在の方式を、そのまま「長さに関係なく滑らか」とは言えない。一方、文字サイズ変更が記事を開くコストを超えないことは確認できた。採用条件は次の形にするのが現実的。
+The [review of commit 8148495](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090606313) reported that the reviewer reran the earlier six tests successfully. The later inputs and measurements are recorded separately.
 
-- 許容値を長さ別に決める（例: 約5万文字までは100ms以内、それを超える記事は記事を開く時間と同程度まで）。数値はPdMが決める。実記事の長さの分布を測ってから決めるのが望ましい。
-- 極端に長い記事の扱いを選ぶ: ①そのまま許容する（記事を開く時間と同じ）、②キーを離すまで待ってから1回だけ適用する、③長文だけ別の方式（本格的な工事が必要で、本PRの対象外）。
-- 全文レイアウトを省く改善は、TextKit 2のような表示範囲だけを組む仕組みへの移行を要する。移行は別の製品判断で、本PRでは試作しない。
+1. Revised note behavior from next-open-only to immediate updates with deferral during IME composition. Keep only the latest pending value. Real IME integration remains unverified.
+2. Added a size map based on 16 pt article text, current `.body` for answers/understanding, and current `title3`/semibold for questions. Standard notes retain current size.
+3. Applied font and paragraph attributes through paragraph newlines, including initial quote rendering, and checked full-attribute/layout equality with fresh rendering.
+4. Added a position-restoration control and Release timing for 20 updates to a 200-paragraph article. This is separate from real-event and draw smoothness.
+5. Marked the old result file as superseded and stored the latest results and input hashes in the repository.
 
-## 最新再レビューへの対応
-
-[commit 8148495への再レビュー](https://github.com/ojiman/feeeder/pull/28#issuecomment-6090606313)では、レビュー側でも旧6試験の再実行が成功したとの報告があった。今回の入力と測定はそれとは別に記録する。
-
-1. ノートの次回表示だけの反映を、通常即時/変換中だけ保留する未承認案へ変更。保留は最新値にまとめ、確定/キャンセル後に反映する。製品の実IME接続は未検証。
-2. 本文16pt、答え/理解の現行body、問いの現行title3/semiboldを基準にする倍率対応表をドラフトへ追加。標準時のノートを16ptへ動かさない案。
-3. 通常段落・引用の改行へもfont/段落属性を適用。初期描画の引用も同じ範囲に揃え、新規描画との全文属性/レイアウト一致を試験。
-4. 復帰scrollを除く対照と、200段落/20回連続更新のRelease時間測定を追加。イベント経路や描画の滑らかさとは区別する。
-5. 旧結果ファイルの冒頭に置換済みの履歴であると明記。最新結果はsettings-po-results.txtに置き、入力SHA256を一致させる。
-
-## 再実行
+## Re-run
 
 ```sh
 bash docs/verification/probes/run-settings-feasibility.sh
 ```
 
-[スクリプト](probes/run-settings-feasibility.sh)は固定commitをmktempへ展開し、2つのパッチと[試験ソース](probes/settings-feasibility.swift)を追加し、Release構成で実行する。PNG・ログ・ビルドは実行ごとのディレクトリへ出力する。専用UserDefaults suiteだけを使い、試験後にそのsuiteを削除する。
+The [runner](probes/run-settings-feasibility.sh) extracts the fixed commit into a unique temporary directory, applies two patches, adds the [test source](probes/settings-feasibility.swift), and runs Release tests. Images, logs, and builds go into that run's directory. It uses a dedicated UserDefaults suite and removes it after the tests.
 
-個別対照の再現: 展開コピーのNativeArticleText.swiftで下記を**1件ずつ**置換し、同じswift testオプションで`--filter parameterizedProductionInstallAndWidth`を実行する。各期待結果はexit 1。元に戻してから次の対照を実行する。
+To reproduce each ignored-setting control, make one change at a time in the temporary copy of `NativeArticleText.swift`, then run `swift test` with the same options and `--filter parameterizedProductionInstallAndWidth`. Each control should exit 1. Restore the source before the next control.
 
-| 対照 | 置換前 | 置換後 |
+| Control | Replace | With |
 |---|---|---|
-| font | `append(paragraph, size: bodyFontSize` | `append(paragraph, size: 16` |
-| 行間 | `style.lineSpacing = lineSpacing` | `style.lineSpacing = 8` |
-| 幅上限 | `min(maximumBodyWidth, newSize.width - 84)` | `min(670, newSize.width - 84)` |
-| 左右余白 | `max(42, (newSize.width - width) / 2)` | `CGFloat(42)` |
+| Font | `append(paragraph, size: bodyFontSize` | `append(paragraph, size: 16` |
+| Line spacing | `style.lineSpacing = lineSpacing` | `style.lineSpacing = 8` |
+| Width limit | `min(maximumBodyWidth, newSize.width - 84)` | `min(670, newSize.width - 84)` |
+| Side margins | `max(42, (newSize.width - width) / 2)` | `CGFloat(42)` |
 
-結果抜粋・入力SHA256をリポジトリへ保持し、リポジトリにないログを文書の参照先にしない。文書リンク、shell構文、git diff --checkを確認する。プローブの最初のsandbox実行はコンパイルキャッシュの権限で止まったため、許可された実行権限で実行した。
+Keep result excerpts and input SHA256 values in the repository; do not link to logs outside it. Check document links, shell syntax, and `git diff --check`. The first sandbox run stopped because of compiler-cache permissions; it was run with the approved execution permissions.
 
-## 残る確認・合流
+## Remaining checks and integration
 
-- 実際のSettings scene、3カテゴリの完成レイアウト、⌘,、カテゴリ復元、複数ウィンドウ。
-- ReaderView/NSViewRepresentableの製品統合、末尾・画像・空白や記事切替の受入、物理JIS配列・実IME・実キー反復。一時コピーの設定接続、合成Storeの副作用、ABCのウィンドウ入力とsheet/WebView境界は[追加記録](2026-10-10-settings-key-path.md)の限定範囲で確認。
-- 上端が画像/見出し/空白の場合、文末のスクロール制限、非常に短い記事、ヒーロー画像、元記事が変わる場合、原文からの復帰。
-- 既存ノートのfont基準・共通倍率・marked text監視と保留解消、問いTextFieldと答え/理解TextEditor、実日本語IME、保存/失敗復旧、長い編集文。
-- 更新時の遅延・滑らかさ、比例式の日英読みやすさ、VoiceOver、Reduce Motion・コントラスト・透明度、数千件・長時間のUX。
-- AI接続、一部不可・資産なし・非対応、進行中の無効化、非同期状態確認、設定の別プロセス再起動。
-- macOS 26 / Swift 6.3.3。AGENTS.mdとdocsのみのためCI対象外。製品Releaseアプリの作成、署名/配布、製品実装、正式仕様承認は対象外。
+- Exercise the actual Settings scene, finished three-category layout, Command-comma, category restoration, and multiple windows.
+- Product integration of the ReaderView/NSViewRepresentable path, acceptance for document end/images/gaps and article switching, physical JIS layout, real IME, and key repeat. The temporary settings path, synthetic Store side effects, ABC window input, sheet, and WebView boundaries were checked within the limits in the [additional record](2026-10-10-settings-key-path.md).
+- Restoration when an image, heading, or gap is at the top; end-of-document clamping; very short articles; hero images; changed source URL; returning from the original page.
+- Existing note font baselines and shared scale, marked-text monitoring and deferral, question TextField and answer/understanding TextEditor, real Japanese IME, save/failure recovery, long editing sessions.
+- Update latency and smoothness, Japanese/English readability of the proportional formula, VoiceOver, Reduce Motion/contrast/transparency, thousands of items, long-running use.
+- AI integration, partial/unavailable/assets-missing/off states, disabling while work is pending, async status, settings across process restarts.
+- macOS 26 / Swift 6.3.3. CI skips docs-only changes. Product Release build, signing/distribution, product implementation, and formal specification approval are outside this PR.
 
-既存の[問い・答え](2026-10-10-theme-questions.md)と[テーマ画面](2026-10-10-theme-screens.md)の未確認事項は残る。
+Open checks in [questions and answers](2026-10-10-theme-questions.md) and [theme screens](2026-10-10-theme-screens.md) also remain.
+
+## Latest review: saved position, editor commands, and product menu
+
+The [review of commit `dc01fd8`](https://github.com/ojiman/feeeder/pull/28#issuecomment-6093795120) identified that size updates refreshed the visible position but left the value saved for return/navigation unchanged. It also found that the probe rejected all editable text controls, contrary to the note-editing recommendation, and asked for standard View-menu commands in the product and English project text.
+
+The temporary update path now calls `recordScroll()` after it finishes restoring the visible character. A new integration assertion checks that the saved `ReaderScrollMemory` anchor/offset equals `readingPosition()`, then restores it and verifies the same top character. The key predicate now allows editable NSTextView/NSTextField responders and blocks only while `hasMarkedText()` is true. This is a responder-rule test; actual note surfaces and real IME composition remain unverified.
+
+The draft and probe record now specify standard View-menu commands for Increase Text Size, Decrease Text Size, and Actual Size, with macOS key equivalents. The low-level local event monitor remains temporary measurement tooling and is expressly excluded from the product design. JIS and other keyboard layouts still require product verification.
+
+The branch now includes `origin/main` through `9a9e831` to pick up the current documentation rules and project state. The reproducible settings probe remains pinned to `e9bcd933873fe920fc3751ba417afe561ff2a99c` so it does not absorb the independently developed product work into its test baseline. The PR diff remains scoped to Settings documents and probes.
