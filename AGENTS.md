@@ -71,6 +71,22 @@ A new thread starts without the previous one's memory. Rebuild the state from Gi
 7. Never report success for a save or change the user asked for when it did not happen (for example `try?` discarding a save or reload failure, or user-entered text dropped because its target is gone). Legitimate no-ops are fine and should be kept distinct: cancellation, a stale async response after the selection moved, and an optional action with nothing to act on.
 8. Risky changes (store/model, concurrency, external writes) get an independent review of a fixed commit using docs/review-checklist.md. A review that finds nothing lists what it checked and what it did not.
 
+## Proportion
+
+Match the work to the risk. Items 1, 2, 5, 6 and 7 above always apply. Items 3, 4 and 8 apply in full to changes in the store or model, concurrency, external writes, and data retention or deletion. For other changes the short form is enough:
+
+- UI polish, labels, and small behavior changes: tests for the changed logic, `git diff --check`, and a list of what stays unverified in the PR text. Run a synthetic instance only when a test cannot show the behavior.
+- Docs-only changes: `git diff --check` and working links.
+
+Keep evidence small, because every record has to be read and kept in step later:
+
+- Write a verification record (`docs/verification/`) only for a risky change, or when a PASS claim needs a lasting reference. At most one record per PR. Extend an existing record instead of adding a new one on the same topic.
+- Put the result in the first three lines. Use a table for the rest. If a record passes about 100 lines, ask what the reader needs and cut the rest.
+- Do not commit raw logs, raw event dumps, probe patches, or generated files unless a reader needs them to reproduce a PASS that the 1.0 acceptance relies on. The PR text and Git history can hold the rest.
+- A review of a low-risk change is one pass. Do not add review rounds only to produce more evidence.
+
+Before the 1.0 acceptance, the project prunes existing records and probes down to their conclusions (see the roadmap in `docs/superpowers/plans/2026-10-10-theme-notes.md`, stage G). Until then, follow these rules for new work and do not prune existing files without the user's instruction.
+
 ## Language
 
 The project is meant to be used and read worldwide, so new project text is written in English. Many readers are not native English speakers, so write plain English: short sentences, common words, no idioms, and the same term for the same thing.

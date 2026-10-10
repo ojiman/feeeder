@@ -71,7 +71,7 @@ Merging the PR that adds this part approves the order and gates below as a plan.
 
 ## How the stages fit together
 
-The PdM's real-device check is the most important next step, so it runs first and does not wait for any PR. Settings work that does not depend on the theme screens runs beside it. Work that depends on screens, keys, or rules that feedback may still change waits until the first round of feedback is closed, so it is not built twice. The rename goes between PRs, because it touches many files. Beta distribution does not wait for PR 9.
+The PdM's real-device check is the most important next step, so it runs first and does not wait for any PR. Settings work that does not depend on the theme screens runs beside it. Work that depends on screens, keys, or rules that feedback may still change waits until the first round of feedback is closed, so it is not built twice. The rename goes between PRs, because it touches many files. Beta distribution does not wait for PR 9. Documents and probes keep growing slowly under the proportion rules in AGENTS.md and are pruned once, in stage G, before the 1.0 acceptance.
 
 | Stage | Owner | What | Exit |
 |---|---|---|---|
@@ -81,6 +81,7 @@ The PdM's real-device check is the most important next step, so it runs first an
 | D. Rename to Unagi Reader | Agent, after D4 | One theme in one PR, started when no other PR is in flight. See "The rename PR". | Rename PR merged, before beta distribution. |
 | E. PR 10 and PR 11 | Agent | After A closes. PR 10 also needs the real-IME result from C. See the PR table. | PRs merged. They do not block the beta. |
 | F. Beta preparation | PdM decides; agent prepares | PdM approval of `docs/specification.md` (its header says it is still required). A check that the user guides match the app. Signing and distribution only on the PdM's instruction (AGENTS.md, Boundaries). | A, D and the spec approval are done. Unverified items may remain if they are listed in the release notes; the PdM decides. |
+| G. Prune before 1.0 | Agent audits and cuts; PdM approves the scope | Run the `complexity-budget` audit (read-only). The PdM approves what to cut. Then cut in small PRs: compress verification records and probes to their conclusions (raw logs, probe patches and event dumps stay in Git history), merge records on the same topic, make `README.md` the front door and mark `docs/` as internal records, and fix cross-links and the commit hashes that documents cite. No Git history rewrite. | After the beta and before the 1.0 acceptance demo (PRD-07), and after the 1.0 shipping conditions in PRD §7.1 are done, so the two do not compete. Records that the acceptance relies on are kept until the acceptance is done. |
 
 Checklist for stage A:
 
@@ -114,6 +115,7 @@ The name is decided. What the rename changes is not, because some parts can orph
 - **D3 (when stage A closes).** Whether to explore keeping the bodies of articles that are in a theme. It changes the storage contract in decisions 0004 and 0005.
 - **D4 (before the rename PR).** What the rename changes: display names and text only (proposed), or also the bundle ID and the data folder.
 - **Spec approval (before beta).** Approval of `docs/specification.md`.
+- **Prune scope (before stage G).** The PdM approves the audit result before anything is cut.
 
 Feedback-sensitive assumptions. If feedback changes one of these, revisit the PR that depends on it before building it:
 
