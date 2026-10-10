@@ -294,7 +294,7 @@ struct ReaderView: View {
                 perform { try store.deleteTheme(id: id); if scope == .theme(id) { scope = .all } }
                 deletingTheme = nil
             }
-        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、問い・答え・いまの理解は消えます。") }
+        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、学習ゴールとノートは消えます。") }
     }
 
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {
