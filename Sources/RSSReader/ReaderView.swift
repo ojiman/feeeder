@@ -94,7 +94,6 @@ struct ReaderView: View {
 
     var body: some View {
         reader
-
         .onAppear { if onNoteFace { noteLayout.enterNoteFace(); applyColumns() } }
         .onChange(of: onNoteFace) { _, on in
             if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
@@ -193,6 +192,8 @@ struct ReaderView: View {
             if let id = selection { await loading.load(articleID: id) }
             else { loading.clear() }
         }
+        .onKeyPress("j") { guard onNoteFace, shortcutsEnabled else { return .ignored }; move(1); return .handled }   // the articles face has its own on the list
+        .onKeyPress("k") { guard onNoteFace, shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled
@@ -417,12 +418,17 @@ struct ReaderView: View {
         }.clipped()
     }
 
+    /// Not while Japanese text is being composed, and not while the theme picker is open (it belongs to the article that is shown).
+    private var topBarMayMove: Bool {
+        !pickingTheme && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
+    }
+
     private func readerTopBar(_ themeID: UUID) -> some View {
         ReaderTopBar(entries: store.themeArticleEntries(themeID: themeID, selection: selection),
                      canPrevious: ThemeArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
                      canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
-                     onPrevious: { guard !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder) else { return }; perform(.previous) },
-                     onNext: { guard !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder) else { return }; perform(.next) },
+                     onPrevious: { guard topBarMayMove else { return }; perform(.previous) },
+                     onNext: { guard topBarMayMove else { return }; perform(.next) },
                      onChoose: { id in if id != selection { ReaderPerformance.selectionStarted(id) }; selectArticle(id) })
     }
 

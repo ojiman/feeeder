@@ -23,7 +23,8 @@ struct ReaderTopBar: View {
                 if entries.isEmpty { Text("このテーマに記事はありません") }
                 ForEach(entries, id: \.id) { entry in
                     Button { onChoose(entry.id) } label: {
-                        if entry.isCurrent { Label(entry.title, systemImage: "checkmark") } else { Text(entry.title) }
+                        let title = entry.inTheme ? entry.title : entry.title + "（テーマ外）"
+                        if entry.isCurrent { Label(title, systemImage: "checkmark") } else { Text(title) }
                     }
                 }
             } label: {
