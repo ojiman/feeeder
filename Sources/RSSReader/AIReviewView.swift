@@ -7,12 +7,15 @@ struct AIReviewView: View {
     @Bindable var review: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
     let selections: [AIInputSelection]
+    var themeID: UUID? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var selected = Set<AIInputSelection>()
     @State private var options: [Option] = []
     @State private var language = "日本語"
     @State private var error: String?
     @State private var copied = false
+    @State private var includeQuestions = true
+    @State private var includeAnswers = false
     private struct Option: Identifiable {
         let id: AIInputSelection
         let articleID: UUID
@@ -23,19 +26,28 @@ struct AIReviewView: View {
     init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, articleIDs: [UUID]) {
         self.init(store: store, review: review, handoff: handoff, selections: articleIDs.map(AIInputSelection.article))
     }
-    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection]) {
-        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections
+    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection], themeID: UUID? = nil) {
+        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections; self.themeID = themeID
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("AIへの入力を確認").font(.title2.bold())
+                Text(themeID == nil ? "AIへの入力を確認" : "Claudeへ渡す内容を確認").font(.title2.bold())
                 Spacer()
                 Button("閉じる") { review.clear(); dismiss() }.keyboardShortcut(.cancelAction)
             }
             HStack {
                 Picker("出力言語", selection: $language) { Text("日本語").tag("日本語"); Text("English").tag("English") }.frame(width: 250)
                 Text("本文を省略せず、選択した出典と一緒に渡します。").font(.caption).foregroundStyle(.secondary)
+            }
+            if let themeID {
+                let hasQuestions = !store.questions(themeID: themeID).isEmpty
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("問いを含める", isOn: $includeQuestions).disabled(!hasQuestions)
+                    Toggle("自分の答えと根拠の記事を含める", isOn: $includeAnswers).disabled(!hasQuestions || !includeQuestions)
+                    Text(hasQuestions ? "答えは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。" : "このテーマには問いがありません。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             HSplitView {
                 List(options) { option in
@@ -97,6 +109,8 @@ struct AIReviewView: View {
             generate()
         }
         .onChange(of: language) { _, _ in generate() }
+        .onChange(of: includeQuestions) { _, _ in generate() }
+        .onChange(of: includeAnswers) { _, _ in generate() }
         .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
         .task(id: review.package?.expiresAt) {
             guard let expiry = review.package?.expiresAt else { return }
@@ -125,7 +139,10 @@ struct AIReviewView: View {
     }
     private func generate() {
         copied = false; error = nil; handoff.resetStatus()
-        perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, language: language, at: .now) }
+        perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, theme: themeRequest, language: language, at: .now) }
+    }
+    private var themeRequest: AIThemeRequest? {
+        themeID.map { AIThemeRequest(themeID: $0, includeQuestions: includeQuestions && !store.questions(themeID: $0).isEmpty, includeAnswers: includeAnswers && includeQuestions) }
     }
     private func export() {
         perform {
