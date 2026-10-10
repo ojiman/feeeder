@@ -14,8 +14,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |
 | docs/review-checklist.md | Lens for independent review of a fixed commit. |
 | docs/verification/ | Evidence logs per change. Logs, not specs. |
-| docs/superpowers/specs/ | Unapproved design drafts. The V1 source of truth remains docs/specification.md. |
-| docs/superpowers/plans/ | Historical implementation plans. |
+| docs/roadmap.md | The order of work (stages S1 to S5, then the real-device check, the rename, the beta). A stage's plan lives in docs/superpowers/plans/ only until the stage is merged. |
 | Sources/ReaderCore | Models, store, parsing, retention, handoff. No UI. |
 | Sources/RSSReader | SwiftUI/AppKit app. |
 | Tests/ReaderCoreTests, Tests/ReaderUITests | Tests. Synthetic data only. |
@@ -87,7 +86,7 @@ Keep evidence small, because every record has to be read and kept in step later:
 - Do not commit raw logs, raw event dumps, probe patches, or generated files unless a reader needs them to reproduce a PASS that the 1.0 acceptance relies on. The PR text and Git history can hold the rest.
 - A review of a low-risk change is one pass. Do not add review rounds only to produce more evidence.
 
-Before the 1.0 acceptance, the project prunes existing records and probes down to their conclusions (see the roadmap in `docs/superpowers/plans/2026-10-10-theme-notes.md`, stage G). Until then, follow these rules for new work and do not prune existing files without the user's instruction.
+The first prune pass was done in 2026-10 (old plans and records of removed features are in Git history). A second pass comes before 1.0 (see docs/roadmap.md). Do not prune existing files without the user's instruction.
 
 ## Language
 

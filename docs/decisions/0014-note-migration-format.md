@@ -2,7 +2,7 @@
 
 - Status: valid (approved by the PdM when the plan PR that proposes it was merged)
 - Date: 2026-10-10
-- Decider: the owner (PdM) approved the N2 plan, [2026-10-10-theme-note.md](../superpowers/plans/2026-10-10-theme-note.md), which lists these points as "Decisions for you". The Product Owner (the agent) proposed them.
+- Decider: the owner (PdM) approved the N2 plan, 2026-10-10-theme-note.md (removed; in Git history), which lists these points as "Decisions for you". The Product Owner (the agent) proposed them.
 - Builds on: [decision 0013](0013-goal-and-note-for-themes.md) (point 3, the migration).
 
 ## Decision
@@ -16,7 +16,7 @@
 
 ## Not verified
 
-- The migration on a real library; the real Japanese IME in the note editor; VoiceOver and Reduce Motion on the note face. See [the verification record](../verification/2026-10-10-theme-note.md).
+- The migration on a real library; the real Japanese IME in the note editor; VoiceOver and Reduce Motion on the note face. See the verification record (removed; in Git history).
 
 ## Sources
 

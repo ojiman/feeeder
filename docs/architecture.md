@@ -4,7 +4,7 @@
 
 ## 1. 位置づけ
 
-製品要件は[PRD](specification.md)を正とする。本書は現行ベータの実装構成と、変更時に守る技術上の契約を定める。決定の理由は[決定記録](decisions/README.md)、承認履歴はPR、実行結果は[検証記録](verification/2026-10-07-feed-polish.md)、過去の実装順は`docs/superpowers/plans/`で追う。検証記録はcommit・環境ごとの証拠であり、本書の記載や過去のPASSを現在の合格証拠に代えない。
+製品要件は[PRD](specification.md)を正とする。本書は現行ベータの実装構成と、変更時に守る技術上の契約を定める。決定の理由は[決定記録](decisions/README.md)、承認履歴はPR、実行結果は[検証記録](verification/2026-10-07-feed-polish.md)、今後の作業順は[ロードマップ](roadmap.md)で追う（過去の計画・記録はGit履歴）。検証記録はcommit・環境ごとの証拠であり、本書の記載や過去のPASSを現在の合格証拠に代えない。
 
 ## 2. V1の技術構成と保存
 
@@ -33,7 +33,7 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 - 「未整理のStar」は、Starが付いていてどの`ThemeArticle`にも無い記事から導く。保存しない。
 - 端末内AIの有効／無効は`AppStorage`で持ち、スキーマを増やさない。埋め込みなどAIの中間結果は保存しない。
 
-新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。配布済みのbeta.2・beta.3と、置き換え直前のmainの合成ストアは、旧5モデルを外した新スキーマで開けて、購読・記事・既読・Starを保持し、書き込みと再openもできる（[検証記録](verification/2026-10-10-theme-screens.md)）。このとき旧ノートのデータは、新スキーマで開いた時点でテーブルごと削除され（元に戻せない）、CoreDataが「削除されたモデルのため永続履歴を切り詰める」というログを`error:`として出すが、動作には影響しない。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
+新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。配布済みのbeta.2・beta.3と、置き換え直前のmainの合成ストアは、旧5モデルを外した新スキーマで開けて、購読・記事・既読・Starを保持し、書き込みと再openもできる（検証記録はGit履歴）。このとき旧ノートのデータは、新スキーマで開いた時点でテーブルごと削除され（元に戻せない）、CoreDataが「削除されたモデルのため永続履歴を切り詰める」というログを`error:`として出すが、動作には影響しない。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
 
 ### 2.2 変更と失敗からの復旧
 
@@ -51,7 +51,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 3.1 端末内AI
 
-`ThemeAssistant`プロトコル（ReaderCore、非同期・`Sendable`）が、近いテーマ・まとまりの提案、テーマ名の案、レンズの具体化を返す。実物の`OnDeviceThemeAssistant`はアプリ側に置き、テストは偽の実装で行う。実物の出力の質は環境つきの検証記録で扱い、CIでは検証しない。結果は要求ごとのIDで検査し、選択が移った後の遅延応答を捨てる。計算はMainActorを塞がない。原則は[決定0009](decisions/0009-on-device-ai-principles.md)、実測は[端末内AIのspike](verification/2026-10-10-on-device-ai-spike.md)に従う。
+`ThemeAssistant`プロトコル（ReaderCore、非同期・`Sendable`）が、近いテーマ・まとまりの提案、テーマ名の案、レンズの具体化を返す。実物の`OnDeviceThemeAssistant`はアプリ側に置き、テストは偽の実装で行う。実物の出力の質は環境つきの検証記録で扱い、CIでは検証しない。結果は要求ごとのIDで検査し、選択が移った後の遅延応答を捨てる。計算はMainActorを塞がない。原則は[決定0009](decisions/0009-on-device-ai-principles.md)、実測は端末内AIのspike (removed; in Git history)に従う。
 
 - **束ねる**: `NLContextualEmbedding`（日本語）で、記事ごとにタイトル＋要約のトークンベクトルの平均を取り、全体の平均を引いて中心化し、コサイン類似度の平均連結で凝集クラスタリングする。初期の閾値は0.15（合成データでの値で、実データでの妥当性は未検証。調整できる前提にする）。近いテーマの提案は、既存テーマの記事との類似度の順にする。ベクトルは保存せず、必要なときに計算する。
   - 実装（PR 6）: `EmbeddingMath`・`ThemeClustering`・`ThemeRanking`（ReaderCore、純粋関数）、`ThemeSuggestionModel`（要求IDで古い応答を捨て、無効のときは呼ばない）、`OnDeviceThemeAssistant`・`ContextualTextEmbedder`（アプリ側）。中心化の基準にライブラリの新しい40件を足す。日本語とラテン文字の言語は別の空間として扱い、空間の違う記事は比べない。1つの空間が6件未満のときは平均を引けないため、その空間の記事は提案の対象から外す。上限・閾値は`SuggestionTuning`に集め、[決定0010](decisions/0010-on-device-suggestion-defaults.md)に記録する。ソースに`requestAssets`が無いことを試験で守る。
@@ -129,7 +129,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 | [初回V1受入](verification/2026-10-05-v1-acceptance.md) | 本体ハンドオフ・保持・性能の当時の測定と未検証 |
 | [Dogfooding受入](verification/2026-10-07-dogfooding-acceptance.md) | Star・日次／週・画像・保存の改修結果 |
 | [読書UI追加受入](verification/2026-10-07-feed-polish.md) | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
-| [端末内AIのspike](verification/2026-10-10-on-device-ai-spike.md) | 利用可否・まとまり・名前・問いの実測と失敗（合成データのみ） |
+| [端末内AIの実測](verification/on-device-ai-findings.md) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語） |
 
 実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、30日の保持でテーマの咀嚼に足りるか、本人の実際のStarでのまとまりの精度と閾値、数百件での提案の速度、Apple Intelligenceが無効な環境での挙動、レンズを具体化した問いの質、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
 

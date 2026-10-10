@@ -48,9 +48,9 @@
 
 - 「Star→テーマ→問い→答え」の流れが、実際にしっくりくるか（Dogfoodingで確認する）。
 - 固定のレンズから立てた問いが、考えるきっかけとして足りるか。
-- 本人の実際のStarで、まとまり提案が使えるか（[検証記録](../verification/2026-10-10-on-device-ai-spike.md)は合成データのみ）。
+- 本人の実際のStarで、まとまり提案が使えるか（検証記録 (removed; in Git history)は合成データのみ）。
 
 ## 出典
 
 - 本人の指示（2026-10-10の開発セッション）
-- [端末内AIのspike](../verification/2026-10-10-on-device-ai-spike.md)
+- 端末内AIのspike (removed; in Git history)

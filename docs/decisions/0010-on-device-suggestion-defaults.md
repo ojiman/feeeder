@@ -31,5 +31,5 @@
 
 ## 出典
 
-- [PR 6の計画](../superpowers/plans/2026-10-10-theme-ai-suggestions.md)
-- [端末内AIのspike](../verification/2026-10-10-on-device-ai-spike.md)、[PR 6の検証記録](../verification/2026-10-10-theme-ai-suggestions.md)
+- PR 6の計画 (removed; in Git history)
+- 端末内AIのspike (removed; in Git history)、PR 6の検証記録 (removed; in Git history)

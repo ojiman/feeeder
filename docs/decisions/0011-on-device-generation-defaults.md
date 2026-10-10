@@ -33,5 +33,5 @@
 
 ## 出典
 
-- [PR 7の計画](../superpowers/plans/2026-10-10-theme-ai-names.md)
-- [端末内AIのspike](../verification/2026-10-10-on-device-ai-spike.md)、[PR 7の検証記録](../verification/2026-10-10-theme-ai-names.md)
+- PR 7の計画 (removed; in Git history)
+- 端末内AIのspike (removed; in Git history)、PR 7の検証記録 (removed; in Git history)

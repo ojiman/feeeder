@@ -2,7 +2,7 @@
 
 - Status: replaced by [0019](0019-v1-simplification-notes.md) (the note actions are removed)
 - Date: 2026-10-10
-- Decider: the owner (PdM) approved the N5 plan, [2026-10-10-note-actions.md](../superpowers/plans/2026-10-10-note-actions.md). The Product Owner (the agent) proposed the points.
+- Decider: the owner (PdM) approved the N5 plan, 2026-10-10-note-actions.md (removed; in Git history). The Product Owner (the agent) proposed the points.
 - Builds on: [decision 0013](0013-goal-and-note-for-themes.md) (points 5 and 6). Replaces point 5 of [0015](0015-article-summary-details.md) ("no undo promise"): an adopted summary can now be undone too.
 
 ## Decision
@@ -17,8 +17,8 @@
 
 ## Not verified
 
-- A real window and the real IME (⌘Z inside a composition); real rewrites on real notes: in a probe on a synthetic note the rewrite changed almost nothing, and one essence line turned "thinking about" into "chose". See [the verification record](../verification/2026-10-10-note-actions.md).
+- A real window and the real IME (⌘Z inside a composition); real rewrites on real notes: in a probe on a synthetic note the rewrite changed almost nothing, and one essence line turned "thinking about" into "chose". See the verification record (removed; in Git history).
 
 ## Sources
 
-- PdM approval of the N5 plan (PR #56), decision 0013, [the AI experiment](../verification/2026-10-10-note-ai-experiment.md).
+- PdM approval of the N5 plan (PR #56), decision 0013, the AI experiment (removed; in Git history).

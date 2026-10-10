@@ -1,0 +1,37 @@
+# Roadmap
+
+The order of work from the V1 simplification ([decision 0019](decisions/0019-v1-simplification-notes.md)) to the beta. The value and the questions to ask when in doubt are in the [vision](vision.md); the product is in the [specification](specification.md). Older plans, records and roadmaps were removed from the working tree by the prune PR; they are in Git history.
+
+## How a stage runs
+
+Each stage has a short plan PR first (scope, files and tests it touches, the decisions it needs). Merging the plan approves it. Then one implementation PR per stage, with failing tests first, one independent review of a fixed commit when the change is risky, and the specification, the architecture and the user guides updated for what changed. A plan lives in `docs/superpowers/plans/` only until its stage is merged; then delete it (Git keeps it).
+
+## Stages
+
+| Stage | What | Needs from the PdM |
+|---|---|---|
+| S1 | Notes: rename; no goal and no name (title from the first line); remove the suggestions, the note actions, the summary card in the panel and the article hand-off; the panel opens at once, is resizable and remembers its width; the sidebar folds only when the window is narrow. The picker and `t` stay as the only way to link an article until S2. | Merging the plan. |
+| S2 | 「ノートに要約を送る」 (button, menu, `n`), the automatic link and its removal, the summary settings, the AI mark and 「取り消す」. Removes the picker and `t`. | Merging the plan. |
+| S3 | Claude from the note: the share-style button in the note panel, the note-only package. | Merging the plan. |
+| S4 | Clean up: dead code and tests (article packages and sources, theme assistant parts, the migration code, old settings), then the architecture and the user guides. | Merging the plan. |
+| S5 | Light styling of headings and lists in the editor. Does not block the beta. | Merging the plan. |
+
+## After S3
+
+- **Real-device check (the PdM).** Read, send a summary, write beside the articles, ask Claude through the share button (the real launch of Claude Desktop is still unverified), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
+- **Rename to Unagi Reader.** One PR, started when no other PR is in flight. Proposed scope: the names shown in the app (window title, menus, About), the bundle's display name, the README and the user guides. Not in the proposal: the bundle identifier and the data folder `~/Library/Application Support/Feeeder/` (changing either hides an existing beta library from the app; the PdM decides, before the PR), the repository, and the SwiftPM targets. The first task of the PR is to list every place the old name appears.
+- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A check that the user guides match the app. Signing and distribution only on the PdM's instruction.
+
+## Candidates (not scheduled)
+
+- **Reading size.** One shared size in Appearance (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) and View-menu commands. A probe showed that a separate update path keeps the top visible line in place across 36 synthetic cases, and that the update time grows with the article (about 10 to 20 ms at 7,800 characters, about 0.2 to 0.35 s at 156,000). The probe code is in Git history (PR #28). Open: a time budget (the proposal: finish within about 100 ms up to about 50,000 characters, above that apply once after the key is released), and how it feels on the device.
+- **Note editor size.** The same scale for the note editor. Needs a real Japanese input check: the update waits while text is being composed.
+- **Keep the bodies of articles that are in a note.** Changes the retention contract; needs its own decision record. Not started without the PdM's instruction.
+
+## Not planned
+
+Goals and learning plans; AI suggestions of notes; AI editing of the note; note folders, tags and search (after V1); system sharing services (after V1); sync and accounts; a settings framework; key remapping; a language setting before the public release is planned but has no stage yet.
+
+## Prune before 1.0
+
+The first pass was done by the prune PR (plans, records for removed features). Before 1.0: a second pass over the verification records that remain, the decision records and the user guides, run as an audit; the PdM approves what to cut.

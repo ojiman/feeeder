@@ -2,7 +2,7 @@
 
 - Status: replaced in part by [0019](0019-v1-simplification-notes.md) (no goal; the hand-off package holds the note only)
 - Date: 2026-10-11
-- Decider: the owner (PdM) approved the N6 plan, [2026-10-11-handoff-goal-note.md](../superpowers/plans/2026-10-11-handoff-goal-note.md), and chose to give the review of a note against its goal to Claude after the on-device experiment ([the record](../verification/2026-10-11-goal-review-experiment.md)). The Product Owner (the agent) proposed the points.
+- Decider: the owner (PdM) approved the N6 plan, 2026-10-11-handoff-goal-note.md (removed; in Git history), and chose to give the review of a note against its goal to Claude after the on-device experiment (the record (removed; in Git history)). The Product Owner (the agent) proposed the points.
 - Refines: [decision 0012](0012-claude-handoff-from-themes.md) (the questions and answers switches become goal and note switches; points 5 and 6 lose the questions) and point 7 of [0013](0013-goal-and-note-for-themes.md).
 
 ## Decision
@@ -17,7 +17,7 @@
 ## Not verified
 
 - A real launch into Claude Desktop with the goal and the note, and the usefulness of Claude's review. Other versions, plans or routes than the one checked (Claude Desktop 2.19675.0 / Pro / Cowork). A very large note through the Cowork route.
-- See [the verification record](../verification/2026-10-11-handoff-goal-note.md).
+- See the verification record (removed; in Git history).
 
 ## Sources
 
