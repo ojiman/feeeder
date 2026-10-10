@@ -19,6 +19,8 @@
 
 PR 4以降の詳細計画（手順とコード）は、直前のPRが着地して実コードが確定してから、別の計画文書として書き、そのPRで承認を取る。PR 1・2は完了済み（[#20](https://github.com/ojiman/feeeder/pull/20)・[#21](https://github.com/ojiman/feeeder/pull/21)）。
 
+PR 9 onward (Settings) was added after PR 8 landed. It is in "Part 1b" below and follows the same rule: this document lists scope, order, gates and acceptance, and each PR gets its own detailed plan when it starts.
+
 ## Global Constraints
 
 - サポート下限はmacOS 27.0、ビルド下限（`Package.swift`・CI）はmacOS 26.6のまま。macOS 27 SDK専用のAPIは、CIがビルドできるまで使わない（[決定0007](../../decisions/0007-support-floor-macos-27.md)）。
@@ -58,6 +60,48 @@ PR 4以降の詳細計画（手順とコード）は、直前のPRが着地し�
 | 8 | Claudeハンドオフの付け替え | `AIInputSelection`を`article`と`themeArticle`にし、テーマから「Claudeで開く」。問いと自分の答えを含めるかを確認画面で選ぶ。`deleteTheme`/`removeArticle`で管理コピーを同期 | PR 4〜5 | 既存のハッシュ・期限・再試行の試験を維持。Claude側の実機確認は検証済みのCowork経路だけを扱い、未確認を合格にしない |
 
 各PRの共通の完了条件は`AGENTS.md`の「Definition of done」に従う（テスト、Releaseビルド、`git diff --check`、UI変更では合成インスタンスでの操作、未検証の列挙、仕様変更時の文書更新）。
+
+---
+
+# Part 1b: Follow-on roadmap (PR 9 onward, added after PR 8)
+
+Status when added: PR 3 to PR 8 are merged. The Settings draft ([draft](../specs/2026-10-10-settings-draft.md), [feasibility record](../../verification/2026-10-10-settings-feasibility.md), [key-input record](../../verification/2026-10-10-settings-key-path.md)) is merged as **unapproved** evidence; it is not a decision. Merging the PR that adds this part approves the order and gates below as a plan. It does not approve the Settings proposal. The PdM approves the proposal with the decision record in PR 9.
+
+## Why two groups, and a feedback checkpoint
+
+Some Settings work is independent of the theme features and has a measurable technical risk. That work can start now, and it gives the PdM something to use during dogfooding. Other work sits on screens or rules that the PdM's feedback may still change. That work waits for the checkpoint, so it is not built twice.
+
+| Item | Group | Reason |
+|---|---|---|
+| Article reading size (View menu commands, separate update path, saved position) | Now (PR 9) | Independent of the theme screens. Used every day. Its performance and position risks need field data early. |
+| Note editor scale and IME deferral | After the checkpoint (PR 10) | Depends on the question and answer editors, which feedback may change. |
+| Help-menu shortcut list, Storage explanation text, AI status wording | After the checkpoint (PR 11) | Depend on the final key set, on decision D3, and on how the AI features settle. |
+
+## Roadmap
+
+| PR | Theme | Scope | Prerequisites | Acceptance and verification |
+|---|---|---|---|---|
+| 9 | Article reading size | One shared reading size (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) in the existing 「外観」 (Appearance) tab. View-menu commands 「文字を大きく」 (Increase Text Size), 「文字を小さく」 (Decrease Text Size), 「実際のサイズ」 (Actual Size) with key equivalents. A separate update path for an open article (not `install()`). Line spacing `size / 2` and maximum width `670 × size / 16` as unapproved candidates. The saved scroll position is refreshed after reflow. A small tool the PdM runs on their own store to print article-length statistics. Decision record 0013 and the PRD/Architecture edits for this behavior, in the same PR. | PR 8 (done). Settings draft. Decision **D1** (below) can be proposed in the plan and approved by merging it. | The top visible text stays in the top line after a size change. Saved position matches `readingPosition()` and restores the same text. No refetch, no re-read, no content rewrite. A size limit is a no-op. Check JIS and other input sources, and menu commands in the real app. Measure event-to-draw time on synthetic articles of three lengths in a separate instance (`open -n`, `--data-directory`, `--seed-demo`). Start from the probe tests in the feasibility record. Time is recorded, and the PdM budget from D1 decides the performance result. |
+| Checkpoint | Dogfooding feedback | The PdM uses the app and gives feedback. | PR 9 | Output: decisions **D2** and **D3**, the article-length statistics, and a list of which feedback-sensitive assumptions below changed. Same style as the PR 5 checkpoint: the PdM decides when to proceed. |
+| 10 | Note editor scale | The same scale for question, answer and current understanding, based on the resolved current `.body` and `.title3` + semibold sizes (factors 0.875 / 1 / 1.125 / 1.25). Apply immediately while editing. Defer only while IME composition is active, keep the latest value, and show a pending message. | Checkpoint. The editors as they are after feedback. | Real Japanese IME: composition and candidates stay intact, and the pending update always resolves. Save binding, selection and text stay intact. Standard keeps the current look. If SwiftUI cannot observe marked text, add a native input bridge and say so in the PR. |
+| 11 | Settings polish | Help-menu list of shortcuts. Storage explanation text, aligned with D3. AI status wording (the 「端末内AI」 tab already shows status lines). | Checkpoint. Decision **D3**. | Labels match the real keys and behavior. No new settings are added. |
+| (if D3 says yes) | Keep bodies of themed articles | A new decision record and a retention change (PRD §3.3, `ContentRetention`). A product change, not a Settings item. | Checkpoint, D3 | Its own plan, decision record and independent review. Not started without the PdM's instruction. |
+
+Decisions for the PdM:
+
+- **D1 (before PR 9 is accepted).** Time budget by article length, and what happens for very long articles. Proposal: up to about 50,000 UTF-16 units, an update should finish within about 100 ms; above that, apply once after the key is released. The probe measured about 1.2 to 2.4 ms per 1,000 units, close to the time to open the same article. The numbers are a proposal, not a decision.
+- **D2 (at the checkpoint).** Whether the shared reading size value and the proportional line spacing and width feel right on the device, or need separate controls.
+- **D3 (at the checkpoint).** Whether to explore keeping the bodies of articles that are in a theme. It changes the storage contract in decisions 0004 and 0005.
+
+Feedback-sensitive assumptions. If feedback changes one of these, revisit the PR that depends on it before building it:
+
+- The question and answer editor layout (PR 10).
+- The set of keyboard shortcuts (PR 11 list, and PR 9 key choice).
+- The AI features' behavior and wording (PR 11).
+- The reading-size values and the proportional formula (PR 9, checked on the device).
+- The retention contract for themed articles (PR 11, D3).
+
+Not in this roadmap: separate controls for line spacing, width or note size; a sample article; key remapping; a settings framework. Add them only if feedback shows a need.
 
 ---
 
