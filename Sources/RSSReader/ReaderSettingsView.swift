@@ -66,7 +66,7 @@ struct ReaderSettingsView: View {
             }
             Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("テーマの記録（記事のタイトル・リンク・記録した要約、問い・答え・いまの理解）は自動削除しません。")
+            Text("テーマの記録（記事のタイトル・リンク・記録した要約、学習ゴール、ノート）は自動削除しません。")
             Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
                 perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
             }
@@ -97,10 +97,10 @@ struct OnDeviceAISettingsView: View {
     var body: some View {
         Form {
             Toggle("端末内AIの提案を使う", isOn: $enabled)
-            Text("近いテーマ（tキー）、まとまりの提案（未整理のStar）、テーマ名と問いの案を、この Mac の中だけで作ります。外部へ送らず、アカウントも要りません。案は別に表示され、自分で選ぶまで何も書き換えません。答えやいまの理解には何も書き込みません。")
+            Text("近いテーマ（tキー）、まとまりの提案（未整理のStar）、テーマ名の案を、この Mac の中だけで作ります。外部へ送らず、アカウントも要りません。案は別に表示され、自分で選ぶまで何も書き換えません。ノートには何も書き込みません。")
                 .font(.caption).foregroundStyle(.secondary)
             LabeledContent("状態") { Text(statusText) }
-            LabeledContent("テーマ名・問いの案") { Text(generationText) }
+            LabeledContent("テーマ名の案") { Text(generationText) }
             Text("言語の資産が端末に無い場合、アプリは自動で取得しません。提案が出ないだけで、ほかの操作は変わりません。")
                 .font(.caption).foregroundStyle(.secondary)
         }
