@@ -6,6 +6,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 
 | Path | Role |
 |---|---|
+| docs/vision.md | The owner's statement of the value, the user, the promises and the questions to ask when in doubt. Above the specification. |
 | README.md | English public overview: concept, status, how to try it. Derived from the spec; it does not define product behavior. |
 | docs/user-guide.md, docs/user-guide.ja.md | Operations, data retention and backup, Claude hand-off, verification steps. English and Japanese; keep them in step. |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
@@ -58,6 +59,7 @@ A new thread starts without the previous one's memory. Rebuild the state from Gi
 - Use synthetic RSS/HTML and temporary databases for tests. Do not read the user's library, credentials, Keychain, browser profile, or unrelated projects. /private/tmp is disposable scratch, not a security boundary.
 - Local edits, tests, builds, and commits are allowed. Review concrete URLs, dependencies, migrations, and external writes against the user's current instruction. Authorization already given in the task does not need to be requested again.
 - Do not push directly to main. Use a branch and PR when GitHub publication is requested. Do not sign, submit, or publish an app without the user's instruction.
+- `docs/vision.md` is the owner's words. Do not change it without the owner's instruction. When you propose or judge a feature, check it against its questions (does it make the loop smoother, does it add something to manage, can it make the reader wait, can text leave the Mac without a button, does it work with AI off).
 - Adding or changing a dependency (SwiftSoup is pinned to an exact version) needs the user's instruction.
 
 ## Definition of done

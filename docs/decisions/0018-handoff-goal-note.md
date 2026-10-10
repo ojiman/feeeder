@@ -1,6 +1,6 @@
 # 0018 Claude hand-off with the goal and the note
 
-- Status: valid (approved by the PdM when the plan PR that proposes it was merged)
+- Status: replaced in part by [0019](0019-v1-simplification-notes.md) (no goal; the hand-off package holds the note only)
 - Date: 2026-10-11
 - Decider: the owner (PdM) approved the N6 plan, [2026-10-11-handoff-goal-note.md](../superpowers/plans/2026-10-11-handoff-goal-note.md), and chose to give the review of a note against its goal to Claude after the on-device experiment ([the record](../verification/2026-10-11-goal-review-experiment.md)). The Product Owner (the agent) proposed the points.
 - Refines: [decision 0012](0012-claude-handoff-from-themes.md) (the questions and answers switches become goal and note switches; points 5 and 6 lose the questions) and point 7 of [0013](0013-goal-and-note-for-themes.md).
