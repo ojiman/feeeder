@@ -42,7 +42,7 @@
 | [0014](0014-note-migration-format.md) | The note migration: format, what stays, what pauses | valid (approved by merging the N2 plan) |
 | [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid in part; refined by 0019 |
 | [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | replaced by 0019 |
-| [0017](0017-note-beside-the-article.md) | The note beside the article | replaced by 0019 |
+| [0017](0017-note-beside-the-article.md) | The note beside the article | refined by 0019 |
 | [0018](0018-handoff-goal-note.md) | Claude hand-off with the goal and the note | replaced in part by 0019 |
 | [0019](0019-v1-simplification-notes.md) | V1 simplification: notes replace themes | valid (approved by merging the PR that adds it) |
 

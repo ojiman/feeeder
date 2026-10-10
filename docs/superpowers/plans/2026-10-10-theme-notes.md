@@ -71,7 +71,7 @@ Merging the PR that adds this part approves the order and gates below as a plan.
 
 ## V1 simplification (decision 0019, 2026-10-11)
 
-After dogfooding the N6 build, the PdM simplified V1: notes replace themes; no goal; no link between an article and a note; one button sends an article's summary to a note; Claude is a function of the note. This section **replaces** the order of work in the rest of this file where they differ. The new stages S1 to S5 are in [decision 0019](../../decisions/0019-v1-simplification-notes.md); each gets its own plan PR and implementation PR.
+After dogfooding the N6 build, the PdM simplified V1: notes replace themes; no goal; one button sends an article's summary to a note and links the article to it; the layout of L1 stays; Claude is a function of the note. This section **replaces** the order of work in the rest of this file where they differ. The new stages S1 to S5 are in [decision 0019](../../decisions/0019-v1-simplification-notes.md); each gets its own plan PR and implementation PR.
 
 | Item in this file | Now |
 |---|---|
