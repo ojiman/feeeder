@@ -2,62 +2,25 @@ import Foundation
 import SwiftData
 
 public enum ThemeError: LocalizedError {
-    case missingName, missingTheme, missingArticle, missingQuestionText, goalTooLong
+    case missingName, missingTheme, missingArticle
     public var errorDescription: String? {
         switch self {
         case .missingName: "テーマの名前を入力してください。"
         case .missingTheme: "テーマが見つかりません。"
         case .missingArticle: "記事が見つかりません。"
-        case .missingQuestionText: "問いの文を入力してください。"
-        case .goalTooLong: "ゴールは\(Theme.goalLimit)文字までです。短くしてください。"
-        }
-    }
-}
-
-/// Fixed lenses for starting a question. `draft` is the deterministic fallback; the on-device
-/// assistant may later propose a more specific question, but this text must always work.
-public enum QuestionLens: String, CaseIterable, Sendable {
-    case assumption, exception, condition, tradeoff, personal, custom
-
-    public var title: String {
-        switch self {
-        case .assumption: "前提を疑う"
-        case .exception: "例外・反論"
-        case .condition: "成り立つ条件"
-        case .tradeoff: "トレードオフ"
-        case .personal: "自分の場合"
-        case .custom: "自由に書く"
-        }
-    }
-    public func draft(themeName: String) -> String {
-        let name = themeName.trimmingCharacters(in: .whitespacesAndNewlines)
-        switch self {
-        case .assumption: return "「\(name)」は、どんな前提の上に成り立っているか。その前提は本当に正しいか。"
-        case .exception: return "「\(name)」に当てはまらない例外や、反対の立場からの反論はあるか。"
-        case .condition: return "「\(name)」は、どんな条件のもとで成り立つか。条件が変わると何が変わるか。"
-        case .tradeoff: return "「\(name)」で得るものと引き換えに、何を手放しているか。"
-        case .personal: return "「\(name)」は、自分の場合どう当てはまるか。何を変え、何を変えないか。"
-        case .custom: return ""
         }
     }
 }
 
 @Model public final class Theme {
-    public static let goalLimit = 200
-    /// How long a goal is once saved (trimmed, line breaks as spaces), in characters. The sheet's counter uses this too.
-    public static func goalLength(_ text: String) -> Int { SingleLineText.name(text).count }
     @Attribute(.unique) public var id: UUID
     public var name: String
-    /// What the person wants to learn in this theme: plain text, one paragraph, at most `goalLimit` characters, may be empty.
-    public var goal: String = ""
     /// The theme's one note: plain text, `#` lines are headings. Stored exactly as typed; no length limit.
     public var note: String = ""
-    /// Retired by the note (decision 0013). Kept in the schema until the cleanup so an unmigrated library still opens; the migration empties it.
-    public var understanding: String
     public var createdAt: Date
     public var updatedAt: Date
     public init(name: String, at: Date) {
-        id = UUID(); self.name = name; understanding = ""; createdAt = at; updatedAt = at
+        id = UUID(); self.name = name; createdAt = at; updatedAt = at
     }
 }
 
@@ -77,23 +40,6 @@ public enum QuestionLens: String, CaseIterable, Sendable {
     }
 }
 
-@Model public final class ThemeQuestion {
-    @Attribute(.unique) public var id: UUID
-    public var themeID: UUID
-    public var lensRaw: String
-    public var text: String
-    public var answer: String
-    public var evidenceArticleIDs: [UUID]
-    public var createdAt: Date
-    public var updatedAt: Date
-    public var lens: QuestionLens { QuestionLens(rawValue: lensRaw) ?? .custom }
-    public var isAnswered: Bool { !answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    public init(themeID: UUID, lens: QuestionLens, text: String, at: Date) {
-        id = UUID(); self.themeID = themeID; lensRaw = lens.rawValue; self.text = text
-        answer = ""; evidenceArticleIDs = []; createdAt = at; updatedAt = at
-    }
-}
-
 extension ReaderStore {
     public func theme(id: UUID) -> Theme? { themes.first { $0.id == id } }
 
@@ -106,53 +52,16 @@ extension ReaderStore {
         try save(); try reload()
         return theme
     }
-    /// The goal as it is saved: line breaks become spaces and the ends are trimmed. Never cut: too long is an error.
-    private static func normalizedGoal(_ text: String) throws -> String {
-        let goal = SingleLineText.name(text)
-        guard Theme.goalLength(goal) <= Theme.goalLimit else { throw ThemeError.goalTooLong }
-        return goal
-    }
-
-    @discardableResult public func createTheme(name: String, goal: String, at: Date) throws -> Theme {
-        try reloadIfNeeded()
-        let name = SingleLineText.name(name)
-        guard !name.isEmpty else { throw ThemeError.missingName }
-        let goal = try Self.normalizedGoal(goal)
-        let theme = Theme(name: name, at: at)
-        theme.goal = goal
-        context.insert(theme)
-        try save(); try reload()
-        return theme
-    }
-
-    /// Changes the name and the goal in one save. A blank name, a too long goal, or an unknown theme changes nothing.
-    public func updateTheme(id: UUID, name: String, goal: String, at: Date) throws {
-        try reloadIfNeeded()
-        let name = SingleLineText.name(name)
-        guard !name.isEmpty else { throw ThemeError.missingName }
-        let goal = try Self.normalizedGoal(goal)
-        guard let theme = theme(id: id) else { throw ThemeError.missingTheme }
-        guard theme.name != name || theme.goal != goal else { return }
-        theme.name = name; theme.goal = goal; theme.updatedAt = at
-        try save(); try reload()
-    }
-
     public func renameTheme(id: UUID, to name: String, at: Date) throws {
         try reloadIfNeeded()
         let name = SingleLineText.name(name)
         guard !name.isEmpty else { throw ThemeError.missingName }
-        guard let theme = theme(id: id), theme.name != name else { return }
+        guard let theme = theme(id: id) else { throw ThemeError.missingTheme }
+        guard theme.name != name else { return }
         theme.name = name; theme.updatedAt = at
         try save(); try reload()
     }
-    /// Typing path: saves without reloading so the editor is not rebuilt on every change.
-    public func saveUnderstanding(themeID: UUID, text: String, at: Date) throws {
-        try reloadIfNeeded()
-        guard let theme = theme(id: themeID), theme.understanding != text else { return }
-        theme.understanding = text; theme.updatedAt = at
-        try save()
-    }
-    /// Typing path: saves without reloading so the editor is not rebuilt on every change. The text is stored exactly as typed.
+    /// The typing path: the note is saved as it is, once per change. An unknown theme is an error, never a silent drop.
     public func saveNote(themeID: UUID, text: String, at: Date) throws {
         try reloadIfNeeded()
         guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
@@ -164,7 +73,6 @@ extension ReaderStore {
         try reloadIfNeeded()
         guard let theme = theme(id: id) else { return }
         for link in themeArticles where link.themeID == id { context.delete(link) }
-        for question in themeQuestions where question.themeID == id { context.delete(question) }
         context.delete(theme)
         try save()
         defer { onContentPolicyChanged?() }
@@ -189,10 +97,6 @@ extension ReaderStore {
     public func removeArticle(_ articleID: UUID, fromTheme themeID: UUID, at: Date) throws {
         try reloadIfNeeded()
         guard let link = themeArticles.first(where: { $0.themeID == themeID && $0.articleID == articleID }) else { return }
-        for question in themeQuestions where question.themeID == themeID && question.evidenceArticleIDs.contains(articleID) {
-            question.evidenceArticleIDs.removeAll { $0 == articleID }
-            question.updatedAt = at
-        }
         context.delete(link)
         theme(id: themeID)?.updatedAt = at
         try save()
@@ -265,74 +169,7 @@ extension ReaderStore {
         guard let ids = articleThemeIDs[articleID] else { return [] }
         return themes.map(\.id).filter { ids.contains($0) }
     }
-    /// Starred articles in no theme. `keeping` keeps the current selection visible after it leaves the inbox.
-    public func unfiledStarredArticleIDs(keeping: UUID?) -> [UUID] {
-        _ = starCount; _ = themeArticles
-        return articleIDs.filter { (starredIDs.contains($0) && articleThemeIDs[$0] == nil) || $0 == keeping }
-    }
-    public var unfiledStarCount: Int { unfiledStarredArticleIDs(keeping: nil).count }
 
-    /// Starts a question from a fixed lens: the lens's draft with the theme's current name. The free lens needs text.
-    @discardableResult public func addQuestion(themeID: UUID, lens: QuestionLens, at: Date) throws -> ThemeQuestion {
-        try reloadIfNeeded()
-        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
-        guard lens != .custom else { throw ThemeError.missingQuestionText }
-        return try addQuestion(themeID: themeID, lens: lens, text: lens.draft(themeName: theme.name), at: at)
-    }
-    @discardableResult public func addQuestion(themeID: UUID, lens: QuestionLens, text: String, at: Date) throws -> ThemeQuestion {
-        try reloadIfNeeded()
-        guard let theme = theme(id: themeID) else { throw ThemeError.missingTheme }
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw ThemeError.missingQuestionText }
-        let question = ThemeQuestion(themeID: themeID, lens: lens, text: text, at: at)
-        context.insert(question)
-        theme.updatedAt = at
-        try save(); try reload()
-        return question
-    }
-    public func questions(themeID: UUID) -> [ThemeQuestion] {
-        themeQuestions.filter { $0.themeID == themeID }.sorted {
-            $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
-        }
-    }
-    /// Commit-only: the text is trimmed and blank text throws. Do not call it on every keystroke.
-    public func updateQuestion(id: UUID, text: String, at: Date) throws {
-        try reloadIfNeeded()
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw ThemeError.missingQuestionText }
-        guard let question = themeQuestions.first(where: { $0.id == id }), question.text != text else { return }
-        question.text = text; question.updatedAt = at
-        theme(id: question.themeID)?.updatedAt = at
-        try save()
-    }
-    /// Typing path: saves without reloading. The answer is stored exactly as typed.
-    public func saveAnswer(questionID: UUID, answer: String, at: Date) throws {
-        try reloadIfNeeded()
-        guard let question = themeQuestions.first(where: { $0.id == questionID }), question.answer != answer else { return }
-        question.answer = answer; question.updatedAt = at
-        theme(id: question.themeID)?.updatedAt = at
-        try save()
-    }
-    public func setEvidence(questionID: UUID, articleIDs: [UUID], at: Date) throws {
-        try reloadIfNeeded()
-        guard let question = themeQuestions.first(where: { $0.id == questionID }) else { return }
-        let members = themeMembers[question.themeID] ?? []
-        var seen = Set<UUID>()
-        let evidence = articleIDs.filter { members.contains($0) && seen.insert($0).inserted }
-        guard evidence != question.evidenceArticleIDs else { return }
-        question.evidenceArticleIDs = evidence; question.updatedAt = at
-        theme(id: question.themeID)?.updatedAt = at
-        try save()
-    }
-    public func deleteQuestion(id: UUID, at: Date) throws {
-        try reloadIfNeeded()
-        guard let question = themeQuestions.first(where: { $0.id == id }) else { return }
-        theme(id: question.themeID)?.updatedAt = at
-        context.delete(question)
-        try save()
-        defer { onContentPolicyChanged?() }
-        try reload()
-    }
 }
 
 public enum ThemeMembershipChange: Equatable, Sendable {

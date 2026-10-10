@@ -9,10 +9,6 @@ struct ReaderView: View {
     @Bindable var aiReview: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
     let imageLoader: ReaderImageLoader
-    let suggestions: ThemeSuggestionModel?
-    let summaries: ArticleSummaryModel?
-    let noteActions: NoteActionModel?
-    @AppStorage private var aiEnabled: Bool
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
@@ -20,12 +16,6 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var noteLayout = NoteLayout()
-    /// The note editor's text view, for edits that can be undone with ⌘Z.
-    @State private var noteHandle = NoteTextHandle()
-    /// The summary that was adopted into the note, so its button reads 「採用しました」 until a new summary is made.
-    @State private var adoptedSummary: ArticleSummaryModel.Summary?
-    /// Where the cursor was in each theme's note. In memory only: it is restored when the note is closed and opened again, not after a restart.
-    @State private var noteSelections: [UUID: TextSelection] = [:]
     @State private var saveError: String?
     @State private var themeMessage: String?
     @State private var pickingTheme = false
@@ -46,13 +36,9 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false,
-         suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil, noteActions: NoteActionModel? = nil,
-         defaults: UserDefaults = .standard) {
-        _aiEnabled = AppStorage(wrappedValue: true, OnDeviceAISetting.key, store: defaults)   // tests pass their own store
-        self.summaries = summaries; self.noteActions = noteActions
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
-        self.imageLoader = imageLoader; self.suggestions = suggestions
+        self.imageLoader = imageLoader
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
@@ -72,11 +58,11 @@ struct ReaderView: View {
         guard canAskReview(themeID) else { return nil }
         return { reviewingTheme = ThemeSheet(id: themeID, fromNotePanel: true) }
     }
-    /// Something to hand over: an article source, or the person's goal or note.
+    /// Something to hand over: an article source, or the person's note.
     private func canAskReview(_ themeID: UUID) -> Bool {
         guard let theme = store.theme(id: themeID) else { return false }
-        let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: false)
-        return !claudeSelections(themeID: themeID).isEmpty || switches.goalEnabled || switches.noteEnabled
+        let switches = HandoffDefaults.switches(note: theme.note, fromNotePanel: false)
+        return !claudeSelections(themeID: themeID).isEmpty || switches.noteEnabled
     }
     /// Every theme article as two choices: the retained article text first (so it is the default), then the saved RSS summary.
     private func claudeSelections(themeID: UUID) -> [AIInputSelection] {
@@ -89,7 +75,6 @@ struct ReaderView: View {
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
-        case .unfiledStars: store.unfiledStarredArticleIDs(keeping: selection)
         case .theme(let id): store.themeArticleIDs(themeID: id, keeping: selection)
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
@@ -101,7 +86,6 @@ struct ReaderView: View {
 
     private var scopeTitle: String {
         switch scope ?? .all {
-        case .unfiledStars: "未整理のStar"
         case .theme(let id): store.theme(id: id)?.name ?? "テーマ"
         case .folder(let name): name
         case .all: "すべての記事"
@@ -114,10 +98,7 @@ struct ReaderView: View {
     var body: some View {
         reader
         .onAppear { if noteOpen { noteLayout.noteOpened(); applyColumns() } }
-        .onChange(of: selection) { _, _ in summaries?.reset(); adoptedSummary = nil }
-        .onChange(of: aiEnabled) { _, on in if !on { noteActions?.reset(); summaries?.reset() } }
         .onChange(of: noteOpen) { _, open in
-            noteActions?.reset(); summaries?.reset(); adoptedSummary = nil
             if open { noteLayout.noteOpened() } else { noteLayout.noteClosed() }
             applyColumns()
         }
@@ -132,7 +113,6 @@ struct ReaderView: View {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
-            summaries?.reset(); adoptedSummary = nil; noteActions?.reset()          // a summary or a card belongs to the theme it was made in
             workspace.scope = new ?? .all
             enterScope()
         }
@@ -176,7 +156,7 @@ struct ReaderView: View {
                 .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
                 .disabled(article == nil)
                 .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
-                    if let article { ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }, suggestions: suggestions) }
+                    if let article { ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }) }
                 }
                 Button(action: openExternal) { Image(systemName: "globe") }
                     .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
@@ -192,14 +172,6 @@ struct ReaderView: View {
             } catch { /* Selection changes cancel the old article's deadline. */ }
         }
         .task { try? await imageLoader.prepare(at: .now) }
-        .task(id: ClusterTrigger(active: scope == .unfiledStars && aiEnabled, count: store.unfiledStarCount)) {
-            guard let suggestions else { return }
-            guard scope == .unfiledStars, aiEnabled else { suggestions.invalidateClusters(); return }
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            await suggestions.loadClusters()
-        }
-        .onChange(of: aiEnabled) { _, on in if !on { suggestions?.invalidate() } }
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
         }
@@ -279,12 +251,11 @@ struct ReaderView: View {
                 sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
             }
             Section("テーマ") {
-                sidebarRow("未整理のStar", symbol: "tray.full", count: store.unfiledStarCount).tag(LibraryScope.unfiledStars)
                 ForEach(store.themes) { theme in
                     sidebarRow(theme.name, symbol: "square.stack", count: store.themeArticleCount(themeID: theme.id))
                         .tag(LibraryScope.theme(theme.id))
                         .contextMenu {
-                            Button("名前とゴールを編集…") { themeEditor = ThemeEditorTarget(themeID: theme.id) }
+                            Button("名前を編集…") { themeEditor = ThemeEditorTarget(themeID: theme.id) }
                             Button("削除…", role: .destructive) { deletingTheme = theme.id }
                         }
                 }
@@ -329,7 +300,7 @@ struct ReaderView: View {
                 perform { try store.deleteTheme(id: id); if scope == .theme(id) { scope = .all } }
                 deletingTheme = nil
             }
-        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、学習ゴールとノートは消えます。") }
+        } message: { Text("記事とStarそのものは消えません。このテーマに記録した記事のタイトル・リンク・要約と、ノートは消えます。") }
     }
 
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {
@@ -394,28 +365,21 @@ struct ReaderView: View {
                 switch scope ?? .all {
                 case .theme: ContentUnavailableView("記事が入っていません", systemImage: "square.stack",
                     description: Text("記事を選んで t キーを押すと、このテーマに入れられます。"))
-                case .unfiledStars: ContentUnavailableView("未整理のStarはありません", systemImage: "tray.full",
-                    description: Text("Starを付けた記事のうち、テーマに入っていないものがここに並びます。"))
                 default: ContentUnavailableView("記事はありません", systemImage: "tray",
                     description: Text("購読を追加するか、ほかの一覧を選んでください。"))
                 }
             }
         }
         .safeAreaInset(edge: .top) {
-            if case .theme(let id) = scope {
+            // While the note is open the sidebar is folded; this button brings it back (and folds it again).
+            if noteOpen {
                 HStack(spacing: 0) {
-                    // While the note is open the sidebar is folded; this button brings it back (and folds it again).
-                    if noteOpen {
-                        Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
-                            .buttonStyle(.borderless).padding(.leading, 12)
-                            .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                            .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                    }
-                    ThemeGoalStrip(goal: store.theme(id: id)?.goal ?? "", onEdit: { themeEditor = ThemeEditorTarget(themeID: id) })
+                    Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
+                        .buttonStyle(.borderless).padding(.leading, 12).padding(.vertical, 6)
+                        .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
+                        .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
+                    Spacer(minLength: 0)
                 }.background(.bar)
-            }
-            else if scope == .unfiledStars, aiEnabled, let suggestions, !suggestions.clusters.groups.isEmpty {
-                ClusterSuggestionBar(store: store, model: suggestions, onCreated: { themeMessage = $0 })
             }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
@@ -430,19 +394,12 @@ struct ReaderView: View {
     /// The note beside the reader (the inspector). It is there only inside a theme.
     @ViewBuilder private var notePanel: some View {
         if let id = themeScopeID {
-            NotePanel(store: store, themeID: id, selection: noteSelectionBinding(id), handle: noteHandle, aiEnabled: aiEnabled,
-                      noteActions: noteActions, summaries: summaries, article: selectedArticle,
-                      summaryAdopted: { if case .ready(let value) = summaries?.state, value == adoptedSummary { return true }; return false }(),
+            NotePanel(store: store, themeID: id,
                       canPrevious: ThemeArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
                       canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
-                      onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) },
-                      onAskReview: askReviewAction(id),
-                      onSummarize: { if let article = selectedArticle { adoptedSummary = nil; summaries?.request(articleID: article.id, themeID: id) } },
-                      onAdoptSummary: { summary in if let article = selectedArticle { adopt(summary, article: article, themeID: id) } },
-                      onNoteAdopted: { range in DispatchQueue.main.async { noteHandle.textView?.setSelectedRange(range) } },
-                      onError: { saveError = $0 })
+                      onAskReview: askReviewAction(id))
             .id(id)
         } else { EmptyView() }
     }
@@ -450,42 +407,6 @@ struct ReaderView: View {
     /// Not while Japanese text is being composed, and not while the theme picker is open (it belongs to the article that is shown).
     private var panelMayMove: Bool {
         !pickingTheme && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
-    }
-
-    private func adopt(_ summary: ArticleSummaryModel.Summary, article: Article, themeID: UUID) {
-        guard summary.articleID == article.id else { return }
-        guard let theme = store.theme(id: themeID) else { saveError = "テーマが見つかりません。"; return }
-        let note = theme.note
-        // No selection recorded (the note was never clicked in) means the end of the note, not the start the text view starts at.
-        let selectionEnd = noteSelections[themeID] == nil ? nil : (noteHandle.selectedRange.map { NSMaxRange($0) } ?? noteSelectionEnd(themeID, in: note))
-        let result = NoteInsertion.adopted(summary: summary.text, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0)?.absoluteString },
-                                           into: note, selectionEndUTF16: selectionEnd)
-        do {
-            // One undo step when the note's text view is mounted; the plain save otherwise.
-            let saver: (String) throws -> Void = { [store] text in try store.saveNote(themeID: themeID, text: text, at: .now) }
-            let whole = NSRange(location: 0, length: (note as NSString).length)
-            noteHandle.expectedText = { [store] in store.theme(id: themeID)?.note }
-            noteHandle.onUndoError = { saveError = $0 }
-            if try !noteHandle.replace(whole, with: result.note, actionName: "要約の採用", save: saver) { try saver(result.note) }
-            adoptedSummary = summary
-            let index = result.note.index(result.note.startIndex, offsetBy: min(result.cursorOffset, result.note.count))
-            noteSelections[themeID] = TextSelection(insertionPoint: index)
-        } catch { saveError = error.localizedDescription }
-    }
-
-    /// An index from an older copy of the note can lie past its end; `utf16Offset(in:)` traps on that, so it is checked first.
-    private func safeUTF16Offset(_ index: String.Index, in note: String) -> Int? {
-        index <= note.endIndex ? index.utf16Offset(in: note) : nil
-    }
-
-    /// The end of the person's selection in the note (or the cursor), as a UTF-16 offset; the end of the note when there is none.
-    private func noteSelectionEnd(_ themeID: UUID, in note: String) -> Int? {
-        guard let selection = noteSelections[themeID] else { return nil }
-        switch selection.indices {
-        case .selection(let range): return safeUTF16Offset(range.upperBound, in: note)
-        case .multiSelection(let set): return set.ranges.last.flatMap { safeUTF16Offset($0.upperBound, in: note) }
-        @unknown default: return nil
-        }
     }
 
     private var originalColumn: some View {
@@ -567,9 +488,6 @@ struct ReaderView: View {
         guard let id = themeScopeID else { return }
         workspace.setNote(open: !workspace.isNoteOpen(of: id), of: id)
     }
-    private func noteSelectionBinding(_ themeID: UUID) -> Binding<TextSelection?> {
-        Binding(get: { noteSelections[themeID] }, set: { value in noteSelections[themeID] = value })
-    }
     private func toggleSidebar() {
         noteLayout.toggleSidebar()
         applyColumns()
@@ -598,8 +516,6 @@ struct ReaderView: View {
         do { try operation() } catch { saveError = error.localizedDescription }
     }
 }
-
-private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }
 
 /// The theme a review sheet was opened for, kept for the sheet's life even if the selection moves.
 private struct ThemeSheet: Identifiable { let id: UUID; var fromNotePanel = false }

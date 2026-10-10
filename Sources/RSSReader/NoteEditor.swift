@@ -2,17 +2,16 @@ import SwiftUI
 import ReaderCore
 
 /// The theme's one note. Plain text; a line that starts with `#` is a heading. Saved as it is typed, exactly as typed.
-/// Nothing but the person writes here: the AI only offers cards the person adopts (decision 0013).
+/// Nothing but the person writes here (decision 0019: a summary the person sends is the only text that arrives from elsewhere).
 struct NoteEditor: View {
     @Bindable var store: ReaderStore
     let themeID: UUID
-    @Binding var selection: TextSelection?
     @State private var error: String?
     var body: some View {
         if let theme = store.theme(id: themeID) {
             TextEditor(text: Binding(get: { theme.note }, set: { text in
-                do { try store.saveNote(themeID: themeID, text: text, at: .now) } catch { self.selection = nil; self.error = error.localizedDescription }
-            }), selection: $selection)
+                do { try store.saveNote(themeID: themeID, text: text, at: .now) } catch { self.error = error.localizedDescription }
+            }))
             .font(.body).accessibilityLabel("ノート")
             .scrollContentBackground(.hidden)
             .padding(.horizontal, 16).padding(.vertical, 12)

@@ -4,7 +4,6 @@ import ReaderCore
 struct ReaderSettingsView: View {
     @Bindable var store: ReaderStore
     @Binding var appearance: String
-    var suggestions: ThemeSuggestionModel? = nil
     @State private var days = 30
     @State private var pendingDays: Int?
     @State private var deletingAll = false
@@ -25,10 +24,8 @@ struct ReaderSettingsView: View {
                 .tabItem { Label("外観", systemImage: "circle.lefthalf.filled") }
             storage
                 .tabItem { Label("保存", systemImage: "externaldrive") }
-            if let suggestions {
-                OnDeviceAISettingsView(suggestions: suggestions)
-                    .tabItem { Label("端末内AI", systemImage: "sparkles") }
-            }
+            OnDeviceAISettingsView()
+                .tabItem { Label("端末内AI", systemImage: "sparkles") }
         }.frame(width: 520, height: 340)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         .onAppear { days = store.retentionDays }
@@ -66,7 +63,7 @@ struct ReaderSettingsView: View {
             }
             Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("テーマの記録（記事のタイトル・リンク・記録した要約、学習ゴール、ノート）は自動削除しません。")
+            Text("テーマの記録（記事のタイトル・リンク・記録した要約、ノート）は自動削除しません。")
             Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
                 perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
             }
@@ -91,37 +88,27 @@ enum OnDeviceAISetting {
 }
 
 struct OnDeviceAISettingsView: View {
-    @Bindable var suggestions: ThemeSuggestionModel
     @AppStorage(OnDeviceAISetting.key) private var enabled = true
+    @State private var availability: AssistantAvailability?
 
     var body: some View {
         Form {
-            Toggle("端末内AIの提案を使う", isOn: $enabled)
-            Text("近いテーマ（tキー）、まとまりの提案（未整理のStar）、テーマ名の案を、この Mac の中だけで作ります。外部へ送らず、アカウントも要りません。案は別に表示され、自分で選ぶまで何も書き換えません。ノートのパネルでは、記事の要約や、ノートの文章の書き直し・3行の要点も頼めます（頼んだときだけ作り、採用するまでどこにも保存しません）。ノートには、採用した文章のほかは何も書き込みません。")
+            Toggle("端末内AIを使う", isOn: $enabled)
+            Text("記事の要約を作るときに、この Mac の中だけで使います。外部へ送らず、アカウントも要りません。使わなくても、すべての操作ができます。")
                 .font(.caption).foregroundStyle(.secondary)
             LabeledContent("状態") { Text(statusText) }
-            LabeledContent("テーマ名の案") { Text(generationText) }
-            Text("言語の資産が端末に無い場合、アプリは自動で取得しません。提案が出ないだけで、ほかの操作は変わりません。")
+            Text("言語の資産が端末に無い場合、アプリは自動で取得しません。AIが使えないだけで、ほかの操作は変わりません。")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .formStyle(.grouped).padding()
-        .task(id: enabled) { await suggestions.refreshAvailability() }
-    }
-    private var generationText: String {
-        guard enabled else { return "オフ" }
-        return switch suggestions.generationAvailability {
-        case nil: "確認中…"
-        case .available: "使えます"
-        case .assetsMissing: "モデルの準備中です"
-        case .unsupported: "この環境では使えません"
-        }
+        .task(id: enabled) { availability = enabled ? await FoundationModelsGenerator().generationAvailability() : nil }
     }
     private var statusText: String {
         guard enabled else { return "オフ" }
-        return switch suggestions.availability {
+        return switch availability {
         case nil: "確認中…"
         case .available: "使えます"
-        case .assetsMissing: "端末に言語の資産がありません"
+        case .assetsMissing: "モデルの準備中です"
         case .unsupported: "この環境では使えません"
         }
     }

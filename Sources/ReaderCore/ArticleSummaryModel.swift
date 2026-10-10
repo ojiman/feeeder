@@ -19,14 +19,14 @@ import Observation
 
     public private(set) var state = State.idle
     private let store: ReaderStore
-    private let assistant: (any ThemeAssistant)?
+    private let assistant: (any TextGenerator)?
     private let isEnabled: @MainActor () -> Bool
     private let deadline: Double
     private let now: () -> Date
     private var token = UUID()
     private var task: Task<Void, Never>?
 
-    public init(store: ReaderStore, assistant: (any ThemeAssistant)?, isEnabled: @escaping @MainActor () -> Bool = { true },
+    public init(store: ReaderStore, assistant: (any TextGenerator)?, isEnabled: @escaping @MainActor () -> Bool = { true },
                 deadline: Double = 20, now: @escaping () -> Date = { .now }) {
         self.store = store; self.assistant = assistant; self.isEnabled = isEnabled; self.deadline = deadline; self.now = now
     }

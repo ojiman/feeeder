@@ -140,48 +140,40 @@ import Testing
         #expect(review.package?.sources.count == 2)
     }
 
-    // MARK: Theme context (the goal and the note)
+    // MARK: Theme context (the note)
 
-    /// A theme with one saved-summary source, a goal, and a note.
+    /// A theme with one saved-summary source and a note.
     private func themeFixture(_ at: Date) throws -> (library: TestLibrary, store: ReaderStore, theme: Theme, link: ThemeArticle) {
         let library = try TestLibrary()
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let article = store.articles[0]; article.summary = "Recorded synthetic summary"
-        let theme = try store.createTheme(name: "Rates and households", goal: "Decide between a variable and a fixed rate", at: at)
+        let theme = try store.createTheme(name: "Rates and households", at: at)
         let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
         try store.saveNote(themeID: theme.id, text: "# Variable\nMonthly payments are low.\n\n# Fixed\nI am not sure about prepayment fees.", at: at)
         return (library, store, theme, link)
     }
-    private func request(_ theme: Theme, goal: Bool = true, note: Bool = true) -> AIThemeRequest { AIThemeRequest(themeID: theme.id, includeGoal: goal, includeNote: note) }
+    private func request(_ theme: Theme, note: Bool = true) -> AIThemeRequest { AIThemeRequest(themeID: theme.id, includeNote: note) }
 
-    @Test func theGoalAndTheNoteAreIncludedOnlyWhenAsked() throws {
+    @Test func theNoteIsIncludedOnlyWhenAskedAndNoGoalIsEverMentioned() throws {
         let at = Date.now
         let (library, store, theme, link) = try themeFixture(at); defer { library.cleanup() }
         let review = AIPackageReview(store: store, now: { at })
         try review.build(selections: [.themeArticle(link.key)], theme: request(theme), language: "English", at: at)
-        let both = try #require(review.package)
-        #expect(both.text.contains("BEGIN_THEME \(theme.id.uuidString)\nTheme: Rates and households"))
-        #expect(both.text.contains("Goal (written by the user):\nDecide between a variable and a fixed rate"))
-        #expect(both.text.contains("Note (written by the user):\n# Variable\nMonthly payments are low.\n\n# Fixed\nI am not sure about prepayment fees."))
-        #expect(both.theme?.goal != nil && both.theme?.note != nil && both.sha256 == AIPackageBuilder.hash(Data(both.text.utf8)))
-        #expect(both.text.contains("ノートに書かれていることを「ない」と言わないでください"))        // the review request, only because the note is in
+        let with = try #require(review.package)
+        #expect(with.text.contains("BEGIN_THEME \(theme.id.uuidString)\nTheme: Rates and households"))
+        #expect(with.text.contains("Note (written by the user):\n# Variable\nMonthly payments are low.\n\n# Fixed\nI am not sure about prepayment fees."))
+        #expect(with.theme?.note != nil && with.sha256 == AIPackageBuilder.hash(Data(with.text.utf8)))
+        #expect(with.text.contains("ノートに書かれていることを「ない」と言わないでください"))        // the review request, only because the note is in
+        #expect(!with.text.contains("Goal") && !with.text.contains("ゴール"))                      // decision 0019: no goal anywhere in the package
 
         try review.build(selections: [.themeArticle(link.key)], theme: request(theme, note: false), language: "English", at: at)
-        let goalOnly = try #require(review.package)
-        #expect(goalOnly.text.contains("Goal (written by the user):") && !goalOnly.text.contains("Note (written by the user)") && !goalOnly.text.contains("Monthly payments"))
-        #expect(!goalOnly.text.contains("ノートに書かれていることを「ない」"))                      // the old request for the sources
-        #expect(goalOnly.text.contains("主要な論点、出典間の共通点と相違点"))
-
-        try review.build(selections: [.themeArticle(link.key)], theme: request(theme, goal: false), language: "English", at: at)
-        let noteOnly = try #require(review.package)
-        #expect(!noteOnly.text.contains("Goal (written by the user)") && noteOnly.text.contains("学習ゴールは示されていない"))
-
-        try review.build(selections: [.themeArticle(link.key)], theme: request(theme, goal: false, note: false), language: "English", at: at)
-        let neither = try #require(review.package)
-        #expect(neither.theme == nil && !neither.text.contains("BEGIN_THEME") && neither.themeID == theme.id)   // still tied to the theme for managed copies
+        let without = try #require(review.package)
+        #expect(without.theme == nil && !without.text.contains("BEGIN_THEME") && !without.text.contains("Monthly payments"))
+        #expect(!without.text.contains("ノートに書かれていることを「ない」") && without.text.contains("主要な論点、出典間の共通点と相違点"))   // the old request for the sources
+        #expect(without.themeID == theme.id)                                                       // still tied to the theme for managed copies
     }
 
-    @Test func anEmptyGoalOrNoteIsNotIncludedAndAThemeWithNeitherCannotBeSentWithoutSources() throws {
+    @Test func anEmptyNoteIsNotIncludedAndAThemeWithoutOneCannotBeSentWithoutSources() throws {
         let at = Date.now
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
@@ -193,11 +185,11 @@ import Testing
         #expect(throws: AIPackageError.self) { try review.build(selections: [], theme: request(theme), language: "English", at: at) }
         try store.saveNote(themeID: theme.id, text: "Something", at: at)
         #expect(store.aiThemeContext(request(theme, note: false)) == nil)
-        #expect(store.aiThemeContext(request(theme))?.goal == nil && store.aiThemeContext(request(theme))?.note == "Something")
-        #expect(store.aiThemeContext(AIThemeRequest(themeID: UUID(), includeGoal: true, includeNote: true)) == nil)
+        #expect(store.aiThemeContext(request(theme))?.note == "Something")
+        #expect(store.aiThemeContext(AIThemeRequest(themeID: UUID(), includeNote: true)) == nil)
     }
 
-    @Test func aPackageOfTheGoalOrTheNoteAloneHasNoSourcesAndLivesADay() throws {
+    @Test func aPackageOfTheNoteAloneHasNoSourcesAndLivesADay() throws {
         let at = Date.now
         let (library, store, theme, _) = try themeFixture(at); defer { library.cleanup() }
         let review = AIPackageReview(store: store, now: { at })
@@ -208,18 +200,14 @@ import Testing
         #expect(package.sha256 == AIPackageBuilder.hash(Data(package.text.utf8)) && package.text.hasSuffix("END_PACKAGE\n"))
         _ = try review.validated(at: at.addingTimeInterval(3_600))                                   // still valid an hour later
         #expect(throws: (any Error).self) { try review.validated(at: at.addingTimeInterval(86_401)) }
-        try review.build(selections: [], theme: request(theme, note: false), language: "English", at: at)    // the goal alone is enough too
-        #expect(review.package?.sources.isEmpty == true)
-        let goalOnly = try #require(review.package?.text)
-        #expect(!goalOnly.contains("記事データを使い") && !goalOnly.contains("ノートで既にできていること") && goalOnly.contains("学習ゴールに照らして"))   // no request about articles or a note that are not there
-        #expect(AIPackageError.empty.localizedDescription.contains("ゴール"))                      // the message does not insist on an article
+        #expect(AIPackageError.empty.localizedDescription.contains("ノート"))                      // the message does not insist on an article
     }
 
     @Test func aReviewBecomesInvalidWhenWhatItContainsChanges() throws {
         let at = Date.now
         let (library, store, theme, link) = try themeFixture(at); defer { library.cleanup() }
         let review = AIPackageReview(store: store, now: { at })
-        func rebuild(note: Bool = true, goal: Bool = true) throws { try review.build(selections: [.themeArticle(link.key)], theme: request(theme, goal: goal, note: note), language: "English", at: at) }
+        func rebuild() throws { try review.build(selections: [.themeArticle(link.key)], theme: request(theme), language: "English", at: at) }
 
         try rebuild()
         _ = try review.validated(at: at); _ = try review.validated(at: at)                           // unchanged stays valid
@@ -227,24 +215,18 @@ import Testing
         #expect(throws: (any Error).self) { try review.validated(at: at) }
         #expect(review.package == nil)
         try store.saveNote(themeID: theme.id, text: "# Variable\nMonthly payments are low.", at: at)
-        try rebuild()
-        try store.updateTheme(id: theme.id, name: "Rates and households", goal: "A new goal", at: at)
-        #expect(throws: (any Error).self) { try review.validated(at: at) }
         try rebuild(); try store.renameTheme(id: theme.id, to: "Renamed", at: at)
         #expect(throws: (any Error).self) { try review.validated(at: at) }
         try rebuild(); try store.deleteTheme(id: theme.id)
         #expect(throws: (any Error).self) { try review.validated(at: at) }
     }
 
-    @Test func anEditOfWhatIsNotIncludedDoesNotInvalidateTheReview() throws {
+    @Test func anEditOfTheNoteDoesNotInvalidateAReviewThatDoesNotIncludeIt() throws {
         let at = Date.now
         let (library, store, theme, link) = try themeFixture(at); defer { library.cleanup() }
         let review = AIPackageReview(store: store, now: { at })
-        try review.build(selections: [.themeArticle(link.key)], theme: request(theme, note: false), language: "English", at: at)   // the goal only
+        try review.build(selections: [.themeArticle(link.key)], theme: request(theme, note: false), language: "English", at: at)
         try store.saveNote(themeID: theme.id, text: "A private edit that was never included.", at: at)
-        _ = try review.validated(at: at)
-        try review.build(selections: [.themeArticle(link.key)], theme: request(theme, goal: false), language: "English", at: at)    // the note only
-        try store.updateTheme(id: theme.id, name: "Rates and households", goal: "A goal that was never included", at: at)
         _ = try review.validated(at: at)
     }
 

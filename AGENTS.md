@@ -34,7 +34,7 @@ git diff --check
 
 Use `open -n` for the synthetic run. Without it, `open` can reuse a Feeeder that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `RSSReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl RSSReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
 
-Opt-in store compatibility check (skipped unless `FEEEDER_V1_FIXTURE_DIR` is set; not part of CI during beta):
+Opt-in store compatibility check (skipped unless `FEEEDER_V1_FIXTURE_DIR` is set; not part of CI during beta; `FEEEDER_PRE0019_FIXTURE_DIR` is the same for a fixture made from commit `52429b4`, the build before decision 0019):
 
 ```sh
 bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new

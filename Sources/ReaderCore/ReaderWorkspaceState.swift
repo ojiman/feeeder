@@ -1,7 +1,7 @@
 import Foundation
 
 public enum ReaderWorkspaceScope: Hashable, Sendable {
-    case all, unread, starred, feed(UUID), folder(String), unfiledStars, theme(UUID)
+    case all, unread, starred, feed(UUID), folder(String), theme(UUID)
 }
 
 public struct ReaderWorkspaceState {

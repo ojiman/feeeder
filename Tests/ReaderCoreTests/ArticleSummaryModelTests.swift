@@ -11,7 +11,7 @@ import Testing
         for _ in 0..<300 { if !predicate(model.state) { return }; try? await Task.sleep(for: .milliseconds(10)) }
     }
     private func makeStore(_ library: TestLibrary) throws -> ReaderStore { try ReaderStore(url: library.url, seedDemo: true, now: at) }
-    private func make(_ store: ReaderStore, _ assistant: FakeAssistant, enabled: SuggestionSwitch = SuggestionSwitch(), deadline: Double = 5,
+    private func make(_ store: ReaderStore, _ assistant: FakeGenerator, enabled: EnabledSwitch = EnabledSwitch(), deadline: Double = 5,
                       now: Date? = nil) -> ArticleSummaryModel {
         let time = now ?? at
         return ArticleSummaryModel(store: store, assistant: assistant, isEnabled: { enabled.on }, deadline: deadline, now: { time })
@@ -20,7 +20,7 @@ import Testing
     @Test func aSummaryIsShownOnlyAfterTheRequestAndIsCleaned() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["「要約です。」\n"])
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["「要約です。」\n"])
         let model = make(store, assistant)
         #expect(model.state == .idle)
         let early = await assistant.generateCalls
@@ -37,8 +37,8 @@ import Testing
     @Test func nothingIsCalledWhenTheSettingIsOff() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["x"])
-        let enabled = SuggestionSwitch(); enabled.on = false
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["x"])
+        let enabled = EnabledSwitch(); enabled.on = false
         let model = make(store, assistant, enabled: enabled)
         model.request(articleID: store.articles[0].id, themeID: nil)
         #expect(model.state == .unavailable(.disabled))
@@ -49,8 +49,8 @@ import Testing
     @Test func switchingTheSettingOffWhileWorkingDropsTheAnswer() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["要約"], hold: true)
-        let enabled = SuggestionSwitch()
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["要約"], hold: true)
+        let enabled = EnabledSwitch()
         let model = make(store, assistant, enabled: enabled)
         model.request(articleID: store.articles[0].id, themeID: nil)
         while !(await assistant.generationParked) { try await Task.sleep(for: .milliseconds(5)) }
@@ -64,7 +64,7 @@ import Testing
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
         for (availability, reason) in [(AssistantAvailability.unsupported, ArticleSummaryModel.Reason.unsupported), (.assetsMissing, .assetsMissing)] {
-            let assistant = FakeAssistant(); await assistant.scriptGeneration(["x"], availability: availability)
+            let assistant = FakeGenerator(); await assistant.scriptGeneration(["x"], availability: availability)
             let model = make(store, assistant)
             model.request(articleID: store.articles[0].id, themeID: nil)
             await settle(model)
@@ -81,13 +81,13 @@ import Testing
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
         let id = store.articles[0].id
-        let failing = FakeAssistant(); await failing.scriptGeneration(failure: Boom())
+        let failing = FakeGenerator(); await failing.scriptGeneration(failure: Boom())
         let one = make(store, failing); one.request(articleID: id, themeID: nil); await settle(one)
         #expect(one.state == .failed)
-        let blank = FakeAssistant(); await blank.scriptGeneration(["  \u{200B}\n"])
+        let blank = FakeGenerator(); await blank.scriptGeneration(["  \u{200B}\n"])
         let two = make(store, blank); two.request(articleID: id, themeID: nil); await settle(two)
         #expect(two.state == .failed)
-        let slow = FakeAssistant(); await slow.scriptGeneration(["遅い"], hold: true)
+        let slow = FakeGenerator(); await slow.scriptGeneration(["遅い"], hold: true)
         let three = make(store, slow, deadline: 0.05); three.request(articleID: id, themeID: nil); await settle(three)
         #expect(three.state == .failed)
         await slow.releaseGeneration()
@@ -100,7 +100,7 @@ import Testing
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
         let (first, second) = (store.articles[0].id, store.articles[1].id)
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["古い答え", "新しい答え"], hold: true)
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["古い答え", "新しい答え"], hold: true)
         let model = make(store, assistant)
         model.request(articleID: first, themeID: nil)
         while !(await assistant.generationParked) { try await Task.sleep(for: .milliseconds(5)) }
@@ -122,7 +122,7 @@ import Testing
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try makeStore(library)
         let (first, second) = (store.articles[0].id, store.articles[1].id)
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["一つ目", "二つ目"], hold: true)
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["一つ目", "二つ目"], hold: true)
         let model = make(store, assistant)
         model.request(articleID: first, themeID: nil)
         while !(await assistant.generationParked) { try await Task.sleep(for: .milliseconds(5)) }
@@ -143,7 +143,7 @@ import Testing
         let recorded = try #require(store.themeArticles.first { $0.articleID == id }?.summary)
         #expect(!recorded.isEmpty)
         let late = at.addingTimeInterval(400 * 86_400)                                     // past the longest retention
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["記録からの要約"])
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["記録からの要約"])
         let withTheme = make(store, assistant, now: late)
         withTheme.request(articleID: id, themeID: theme.id); await settle(withTheme)
         if case .ready(let summary) = withTheme.state { #expect(summary.fromThemeSummary && summary.text == "記録からの要約") } else { Issue.record("got \(withTheme.state)") }
@@ -169,7 +169,7 @@ import Testing
         try store.addArticle(article.id, toTheme: theme.id, at: at)
         try store.saveNote(themeID: theme.id, text: "自分のノート", at: at)
         let stamp = theme.updatedAt, links = store.themeArticles.count, read = article.isRead
-        let assistant = FakeAssistant(); await assistant.scriptGeneration(["要約"])
+        let assistant = FakeGenerator(); await assistant.scriptGeneration(["要約"])
         let model = make(store, assistant)
         model.request(articleID: article.id, themeID: theme.id); await settle(model)
         if case .ready(let summary) = model.state { #expect(summary.wasCut && !summary.fromThemeSummary) } else { Issue.record("got \(model.state)") }

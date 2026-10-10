@@ -205,13 +205,13 @@ import Testing
         #expect(FileManager.default.fileExists(atPath: library.url.path))
     }
 
-    /// Store + theme with a goal and a note, a package that includes both, and a controller that is wired the way the app wires it
-    /// (a store change calls the controller's reconcile). `sources` false makes a package of the goal and the note alone.
+    /// Store + theme with a note, a package that includes it, and a controller that is wired the way the app wires it
+    /// (a store change calls the controller's reconcile). `sources` false makes a package of the note alone.
     private func themeCopy(_ at: Date, sources: Bool = true) throws -> (library: TestLibrary, store: ReaderStore, theme: Theme, link: ThemeArticle, controller: ClaudeHandoffController, folder: URL, launcher: ProbeLauncher) {
         let library = try TestLibrary()
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let article = store.articles[0]; article.summary = "Recorded synthetic summary"
-        let theme = try store.createTheme(name: "Rates", goal: "Choose a rate type", at: at)
+        let theme = try store.createTheme(name: "Rates", at: at)
         let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
         try store.saveNote(themeID: theme.id, text: "My private note", at: at)
         let review = AIPackageReview(store: store, now: { at })
@@ -219,7 +219,7 @@ import Testing
         let root = library.directory.appending(path: "handoff")
         let controller = ClaudeHandoffController(directory: root, review: review, launcher: launcher, now: { at })
         store.onContentPolicyChanged = { [weak store, weak controller] in if let store { controller?.reconcile(with: store, at: at) } }
-        try review.build(selections: sources ? [.themeArticle(link.key)] : [], theme: AIThemeRequest(themeID: theme.id, includeGoal: true, includeNote: true), language: "English", at: at)
+        try review.build(selections: sources ? [.themeArticle(link.key)] : [], theme: AIThemeRequest(themeID: theme.id, includeNote: true), language: "English", at: at)
         let package = try #require(review.package)
         let file = try HandoffFiles.write(package, directory: root)
         return (library, store, theme, link, controller, file.deletingLastPathComponent(), launcher)
@@ -241,11 +241,11 @@ import Testing
         }
     }
 
-    @Test func editingTheNoteOrTheGoalOrRenamingTheThemeKeepsTheCopyUntilItExpires() throws {
+    @Test func editingTheNoteOrRenamingTheThemeKeepsTheCopyUntilItExpires() throws {
         let at = Date.now
         let (library, store, theme, _, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
         try store.saveNote(themeID: theme.id, text: "Edited later", at: at)
-        try store.updateTheme(id: theme.id, name: "Renamed", goal: "Another goal", at: at)
+        try store.renameTheme(id: theme.id, to: "Renamed", at: at)
         controller.reconcile(with: store, at: at)
         #expect(FileManager.default.fileExists(atPath: folder.path))
         let text = try String(contentsOf: folder.appending(path: "Feeeder-review.txt"), encoding: .utf8)
@@ -254,7 +254,7 @@ import Testing
         #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the 24-hour limit still applies
     }
 
-    @Test func aCopyOfTheGoalAndTheNoteAloneIsKeptForADayAndRemovedWithItsTheme() throws {
+    @Test func aCopyOfTheNoteAloneIsKeptForADayAndRemovedWithItsTheme() throws {
         let at = Date.now
         let (library, store, theme, _, controller, folder, _) = try themeCopy(at, sources: false); defer { library.cleanup() }
         controller.reconcile(with: store, at: at.addingTimeInterval(3_600))
@@ -272,7 +272,7 @@ import Testing
         let at = Date.now
         let (library, store, theme, link, _, _, launcher) = try themeCopy(at); defer { library.cleanup() }
         let review = AIPackageReview(store: store, now: { at })
-        try review.build(selections: [.themeArticle(link.key)], theme: AIThemeRequest(themeID: theme.id, includeGoal: true, includeNote: true), language: "English", at: at)
+        try review.build(selections: [.themeArticle(link.key)], theme: AIThemeRequest(themeID: theme.id, includeNote: true), language: "English", at: at)
         let second = ClaudeHandoffController(directory: library.directory.appending(path: "handoff2"), review: review, launcher: launcher, now: { at })
         let package = try #require(review.package)
         try store.saveNote(themeID: theme.id, text: "Changed after review", at: at)
@@ -302,14 +302,14 @@ import Testing
         let library = try TestLibrary()
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let article = store.articles[0]
-        let theme = try store.createTheme(name: "Rates", goal: "A goal", at: at)
+        let theme = try store.createTheme(name: "Rates", at: at)
         try store.addArticle(article.id, toTheme: theme.id, at: at)
         try store.saveNote(themeID: theme.id, text: "My private note", at: at)
         let review = AIPackageReview(store: store, now: { at })
         let root = library.directory.appending(path: "handoff")
         let controller = ClaudeHandoffController(directory: root, review: review, launcher: ProbeLauncher(), now: { at })
         store.onContentPolicyChanged = { [weak store, weak controller] in if let store { controller?.reconcile(with: store, at: at) } }
-        try review.build(selections: [.article(article.id)], theme: AIThemeRequest(themeID: theme.id, includeGoal: note, includeNote: note), language: "English", at: at)
+        try review.build(selections: [.article(article.id)], theme: AIThemeRequest(themeID: theme.id, includeNote: note), language: "English", at: at)
         let file = try HandoffFiles.write(try #require(review.package), directory: root)
         return (library, store, theme, article, controller, file.deletingLastPathComponent())
     }

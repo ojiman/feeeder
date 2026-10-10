@@ -10,7 +10,7 @@ public enum ArticleSummaryPrompt {
     public static let instructions = "あなたは読書ノートの整理を手伝います。与えられた記事を、日本語で3文以内に要約します。記事に書かれていることだけを使い、記事にない事実や評価を足しません。「〜という見方がある」のような留保や、否定・条件は、強めたり逆にしたりしません。数字はそのまま使います。要約の文章だけを出力し、見出し・箇条書き・番号・引用符・前置きは付けません。"
 
     public struct Input: Sendable, Equatable {
-        public let request: SuggestionPrompts.Request
+        public let request: TextRequest
         public let wasCut: Bool
     }
 
@@ -20,7 +20,7 @@ public enum ArticleSummaryPrompt {
         guard !body.isEmpty else { return nil }
         let used = String(body.prefix(bodyLimit))          // by Character: never splits an emoji or a combining mark
         let heading = title.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " ")
-        let request = SuggestionPrompts.Request(instructions: instructions, prompt: "タイトル: \(String(heading.prefix(titleLimit)))\n本文:\n\(used)", maximumTokens: outputTokenLimit)
+        let request = TextRequest(instructions: instructions, prompt: "タイトル: \(String(heading.prefix(titleLimit)))\n本文:\n\(used)", maximumTokens: outputTokenLimit)
         return Input(request: request, wasCut: body.count > bodyLimit)
     }
 
