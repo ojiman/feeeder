@@ -1,9 +1,10 @@
 name: Feeeder CI
 
 on:
+  # No paths-ignore here: every pull request must report the `check` status (the ruleset requires it), so a
+  # documentation-only change still starts this workflow. The `changes` job then skips the macOS jobs for it.
   pull_request:
     branches: [main]
-    paths-ignore: ['docs/**', '**.md']
   push:
     branches: [main]
     paths-ignore: ['docs/**', '**.md']
@@ -21,8 +22,41 @@ defaults:
     shell: bash
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Classify the changed files
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Only a pull request can be documentation-only. Any other event runs the tests.
+          if [ "$EVENT" = pull_request ]; then
+            files=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" --jq '.[].filename')
+            code=$(printf '%s\n' "$files" | bash scripts/ci-gate.sh classify)
+          else
+            code=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "code changed: $code"
+
   verify:
     name: ${{ matrix.job }}
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # No macOS 27 runner exists yet: this verifies the build floor (26.6), not the support floor (27.0). See docs/decisions/0007.
     runs-on: macos-26
     timeout-minutes: 20
@@ -69,3 +103,24 @@ jobs:
           path: ${{ env.CI_RESULTS }}/
           if-no-files-found: warn
           retention-days: 7
+
+  # The one status that the ruleset requires. It always runs, and it fails when the macOS jobs fail, are cancelled,
+  # or were skipped for a change that touched code.
+  check:
+    name: check
+    needs: [changes, verify]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Test the gate script
+        run: bash scripts/test-ci-gate.sh
+      - name: Decide
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          VERIFY: ${{ needs.verify.result }}
+        run: bash scripts/ci-gate.sh verdict "$CHANGES" "${CODE:-true}" "$VERIFY"
