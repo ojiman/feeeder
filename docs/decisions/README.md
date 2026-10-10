@@ -43,6 +43,7 @@
 | [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid (approved by merging the N4 plan) |
 | [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | valid (approved by merging the N5 plan) |
 | [0017](0017-note-beside-the-article.md) | The note beside the article | valid (approved by merging the PR that adds it) |
+| [0018](0018-handoff-goal-note.md) | Claude hand-off with the goal and the note | valid (approved by merging the N6 plan) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

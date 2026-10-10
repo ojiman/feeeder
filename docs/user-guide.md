@@ -139,7 +139,7 @@ If the language assets are not on your Mac, the app does not download them. Sugg
 
 ## 6. Hand-off to Claude Desktop
 
-The entry point is the toolbar button 「Claudeで開く…」 (Open in Claude…), which appears when you select a theme. It opens the review screen. This is how the hand-off works.
+There are two entry points: the toolbar button 「Claudeで開く…」 (Open in Claude…), which appears when you select a theme, and the button 「Claudeでレビューを頼む」 (Ask Claude to review) at the top of the note panel. Both open the review screen. This is how the hand-off works.
 
 1. On the review screen you choose the output language and the sources.
 2. The screen separates saved RSS summaries from articles that are still stored. You review the complete text, the coverage, and the source URLs.
@@ -147,9 +147,11 @@ The entry point is the toolbar button 「Claudeで開く…」 (Open in Claude�
 
 On the review screen you can also choose:
 
-- The theme's note is not included yet. Your questions and answers moved into the note, so the review screen says 「テーマのノートはまだ Claude へ渡せません。」 (The theme's note can not be handed to Claude yet.). A later version will let you include the note (off by default). At least one source is required.
+- **ゴールを含める** (include my goal). On by default when the theme has a goal.
+- **ノートを含める** (include my note). **Off by default** when you open the screen from the toolbar. When you open it from 「Claudeでレビューを頼む」 in the note panel, the goal and the note are both on, because you asked for a review. A switch for something empty is off and cannot be turned on. Your goal and your note are your own writing: if you turn them on, exactly what the screen shows leaves your Mac (it goes to Claude). With the note on, the request becomes a review of your note against your goal: what it already achieves, what is still missing (only from what the note does not say), weak support and opposing views from the sources, and what to read or write next. Claude is told not to rewrite your note.
+- You can include the goal or the note without any article. With neither, at least one source is required.
 
-After you review, if the theme name or the title of an included source changes, the review becomes invalid and you must make it again.
+After you review, if the theme name, the included goal or note, or the title of an included source changes, the review becomes invalid and you must make it again.
 
 Facts you should know:
 
