@@ -8,12 +8,16 @@ struct AIReviewView: View {
     @Bindable var handoff: ClaudeHandoffController
     let selections: [AIInputSelection]
     var themeID: UUID? = nil
+    /// True when the review was started from the note panel's button: then the goal and the note are both switched on.
+    var fromNotePanel = false
     @Environment(\.dismiss) private var dismiss
     @State private var selected = Set<AIInputSelection>()
     @State private var options: [Option] = []
     @State private var language = "日本語"
     @State private var error: String?
     @State private var copied = false
+    @State private var includeGoal = false
+    @State private var includeNote = false
     private struct Option: Identifiable {
         let id: AIInputSelection
         let articleID: UUID
@@ -24,8 +28,8 @@ struct AIReviewView: View {
     init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, articleIDs: [UUID]) {
         self.init(store: store, review: review, handoff: handoff, selections: articleIDs.map(AIInputSelection.article))
     }
-    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection], themeID: UUID? = nil) {
-        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections; self.themeID = themeID
+    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection], themeID: UUID? = nil, fromNotePanel: Bool = false) {
+        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections; self.themeID = themeID; self.fromNotePanel = fromNotePanel
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -38,9 +42,15 @@ struct AIReviewView: View {
                 Picker("出力言語", selection: $language) { Text("日本語").tag("日本語"); Text("English").tag("English") }.frame(width: 250)
                 Text("本文を省略せず、選択した出典と一緒に渡します。").font(.caption).foregroundStyle(.secondary)
             }
-            if themeID != nil {
-                // Questions and answers moved into the note (decision 0013). The note joins the package in N6.
-                Text("テーマのノートはまだ Claude へ渡せません。").font(.caption).foregroundStyle(.secondary)
+            if let themeID, let theme = store.theme(id: themeID) {
+                let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: fromNotePanel)
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("ゴールを含める", isOn: $includeGoal).disabled(!switches.goalEnabled)
+                    Toggle("ノートを含める", isOn: $includeNote).disabled(!switches.noteEnabled)
+                    Text(!switches.goalEnabled && !switches.noteEnabled ? "このテーマにはゴールもノートもありません。"
+                         : "ゴールとノートは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。ノートを含めると、ノートをゴールに照らしてレビューする依頼になります。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             HSplitView {
                 List(options) { option in
@@ -65,7 +75,7 @@ struct AIReviewView: View {
                         Text("SHA-256: \(package.sha256)").font(.caption2.monospaced()).textSelection(.enabled)
                     } else {
                         ContentUnavailableView("再生成して確認してください", systemImage: "doc.text.magnifyingglass",
-                            description: Text(review.reason ?? "本文を利用できる記事を選んでください。"))
+                            description: Text(review.reason ?? "本文を利用できる記事か、ゴール・ノートを選んでください。"))
                     }
                 }.frame(minWidth: 400)
             }
@@ -73,7 +83,7 @@ struct AIReviewView: View {
             if let message = handoff.error ?? handoff.maintenanceError { Text(message).foregroundStyle(.secondary).font(.caption) }
             if handoff.opened { Text("Claudeに確認画面を開きました。添付完了・送信・読取の確認はClaude側で行ってください。").font(.callout) }
             HStack {
-                Button("再生成してレビュー", action: generate).disabled(selected.isEmpty)
+                Button("再生成してレビュー", action: generate).disabled(selected.isEmpty && !includeGoal && !includeNote)
                 Spacer()
                 Button(copied ? "コピーしました" : "全文をコピー") {
                     perform {
@@ -97,11 +107,17 @@ struct AIReviewView: View {
         }.padding(24).frame(minWidth: 820, minHeight: 640)
         .onAppear {
             handoff.resetStatus(); refreshOptions()
+            if let themeID, let theme = store.theme(id: themeID) {
+                let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: fromNotePanel)
+                includeGoal = switches.goalOn; includeNote = switches.noteOn
+            }
             var seen = Set<UUID>()
             selected = Set(options.filter { $0.available && seen.insert($0.articleID).inserted }.map(\.id))
             generate()
         }
         .onChange(of: language) { _, _ in generate() }
+        .onChange(of: includeGoal) { _, _ in generate() }
+        .onChange(of: includeNote) { _, _ in generate() }
         .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
         .task(id: review.package?.expiresAt) {
             guard let expiry = review.package?.expiresAt else { return }
@@ -133,7 +149,7 @@ struct AIReviewView: View {
         perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, theme: themeRequest, language: language, at: .now) }
     }
     private var themeRequest: AIThemeRequest? {
-        themeID.map { AIThemeRequest(themeID: $0, includeQuestions: false, includeAnswers: false) }
+        themeID.map { AIThemeRequest(themeID: $0, includeGoal: includeGoal, includeNote: includeNote) }
     }
     private func export() {
         perform {

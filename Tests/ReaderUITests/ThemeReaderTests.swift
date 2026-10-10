@@ -440,3 +440,53 @@ private struct StubAssistant: ThemeAssistant {
         try await t.settle(h.host) { model.state == .unavailable(.tooLong) }
     }
 }
+
+/// The note panel's button that asks Claude to review the note (N6). A suite of its own; run each test alone.
+@Suite(.serialized) @MainActor struct HandoffEntryTests {
+    private let t = ThemeReaderTests()
+
+    private func make(goal: String, note: String, articles: Int) throws -> ThemeReaderTests.Harness {
+        try t.harness(scope: { store in .theme(store.themes[0].id) }, noteOpen: true) { store in
+            let theme = try store.createTheme(name: "A", goal: goal, at: .now)
+            for index in 0..<articles { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
+            if !note.isEmpty { try store.saveNote(themeID: theme.id, text: note, at: .now) }
+        }
+    }
+    /// The wide button in the panel's header row, left of the two narrow chevrons.
+    private func reviewButton(_ h: ThemeReaderTests.Harness) -> NSButton? {
+        let width = h.window.contentView?.bounds.width ?? 1_240
+        let candidates = t.buttons(in: h.host).filter { !($0 is NSPopUpButton) }.map { ($0, $0.convert($0.bounds, to: nil)) }
+            .filter { $0.1.minX > width - 420 && $0.1.width > 0 }
+        guard let chevron = candidates.first(where: { $0.1.width <= 20 }) else { return nil }
+        return candidates.first { $0.1.width > 40 && abs($0.1.maxY - chevron.1.maxY) < 12 }?.0
+    }
+    private func packageText(_ h: ThemeReaderTests.Harness) -> String? {
+        guard let sheet = h.window.attachedSheet?.contentView else { return nil }
+        func find(_ v: NSView) -> String? { if let tv = v as? NSTextView, tv.string.contains("Feeeder reading review") { return tv.string }; return v.subviews.lazy.compactMap(find).first }
+        return find(sheet)
+    }
+
+    @Test func theNotePanelsButtonOpensTheReviewWithTheGoalAndTheNote() async throws {
+        let h = try make(goal: "目標を書いた", note: "# 見出し\n本文のノート", articles: 1)
+        defer { t.finish(h) }
+        h.window.makeKeyAndOrderFront(nil)
+        try await t.settle(h.host) { reviewButton(h) != nil }
+        reviewButton(h)?.performClick(nil)
+        try await t.settle(h.host) { packageText(h) != nil }
+        let text = try #require(packageText(h))
+        #expect(text.contains("Goal (written by the user):\n目標を書いた") && text.contains("Note (written by the user):\n# 見出し\n本文のノート"))
+        #expect(text.contains("ノートに書かれていることを「ない」と言わないでください"))                // the review request
+        h.window.endSheet(try #require(h.window.attachedSheet))
+    }
+
+    @Test func theButtonIsAbsentWhenThereIsNothingToHandOver() async throws {
+        let h = try make(goal: "", note: "", articles: 0)
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.panelButtons(in: h).count >= 2 }                    // the chevrons are there
+        pumpRunLoop(0.3)
+        let width = h.window.contentView?.bounds.width ?? 1_240
+        let narrow = t.buttons(in: h.host).filter { !($0 is NSPopUpButton) }.map { $0.convert($0.bounds, to: nil) }.filter { $0.minX > width - 420 && $0.width > 0 && $0.width <= 20 }
+        #expect(!narrow.isEmpty)                                                          // the lookup works: the chevrons are found
+        #expect(reviewButton(h) == nil)
+    }
+}

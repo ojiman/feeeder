@@ -20,6 +20,8 @@ struct NotePanel: View {
     let onPrevious: () -> Void
     let onNext: () -> Void
     let onEditGoal: () -> Void
+    /// Nil when there is nothing to hand over (no goal, no note, no article).
+    let onAskReview: (() -> Void)?
     let onSummarize: () -> Void
     let onAdoptSummary: (ArticleSummaryModel.Summary) -> Void
     let onNoteAdopted: (NSRange) -> Void
@@ -44,6 +46,10 @@ struct NotePanel: View {
             HStack(spacing: 8) {
                 Text(store.theme(id: themeID)?.name ?? "テーマ").font(.headline).lineLimit(1)
                 Spacer(minLength: 0)
+                if let onAskReview {
+                    Button("Claudeでレビューを頼む", systemImage: "paperplane", action: onAskReview)
+                        .help("ゴールとノートを、確認したうえで Claude へ渡して、ノートのレビューを頼みます")
+                }
                 Button(action: onPrevious) { Image(systemName: "chevron.up") }
                     .keyboardShortcut(.upArrow, modifiers: [.option, .command])
                     .disabled(!canPrevious).help("前の記事 (⌥⌘↑)").accessibilityLabel("前の記事")

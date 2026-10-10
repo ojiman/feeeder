@@ -65,6 +65,19 @@ struct ReaderView: View {
         guard let article = selectedArticle, article.contentDeletedAt == nil else { return nil }
         return RetentionPolicy(days: store.retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
     }
+    private func reviewSheet(_ sheet: ThemeSheet) -> some View {
+        AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: sheet.id), themeID: sheet.id, fromNotePanel: sheet.fromNotePanel)
+    }
+    private func askReviewAction(_ themeID: UUID) -> (() -> Void)? {
+        guard canAskReview(themeID) else { return nil }
+        return { reviewingTheme = ThemeSheet(id: themeID, fromNotePanel: true) }
+    }
+    /// Something to hand over: an article source, or the person's goal or note.
+    private func canAskReview(_ themeID: UUID) -> Bool {
+        guard let theme = store.theme(id: themeID) else { return false }
+        let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: false)
+        return !claudeSelections(themeID: themeID).isEmpty || switches.goalEnabled || switches.noteEnabled
+    }
     /// Every theme article as two choices: the retained article text first (so it is the default), then the saved RSS summary.
     private func claudeSelections(themeID: UUID) -> [AIInputSelection] {
         store.themeArticles.filter { $0.themeID == themeID }
@@ -143,7 +156,7 @@ struct ReaderView: View {
                 if case .theme(let id) = scope {
                     Button { reviewingTheme = ThemeSheet(id: id) } label: { Image(systemName: "paperplane") }
                         .help("Claudeで開く…").accessibilityLabel("Claudeで開く")
-                        .disabled(claudeSelections(themeID: id).isEmpty)
+                        .disabled(!canAskReview(id))
                 }
             }
             // Always present, disabled when no article is open. If these buttons came and went with the selection,
@@ -306,9 +319,7 @@ struct ReaderView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
         }
-        .sheet(item: $reviewingTheme) { sheet in
-            AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: sheet.id), themeID: sheet.id)
-        }
+        .sheet(item: $reviewingTheme) { sheet in reviewSheet(sheet) }
         .sheet(item: $themeEditor) { target in
             ThemeEditorSheet(store: store, themeID: target.themeID) { scope = .theme($0) }
         }
@@ -427,6 +438,7 @@ struct ReaderView: View {
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
                       onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) },
+                      onAskReview: askReviewAction(id),
                       onSummarize: { if let article = selectedArticle { adoptedSummary = nil; summaries?.request(articleID: article.id, themeID: id) } },
                       onAdoptSummary: { summary in if let article = selectedArticle { adopt(summary, article: article, themeID: id) } },
                       onNoteAdopted: { range in DispatchQueue.main.async { noteHandle.textView?.setSelectedRange(range) } },
@@ -590,6 +602,6 @@ struct ReaderView: View {
 private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }
 
 /// The theme a review sheet was opened for, kept for the sheet's life even if the selection moves.
-private struct ThemeSheet: Identifiable { let id: UUID }
+private struct ThemeSheet: Identifiable { let id: UUID; var fromNotePanel = false }
 
 private struct ThemeEditorTarget: Identifiable { let id = UUID(); let themeID: UUID? }

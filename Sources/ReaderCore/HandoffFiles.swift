@@ -58,7 +58,7 @@ public enum HandoffFiles {
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
             let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
-                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, themeID: package.themeID, questionIDs: package.theme?.questions.map(\.id))
+                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, themeID: package.themeID, questionIDs: nil)
             try saveMetadata(metadata, folder: folder)
         } catch {
             // This folder was just created by this operation, and contains only its generated copies.
@@ -81,15 +81,17 @@ public enum HandoffFiles {
         }
     }
     public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date],
-                                 themeContextIsValid: (_ themeID: UUID, _ questionIDs: [UUID], _ sourceArticleIDs: [UUID]) -> Bool = { _, _, _ in true }, at: Date) throws {
+                                 themeContextIsValid: (_ themeID: UUID, _ sourceArticleIDs: [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
         try maintain(directory: directory) { folder, record in
             var metadata = record
-            if let themeID = metadata.themeID, !themeContextIsValid(themeID, metadata.questionIDs ?? [], metadata.articleIDs) {
+            // `questionIDs` is only read for copies made before notes replaced questions; it is not used any more.
+            if let themeID = metadata.themeID, !themeContextIsValid(themeID, metadata.articleIDs) {
                 try manager.removeItem(at: folder); return
             }
             let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
             let expiries = selections.compactMap { validInputExpiries[$0] }
-            guard expiries.count == selections.count, let earliest = expiries.min() else {
+            // A package made of the person's goal or note alone has no article, so nothing earlier than its own 24 hours applies.
+            guard expiries.count == selections.count, let earliest = expiries.min() ?? (selections.isEmpty ? metadata.expiresAt : nil) else {
                 try manager.removeItem(at: folder); return
             }
             metadata.expiresAt = min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400), earliest)
@@ -159,7 +161,8 @@ public enum HandoffFiles {
               let size = values[.size] as? NSNumber, size.intValue <= 1_048_576 else { throw HandoffError.unsafeFile }
         let metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: file))
         guard folder.lastPathComponent == metadata.packageID.uuidString + (metadata.split ? "-parts" : ""),
-              !metadata.articleIDs.isEmpty, !metadata.files.isEmpty,
+              !metadata.articleIDs.isEmpty || metadata.themeID != nil,     // a package of the goal or the note alone has no article
+              !metadata.files.isEmpty,
               metadata.files.enumerated().allSatisfy({ index, record in
                   record.name == (metadata.split ? "Feeeder-review-part-\(index + 1).txt" : "Feeeder-review.txt") && record.sha256.count == 64
               }), metadata.split || metadata.files.count == 1 else { throw HandoffError.unsafeFile }

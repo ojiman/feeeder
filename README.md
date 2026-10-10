@@ -24,7 +24,7 @@ Most readers stop at "read" and "starred". Stars pile up and are never looked at
 - Images: favicons and article thumbnails, best effort, with a bounded cache.
 - Retention: article bodies are kept for 30 days by default (7 / 30 / 90 / 365 in Settings). What you recorded in themes (title, link, saved summary, your writing) is never deleted automatically.
 
-Claude Desktop hand-off: from a theme, a toolbar button 「Claudeで開く…」 (Open in Claude…) opens a review screen. You choose the sources and the output language. (The theme's note can not be included yet; that comes in a later version.) You see the exact text first, confirm the attachment in Claude, and send it yourself. Nothing is sent automatically.
+Claude Desktop hand-off: from a theme, a toolbar button 「Claudeで開く…」 (Open in Claude…), or the note panel's 「Claudeでレビューを頼む」 (Ask Claude to review), opens a review screen. You choose the sources, the output language, and whether to include your goal and your note (the note is off by default from the toolbar; including it turns the request into a review of the note against your goal). You see the exact text first, confirm the attachment in Claude, and send it yourself. Nothing is sent automatically.
 
 ## Try it
 
