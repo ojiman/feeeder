@@ -24,7 +24,7 @@ struct ThemePickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("テーマに入れる").font(.headline)
-            TextField("テーマを探す、または新しい名前", text: $query)
+            TextField("テーマを探す、または新しい名前", text: $query.singleLine())
                 .focused($fieldFocused)
                 .onSubmit(activateHighlighted)
                 .onKeyPress(.return) {

@@ -218,7 +218,7 @@ struct ReaderView: View {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
         .alert("フォルダ名を変更", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
-            TextField("フォルダ名", text: $folderName)
+            TextField("フォルダ名", text: $folderName.singleLine())
             Button("保存") {
                 guard let old = renamingFolder else { return }
                 let name = folderName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -289,7 +289,7 @@ struct ReaderView: View {
             AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: sheet.id), themeID: sheet.id)
         }
         .alert("新しいテーマ", isPresented: $creatingTheme) {
-            TextField("テーマの名前", text: $newThemeName)
+            TextField("テーマの名前", text: $newThemeName.singleLine())
             Button("作成") {
                 let name = newThemeName
                 perform { let theme = try store.createTheme(name: name, at: .now); scope = .theme(theme.id) }
@@ -297,7 +297,7 @@ struct ReaderView: View {
             Button("キャンセル", role: .cancel) {}
         } message: { Text("関心のあるテーマの名前を入力します。記事は t キーで入れられます。") }
         .alert("テーマ名を変更", isPresented: Binding(get: { renamingTheme != nil }, set: { if !$0 { renamingTheme = nil } })) {
-            TextField("テーマの名前", text: $themeName)
+            TextField("テーマの名前", text: $themeName.singleLine())
             Button("保存") {
                 guard let id = renamingTheme else { return }
                 let name = themeName
