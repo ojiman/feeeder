@@ -19,7 +19,7 @@ Dogfoodingで、左カラムの操作整理と、原文表示から戻る際の�
 
 - 原文表示中の記事選択を「新しい原文へ追従」に戻す、またはsidebarの開閉を復活させる変更は、この決定を覆すものとして利用者の確認を取る。
 - 現行の挙動は docs/specification.md §3.1、docs/architecture.md §6.1に記す。
-- macOS 26.6実機での確認は [読書UI追加受入](../verification/2026-10-07-feed-polish.md) の未確認項目を参照する。
+- macOS 26.6実機での確認は 読書UI追加受入（Git履歴） の未確認項目を参照する。
 
 ## 出典
 

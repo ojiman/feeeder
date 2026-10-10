@@ -20,7 +20,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 
 - **Real-device check (the PdM).** Read, send a summary, write beside the articles, ask Claude through the share button (the real launch of Claude Desktop is still unverified), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
 - **Rename to Unagi Reader.** One PR, started when no other PR is in flight. Proposed scope: the names shown in the app (window title, menus, About), the bundle's display name, the README and the user guides. Not in the proposal: the bundle identifier and the data folder `~/Library/Application Support/Feeeder/` (changing either hides an existing beta library from the app; the PdM decides, before the PR), the repository, and the SwiftPM targets. The first task of the PR is to list every place the old name appears.
-- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A check that the user guides match the app. Signing and distribution only on the PdM's instruction.
+- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A fresh acceptance run of the reading features (the older acceptance records were removed, because they described old commits). A check that the user guides match the app. Signing and distribution only on the PdM's instruction.
 
 ## Candidates (not scheduled)
 

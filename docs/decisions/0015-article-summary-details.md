@@ -2,8 +2,8 @@
 
 - Status: valid in part; refined by [0019](0019-v1-simplification-notes.md) (the summary is sent straight to a note; the input budget and the source line stay)
 - Date: 2026-10-10
-- Decider: the owner (PdM) approved the N4 plan, 2026-10-10-ai-summary.md (removed; in Git history). The Product Owner (the agent) proposed the points.
-- Builds on: [decision 0013](0013-goal-and-note-for-themes.md) (points 5 and 6) and [0009](0009-on-device-ai-principles.md). It refines 0013 where the two differ (see 1 and 2).
+- Decider: the owner (PdM) approved the N4 plan, 2026-10-10-ai-summary.md (Git history). The Product Owner (the agent) proposed the points.
+- Builds on: decision 0013 (Git history) (points 5 and 6) and [0009](0009-on-device-ai-principles.md). It refines 0013 where the two differ (see 1 and 2).
 
 ## Decision
 
@@ -15,8 +15,8 @@
 
 ## Not verified
 
-- The card's buttons in any window; real summaries on real articles. See the verification record (removed; in Git history).
+- The card's buttons in any window; real summaries on real articles. See the verification record (Git history).
 
 ## Sources
 
-- PdM approval of the N4 plan (PR #54), decision 0013, and the AI experiment (removed; in Git history).
+- PdM approval of the N4 plan (PR #54), decision 0013, and the AI experiment (Git history).

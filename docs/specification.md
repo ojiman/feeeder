@@ -4,9 +4,9 @@
 
 本書はV1の製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/feeeder/pull/6)、実装計画は[PR #7](https://github.com/ojiman/feeeder/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
 
-**方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)、V1の簡素化）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め、学習ゴール・端末内AIの提案・ノートへのAI操作をやめる。記事からは「AI要約をノートに送る」だけにし、送った記事がそのノートの記事一覧に並ぶ。Claudeへの依頼はノートの機能として残す。**本書は、この決定に合わせて書き換えた目標仕様である。** 実装は段階S1〜S5（決定0019の表）で行い、各PRが対象の節を更新する。それまで現在のアプリには、テーマ・ゴールなど旧仕様の画面が残っている。旧仕様の来歴は[決定0008](decisions/0008-theme-centered-notes.md)・[0013](decisions/0013-goal-and-note-for-themes.md)・[0018](decisions/0018-handoff-goal-note.md)にある。
+**方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)、V1の簡素化）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め、学習ゴール・端末内AIの提案・ノートへのAI操作をやめる。記事からは「AI要約をノートに送る」だけにし、送った記事がそのノートの記事一覧に並ぶ。Claudeへの依頼はノートの機能として残す。**本書は、この決定に合わせて書き換えた目標仕様である。** 実装は段階S1〜S5（決定0019の表）で行い、各PRが対象の節を更新する。それまで現在のアプリには、テーマ・ゴールなど旧仕様の画面が残っている。旧仕様の来歴は決定0008（Git履歴）・0013（Git履歴）・0018（Git履歴）にある。
 
-技術設計は[Architecture](architecture.md)、決定の理由は[決定記録](decisions/README.md)、実測と未確認事項は[検証記録](verification/2026-10-07-feed-polish.md)を参照する。過去の実装計画・検証結果を現行の仕様や合格証拠として流用しない。
+技術設計は[Architecture](architecture.md)、決定の理由は[決定記録](decisions/README.md)、実測と未確認事項は検証記録（Git履歴）を参照する。過去の実装計画・検証結果を現行の仕様や合格証拠として流用しない。
 
 ## 1. 目的と対象利用者
 

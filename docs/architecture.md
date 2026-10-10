@@ -4,7 +4,7 @@
 
 ## 1. 位置づけ
 
-製品要件は[PRD](specification.md)を正とする。本書は現行ベータの実装構成と、変更時に守る技術上の契約を定める。決定の理由は[決定記録](decisions/README.md)、承認履歴はPR、実行結果は[検証記録](verification/2026-10-07-feed-polish.md)、今後の作業順は[ロードマップ](roadmap.md)で追う（過去の計画・記録はGit履歴）。検証記録はcommit・環境ごとの証拠であり、本書の記載や過去のPASSを現在の合格証拠に代えない。
+製品要件は[PRD](specification.md)を正とする。本書は現行ベータの実装構成と、変更時に守る技術上の契約を定める。決定の理由は[決定記録](decisions/README.md)、承認履歴はPR、実行結果は検証記録（Git履歴）、今後の作業順は[ロードマップ](roadmap.md)で追う（過去の計画・記録はGit履歴）。検証記録はcommit・環境ごとの証拠であり、本書の記載や過去のPASSを現在の合格証拠に代えない。
 
 ## 2. V1の技術構成と保存
 
@@ -19,11 +19,11 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 ### 2.1 保存モデル
 
-保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。置き換えは完了し、`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
+保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（決定0008（Git履歴））。置き換えは完了し、`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
 
 `ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル（`ThemeQuestion`は退役済みで、移行前のライブラリのために残る）。
 
-**ノートの移行（N2、[決定0014](decisions/0014-note-migration-format.md)）。** `migrateLegacyThemeContent(at:)`は、アプリの起動時（ストアを開いたあと、ライブラリを開けない場合の経路とは別）に呼ぶ。テーマごとに、`LegacyNoteText.compose`で、既存のノート、いまの理解、問いごとの`# 問い`・答え・`根拠の記事:`の一覧をこの順で作り、`containsEverything`が元の文章をすべて含むと確かめてから、全テーマ分を1回の保存で書き込み、同じ保存で古い問いを削除していまの理解を空にする。確認に失敗したときは保存せず、保存に失敗したときは`rollback`の規則に従い、何も消さない。2回目以降は対象がなく何もしない。問いを消したあとは`onContentPolicyChanged`を呼ぶ。
+**ノートの移行（N2、決定0014（Git履歴））。** `migrateLegacyThemeContent(at:)`は、アプリの起動時（ストアを開いたあと、ライブラリを開けない場合の経路とは別）に呼ぶ。テーマごとに、`LegacyNoteText.compose`で、既存のノート、いまの理解、問いごとの`# 問い`・答え・`根拠の記事:`の一覧をこの順で作り、`containsEverything`が元の文章をすべて含むと確かめてから、全テーマ分を1回の保存で書き込み、同じ保存で古い問いを削除していまの理解を空にする。確認に失敗したときは保存せず、保存に失敗したときは`rollback`の規則に従い、何も消さない。2回目以降は対象がなく何もしない。問いを消したあとは`onContentPolicyChanged`を呼ぶ。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
@@ -51,15 +51,15 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 3.1 端末内AI
 
-`ThemeAssistant`プロトコル（ReaderCore、非同期・`Sendable`）が、近いテーマ・まとまりの提案、テーマ名の案、レンズの具体化を返す。実物の`OnDeviceThemeAssistant`はアプリ側に置き、テストは偽の実装で行う。実物の出力の質は環境つきの検証記録で扱い、CIでは検証しない。結果は要求ごとのIDで検査し、選択が移った後の遅延応答を捨てる。計算はMainActorを塞がない。原則は[決定0009](decisions/0009-on-device-ai-principles.md)、実測は端末内AIのspike (removed; in Git history)に従う。
+`ThemeAssistant`プロトコル（ReaderCore、非同期・`Sendable`）が、近いテーマ・まとまりの提案、テーマ名の案、レンズの具体化を返す。実物の`OnDeviceThemeAssistant`はアプリ側に置き、テストは偽の実装で行う。実物の出力の質は環境つきの検証記録で扱い、CIでは検証しない。結果は要求ごとのIDで検査し、選択が移った後の遅延応答を捨てる。計算はMainActorを塞がない。原則は[決定0009](decisions/0009-on-device-ai-principles.md)、実測は端末内AIのspike（Git履歴）に従う。
 
 - **束ねる**: `NLContextualEmbedding`（日本語）で、記事ごとにタイトル＋要約のトークンベクトルの平均を取り、全体の平均を引いて中心化し、コサイン類似度の平均連結で凝集クラスタリングする。初期の閾値は0.15（合成データでの値で、実データでの妥当性は未検証。調整できる前提にする）。近いテーマの提案は、既存テーマの記事との類似度の順にする。ベクトルは保存せず、必要なときに計算する。
-  - 実装（PR 6）: `EmbeddingMath`・`ThemeClustering`・`ThemeRanking`（ReaderCore、純粋関数）、`ThemeSuggestionModel`（要求IDで古い応答を捨て、無効のときは呼ばない）、`OnDeviceThemeAssistant`・`ContextualTextEmbedder`（アプリ側）。中心化の基準にライブラリの新しい40件を足す。日本語とラテン文字の言語は別の空間として扱い、空間の違う記事は比べない。1つの空間が6件未満のときは平均を引けないため、その空間の記事は提案の対象から外す。上限・閾値は`SuggestionTuning`に集め、[決定0010](decisions/0010-on-device-suggestion-defaults.md)に記録する。ソースに`requestAssets`が無いことを試験で守る。
+  - 実装（PR 6）: `EmbeddingMath`・`ThemeClustering`・`ThemeRanking`（ReaderCore、純粋関数）、`ThemeSuggestionModel`（要求IDで古い応答を捨て、無効のときは呼ばない）、`OnDeviceThemeAssistant`・`ContextualTextEmbedder`（アプリ側）。中心化の基準にライブラリの新しい40件を足す。日本語とラテン文字の言語は別の空間として扱い、空間の違う記事は比べない。1つの空間が6件未満のときは平均を引けないため、その空間の記事は提案の対象から外す。上限・閾値は`SuggestionTuning`に集め、決定0010（Git履歴）に記録する。ソースに`requestAssets`が無いことを試験で守る。
 - **名前**: `FoundationModels`のプレーンテキスト応答に、短い指示と`maximumResponseTokens`（実装は32）を付ける。先頭の一句だけを使い、「」}」や改行以降を切り捨てる。構造化出力の自由な文字列欄と正規表現ガイドは使わない。
 - **レンズの具体化（退役）**: 画面から外した（N2）。コードと試験は後続の削除PRで消す。1回1問だった。定型の問いとテーマの記事（タイトル＋切り詰めた要約）から問いを1つ出させる（プロンプトは50文字以内を求め、検査は10〜80文字、出力トークンは90）。失敗・空・異常な長さは捨て、定型文にテーマ名を差し込んだ問いを使う。
-  - 実装（PR 7）: 生成は`ThemeAssistant.generate(_:)`（アプリ側は`FoundationModelsGenerator`、`LanguageModelSession`のプレーンテキストと`maximumResponseTokens`）で、10秒の期限（`withDeadline`）で打ち切る。プロンプトは`SuggestionPrompts`（新しい16件・各120文字）、出力は`SuggestionText`で検査し（先頭1行・長さ・問いは疑問で終わるもの）、`ThemeSuggestionModel`が無効化・古い応答・編集済みの問いを捨てる。案は別カードに出し、本人が選ぶまで書き換えない。`GenerationError`は型で受けず、すべての失敗を「案なし」にする。[決定0011](decisions/0011-on-device-generation-defaults.md)。
+  - 実装（PR 7）: 生成は`ThemeAssistant.generate(_:)`（アプリ側は`FoundationModelsGenerator`、`LanguageModelSession`のプレーンテキストと`maximumResponseTokens`）で、10秒の期限（`withDeadline`）で打ち切る。プロンプトは`SuggestionPrompts`（新しい16件・各120文字）、出力は`SuggestionText`で検査し（先頭1行・長さ・問いは疑問で終わるもの）、`ThemeSuggestionModel`が無効化・古い応答・編集済みの問いを捨てる。案は別カードに出し、本人が選ぶまで書き換えない。`GenerationError`は型で受けず、すべての失敗を「案なし」にする。決定0011（Git履歴）。
 - **記事の要約（N4）**: `ArticleSummaryPrompt`が、記事の保持中の本文の先頭3,000文字（`Character`単位で切り、絵文字や結合文字を割らない。約2,200トークン）とタイトルから、3文以内の要約を求める固定の指示（300字未満）と、出力上限400トークンの依頼を作る。`ArticleSummaryModel`（`@MainActor`）は`ThemeAssistant.generate`を使い、本人がパネルの「記事から要約する」を押したときだけ1件を要求する。AI設定が切れていれば呼ばず、依頼時と応答時の両方で設定を読み直す。20秒の期限（`withDeadline`）、取消、要求トークンによる古い応答の破棄を持ち、失敗・空・時間切れは`failed`、本文なしは`unavailable(.noText)`（期限切れ本文は使わない。本文が無くてもテーマ記録のRSS要約があれば使う）。ストアには何も書かない。採用は`NoteInsertion.adopted`（純粋なテキスト規則。本人の文章は変えず、前後に空行を足して独立した段落にし、ノートのCRLF／LFに合わせる）の結果を、タイピングと同じ`saveNote`で保存する。ボタンとカードは`NotePanel`の`NoteSummarySection`（`.borderless`のボタンなので、依頼と採用までを画面の試験で押せる）。
-- **ノートへの操作（N5、[決定0016](decisions/0016-note-actions.md)）**: `NoteSection`（純粋。UTF-16の範囲、CRLF、絵文字を壊さない）が、選択、なければカーソルのある節の本文（見出しを除く）を返す。`NoteActionPrompt`が、書き直し（入力1,300文字まで・超えたら`tooLong`・出力上限1,200トークン・学習ゴールなし）と3行の要点（先頭1,300文字・出力300トークン・ゴールあり）の依頼を作り、答えを整える（要点は「・」の3行まで）。`NoteActionModel`は`ArticleSummaryModel`と同じ形（押したときだけ・設定の再確認・20秒・取消・要求トークン）で、カードは作った時点のノートの全文と選択範囲を持ち、`noteDidChange`と`currentCard`で一致しなくなったカードを破棄し、採用させない。採用は`NoteTextHandle.replace`が、ノートのテキストビュー（キーウィンドウの、編集できる、フィールドエディタでない`NSTextView`。期待するノート本文が一致するものを優先）の新しい全文を、タイピングと同じ`saveNote`へ渡し、同時に編集ウィンドウの`UndoManager`へ「古い全文に戻す」1手（と、その中で登録するやり直し）を登録する。テキストビューは束縛を通して保存結果に追従する。N4の採用も同じ道を使う。ボタンは`.borderless`で、SwiftUIのボタンがAppKitのボタンとして押せる。
+- **ノートへの操作（N5、決定0016（Git履歴））**: `NoteSection`（純粋。UTF-16の範囲、CRLF、絵文字を壊さない）が、選択、なければカーソルのある節の本文（見出しを除く）を返す。`NoteActionPrompt`が、書き直し（入力1,300文字まで・超えたら`tooLong`・出力上限1,200トークン・学習ゴールなし）と3行の要点（先頭1,300文字・出力300トークン・ゴールあり）の依頼を作り、答えを整える（要点は「・」の3行まで）。`NoteActionModel`は`ArticleSummaryModel`と同じ形（押したときだけ・設定の再確認・20秒・取消・要求トークン）で、カードは作った時点のノートの全文と選択範囲を持ち、`noteDidChange`と`currentCard`で一致しなくなったカードを破棄し、採用させない。採用は`NoteTextHandle.replace`が、ノートのテキストビュー（キーウィンドウの、編集できる、フィールドエディタでない`NSTextView`。期待するノート本文が一致するものを優先）の新しい全文を、タイピングと同じ`saveNote`へ渡し、同時に編集ウィンドウの`UndoManager`へ「古い全文に戻す」1手（と、その中で登録するやり直し）を登録する。テキストビューは束縛を通して保存結果に追従する。N4の採用も同じ道を使う。ボタンは`.borderless`で、SwiftUIのボタンがAppKitのボタンとして押せる。
 - **入力量**: コンテキスト窓は4096トークン（入出力の合計）。1回に渡す記事は約20件までとし、新しい順に切る。要約は切り詰める。
 - **利用可否**: `SystemLanguageModel.default.availability`と埋め込み資産の有無を検査する。資産が無い場合に、アプリが自動で取得要求（通信）を起こさない。利用不可・ガードレールの誤検知・上限超過・取消は「提案なし」として扱い、操作を止めない。
 - **設定**: 端末内AIの有効／無効を持つ。既定は有効。無効のときはモデルも埋め込みも呼ばない。
@@ -68,7 +68,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 テーマからのレビューで、テーマに記録した要約（`themeArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、ゴールとノートを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。入口はテーマ画面のツールバーのボタン。N2以降、テーマの問い・答えはない。N6から、ゴールとノートも本人が選べば渡せる（下記）。
 
-**Theme content (PR 8, reworked by N6).** A package can carry an `AIThemeContext` (theme name, and the goal and the note when the person includes them; nil when not included). It appears in the text between `BEGIN_THEME` and `END_THEME` under the labels `Goal (written by the user):` and `Note (written by the user):`. When the note is included the package header is the review request (the note against the goal, quoting the note for what is achieved, naming a gap only from what the note does not say, the sources' weak support and opposing views, and what to read or write next); otherwise it is the request for the sources. `AIThemeRequest(themeID:includeGoal:includeNote:)` says what is included, and `ReaderStore.aiThemeContext` builds the context (empty text counts as not included, and nil is returned when nothing is included). The person's words and article text are data: marker-like lines inside them are kept as they are, and the theme name is folded to one line so it cannot start a line of its own. A package needs an article source unless it carries the goal or the note; one without sources expires after 24 hours (`AIPackageReview` and `HandoffFiles.reconcile` use the package's own expiry when there is no article expiry). `AIPackageReview.reconcile` rebuilds the context from the store and marks the review `changed` if it is not equal to the one that was reviewed (so editing the included goal or note, or renaming the theme, invalidates it; editing something that was not included does not). A managed copy's metadata records `themeID` for every package made from a theme (`questionIDs` is only read for copies written before notes replaced questions, and is never written now). The copy is deleted when the theme or an included source article is gone or no longer in the theme; the cleanup is started through `onContentPolicyChanged` even if the reload after a deletion fails, but it reads the current sources, so while the reload keeps failing the copy stays and the maintenance error is shown. It is removed once a reload succeeds or at its 24 hours (this part predates N6). Editing the note or the goal or renaming the theme does not delete a copy: it is a snapshot, and its 24-hour limit still applies. The review screen's switches come from `HandoffDefaults` (a pure rule: the toolbar entry leaves the note off, the note panel's button switches the goal and the note on, an empty one is off and disabled). [Decision 0018](decisions/0018-handoff-goal-note.md), [0012](decisions/0012-claude-handoff-from-themes.md).
+**Theme content (PR 8, reworked by N6).** A package can carry an `AIThemeContext` (theme name, and the goal and the note when the person includes them; nil when not included). It appears in the text between `BEGIN_THEME` and `END_THEME` under the labels `Goal (written by the user):` and `Note (written by the user):`. When the note is included the package header is the review request (the note against the goal, quoting the note for what is achieved, naming a gap only from what the note does not say, the sources' weak support and opposing views, and what to read or write next); otherwise it is the request for the sources. `AIThemeRequest(themeID:includeGoal:includeNote:)` says what is included, and `ReaderStore.aiThemeContext` builds the context (empty text counts as not included, and nil is returned when nothing is included). The person's words and article text are data: marker-like lines inside them are kept as they are, and the theme name is folded to one line so it cannot start a line of its own. A package needs an article source unless it carries the goal or the note; one without sources expires after 24 hours (`AIPackageReview` and `HandoffFiles.reconcile` use the package's own expiry when there is no article expiry). `AIPackageReview.reconcile` rebuilds the context from the store and marks the review `changed` if it is not equal to the one that was reviewed (so editing the included goal or note, or renaming the theme, invalidates it; editing something that was not included does not). A managed copy's metadata records `themeID` for every package made from a theme (`questionIDs` is only read for copies written before notes replaced questions, and is never written now). The copy is deleted when the theme or an included source article is gone or no longer in the theme; the cleanup is started through `onContentPolicyChanged` even if the reload after a deletion fails, but it reads the current sources, so while the reload keeps failing the copy stays and the maintenance error is shown. It is removed once a reload succeeds or at its 24 hours (this part predates N6). Editing the note or the goal or renaming the theme does not delete a copy: it is a snapshot, and its 24-hour limit still applies. The review screen's switches come from `HandoffDefaults` (a pure rule: the toolbar entry leaves the note off, the note panel's button switches the goal and the note on, an empty one is off and disabled). Decision 0018 (Git history), [0012](decisions/0012-claude-handoff-from-themes.md).
 
 `ClaudeLink`は[公式案内](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link)にある`claude://cowork/new`の`q`へ短い依頼文、`file`へ生成TXTの絶対パスをURLエンコードして渡す。本文はUTF-8 TXT内に置き、起動URLへ詰め込まない（`q`は約14,000文字で切り詰められる）。通常Chatが利用者の希望だが、自動添付は未検証のため現行経路はCowork。通常Chat用の起動リンクに未文書化のファイル添付パラメータがあるとは仮定せず、推測したパラメータを実装しない。起動処理とパッケージ生成は分離する。
 
@@ -78,7 +78,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 - 全文コピー・TXT書き出し・UTF-8の全bytesを保つ1MiB/part以下の分割を提供する。分割値はClaudeの公称上限ではない。本人の書き出し先とClaude側の内容は削除同期の対象外。
 - Attach・送信・必要な親フォルダ許可は本人が操作する。フォルダ許可は読取り・変更を可能にし、cloudで使われる内容は端末を離れる旨を案内する。リンク由来の警告が出る場合がある。APIキー・自動送信・返答の自動書込みは使わない。
 
-検証対象はClaude Desktop 2.19675.0 / Pro / Cowork。起動・添付・読取りの条件と結果は[技術probe](verification/2026-10-04-claude-desktop-handoff.md)と[本体受入](verification/2026-10-05-v1-acceptance.md)で区別する。通常Chat自動添付、他版・他プラン、大容量TXTのClaude側読取りを確認済みと扱わない。
+検証対象はClaude Desktop 2.19675.0 / Pro / Cowork。起動・添付・読取りの条件と結果は[技術probe](verification/2026-10-04-claude-desktop-handoff.md)と本体受入（Git履歴）で区別する。通常Chat自動添付、他版・他プラン、大容量TXTのClaude側読取りを確認済みと扱わない。
 
 ## 4. AIエージェントによる開発
 
@@ -126,9 +126,9 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 | 記録 | 用途 |
 |---|---|
 | [Claude技術probe](verification/2026-10-04-claude-desktop-handoff.md) | 合成TXT・許可操作・経路の制約 |
-| [初回V1受入](verification/2026-10-05-v1-acceptance.md) | 本体ハンドオフ・保持・性能の当時の測定と未検証 |
-| [Dogfooding受入](verification/2026-10-07-dogfooding-acceptance.md) | Star・日次／週・画像・保存の改修結果 |
-| [読書UI追加受入](verification/2026-10-07-feed-polish.md) | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
+| 初回V1受入（Git履歴） | 本体ハンドオフ・保持・性能の当時の測定と未検証 |
+| Dogfooding受入（Git履歴） | Star・日次／週・画像・保存の改修結果 |
+| 読書UI追加受入（Git履歴） | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
 | [端末内AIの実測](verification/on-device-ai-findings.md) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語） |
 
 実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、30日の保持でテーマの咀嚼に足りるか、本人の実際のStarでのまとまりの精度と閾値、数百件での提案の速度、Apple Intelligenceが無効な環境での挙動、レンズを具体化した問いの質、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。

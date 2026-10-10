@@ -33,5 +33,5 @@ Decision 0009 says the only route that sends content off the Mac is the existing
 
 ## Sources
 
-- PR 8 plan (removed; in Git history), verification record (removed; in Git history)
+- PR 8 plan (Git history), verification record (Git history)
 - [PRD §5.2](../specification.md), [decision 0005](0005-v1-product-decisions-2026-10-04.md), [decision 0009](0009-on-device-ai-principles.md)
