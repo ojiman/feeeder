@@ -15,7 +15,7 @@ PY
 source_dir=$(mktemp -d /private/tmp/feeeder-v1-source.XXXXXX)
 baseline=${2:-53102cc42ea665b3379ad2a23d842c3186ad9c3e}
 case "$baseline" in
-    53102cc42ea665b3379ad2a23d842c3186ad9c3e|f9db83b49a82947a7031ddf874bc94fcb91ef89d|1007dce64ebc5d1c9d7ac6f0b3e05869c8581ba4|215b901ffc3863b3e1afd1e17a76b18101fc0cb6|52429b44c647a4a3ee2c95fb039bf99d5e674f18) ;;
+    53102cc42ea665b3379ad2a23d842c3186ad9c3e|f9db83b49a82947a7031ddf874bc94fcb91ef89d|1007dce64ebc5d1c9d7ac6f0b3e05869c8581ba4|215b901ffc3863b3e1afd1e17a76b18101fc0cb6|52429b44c647a4a3ee2c95fb039bf99d5e674f18|ae8aa781856a586ab6fa10d17449e16fa0cddda8) ;;
     *) echo "Use a tested baseline commit" >&2; exit 2 ;;
 esac
 git archive "$baseline" | tar -x -C "$source_dir"
@@ -103,6 +103,41 @@ import ReaderCore
         try store.saveAnswer(questionID: question.id, answer: "合成の答え", at: at)
         let manifest: [String: Any] = [
             "baseline": "52429b44c647a4a3ee2c95fb039bf99d5e674f18", "at": at.timeIntervalSince1970,
+            "feedID": feed.id.uuidString, "articleID": article.id.uuidString, "themeID": theme.id.uuidString,
+            "firstReadAt": at.addingTimeInterval(60).timeIntervalSince1970
+        ]
+        try JSONSerialization.data(withJSONObject: manifest, options: [.sortedKeys, .prettyPrinted])
+            .write(to: destination.appending(path: "expected.json"))
+    }
+}
+SWIFT
+fi
+if [ "$baseline" = "ae8aa781856a586ab6fa10d17449e16fa0cddda8" ]; then
+cat > "$source_dir/Sources/V1Fixture/main.swift" <<'SWIFT'
+import Foundation
+import ReaderCore
+
+// The store of the build after S1a (themes with a name and a note, no goal, no questions), before the rename to notes.
+@main struct V1Fixture {
+    @MainActor static func main() throws {
+        let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+        let at = Date(timeIntervalSince1970: 1_791_152_000)
+        let store = try ReaderStore(url: destination.appending(path: "Reader.store"), now: at)
+        let xml = """
+        <rss version="2.0"><channel><title>合成フィード</title><item><guid>synthetic-1</guid>
+        <title>合成記事</title><link>https://synthetic.example/article/1</link>
+        <description>合成RSS要約</description></item></channel></rss>
+        """
+        let feed = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!), receivedAt: at)
+        try store.updateSubscription(feed, title: "合成購読", folder: "技術")
+        let article = store.articles[0]
+        try store.markDisplayed(articleID: article.id, at: at.addingTimeInterval(60))
+        try store.setStar(articleID: article.id, isStarred: true, at: at)
+        let theme = try store.createTheme(name: "合成テーマ", at: at)
+        try store.addArticle(article.id, toTheme: theme.id, at: at)
+        try store.saveNote(themeID: theme.id, text: "合成ノート", at: at)
+        let manifest: [String: Any] = [
+            "baseline": "ae8aa781856a586ab6fa10d17449e16fa0cddda8", "at": at.timeIntervalSince1970,
             "feedID": feed.id.uuidString, "articleID": article.id.uuidString, "themeID": theme.id.uuidString,
             "firstReadAt": at.addingTimeInterval(60).timeIntervalSince1970
         ]

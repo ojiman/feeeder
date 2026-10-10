@@ -85,8 +85,8 @@ import ReaderCore
         let a = URL(string: "https://synthetic.example/a.png")!, b = URL(string: "https://synthetic.example/b.png")!
         first.imageURL = a.absoluteString; second.imageURL = b.absoluteString
         let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
-        cell.configure(first, feed: "合成", iconURL: a, loader: nil, themed: false)
-        cell.configure(second, feed: "合成", iconURL: b, loader: nil, themed: true)
+        cell.configure(first, feed: "合成", iconURL: a, loader: nil, inNote: false)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil, inNote: true)
         let stale = NSImage(size: NSSize(width: 10, height: 10))
         cell.completeImage(stale, articleID: first.id, url: a, thumbnail: true)
         cell.completeImage(stale, articleID: first.id, url: a, thumbnail: false)
@@ -96,7 +96,7 @@ import ReaderCore
         cell.completeImage(current, articleID: second.id, url: b, thumbnail: false)
         #expect(cell.thumbnail.image === current && cell.favicon.image === current)
         #expect(cell.frame.height == 96)
-        cell.configure(second, feed: "合成", iconURL: b, loader: nil, themed: true)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil, inNote: true)
         #expect(cell.thumbnail.image === current)
     }
     @Test func starKeyRoutesWithoutConsumingModifiedInput() throws {
@@ -110,7 +110,7 @@ import ReaderCore
         }
         #expect(handled == ["s"])
     }
-    @Test func themeKeyRoutesAndTheOldScrapKeyDoesNot() throws {
+    @Test func noteKeyRoutesAndTheOldScrapKeyDoesNot() throws {
         let table = NativeArticleList.Table()
         var handled: [String] = []
         table.keyHandler = { handled.append($0); return true }

@@ -24,7 +24,7 @@ public enum HandoffFiles {
         var expiresAt: Date
         let split: Bool
         let files: [Record]
-        let themeID: UUID?
+        let noteID: UUID?
         let questionIDs: [UUID]?
     }
     private static var manager: FileManager { .default }
@@ -58,7 +58,7 @@ public enum HandoffFiles {
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
             let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
-                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, themeID: package.themeID, questionIDs: nil)
+                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, noteID: package.noteID, questionIDs: nil)
             try saveMetadata(metadata, folder: folder)
         } catch {
             // This folder was just created by this operation, and contains only its generated copies.
@@ -81,11 +81,11 @@ public enum HandoffFiles {
         }
     }
     public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date],
-                                 themeContextIsValid: (_ themeID: UUID, _ sourceArticleIDs: [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
+                                 noteContextIsValid: (_ noteID: UUID, _ sourceArticleIDs: [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
         try maintain(directory: directory) { folder, record in
             var metadata = record
             // `questionIDs` is only read for copies made before notes replaced questions; it is not used any more.
-            if let themeID = metadata.themeID, !themeContextIsValid(themeID, metadata.articleIDs) {
+            if let noteID = metadata.noteID, !noteContextIsValid(noteID, metadata.articleIDs) {
                 try manager.removeItem(at: folder); return
             }
             let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
@@ -161,7 +161,7 @@ public enum HandoffFiles {
               let size = values[.size] as? NSNumber, size.intValue <= 1_048_576 else { throw HandoffError.unsafeFile }
         let metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: file))
         guard folder.lastPathComponent == metadata.packageID.uuidString + (metadata.split ? "-parts" : ""),
-              !metadata.articleIDs.isEmpty || metadata.themeID != nil,     // a package of the note alone has no article
+              !metadata.articleIDs.isEmpty || metadata.noteID != nil,     // a package of the note alone has no article
               !metadata.files.isEmpty,
               metadata.files.enumerated().allSatisfy({ index, record in
                   record.name == (metadata.split ? "Feeeder-review-part-\(index + 1).txt" : "Feeeder-review.txt") && record.sha256.count == 64

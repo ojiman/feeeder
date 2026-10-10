@@ -1,9 +1,9 @@
 import SwiftUI
 import ReaderCore
 
-/// Opened by `t` and by the toolbar icon. One text field filters the themes; ↑/↓ move the highlight and Return
-/// adds the article to (or removes it from) the highlighted theme, or creates a new one. Rows can also be clicked.
-struct ThemePickerView: View {
+/// Opened by `t` and by the toolbar icon. One text field filters the notes; ↑/↓ move the highlight and Return
+/// adds the article to (or removes it from) the highlighted note, or creates a new one. Rows can also be clicked.
+struct NotePickerView: View {
     @Bindable var store: ReaderStore
     let articleID: UUID
     let onMessage: (String) -> Void
@@ -12,27 +12,27 @@ struct ThemePickerView: View {
     @State private var error: String?
     @FocusState private var fieldFocused: Bool
 
-    private var memberOf: Set<UUID> { Set(store.themeIDs(containing: articleID)) }
-    private var rows: [ThemePickerRow] {
-        ThemePicker.rows(themes: store.themes.map { ($0.id, $0.name) }, memberOf: memberOf, query: query)
+    private var memberOf: Set<UUID> { Set(store.noteIDs(containing: articleID)) }
+    private var rows: [NotePickerRow] {
+        NotePicker.rows(notes: store.notes.map { ($0.id, $0.title) }, memberOf: memberOf, query: query)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("テーマに入れる").font(.headline)
-            TextField("テーマを探す、または新しい名前", text: $query.singleLine())
+            Text("ノートに入れる").font(.headline)
+            TextField("ノートを探す、または新しい名前", text: $query.singleLine())
                 .focused($fieldFocused)
                 .onSubmit(activateHighlighted)
                 .onKeyPress(.return) {
                     guard NSEvent.modifierFlags.contains(.command),
-                          let action = ThemePicker.explicitAction(rows: rows, query: query) else { return .ignored }
+                          let action = NotePicker.explicitAction(rows: rows, query: query) else { return .ignored }
                     run(action); return .handled
                 }
-                .onKeyPress(.upArrow) { highlighted = ThemePicker.move(highlighted, by: -1, count: rows.count); return .handled }
-                .onKeyPress(.downArrow) { highlighted = ThemePicker.move(highlighted, by: 1, count: rows.count); return .handled }
-                .accessibilityLabel("テーマを探す、または新しい名前")
+                .onKeyPress(.upArrow) { highlighted = NotePicker.move(highlighted, by: -1, count: rows.count); return .handled }
+                .onKeyPress(.downArrow) { highlighted = NotePicker.move(highlighted, by: 1, count: rows.count); return .handled }
+                .accessibilityLabel("ノートを探す、または新しい名前")
             if rows.isEmpty {
-                Text("まだテーマがありません。名前を入力すると、新しく作ってこの記事を入れられます。")
+                Text("まだノートがありません。名前を入力すると、新しく作ってこの記事を入れられます。")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 ScrollView {
@@ -47,14 +47,14 @@ struct ThemePickerView: View {
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .padding(14).frame(width: 300)
-        .onAppear { fieldFocused = true; highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
-        .onChange(of: query) { _, _ in highlighted = ThemePicker.defaultHighlight(rows: rows, query: query) }
+        .onAppear { fieldFocused = true; highlighted = NotePicker.defaultHighlight(rows: rows, query: query) }
+        .onChange(of: query) { _, _ in highlighted = NotePicker.defaultHighlight(rows: rows, query: query) }
     }
 
-    private func rowView(_ row: ThemePickerRow, highlighted: Bool) -> some View {
+    private func rowView(_ row: NotePickerRow, highlighted: Bool) -> some View {
         let symbol: String
         switch row.kind {
-        case .theme: symbol = row.included ? "checkmark.square.fill" : "square"
+        case .note: symbol = row.included ? "checkmark.square.fill" : "square"
         case .create: symbol = "plus.square"
         }
         return Button { perform(for: row) } label: {
@@ -71,31 +71,32 @@ struct ThemePickerView: View {
         .accessibilityValue(row.included ? "入っています" : "入っていません")
     }
 
-    private func perform(for row: ThemePickerRow) {
+    private func perform(for row: NotePickerRow) {
         switch row.kind {
-        case .theme(let id): run(.toggle(id))
+        case .note(let id): run(.toggle(id))
         case .create(let name): run(.create(name))
         }
     }
     private func activateHighlighted() {
-        guard let action = ThemePicker.action(rows: rows, highlighted: highlighted) else { return }
+        guard let action = NotePicker.action(rows: rows, highlighted: highlighted) else { return }
         run(action)
     }
-    private func run(_ action: ThemePickerAction) {
+    private func run(_ action: NotePickerAction) {
         do {
             switch action {
             case .toggle(let id):
-                switch try store.toggleTheme(id, for: articleID, at: .now) {
-                case .added(let name): onMessage("「\(name)」に入れました")
-                case .removed(let name): onMessage("「\(name)」から外しました")
+                switch try store.toggleNote(id, for: articleID, at: .now) {
+                case .added(let title): onMessage("「\(title)」に入れました")
+                case .removed(let title): onMessage("「\(title)」から外しました")
                 }
             case .create(let name):
-                let theme = try store.createTheme(name: name, adding: articleID, at: .now)
-                onMessage("「\(theme.name)」に入れました")
+                // A new note starts with its title as the first line (the title is the first line, decision 0019).
+                let note = try store.createNote(text: "# \(name)\n", adding: articleID, at: .now)
+                onMessage("「\(note.title)」に入れました")
                 query = ""
             }
             error = nil
-            highlighted = ThemePicker.defaultHighlight(rows: rows, query: query)
+            highlighted = NotePicker.defaultHighlight(rows: rows, query: query)
         } catch { self.error = error.localizedDescription }
     }
 }

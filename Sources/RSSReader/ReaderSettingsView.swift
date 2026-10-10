@@ -49,7 +49,7 @@ struct ReaderSettingsView: View {
             Button("キャンセル", role: .cancel) { cancel() }
         } message: {
             if let preview {
-                Text("本文\(preview.bodyCount)件・RSS要約\(preview.summaryCount)件、約\(byteCount(preview.estimatedBytes))が削除対象です。テーマの記録は残ります。削除した本文は保持期間を延長しても復元されません。")
+                Text("本文\(preview.bodyCount)件・RSS要約\(preview.summaryCount)件、約\(byteCount(preview.estimatedBytes))が削除対象です。ノートの記録は残ります。削除した本文は保持期間を延長しても復元されません。")
             }
         }
         .alert("変更できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
@@ -63,7 +63,7 @@ struct ReaderSettingsView: View {
             }
             Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("テーマの記録（記事のタイトル・リンク・記録した要約、ノート）は自動削除しません。")
+            Text("ノートの記録（記事のタイトル・リンク・記録した要約、ノート）は自動削除しません。")
             Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
                 perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
             }

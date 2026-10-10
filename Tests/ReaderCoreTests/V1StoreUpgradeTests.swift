@@ -38,10 +38,10 @@ import Testing
                 #expect(article.starredAt == (expected.scrapKey == nil ? nil : at) && article.imageURL == nil)
                 #expect(try store.content(articleID: article.id, at: at)?.bodyParagraphs.first?.links.isEmpty == true)
                 if round == 0 {
-                    let theme = try store.createTheme(name: "移行後のテーマ", at: at)
-                    try store.addArticle(article.id, toTheme: theme.id, at: at)
+                    let note = try store.createNote(text: "# 移行後のノート\n", at: at)
+                    try store.addArticle(article.id, toNote: note.id, at: at)
                 } else {
-                    #expect(store.themes.map(\.name) == ["移行後のテーマ"] && store.themeArticles.count == 1)
+                    #expect(store.notes.map(\.title) == ["移行後のノート"] && store.noteArticles.count == 1)
                 }
             }
         }

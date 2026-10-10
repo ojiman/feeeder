@@ -83,8 +83,8 @@ struct ReaderStoreTests {
         let parsed = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://feed.example/rss")!)
         let feed = try store.importFeed(parsed, receivedAt: at)
         let article = try #require(store.articles.first)
-        let theme = try store.createTheme(name: "保存済み", at: at)
-        let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
+        let note = try store.createNote(text: "# 保存済み\n", at: at)
+        let link = try store.addArticle(article.id, toNote: note.id, at: at)
         failSave = true; failReload = true
         #expect(throws: (any Error).self) { try store.setRead(article, true) }
         failSave = false
@@ -101,30 +101,29 @@ struct ReaderStoreTests {
             { try store.moveFeed(id: feed.id, toFolder: "変更") },
             { try store.renameFolder(from: "", to: "変更") },
             { _ = try store.importFeed(parsed, receivedAt: at) },
-            { _ = try store.createTheme(name: "変更", at: at) },
-            { try store.renameTheme(id: theme.id, to: "変更", at: at) },
-            { try store.saveNote(themeID: theme.id, text: "捨ててはいけない変更", at: at) },
-            { _ = try store.addArticle(article.id, toTheme: theme.id, at: at) },
-            { _ = try store.toggleTheme(theme.id, for: article.id, at: at) },
-            { _ = try store.createTheme(name: "変更", adding: article.id, at: at) },
-            { try store.removeArticle(article.id, fromTheme: theme.id, at: at) },
-            { try store.deleteTheme(id: theme.id) },
+            { _ = try store.createNote(text: "# 変更\n", at: at) },
+            { try store.saveNote(noteID: note.id, text: "捨ててはいけない変更", at: at) },
+            { _ = try store.addArticle(article.id, toNote: note.id, at: at) },
+            { _ = try store.toggleNote(note.id, for: article.id, at: at) },
+            { _ = try store.createNote(text: "# 変更\n", adding: article.id, at: at) },
+            { try store.removeArticle(article.id, fromNote: note.id, at: at) },
+            { try store.deleteNote(id: note.id) },
             { try store.applyRetention(days: 7, at: at) },
             { try store.deleteContent(articleIDs: [article.id], at: at) },
             { try store.markDisplayed(articleID: article.id, at: at) },
             { try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "変更", coverage: .extracted, sourceURL: parsed.sourceURL), at: at) }
         ]
         for change in changes { #expect(throws: (any Error).self) { try change() } }
-        #expect(throws: (any Error).self) { _ = try store.aiSources(selections: [.themeArticle(link.key)], at: at) }
+        #expect(throws: (any Error).self) { _ = try store.aiSources(selections: [.noteArticle(link.key)], at: at) }
         #expect(saveAttempts == attempts)
         failReload = false
         try store.setRead(article, true)
-        try store.saveNote(themeID: theme.id, text: "再試行したノート", at: at)
+        try store.saveNote(noteID: note.id, text: "再試行したノート", at: at)
         let reopened = try ReaderStore(url: url, now: at)
         #expect(reopened.article(id: article.id)?.isRead == true)
         #expect(reopened.feed(id: feed.id)?.title == parsed.title && reopened.feed(id: feed.id)?.folder == "")
-        #expect(reopened.themeArticles.first?.key == link.key)
+        #expect(reopened.noteArticles.first?.key == link.key)
         #expect(reopened.retentionDays == 30 && reopened.article(id: article.id)?.starredAt == nil)
-        #expect(reopened.theme(id: theme.id)?.note == "再試行したノート")
+        #expect(reopened.note(id: note.id)?.text == "再試行したノート")
     }
 }

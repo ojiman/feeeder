@@ -34,7 +34,7 @@ import Testing
         errorPane.keyDown(with: try event("s")); errorPane.keyDown(with: try event("t"))
         errorPane.keyDown(with: try event("j", modifiers: .command))
         errorPane.keyDown(with: try event("Escape"))
-        #expect(commands == [.next, .previous, .toggleStar, .themePicker, .closeOriginal])
+        #expect(commands == [.next, .previous, .toggleStar, .notePicker, .closeOriginal])
         #expect(original.url == nil && reader.selectedArticleID == first)
         #expect(reader.scrollAnchors[first] == "paragraph-7" && reader.scrollOffsets[first] == 23.5)
     }

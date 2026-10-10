@@ -1,7 +1,7 @@
 import Foundation
 
 public enum ReaderWorkspaceScope: Hashable, Sendable {
-    case all, unread, starred, feed(UUID), folder(String), theme(UUID)
+    case all, unread, starred, feed(UUID), folder(String), note(UUID)
 }
 
 public struct ReaderWorkspaceState {
@@ -9,11 +9,11 @@ public struct ReaderWorkspaceState {
     private var readers: [ReaderWorkspaceScope: ReaderSelectionState] = [:]
     private var openNotes: Set<UUID> = []
     public init() {}
-    /// Whether a theme's note is open beside the article. Remembered per theme while the app runs; a theme starts with it closed.
-    /// Opening or closing the note does not touch the theme's reader (the selected article and the scroll memory).
-    public func isNoteOpen(of themeID: UUID) -> Bool { openNotes.contains(themeID) }
-    public mutating func setNote(open: Bool, of themeID: UUID) {
-        if open { openNotes.insert(themeID) } else { openNotes.remove(themeID) }
+    /// Whether a note's note is open beside the article. Remembered per note while the app runs; a note starts with it closed.
+    /// Opening or closing the note does not touch the note's reader (the selected article and the scroll memory).
+    public func isNoteOpen(of noteID: UUID) -> Bool { openNotes.contains(noteID) }
+    public mutating func setNote(open: Bool, of noteID: UUID) {
+        if open { openNotes.insert(noteID) } else { openNotes.remove(noteID) }
     }
     public mutating func rememberReader(_ state: ReaderSelectionState, in scope: ReaderWorkspaceScope) {
         readers[scope] = state

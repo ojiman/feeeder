@@ -8,13 +8,13 @@ import SwiftData
     public private(set) var contentRevision = 0
     public private(set) var settings: ReaderSettings?
     public var retentionDays: Int { settings?.retentionDays ?? 30 }
-    /// Called when something a review or a managed Claude copy may contain is deleted or removed (content policy, a theme, a question, or a theme's article).
+    /// Called when something a review or a managed Claude copy may contain is deleted or removed (content policy, a note, or an article of a note).
     @ObservationIgnored public var onContentPolicyChanged: (@MainActor () -> Void)?
     public private(set) var memberships: [FeedMembership] = []
-    public private(set) var themes: [Theme] = []
-    public private(set) var themeArticles: [ThemeArticle] = []
-    @ObservationIgnored var themeMembers: [UUID: Set<UUID>] = [:]
-    @ObservationIgnored var articleThemeIDs: [UUID: Set<UUID>] = [:]
+    public private(set) var notes: [Note] = []
+    public private(set) var noteArticles: [NoteArticle] = []
+    @ObservationIgnored var noteMembers: [UUID: Set<UUID>] = [:]
+    @ObservationIgnored var articleNoteIDs: [UUID: Set<UUID>] = [:]
     public private(set) var starCount = 0
     @ObservationIgnored var starredIDs: Set<UUID> = []
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
@@ -36,7 +36,7 @@ import SwiftData
 
     public static var schema: Schema {
         Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, ReaderSettings.self,
-                Theme.self, ThemeArticle.self])
+                Note.self, NoteArticle.self])
     }
 
     public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
@@ -79,10 +79,10 @@ import SwiftData
         feeds = try context.fetch(FetchDescriptor<Feed>(sortBy: [SortDescriptor(\.title)]))
         memberships = try context.fetch(FetchDescriptor<FeedMembership>())
         // Ties on the timestamp break by a stable key, so equal times never reorder between launches.
-        themes = try context.fetch(FetchDescriptor<Theme>()).sorted {
+        notes = try context.fetch(FetchDescriptor<Note>()).sorted {
             $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
         }
-        themeArticles = try context.fetch(FetchDescriptor<ThemeArticle>()).sorted {
+        noteArticles = try context.fetch(FetchDescriptor<NoteArticle>()).sorted {
             $0.addedAt == $1.addedAt ? $0.key < $1.key : $0.addedAt < $1.addedAt
         }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
@@ -102,7 +102,7 @@ import SwiftData
         }
         refreshUnreadCounts()
         refreshStarIndex()
-        refreshThemeIndex()
+        refreshNoteIndex()
         needsReload = false
     }
 
@@ -110,11 +110,11 @@ import SwiftData
         if needsReload { try reload() }
     }
 
-    private func refreshThemeIndex() {
-        themeMembers = [:]; articleThemeIDs = [:]
-        for link in themeArticles {
-            themeMembers[link.themeID, default: []].insert(link.articleID)
-            articleThemeIDs[link.articleID, default: []].insert(link.themeID)
+    private func refreshNoteIndex() {
+        noteMembers = [:]; articleNoteIDs = [:]
+        for link in noteArticles {
+            noteMembers[link.noteID, default: []].insert(link.articleID)
+            articleNoteIDs[link.articleID, default: []].insert(link.noteID)
         }
     }
 

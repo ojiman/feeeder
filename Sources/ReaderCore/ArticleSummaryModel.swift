@@ -9,8 +9,8 @@ import Observation
         public let text: String
         /// The body was longer than the budget and only its start was used.
         public let wasCut: Bool
-        /// The article's own text was gone; the RSS summary that the theme recorded was used.
-        public let fromThemeSummary: Bool
+        /// The article's own text was gone; the RSS summary that the note recorded was used.
+        public let fromNoteSummary: Bool
     }
     public enum Reason: Equatable, Sendable { case disabled, noText, unsupported, assetsMissing }
     public enum State: Equatable, Sendable {
@@ -32,12 +32,12 @@ import Observation
     }
 
     /// Starts one request for the article; a request that is still running is replaced and its answer is dropped.
-    public func request(articleID: UUID, themeID: UUID?) {
+    public func request(articleID: UUID, noteID: UUID?) {
         supersede()
         let mine = token
         guard isEnabled() else { state = .unavailable(.disabled); return }
         guard let assistant else { state = .unavailable(.unsupported); return }
-        guard let source = source(for: articleID, themeID: themeID),
+        guard let source = source(for: articleID, noteID: noteID),
               let input = ArticleSummaryPrompt.make(title: store.article(id: articleID)?.title ?? "", text: source.text) else {
             state = .unavailable(.noText); return
         }
@@ -57,7 +57,7 @@ import Observation
                 guard self.token == mine, !Task.isCancelled else { return }
                 guard self.isEnabled() else { self.state = .unavailable(.disabled); return }
                 if let text = ArticleSummaryPrompt.clean(raw) {
-                    self.state = .ready(Summary(articleID: articleID, text: text, wasCut: input.wasCut, fromThemeSummary: source.fromThemeSummary))
+                    self.state = .ready(Summary(articleID: articleID, text: text, wasCut: input.wasCut, fromNoteSummary: source.fromNoteSummary))
                 } else { self.state = .failed }
             } catch {
                 if self.token == mine { self.state = .failed }
@@ -80,12 +80,12 @@ import Observation
         task?.cancel(); task = nil; token = UUID()
     }
 
-    /// The article's own retained text first; if it is gone, the RSS summary the theme recorded (only for a member article).
-    private func source(for articleID: UUID, themeID: UUID?) -> (text: String, fromThemeSummary: Bool)? {
+    /// The article's own retained text first; if it is gone, the RSS summary the note recorded (only for a member article).
+    private func source(for articleID: UUID, noteID: UUID?) -> (text: String, fromNoteSummary: Bool)? {
         if let content = try? store.content(articleID: articleID, at: now()), !content.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return (content.text, false)
         }
-        if let themeID, let link = store.themeArticles.first(where: { $0.themeID == themeID && $0.articleID == articleID }),
+        if let noteID, let link = store.noteArticles.first(where: { $0.noteID == noteID && $0.articleID == articleID }),
            !link.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return (link.summary, true)
         }

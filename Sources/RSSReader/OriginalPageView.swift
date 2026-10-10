@@ -88,7 +88,7 @@ private struct OriginalWebView: NSViewRepresentable {
         view.navigationDelegate = context.coordinator
         view.uiDelegate = context.coordinator
         view.allowsBackForwardNavigationGestures = true
-        context.coordinator.keyboard = OriginalKeyboardBridge(allowsThemePicker: true, onCommand: onCommand)
+        context.coordinator.keyboard = OriginalKeyboardBridge(allowsNotePicker: true, onCommand: onCommand)
         context.coordinator.keyboard?.install(in: view)
         view.load(URLRequest(url: url))
         return view

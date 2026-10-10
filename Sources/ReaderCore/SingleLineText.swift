@@ -1,6 +1,6 @@
 import Foundation
 
-/// Text for one-line fields (subscription names, folder names, theme names, web addresses). A line break can arrive by
+/// Text for one-line fields (subscription names, folder names, note names, web addresses). A line break can arrive by
 /// paste or by Option-Return; it must not end up inside a name.
 public enum SingleLineText {
     /// A name to save: each line break becomes one space, empty lines vanish, and the ends are trimmed.

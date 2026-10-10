@@ -15,8 +15,8 @@ import Testing
         let at = Date.now
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let id = store.articles[0].id
-        let theme = try store.createTheme(name: "A", at: at)
-        let link = try store.addArticle(id, toTheme: theme.id, at: at)
+        let note = try store.createNote(text: "# A\n", at: at)
+        let link = try store.addArticle(id, toNote: note.id, at: at)
         let review = AIPackageReview(store: store, now: { at })
         let root = library.directory.appending(path: "handoff")
         try review.build(articleIDs: [id], language: "日本語", at: at)
@@ -25,11 +25,11 @@ import Testing
         var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
         metadata.removeValue(forKey: "selections")
         try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
-        try review.build(selections: [.themeArticle(link.key)], language: "日本語", at: at)
+        try review.build(selections: [.noteArticle(link.key)], language: "日本語", at: at)
         let savedFile = try HandoffFiles.write(try #require(review.package), directory: root)
         try store.deleteContent(articleIDs: [id], at: at)
         let inputs = try HandoffFiles.sourceSelections(directory: root)
-        #expect(Set(inputs) == [.article(id), .themeArticle(link.key)])
+        #expect(Set(inputs) == [.article(id), .noteArticle(link.key)])
         try HandoffFiles.reconcile(directory: root, validInputExpiries: store.availableInputExpiries(selections: inputs, at: at), at: at)
         #expect(!FileManager.default.fileExists(atPath: oldFile.path))
         #expect(FileManager.default.fileExists(atPath: savedFile.path))
@@ -38,6 +38,28 @@ import Testing
         try HandoffFiles.cleanup(directory: root, at: at.addingTimeInterval(86_400))
         #expect(!FileManager.default.fileExists(atPath: savedFile.path))
     }
+    /// A copy written before the rename to notes names its theme (`themeID`) and its theme sources (`themeArticle`). It lives at most a day;
+    /// the new code cannot read it, so maintenance removes it instead of failing again and again (decision 0019, S1b).
+    @Test func aCopyWrittenBeforeTheRenameToNotesIsRemovedWithoutFailingMaintenance() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let at = Date.now
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let id = store.articles[0].id
+        let review = AIPackageReview(store: store, now: { at })
+        let root = library.directory.appending(path: "handoff")
+        try review.build(articleIDs: [id], language: "日本語", at: at)
+        let file = try HandoffFiles.write(try #require(review.package), directory: root)
+        let metadataFile = file.deletingLastPathComponent().appending(path: "metadata.json")
+        var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+        metadata["themeID"] = UUID().uuidString
+        metadata["selections"] = [["themeArticle": ["_0": "\(UUID().uuidString):\(id.uuidString)"]]]
+        try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+        let inputs = try HandoffFiles.sourceSelections(directory: root)
+        try HandoffFiles.reconcile(directory: root, validInputExpiries: store.availableInputExpiries(selections: inputs, at: at), at: at)
+        #expect(!FileManager.default.fileExists(atPath: file.deletingLastPathComponent().path))
+        try HandoffFiles.cleanup(directory: root, at: at.addingTimeInterval(10 * 86_400))   // and nothing is left to fail later
+    }
+
     @Test func legacyScrapMetadataIsDeletedInsteadOfFailingEveryMaintenance() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let at = Date.now
@@ -205,47 +227,46 @@ import Testing
         #expect(FileManager.default.fileExists(atPath: library.url.path))
     }
 
-    /// Store + theme with a note, a package that includes it, and a controller that is wired the way the app wires it
+    /// Store + note with a note, a package that includes it, and a controller that is wired the way the app wires it
     /// (a store change calls the controller's reconcile). `sources` false makes a package of the note alone.
-    private func themeCopy(_ at: Date, sources: Bool = true) throws -> (library: TestLibrary, store: ReaderStore, theme: Theme, link: ThemeArticle, controller: ClaudeHandoffController, folder: URL, launcher: ProbeLauncher) {
+    private func noteCopy(_ at: Date, sources: Bool = true) throws -> (library: TestLibrary, store: ReaderStore, note: Note, link: NoteArticle, controller: ClaudeHandoffController, folder: URL, launcher: ProbeLauncher) {
         let library = try TestLibrary()
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let article = store.articles[0]; article.summary = "Recorded synthetic summary"
-        let theme = try store.createTheme(name: "Rates", at: at)
-        let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
-        try store.saveNote(themeID: theme.id, text: "My private note", at: at)
+        let note = try store.createNote(text: "# Rates\n", at: at)
+        let link = try store.addArticle(article.id, toNote: note.id, at: at)
+        try store.saveNote(noteID: note.id, text: "My private note", at: at)
         let review = AIPackageReview(store: store, now: { at })
         let launcher = ProbeLauncher()
         let root = library.directory.appending(path: "handoff")
         let controller = ClaudeHandoffController(directory: root, review: review, launcher: launcher, now: { at })
         store.onContentPolicyChanged = { [weak store, weak controller] in if let store { controller?.reconcile(with: store, at: at) } }
-        try review.build(selections: sources ? [.themeArticle(link.key)] : [], theme: AIThemeRequest(themeID: theme.id, includeNote: true), language: "English", at: at)
+        try review.build(selections: sources ? [.noteArticle(link.key)] : [], note: AINoteRequest(noteID: note.id, includeNote: true), language: "English", at: at)
         let package = try #require(review.package)
         let file = try HandoffFiles.write(package, directory: root)
-        return (library, store, theme, link, controller, file.deletingLastPathComponent(), launcher)
+        return (library, store, note, link, controller, file.deletingLastPathComponent(), launcher)
     }
 
-    @Test func aCopyWithTheNoteIsRemovedWhenItsThemeOrASourceIsDeleted() async throws {
+    @Test func aCopyWithTheNoteIsRemovedWhenItsNoteOrASourceIsDeleted() async throws {
         let at = Date.now
         for removal in 0..<2 {
-            let (library, store, theme, link, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
+            let (library, store, note, link, controller, folder, _) = try noteCopy(at); defer { library.cleanup() }
             #expect(FileManager.default.fileExists(atPath: folder.path))
             controller.reconcile(with: store, at: at)
             #expect(FileManager.default.fileExists(atPath: folder.path))                  // nothing was removed yet
             switch removal {
-            case 0: try store.deleteTheme(id: theme.id)
-            default: try store.removeArticle(link.articleID, fromTheme: theme.id, at: at)
+            case 0: try store.deleteNote(id: note.id)
+            default: try store.removeArticle(link.articleID, fromNote: note.id, at: at)
             }
             #expect(!FileManager.default.fileExists(atPath: folder.path), "removal \(removal)")
             #expect(controller.maintenanceError == nil)
         }
     }
 
-    @Test func editingTheNoteOrRenamingTheThemeKeepsTheCopyUntilItExpires() throws {
+    @Test func editingTheNoteKeepsTheCopyUntilItExpires() throws {
         let at = Date.now
-        let (library, store, theme, _, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
-        try store.saveNote(themeID: theme.id, text: "Edited later", at: at)
-        try store.renameTheme(id: theme.id, to: "Renamed", at: at)
+        let (library, store, note, _, controller, folder, _) = try noteCopy(at); defer { library.cleanup() }
+        try store.saveNote(noteID: note.id, text: "Edited later", at: at)
         controller.reconcile(with: store, at: at)
         #expect(FileManager.default.fileExists(atPath: folder.path))
         let text = try String(contentsOf: folder.appending(path: "Feeeder-review.txt"), encoding: .utf8)
@@ -254,83 +275,83 @@ import Testing
         #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the 24-hour limit still applies
     }
 
-    @Test func aCopyOfTheNoteAloneIsKeptForADayAndRemovedWithItsTheme() throws {
+    @Test func aCopyOfTheNoteAloneIsKeptForADayAndRemovedWithItsNote() throws {
         let at = Date.now
-        let (library, store, theme, _, controller, folder, _) = try themeCopy(at, sources: false); defer { library.cleanup() }
+        let (library, store, note, _, controller, folder, _) = try noteCopy(at, sources: false); defer { library.cleanup() }
         controller.reconcile(with: store, at: at.addingTimeInterval(3_600))
         #expect(FileManager.default.fileExists(atPath: folder.path) && controller.maintenanceError == nil)   // no article: nothing earlier than 24 hours
         let metadata = try String(contentsOf: folder.appending(path: "metadata.json"), encoding: .utf8)
-        #expect(metadata.contains(theme.id.uuidString) && !metadata.contains("questionIDs"))
+        #expect(metadata.contains(note.id.uuidString) && !metadata.contains("questionIDs"))
         controller.reconcile(with: store, at: at.addingTimeInterval(86_401))
         #expect(!FileManager.default.fileExists(atPath: folder.path))
-        let (library2, store2, theme2, _, controller2, folder2, _) = try themeCopy(at, sources: false); defer { library2.cleanup() }
-        try store2.deleteTheme(id: theme2.id)
+        let (library2, store2, note2, _, controller2, folder2, _) = try noteCopy(at, sources: false); defer { library2.cleanup() }
+        try store2.deleteNote(id: note2.id)
         #expect(!FileManager.default.fileExists(atPath: folder2.path) && controller2.maintenanceError == nil)   // the controller must stay alive: the store only holds it weakly
     }
 
-    @Test func aThemeCopyIsOpenedOnlyAfterItsPackageIsStillValid() async throws {
+    @Test func aNoteCopyIsOpenedOnlyAfterItsPackageIsStillValid() async throws {
         let at = Date.now
-        let (library, store, theme, link, _, _, launcher) = try themeCopy(at); defer { library.cleanup() }
+        let (library, store, note, link, _, _, launcher) = try noteCopy(at); defer { library.cleanup() }
         let review = AIPackageReview(store: store, now: { at })
-        try review.build(selections: [.themeArticle(link.key)], theme: AIThemeRequest(themeID: theme.id, includeNote: true), language: "English", at: at)
+        try review.build(selections: [.noteArticle(link.key)], note: AINoteRequest(noteID: note.id, includeNote: true), language: "English", at: at)
         let second = ClaudeHandoffController(directory: library.directory.appending(path: "handoff2"), review: review, launcher: launcher, now: { at })
         let package = try #require(review.package)
-        try store.saveNote(themeID: theme.id, text: "Changed after review", at: at)
+        try store.saveNote(noteID: note.id, text: "Changed after review", at: at)
         await second.open(package: package)
         #expect(launcher.urls.isEmpty && second.error != nil && !second.opened)            // changed after review: nothing is opened
     }
 
     @Test func copiesFromOlderVersionsStillReconcile() throws {
         let at = Date.now
-        // A copy without any theme fields (written before themes), and one that still has `questionIDs` (written before notes).
+        // A copy without any note fields (written before notes), and one that still has `questionIDs` (written before notes).
         for oldStyle in 0..<2 {
-            let (library, store, theme, link, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
+            let (library, store, note, link, controller, folder, _) = try noteCopy(at); defer { library.cleanup() }
             let metadataFile = folder.appending(path: "metadata.json")
             var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
-            if oldStyle == 0 { metadata.removeValue(forKey: "themeID"); metadata.removeValue(forKey: "questionIDs") }
+            if oldStyle == 0 { metadata.removeValue(forKey: "noteID"); metadata.removeValue(forKey: "questionIDs") }
             else { metadata["questionIDs"] = [UUID().uuidString] }                       // questions that no longer exist
             try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
             controller.reconcile(with: store, at: at)
             #expect(FileManager.default.fileExists(atPath: folder.path) && controller.maintenanceError == nil, "style \(oldStyle)")   // the questions are not looked at any more
-            try store.removeArticle(link.articleID, fromTheme: theme.id, at: at)
+            try store.removeArticle(link.articleID, fromNote: note.id, at: at)
             #expect(!FileManager.default.fileExists(atPath: folder.path), "style \(oldStyle)")                       // the source rule still applies to it
         }
     }
 
-    /// A copy made from a theme with retained-article sources (the default choice on the review screen).
-    private func retainedCopy(_ at: Date, note: Bool) throws -> (library: TestLibrary, store: ReaderStore, theme: Theme, article: Article, controller: ClaudeHandoffController, folder: URL) {
+    /// A copy made from a note with retained-article sources (the default choice on the review screen).
+    private func retainedCopy(_ at: Date, includeNote: Bool) throws -> (library: TestLibrary, store: ReaderStore, note: Note, article: Article, controller: ClaudeHandoffController, folder: URL) {
         let library = try TestLibrary()
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
         let article = store.articles[0]
-        let theme = try store.createTheme(name: "Rates", at: at)
-        try store.addArticle(article.id, toTheme: theme.id, at: at)
-        try store.saveNote(themeID: theme.id, text: "My private note", at: at)
+        let note = try store.createNote(text: "# Rates\n", at: at)
+        try store.addArticle(article.id, toNote: note.id, at: at)
+        try store.saveNote(noteID: note.id, text: "My private note", at: at)
         let review = AIPackageReview(store: store, now: { at })
         let root = library.directory.appending(path: "handoff")
         let controller = ClaudeHandoffController(directory: root, review: review, launcher: ProbeLauncher(), now: { at })
         store.onContentPolicyChanged = { [weak store, weak controller] in if let store { controller?.reconcile(with: store, at: at) } }
-        try review.build(selections: [.article(article.id)], theme: AIThemeRequest(themeID: theme.id, includeNote: note), language: "English", at: at)
+        try review.build(selections: [.article(article.id)], note: AINoteRequest(noteID: note.id, includeNote: includeNote), language: "English", at: at)
         let file = try HandoffFiles.write(try #require(review.package), directory: root)
-        return (library, store, theme, article, controller, file.deletingLastPathComponent())
+        return (library, store, note, article, controller, file.deletingLastPathComponent())
     }
 
-    @Test func aCopyOfARetainedArticleIsRemovedWhenThatArticleLeavesTheTheme() throws {
+    @Test func aCopyOfARetainedArticleIsRemovedWhenThatArticleLeavesTheNote() throws {
         let at = Date.now
         for note in [true, false] {
-            let (library, store, theme, article, controller, folder) = try retainedCopy(at, note: note); defer { library.cleanup() }
+            let (library, store, note, article, controller, folder) = try retainedCopy(at, includeNote: note); defer { library.cleanup() }
             controller.reconcile(with: store, at: at)
             #expect(FileManager.default.fileExists(atPath: folder.path))
-            try store.removeArticle(article.id, fromTheme: theme.id, at: at)
+            try store.removeArticle(article.id, fromNote: note.id, at: at)
             #expect(!FileManager.default.fileExists(atPath: folder.path), "note \(note)")
         }
     }
 
-    @Test func aCopyWithoutTheNoteIsRemovedWhenItsThemeIsDeleted() throws {
+    @Test func aCopyWithoutTheNoteIsRemovedWhenItsNoteIsDeleted() throws {
         let at = Date.now
-        let (library, store, theme, _, controller, folder) = try retainedCopy(at, note: false); defer { library.cleanup() }
+        let (library, store, note, _, controller, folder) = try retainedCopy(at, includeNote: false); defer { library.cleanup() }
         controller.reconcile(with: store, at: at)
         #expect(FileManager.default.fileExists(atPath: folder.path))
-        try store.deleteTheme(id: theme.id)
+        try store.deleteNote(id: note.id)
         #expect(!FileManager.default.fileExists(atPath: folder.path))
     }
 
@@ -342,10 +363,10 @@ import Testing
         let schema = ReaderStore.schema
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration("Reader", schema: schema, url: library.url, cloudKitDatabase: .none)])
         let store = try ReaderStore(container: container, seedDemo: true, now: at, saveHook: nil, reloadHook: { if gate.failReload { throw CocoaError(.fileReadUnknown) } })
-        let theme = try store.createTheme(name: "A", at: at)
+        let note = try store.createNote(text: "# A\n", at: at)
         store.onContentPolicyChanged = { gate.calls += 1 }
         gate.failReload = true
-        #expect(throws: (any Error).self) { try store.deleteTheme(id: theme.id) }
+        #expect(throws: (any Error).self) { try store.deleteNote(id: note.id) }
         #expect(gate.calls == 1)                                                          // the deletion was saved, so the cleanup must run
     }
 }
