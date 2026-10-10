@@ -5,6 +5,8 @@
 #
 # Usage: fetch-ci-app.sh <PR number>
 #        fetch-ci-app.sh --run <workflow run id>
+# A pull request run builds the app only when the PR changes how the app is built or packaged (see AGENTS.md).
+# For any other branch, start the workflow by hand and pass its run id with --run, or build locally.
 # Needs macOS (ditto, codesign, xattr) and an authenticated, recent `gh` (`run download --pattern`)
 # run inside this repository. FEEEDER_CI_ROOT overrides the output root (scripts/test-fetch-ci-app.sh uses it).
 set -euo pipefail
@@ -30,7 +32,10 @@ dest=${FEEEDER_CI_ROOT:-/private/tmp/feeeder-ci}/$label
 [ ! -e "$dest" ] || { echo "$dest already exists; remove it or use another run." >&2; exit 1; }
 mkdir -p "$dest"
 
-gh run download "$run_id" --pattern 'feeeder-release-*' --dir "$dest"
+if ! gh run download "$run_id" --pattern 'feeeder-release-*' --dir "$dest"; then
+    echo "Run $run_id has no release artifact. A pull request run skips the release build unless the PR changes the build or packaging; run the workflow by hand and use --run, or build locally." >&2
+    exit 1
+fi
 zip=$(find "$dest" -name Feeeder-adhoc.zip 2>/dev/null | head -n 1 || true)
 [ -n "$zip" ] || { echo "Feeeder-adhoc.zip not found in the artifact." >&2; exit 1; }
 
