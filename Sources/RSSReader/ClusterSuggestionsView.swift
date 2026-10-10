@@ -76,7 +76,7 @@ struct ClusterSuggestionsView: View {
             if group.count > 4 { Text("ほか\(group.count - 4)件").font(.caption).foregroundStyle(.secondary) }
             if naming == group {
                 HStack {
-                    TextField("テーマの名前", text: $name).focused($nameFocused)
+                    TextField("テーマの名前", text: $name.singleLine()).focused($nameFocused)
                         .onSubmit { create(group) }.accessibilityLabel("テーマの名前")
                     Button("作成") { create(group) }.disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Button("やめる") { naming = nil; name = "" }

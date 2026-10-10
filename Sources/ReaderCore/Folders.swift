@@ -12,13 +12,13 @@ extension ReaderStore {
     public func moveFeed(id: UUID, toFolder: String) throws {
         try reloadIfNeeded()
         guard let feed = feed(id: id) else { return }
-        let name = toFolder.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = SingleLineText.name(toFolder)
         guard feed.folder != name else { return }
         feed.folder = name; try save(); try reload()
     }
     public func renameFolder(from: String, to: String) throws {
         try reloadIfNeeded()
-        let source = from.trimmingCharacters(in: .whitespacesAndNewlines), target = to.trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = SingleLineText.name(from), target = SingleLineText.name(to)
         guard source != target else { return }
         for feed in feeds where feed.folder == source { feed.folder = target }
         try save(); try reload()

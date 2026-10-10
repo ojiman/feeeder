@@ -71,7 +71,7 @@ struct ThemeQuestionsPane: View {
                 .accessibilityLabel("問いを立てる")
         }
         .alert("自由に書いた問い", isPresented: $writingQuestion) {
-            TextField("問い", text: $customText)
+            TextField("問い", text: $customText.singleLine())
             Button("作成") { create(.custom, text: customText) }
             Button("キャンセル", role: .cancel) {}
         } message: { Text("このテーマで考えたい問いを、自分の言葉で書きます。") }

@@ -22,14 +22,14 @@ struct SubscriptionSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(feed == nil ? "購読を追加" : "購読を編集").font(.title2.bold())
             if let feed {
-                TextField("購読名", text: $title)
+                TextField("購読名", text: $title.singleLine())
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
                 Text("左カラム上部の更新ボタンで最新の記事を取得できます。")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 Text("RSS / AtomのURLを入力して、記事を取得します。")
                     .font(.callout).foregroundStyle(.secondary)
-                TextField("フィードURL（https://…）", text: $source).disabled(busy)
+                TextField("フィードURL（https://…）", text: $source.singleLine(address: true)).disabled(busy)
                 Toggle("XMLを直接入力（合成サンプル・トラブル確認用）", isOn: $manualXML).font(.caption).disabled(busy)
                 if manualXML {
                     TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
@@ -52,7 +52,7 @@ struct SubscriptionSheet: View {
                 }
             }
             HStack {
-                TextField("フォルダ名（空欄は未分類）", text: $folder)
+                TextField("フォルダ名（空欄は未分類）", text: $folder.singleLine())
                     .accessibilityLabel("フォルダ名")
                 Menu("既存から選ぶ") {
                     Button("未分類") { folder = "" }
