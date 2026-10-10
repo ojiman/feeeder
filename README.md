@@ -10,11 +10,14 @@ Skim hundreds of articles in a smooth three-column reader. Send an AI summary of
 
 ## Why
 
-Most readers stop at "read" and "starred". Stars pile up and are never looked at again. Feeeder keeps the reading fast and adds the step after it: turning what you starred into something you understand.
+Many more articles are written now than anyone can read. The hard part is finding the few that matter and turning them into something of your own. Most readers stop at "read" and "starred": stars pile up and are never looked at again. Switching to a notes app or an AI chat breaks the flow of reading.
 
-- **Read fast.** Three columns, Vim-style keys (`j` / `k`), and a UI built so that scrolling and typing do not wait on a reload, a network request, or AI.
-- **Dig deeper later.** Star an article, put it into one or more themes, and write what you want to learn (a goal) and keep one plain-text note per theme in your own words.
-- **Keep it yours.** No account, no backend, no sync. Your subscriptions, articles, themes, and notes live in a local database.
+Unagi Reader is built for engineers in 2026 who read a lot of feeds every day. Its value is one loop in one app, with no waiting: **read, take notes, ask AI, understand.**
+
+- **Read fast.** Three columns, Vim-style keys (`j` / `k`), and a UI built so that scrolling and typing do not wait on a reload, a network request, or AI. Comfort is part of the value.
+- **Note it while you read.** One button sends an article's summary (made on your Mac, or just the title, link and feed summary) to a note. The articles you sent sit beside the note, so you write in your own words while you see them.
+- **Ask AI when you choose.** Show the note's full text, then hand it to Claude for a review. Nothing leaves your Mac before you decide.
+- **Keep it yours.** No account, no backend, no sync. Your subscriptions, articles and notes live in a local database.
 
 ## What it does today
 
