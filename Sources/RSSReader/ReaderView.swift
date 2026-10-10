@@ -111,7 +111,8 @@ struct ReaderView: View {
         .onChange(of: columnVisibility) { _, visibility in
             // The window may change the columns by itself; keep the layout in step (only while the note is open).
             guard noteOpen else { return }
-            noteLayout.follow(visibility == .all ? .all : .doubleColumn)
+            // Only the two states the layout sets itself; `.automatic` and `.detailOnly` are left alone.
+            if visibility == .all { noteLayout.follow(.all) } else if visibility == .doubleColumn { noteLayout.follow(.doubleColumn) }
         }
         .onChange(of: scope) { old, new in
             if let old {
@@ -149,7 +150,7 @@ struct ReaderView: View {
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
                 let article = selectedArticle
-                Button { toggleNote() } label: { Image(systemName: noteOpen ? "note.text.badge.plus" : "note.text") }
+                Button { toggleNote() } label: { Image(systemName: "note.text") }
                     .keyboardShortcut("i", modifiers: [.option, .command])
                     .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
                     .disabled(themeScopeID == nil)
@@ -204,6 +205,8 @@ struct ReaderView: View {
             if let id = selection { await loading.load(articleID: id) }
             else { loading.clear() }
         }
+        .onKeyPress("j") { guard noteOpen, shortcutsEnabled else { return .ignored }; move(1); return .handled }   // from the reader or the panel; the list has its own
+        .onKeyPress("k") { guard noteOpen, shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .onKeyPress("m") {
             guard shortcutsEnabled, let article = selectedArticle else { return .ignored }
             perform { try store.setRead(article, !article.isRead) }; return .handled

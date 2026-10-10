@@ -27,6 +27,21 @@
 | the five N5 tests | unchanged apart from opening the note through the harness |
 | N3's `ReaderTopBar` and `ArticleSummaryCard` | removed with their views |
 
+## Independent review (opus, one pass, commit 7318a0a)
+
+It found no Critical issue. It traced the resets (summary, note actions, adopted summary) on selection, scope, note open or close, and AI off, and found no path where a summary or card for another article or theme can be shown or adopted; the inspector binding does nothing outside a theme; no references to the removed symbols remain.
+
+| Finding | Grade | Handling |
+|---|---|---|
+| Settings still said "the note face" | Important | Fixed |
+| The English guide still said "under the face switch" | Important | Fixed |
+| None of the new wiring is tested (opening and closing, the resets, the folding effect, the disabled button) because the toolbar button and the fold cannot be driven in a headless window; a suite run can stop silently | Important (kept) | Stated here and in the PR: only single-test runs show that the UI tests pass; the open or closed state itself is tested as a pure value |
+| `j` / `k` stopped working from the reader or the panel with the note open | Minor | The window-level handlers are back, active only while the note is open (the key path from a read-only text view is not verified, as in N3) |
+| Adopting a summary into a note that was never clicked now appends at the end instead of inserting at the text view's start (offset 0) | Minor | This is an N4 bug fix, made in N5 (spec: "if neither selection nor cursor, the end of the note"), covered by `aSummaryIsMadeOnRequestAndAdoptedIntoTheNoteAndUndoBringsItBack` |
+| `follow()` treated `.automatic` and `.detailOnly` as folded | Minor | Only `.all` and `.doubleColumn` are followed |
+| The toolbar icon looked like "add a note" when open | Minor | One icon for both states |
+| The wrong theme's panel may mount for an instant while the inspector closes after a theme change; a narrow window may make the system close the inspector | Minor (kept) | Unverified, listed below |
+
 ## Not verified
 
 - **The sidebar folding.** With the note open the harness sets the split view's visibility to the two-column state (confirmed by a trace), but the headless split view stayed expanded, and the sidebar button of the list column was not found in the headless tree either. It may be a limit of the headless host (the same mechanism was used by N3 and was never observed). The folding rule is tested as a pure value (`NoteLayoutTests`); its effect is not.
