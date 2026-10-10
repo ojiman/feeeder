@@ -25,16 +25,37 @@ expect_value "non-docs file named like md"  true  "$(classify $'Sources/notes.tx
 expect_value "empty list never skips"       true  "$(classify '')"
 expect_value "blank lines only never skip"  true  "$(classify $'\n\n')"
 
-expect_status "docs only, jobs skipped"      0 bash "$gate" verdict success false skipped
-expect_status "code, jobs passed"            0 bash "$gate" verdict success true success
-expect_status "code, jobs failed"            1 bash "$gate" verdict success true failure
-expect_status "code, jobs cancelled"         1 bash "$gate" verdict success true cancelled
-expect_status "code, jobs skipped"           1 bash "$gate" verdict success true skipped
-expect_status "docs only but jobs failed"    1 bash "$gate" verdict success false failure
-expect_status "changes job failed"           1 bash "$gate" verdict failure true skipped
-expect_status "changes job cancelled"        1 bash "$gate" verdict cancelled false skipped
-expect_status "missing arguments"            1 bash "$gate" verdict success
-expect_status "unknown command"              2 bash "$gate" nope
+packaging() { printf '%s' "$1" | bash "$gate" packaging; }
+expect_value "packaging: build script"       true  "$(packaging $'scripts/build-app.sh\n')"
+expect_value "packaging: package manifest"   true  "$(packaging $'Package.swift\nSources/a.swift\n')"
+expect_value "packaging: workflow"           true  "$(packaging $'.github/workflows/ci.yml\n')"
+expect_value "packaging: notices"            true  "$(packaging $'ThirdPartyNotices.md\n')"
+expect_value "packaging: plain source"       false "$(packaging $'Sources/RSSReader/ReaderView.swift\nTests/a.swift\n')"
+expect_value "packaging: empty list"         false "$(packaging '')"
+
+v() { bash "$gate" verdict "$@"; }
+# docs only: both macOS jobs skipped
+expect_status "docs only, jobs skipped"             0 v success false false pull_request skipped skipped
+expect_status "docs only but regression ran"        1 v success false false pull_request success skipped
+# a pull request that changes code but not packaging: regression only
+expect_status "PR code, regression passed"          0 v success true false pull_request success skipped
+expect_status "PR code, regression failed"          1 v success true false pull_request failure skipped
+expect_status "PR code, regression cancelled"       1 v success true false pull_request cancelled skipped
+expect_status "PR code, regression skipped"         1 v success true false pull_request skipped skipped
+expect_status "PR code, release ran unexpectedly"   1 v success true false pull_request success success
+# a pull request that changes packaging: both
+expect_status "PR packaging, both passed"           0 v success true true pull_request success success
+expect_status "PR packaging, release skipped"       1 v success true true pull_request success skipped
+expect_status "PR packaging, release failed"        1 v success true true pull_request success failure
+# push or manual run: release always
+expect_status "push, both passed"                   0 v success true false push success success
+expect_status "push, release skipped"               1 v success true false push success skipped
+expect_status "manual run, release failed"          1 v success true false workflow_dispatch success failure
+# the changes job itself
+expect_status "changes job failed"                  1 v failure true false pull_request skipped skipped
+expect_status "changes job cancelled"               1 v cancelled false false pull_request skipped skipped
+expect_status "missing arguments"                   1 v success true
+expect_status "unknown command"                     2 bash "$gate" nope
 
 if [ "$failures" -ne 0 ]; then echo "$failures test(s) failed"; exit 1; fi
 echo "all gate tests passed"
