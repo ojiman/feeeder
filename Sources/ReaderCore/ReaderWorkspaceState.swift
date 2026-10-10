@@ -7,13 +7,13 @@ public enum ReaderWorkspaceScope: Hashable, Sendable {
 public struct ReaderWorkspaceState {
     public var scope: ReaderWorkspaceScope = .all
     private var readers: [ReaderWorkspaceScope: ReaderSelectionState] = [:]
-    private var openNotes: Set<UUID> = []
+    private var closedNotes: Set<UUID> = []
     public init() {}
-    /// Whether a note's note is open beside the article. Remembered per note while the app runs; a note starts with it closed.
-    /// Opening or closing the note does not touch the note's reader (the selected article and the scroll memory).
-    public func isNoteOpen(of noteID: UUID) -> Bool { openNotes.contains(noteID) }
+    /// Whether a note's panel is open beside the article. A note starts with it open (decision 0019); one the person closed stays
+    /// closed while the app runs. Opening or closing the panel does not touch the note's reader (the selected article and the scroll memory).
+    public func isNoteOpen(of noteID: UUID) -> Bool { !closedNotes.contains(noteID) }
     public mutating func setNote(open: Bool, of noteID: UUID) {
-        if open { openNotes.insert(noteID) } else { openNotes.remove(noteID) }
+        if open { closedNotes.remove(noteID) } else { closedNotes.insert(noteID) }
     }
     public mutating func rememberReader(_ state: ReaderSelectionState, in scope: ReaderWorkspaceScope) {
         readers[scope] = state

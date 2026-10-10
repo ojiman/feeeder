@@ -35,14 +35,14 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false) {
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
         initialWorkspace.scope = initialScope
-        if case .note(let id) = initialScope, initialNoteOpen { initialWorkspace.setNote(open: true, of: id) }
+        if case .note(let id) = initialScope, !initialNoteOpen { initialWorkspace.setNote(open: false, of: id) }
         _workspace = State(initialValue: initialWorkspace)
     }
 
