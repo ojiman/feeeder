@@ -72,11 +72,11 @@ This is a beta under active development.
 
 ## Documentation
 
-The vision and the user guide are available in English and Japanese. The other documents are currently in Japanese only.
+The vision is in English only. The user guide is available in English and Japanese. The other documents are currently in Japanese only.
 
 | | |
 |---|---|
-| [Vision](docs/vision.md) ([Japanese](docs/vision.ja.md)) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
+| [Vision](docs/vision.md) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
 | [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |

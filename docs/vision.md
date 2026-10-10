@@ -1,6 +1,6 @@
 # Vision
 
-This page is the owner's statement of what Unagi Reader is for. Read it when you doubt a feature, a design or a priority. It is short on purpose. The details are in the [specification](specification.md); the reasons for each choice are in the [decision records](decisions/README.md). A Japanese copy is [vision.ja.md](vision.ja.md); keep the two in step.
+This page is the owner's statement of what Unagi Reader is for. Read it when you doubt a feature, a design or a priority. It is short on purpose. The details are in the [specification](specification.md); the reasons for each choice are in the [decision records](decisions/README.md).
 
 Unagi Reader is the product name. The repository, the code and the app bundle still use the name Feeeder until the rename (see the roadmap, stage D).
 

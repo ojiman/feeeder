@@ -6,7 +6,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 
 | Path | Role |
 |---|---|
-| docs/vision.md, docs/vision.ja.md | The owner's statement of the value, the user, the promises and the questions to ask when in doubt. Above the specification. |
+| docs/vision.md | The owner's statement of the value, the user, the promises and the questions to ask when in doubt. Above the specification. |
 | README.md | English public overview: concept, status, how to try it. Derived from the spec; it does not define product behavior. |
 | docs/user-guide.md, docs/user-guide.ja.md | Operations, data retention and backup, Claude hand-off, verification steps. English and Japanese; keep them in step. |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
