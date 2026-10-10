@@ -58,4 +58,16 @@ struct NoteInsertionTests {
         let index = note.index(note.startIndex, offsetBy: cursor)
         #expect(String(note[..<index]).hasSuffix("出典: T") && note[index...].hasPrefix("\n\n後半"))
     }
+
+    @Test func adoptingUsesTheEndOfTheSelectionAndTheEndOfTheNoteWithoutOne() {
+        let note = "前半後半"
+        let utf16Two = note.prefix(2).utf16.count
+        #expect(NoteInsertion.adopted(summary: "要約", title: "T", url: nil, into: note, selectionEndUTF16: utf16Two).note == "前半\n\n要約\n出典: T\n\n後半")
+        #expect(NoteInsertion.adopted(summary: "要約", title: "T", url: nil, into: note, selectionEndUTF16: nil).note == "前半後半\n\n要約\n出典: T\n")
+        #expect(NoteInsertion.adopted(summary: "要約", title: "T", url: nil, into: note, selectionEndUTF16: 999).note == "前半後半\n\n要約\n出典: T\n")
+        // An emoji is two UTF-16 units: an offset inside it is not a split point.
+        let emoji = "a😀b"
+        let inside = NoteInsertion.adopted(summary: "要約", title: "T", url: nil, into: emoji, selectionEndUTF16: 2)
+        #expect(inside.note.hasPrefix("a") && inside.note.contains("😀") && inside.note.hasSuffix("b"))
+    }
 }

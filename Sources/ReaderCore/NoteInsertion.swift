@@ -30,6 +30,19 @@ public enum NoteInsertion {
         return (head + trail + after, head.count)
     }
 
+    /// The whole adopt step as text: the block for this summary inserted after the end of the person's selection (or at the cursor;
+    /// at the end of the note when there is no selection). `selectionEndUTF16` is what the text system reports.
+    public static func adopted(summary: String, title: String, url: String?, into note: String, selectionEndUTF16: Int?) -> (note: String, cursorOffset: Int) {
+        let offset = selectionEndUTF16.map { characterOffset(forUTF16Offset: $0, in: note) } ?? note.count
+        return insert(summaryBlock(summary: summary, title: title, url: url), into: note, atCharacterOffset: offset)
+    }
+
+    /// A UTF-16 offset (what the text system reports) as a character offset, clamped to the note.
+    public static func characterOffset(forUTF16Offset offset: Int, in note: String) -> Int {
+        let clamped = min(max(0, offset), note.utf16.count)
+        return note.distance(from: note.startIndex, to: String.Index(utf16Offset: clamped, in: note))
+    }
+
     private static func trailingBreaks(_ text: String) -> Int { text.reversed().prefix { $0.isNewline }.count }
     private static func leadingBreaks(_ text: String) -> Int { text.prefix { $0.isNewline }.count }
 }
