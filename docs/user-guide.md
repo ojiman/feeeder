@@ -2,7 +2,7 @@
 
 This guide explains how to start Feeeder, how it handles your data, and how to use it. For a short overview, read the [README](../README.md) first.
 
-This is an English translation of the [Japanese user guide](user-guide.ja.md). The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "未整理のStar (Unsorted Stars)".
+This is an English translation of the [Japanese user guide](user-guide.ja.md). The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "新しいテーマ (New theme)".
 
 If the two guides differ, check the Japanese guide and the [specification](specification.md), then tell us.
 
@@ -64,8 +64,8 @@ The window has three columns. In Settings you can choose the appearance: follow 
 
 | Column | What it shows |
 |---|---|
-| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Themes (未整理のStar unsorted stars, and each theme), and Sources (folders and subscriptions). |
-| Middle | The list of articles. For a theme it is the theme's articles, with its goal on top. |
+| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Themes (each theme), and Sources (folders and subscriptions). |
+| Middle | The list of articles. For a theme it is the theme's articles. |
 | Right | The article. For a theme, the toolbar button (or `⌥⌘I`) opens the note beside it, as the standard inspector. |
 
 ### Subscriptions and folders
@@ -101,33 +101,24 @@ Focus the article list, then use these keys:
 
 - Press `s` (or use the button at the top right) to star an article. You can read starred articles again from the Star list.
 - Press `t` (or use the icon at the top right) to choose the themes for an article. Check existing themes to add the article or remove it. You can also create a new theme and add the article to it. An article can be in many themes.
-- A Star and a theme are separate. If you remove the Star, the article stays in its themes. A starred article that is in no theme appears under 「未整理のStar」 (Unsorted Stars) on the left.
+- A Star and a theme are separate. If you remove the Star, the article stays in its themes.
 - When you add an article to a theme, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
-- Create a theme with 「新しいテーマ」 (New theme) in the sidebar. The sheet asks for a name and, if you want, a learning goal (what you want to learn in this theme, up to 200 characters). The goal is shown above the article list and at the top of the note panel; click it, or right-click the theme and choose 「名前とゴールを編集…」 (Edit Name and Goal…), to change the name or the goal. Right-click a theme to edit or delete it. Deleting a theme does not delete its articles or Stars.
+- Create a theme with 「新しいテーマ」 (New theme) in the sidebar. The sheet asks for a name. Right-click a theme and choose 「名前を編集…」 (Edit Name…) to change the name, or delete it. Deleting a theme does not delete its articles or Stars.
 
 ### The note in a theme
 
 Select a theme. The middle column shows its articles and the right column shows the article you select. Press the note button in the toolbar, or `⌥⌘I`, to open the note beside the article (press it again to close it). The button is greyed out outside a theme.
 
-- The note is the one document of this theme. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. Opening the note folds the sidebar away to give room; the small button at the left of the goal, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. The app remembers for each theme whether its note is open while the app is running (a theme starts with its note closed). Your cursor in the note is kept when you close and reopen it (not after you quit the app).
-- The top of the note panel shows the theme's name and goal (click the goal to edit it) and two small arrows for the previous and next article.
+- The note is the one document of this theme. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. Opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. The app remembers for each theme whether its note is open while the app is running (a theme starts with its note closed). Your cursor in the note is kept when you close and reopen it (not after you quit the app).
+- The top of the note panel shows the theme's name and two small arrows for the previous and next article.
 - Keys: `j` and `k` move between articles in the list, and `s`, `t`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 - **The AI never writes into your note.**
 
-**Questions and answers from an older version.** Earlier versions had questions with lenses, answers, evidence articles, and 「いまの理解」 (Current understanding). The first time this version opens your library, the app moves them into the note of each theme: the old 「いまの理解」 text first, then for each question a heading line `# <question>`, your answer under it, and the line `根拠の記事:` (Evidence articles:) with a list of the article titles and links. The app checks that the note contains all of your old text. Then it saves the notes and removes the old records in one step. It tells you once with a message, 「ノートにまとめました」. The name of the lens, the "answered" mark, and the dates of questions are not kept. If something goes wrong, nothing is removed. The app says so and tries again at the next start; you can also choose 「再試行」 (Retry). **Before you start this version for the first time, copy the whole `Feeeder` folder** (see "Back up the library by hand" above), because this change cannot be undone.
-
 ## 4. On-device AI
 
-The AI features run on your Mac only. Nothing is sent out. They never write into your note, except a summary that you adopt yourself. You can turn them off in Settings under 「端末内AI」 (On-device AI). When they are off, the app does not call the model. You can also see their state there.
+The AI runs on your Mac only. Nothing is sent out. You can turn it off in Settings under 「端末内AI」 (On-device AI); when it is off, the app does not call the model. You can also see its state there. If the language assets are not on your Mac, the app does not download them.
 
-If the language assets are not on your Mac, the app does not download them. Suggestions just do not appear.
-
-- **Near themes.** When you press `t`, themes with content close to the article come first and have a 「近い」 (Near) mark. Once you start typing or pressing ↑↓, the order stops moving.
-- **Suggested groups.** Open 「未整理のStar」 (Unsorted Stars). A card 「まとまりの提案」 (Suggested groups) shows groups of articles with similar content. From a group you can give a name and create a theme.
-- **Article summary.** In the note panel, press 「記事から要約する」 (Summarize the article). The model writes a summary of the article that is open on the right, in at most three sentences. Nothing is made until you press the button, and moving to another article drops it. It reads the first 3,000 characters of the stored article (the card tells you when it cut), or the RSS summary the theme recorded if the text is gone; text that has expired is never used. The card is marked 「AIによる要約」 and warns that it can be wrong; it can contain small mistakes, so check the article. 「ノートに採用」 (Adopt into the note) puts the summary into your note as its own paragraph after your selection (or at your cursor, or at the end if you have not clicked in the note), with a line `出典: <title> <link>`. It never replaces your text, and nothing is saved unless you adopt. Press ⌘Z to take an adopt back. If on-device AI is off in Settings the button is not shown. If the model is not available the card says why; the app never downloads it.
-- **Note actions.** Below the note there are two buttons, 「わかりやすく」 (Make it clearer) and 「3行の要点」 (The essence in three lines). They work on the text you selected; if nothing is selected, on the section under your cursor (from the nearest line that starts with `#` down to the line before the next one; the heading itself is left alone). Nothing happens until you press a button. The card shows the AI's proposal, marked as AI, with 「採用」 (Adopt), 「別の案」 (Another take) and 「閉じる」 (Close). 「採用」 replaces the text with the rewrite, or adds three lines starting with 「・」 after the section; either is one step that ⌘Z takes back. The card disappears as soon as you type or move the cursor, so you can never adopt a proposal for text that has changed. A text longer than 1,300 characters is refused by 「わかりやすく」 (select less); 「3行の要点」 uses the first 1,300 characters and says so. Your learning goal is used only for the three-line essence. The bar is not shown when on-device AI is off in Settings. The model sometimes changes a word (for example from "thinking about" to "chose"), so read the proposal before you adopt it.
-- **Theme-name idea.** When you create a theme from a group, a line "案: … ［使う］" (Idea: … [Use]) appears under the name field. The field is not filled by itself.
-- Ideas are made by the on-device model and stop after 10 seconds. If the model is not available or fails, nothing appears.
+In this version the AI has no visible feature: the suggestions (near themes, suggested groups, theme-name ideas), the summary card in the note panel and the note actions (「わかりやすく」, 「3行の要点」) are gone (decision 0019). The summary returns in the next stage as 「ノートに要約を送る」 (Send a summary to a note); see the [roadmap](roadmap.md).
 
 ## 5. How long data is kept
 
@@ -147,11 +138,10 @@ There are two entry points: the toolbar button 「Claudeで開く…」 (Open in
 
 On the review screen you can also choose:
 
-- **ゴールを含める** (include my goal). On by default when the theme has a goal.
-- **ノートを含める** (include my note). **Off by default** when you open the screen from the toolbar. When you open it from 「Claudeでレビューを頼む」 in the note panel, the goal and the note are both on, because you asked for a review. A switch for something empty is off and cannot be turned on. Your goal and your note are your own writing: if you turn them on, exactly what the screen shows leaves your Mac (it goes to Claude). With the note on, the request becomes a review of your note against your goal: what it already achieves, what is still missing (only from what the note does not say), weak support and opposing views from the sources, and what to read or write next. Claude is told not to rewrite your note.
-- You can include the goal or the note without any article. With neither, at least one source is required.
+- **ノートを含める** (include my note). **Off by default** when you open the screen from the toolbar. When you open it from 「Claudeでレビューを頼む」 in the note panel, it is on, because you asked for a review. A switch for an empty note is off and cannot be turned on. Your note is your own writing: if you turn it on, exactly what the screen shows leaves your Mac (it goes to Claude). With the note on, the request becomes a review of the note itself: what is already done, what is missing (judged only from what the note does not say), weak support and opposing views in the sources, and what to read or write next. Claude is not asked to change your note.
+- You can include the note without any article. Without the note, at least one source is required.
 
-After you review, if the theme name, the included goal or note, or the title of an included source changes, the review becomes invalid and you must make it again.
+After you review, if the theme name, the included note, or the title of an included source changes, the review becomes invalid and you must make it again.
 
 Facts you should know:
 
