@@ -6,14 +6,17 @@ import AppKit
 /// that is not a field editor (the note editor is the only multi-line editor in the app), in the key window first.
 @MainActor final class NoteTextHandle {
     private var attached: NSTextView?
+    /// The note the editor should be showing. Used to pick the right text view when more than one window has an editor.
+    var expectedText: () -> String? = { nil }
     /// For tests that host a bare text view; the app never sets it.
     func attach(_ view: NSTextView?) { attached = view }
 
     var textView: NSTextView? {
         if let attached { return attached }
         let windows = [NSApp.keyWindow, NSApp.mainWindow].compactMap { $0 } + NSApp.windows
-        for window in windows { if let found = Self.find(in: window.contentView) { return found } }
-        return nil
+        let candidates = windows.flatMap { Self.all(in: $0.contentView) }
+        if let expected = expectedText(), let match = candidates.first(where: { String($0.string) == expected }) { return match }
+        return candidates.first
     }
     var isMounted: Bool { textView != nil }
     var selectedRange: NSRange? { textView?.selectedRange() }
@@ -42,9 +45,10 @@ import AppKit
         undo.setActionName(actionName)
     }
 
-    private static func find(in view: NSView?) -> NSTextView? {
-        guard let view else { return nil }
-        if let text = view as? NSTextView, text.isEditable, !text.isFieldEditor { return text }
-        return view.subviews.lazy.compactMap { find(in: $0) }.first
+    /// Every editable text view that is not a field editor, in the order of the view tree.
+    private static func all(in view: NSView?) -> [NSTextView] {
+        guard let view else { return [] }
+        let here: [NSTextView] = (view as? NSTextView).map { $0.isEditable && !$0.isFieldEditor ? [$0] : [] } ?? []
+        return here + view.subviews.flatMap { all(in: $0) }
     }
 }

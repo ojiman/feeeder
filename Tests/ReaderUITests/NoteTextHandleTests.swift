@@ -72,15 +72,16 @@ import Testing
         let theme = try store.createTheme(name: "T", at: .now)
         try store.saveNote(themeID: theme.id, text: "# 見出し\n元の文章です。", at: .now)
         let handle = NoteTextHandle()
+        handle.expectedText = { theme.note }                                             // other windows may also have a note editor
         let selection = SelectionBox()
         let host = NSHostingView(rootView: EditorHost(store: store, themeID: theme.id, handle: handle, box: selection))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host
         defer { window.close() }
-        for _ in 0..<100 { host.layoutSubtreeIfNeeded(); if handle.isMounted { break }; pump(0.02) }
+        window.makeKeyAndOrderFront(nil)                                                // the handle looks in the key window first
+        for _ in 0..<100 { host.layoutSubtreeIfNeeded(); if handle.string == "# 見出し\n元の文章です。" { break }; pump(0.02) }
         #expect(handle.isMounted && handle.string == "# 見出し\n元の文章です。")
         let range = ("# 見出し\n元の文章です。" as NSString).range(of: "元の文章です。")
-        window.makeKeyAndOrderFront(nil)
         let saver: (String) throws -> Void = { try store.saveNote(themeID: theme.id, text: $0, at: .now) }
         #expect(try handle.replace(range, with: "読みやすい文章です。", save: saver))
         for _ in 0..<100 { if theme.note == "# 見出し\n読みやすい文章です。" && handle.string == theme.note { break }; pump(0.02) }

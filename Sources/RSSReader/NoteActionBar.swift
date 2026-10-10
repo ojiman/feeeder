@@ -34,6 +34,7 @@ struct NoteActionPanel: View {
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.bar)
+        .onAppear { handle.expectedText = { [store, themeID] in store.theme(id: themeID)?.note } }
         // A card, or a request in flight, is dropped as soon as the note's text or the selection is no longer what it was made for.
         .onChange(of: note) { _, text in model.noteDidChange(note: text, selection: currentSelection(in: text)) }
         .onChange(of: selection) { _, _ in model.noteDidChange(note: note, selection: currentSelection(in: note)) }
