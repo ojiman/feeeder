@@ -304,6 +304,10 @@ import Testing
         try store.saveNote(themeID: theme.id, text: "再試行のノート", at: at)
         #expect(store.theme(id: theme.id)?.note == "再試行のノート")
         gate.failNext = true
+        let beforeMigration = store.themeQuestions.count
+        #expect(throws: (any Error).self) { try store.migrateLegacyThemeContent(at: at) }
+        #expect(store.themeQuestions.count == beforeMigration && store.theme(id: theme.id)?.note == "再試行のノート")
+        gate.failNext = true
         #expect(throws: (any Error).self) { try store.setEvidence(questionID: question.id, articleIDs: [ids[0]], at: at) }
         #expect(store.themeQuestions.first { $0.id == question.id }?.evidenceArticleIDs == [ids[0], ids[1]])
         gate.failNext = true
@@ -472,6 +476,10 @@ import Testing
         induceFailedRecovery()
         let withGoal = try store.createTheme(name: "ゴールつき", goal: "回復後のゴール", at: at)
         #expect(store.theme(id: withGoal.id)?.goal == "回復後のゴール")
+        try store.addQuestion(themeID: withGoal.id, lens: .custom, text: "移行する問い", at: at)
+        induceFailedRecovery()
+        #expect(try store.migrateLegacyThemeContent(at: at).themes == 1)
+        #expect(store.theme(id: withGoal.id)?.note == "# 移行する問い\n")
     }
 
     @Test func recordKeepsTheTitleAndURLFromTheTimeOfAdding() throws {
