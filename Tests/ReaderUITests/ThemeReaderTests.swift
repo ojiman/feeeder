@@ -16,7 +16,7 @@ import Testing
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
             if ready() { return }
-            try await Task.sleep(for: .milliseconds(20))
+            pumpRunLoop(0.02)                                              // pump the run loop here instead of suspending
         }
         #expect(ready(), "Synthetic reader did not reach the expected state")
     }
@@ -31,9 +31,8 @@ import Testing
     /// button is earlier, in the middle column). SwiftUI gives these buttons no label or tool tip that AppKit can read.
     fileprivate func topBar(in view: NSView) -> (previous: NSButton, next: NSButton, menu: NSPopUpButton)? {
         let all = buttons(in: view)
-        let plain = all.filter { !($0 is NSPopUpButton) }
-        guard plain.count >= 2, let menu = all.compactMap({ $0 as? NSPopUpButton }).first else { return nil }
-        return (plain[plain.count - 2], plain[plain.count - 1], menu)
+        guard let index = all.firstIndex(where: { $0 is NSPopUpButton }), index >= 2, let menu = all[index] as? NSPopUpButton else { return nil }
+        return (all[index - 2], all[index - 1], menu)         // previous and next come right before the menu in the tree
     }
     fileprivate struct Harness {
         let store: ReaderStore
@@ -42,6 +41,7 @@ import Testing
         let directory: URL
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
+                         summaries: ((ReaderStore) -> ArticleSummaryModel)? = nil,
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -55,7 +55,7 @@ import Testing
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
             handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialThemeFace: face)
+            initialScope: try scope(store), initialThemeFace: face, summaries: summaries?(store))
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-theme-reader")
@@ -133,7 +133,7 @@ import Testing
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
         // The theme's own reader (selection) comes back, not another scope's. Wait past the first remount
         // so a transient state cannot satisfy the check.
-        try await Task.sleep(for: .milliseconds(300))
+        pumpRunLoop(0.3)
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 0 }
         try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
     }
@@ -143,7 +143,7 @@ import Testing
 @Suite(.serialized) @MainActor struct NoteFaceTests {
     private let t = ThemeReaderTests()
 
-    private func noteFaceHarness() throws -> ThemeReaderTests.Harness {
+    fileprivate func noteFaceHarness() throws -> ThemeReaderTests.Harness {
         try t.harness(scope: { store in .theme(store.themes[0].id) }, face: .note) { store in
             let theme = try store.createTheme(name: "A", at: .now)
             for index in 0..<3 { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
@@ -192,7 +192,7 @@ import Testing
         try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
         let themeID = h.store.themes[0].id
         try h.store.removeArticle(h.store.articles[0].id, fromTheme: themeID, at: .now)
-        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }   // let the update land
+        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); pumpRunLoop(0.02) }   // let the update land
         #expect(t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true)   // still shown
         #expect(t.topBar(in: h.host) != nil)
         next.performClick(nil)
@@ -212,7 +212,7 @@ import Testing
         let text = try #require(noteTextView(in: h.host))
         h.window.makeFirstResponder(text)
         text.setSelectedRange(NSRange(location: 2, length: 3))
-        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }
+        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); pumpRunLoop(0.02) }
         let control = try #require(t.find(NSSegmentedControl.self, in: h.host))
         control.selectedSegment = 0; control.performClick(nil)
         try await t.settle(h.host) { noteTextView(in: h.host) == nil && t.find(NativeArticleList.Table.self, in: h.host) != nil }
@@ -222,5 +222,110 @@ import Testing
         let restored = try #require(noteTextView(in: h.host))
         h.window.makeFirstResponder(restored)
         try await t.settle(h.host) { restored.selectedRange() == NSRange(location: 2, length: 3) }
+    }
+}
+
+@MainActor func pumpRunLoop(_ seconds: Double) { RunLoop.main.run(until: Date().addingTimeInterval(seconds)) }
+
+@MainActor private final class EnabledSwitch { var on = true }
+
+/// A stand-in for the on-device model: answers with a fixed text, or fails.
+private struct StubAssistant: ThemeAssistant {
+    var answer: String? = "これは要約です。"
+    func availability() async -> AssistantAvailability { .available }
+    func nearestThemes(for item: SuggestionItem, candidates: [ThemeCandidateInput], background: [SuggestionItem]) async throws -> [ThemeMatch] { [] }
+    func clusters(of items: [SuggestionItem], background: [SuggestionItem]) async throws -> [[UUID]] { [] }
+    func generationAvailability() async -> AssistantAvailability { .available }
+    func generate(_ request: SuggestionPrompts.Request) async throws -> String {
+        guard let answer else { throw CocoaError(.fileReadUnknown) }
+        return answer
+    }
+}
+
+/// The AI summary next to the note (N4). A suite of its own; run each test alone (see the N3 verification record).
+@Suite(.serialized) @MainActor struct AISummaryTests {
+    private let t = ThemeReaderTests()
+
+    private func make(answer: String? = "これは要約です。", enabled: EnabledSwitch = EnabledSwitch()) throws -> (ThemeReaderTests.Harness, ArticleSummaryModel) {
+        var model: ArticleSummaryModel?
+        let h = try t.harness(scope: { store in .theme(store.themes[0].id) }, face: .note, summaries: { store in
+            let made = ArticleSummaryModel(store: store, assistant: StubAssistant(answer: answer), isEnabled: { enabled.on })
+            model = made; return made
+        }) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            for index in 0..<3 { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
+            try store.saveNote(themeID: theme.id, text: "前の文章", at: .now)
+        }
+        return (h, try #require(model))
+    }
+    private func segmented(labelled first: String, in view: NSView) -> NSSegmentedControl? {
+        if let control = view as? NSSegmentedControl, control.segmentCount == 2, control.label(forSegment: 0) == first { return control }
+        return view.subviews.lazy.compactMap { segmented(labelled: first, in: $0) }.first
+    }
+    /// The 「原文を見る」 link is the only AppKit button in the card. The card's other buttons are drawn by SwiftUI itself and
+    /// cannot be pressed from a test, so asking for a summary and adopting it are tested below this level (model, insertion).
+    private func showOriginalLink(in view: NSView) -> NSButton? {
+        let all = t.buttons(in: view)
+        guard let menu = all.firstIndex(where: { $0 is NSPopUpButton }) else { return nil }
+        return all[(menu + 1)...].first
+    }
+    private func openFirstArticleAndSummary(_ h: ThemeReaderTests.Harness) async throws {
+        try await t.settle(h.host) { t.topBar(in: h.host) != nil && segmented(labelled: "原文", in: h.host) != nil }
+        t.topBar(in: h.host)?.next.performClick(nil)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        let switcher = try #require(segmented(labelled: "原文", in: h.host))
+        switcher.selectedSegment = 1; switcher.performClick(nil)
+    }
+
+    @Test func theSwitchIsHiddenWhenOnDeviceAIIsOff() async throws {
+        let defaults = UserDefaults.standard
+        let before = defaults.object(forKey: OnDeviceAISetting.key)
+        defaults.set(false, forKey: OnDeviceAISetting.key)
+        defer { if let before { defaults.set(before, forKey: OnDeviceAISetting.key) } else { defaults.removeObject(forKey: OnDeviceAISetting.key) } }
+        let (h, _) = try make()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.topBar(in: h.host) != nil }
+        #expect(segmented(labelled: "原文", in: h.host) == nil)
+    }
+
+    @Test func openingTheSummaryAsksForNothingAndTheLinkGoesBackToTheArticle() async throws {
+        let enabled = EnabledSwitch()
+        let (h, model) = try make(enabled: enabled)
+        defer { t.finish(h) }
+        try await openFirstArticleAndSummary(h)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host) == nil && showOriginalLink(in: h.host) != nil }   // the card replaced the article
+        #expect(model.state == .idle)                                                  // opening the summary asks for nothing
+        let theme = h.store.themes[0]
+        #expect(theme.note == "前の文章")                                               // and writes nothing
+        // Leave the model in a state that is not `.idle` (the setting is off, so it answers at once without a call).
+        enabled.on = false
+        model.request(articleID: h.store.articles[0].id, themeID: theme.id)
+        #expect(model.state == .unavailable(.disabled))
+        try #require(showOriginalLink(in: h.host)).performClick(nil)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        #expect(segmented(labelled: "原文", in: h.host)?.selectedSegment == 0)
+        #expect(model.state == .idle)                                                  // going back to the article cleared it
+    }
+
+    @Test func movingToAnotherArticleKeepsTheSwitchAndClearsTheModel() async throws {
+        let enabled = EnabledSwitch()
+        let (h, model) = try make(enabled: enabled)
+        defer { t.finish(h) }
+        try await openFirstArticleAndSummary(h)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host) == nil }
+        enabled.on = false
+        model.request(articleID: h.store.articles[0].id, themeID: h.store.themes[0].id)
+        #expect(model.state == .unavailable(.disabled))                                // not idle before the move
+        t.topBar(in: h.host)?.next.performClick(nil)                                    // another article
+        try await t.settle(h.host) { t.topBar(in: h.host)?.menu.title == "合成記事 1" }
+        #expect(segmented(labelled: "原文", in: h.host)?.selectedSegment == 1)         // the switch stays on 「AI要約」
+        #expect(t.find(ArticleTextView.self, in: h.host) == nil && model.state == .idle)
+    }
+
+    @Test func theSwitchIsShownWhenOnDeviceAIIsOn() async throws {
+        let (h, _) = try make()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.topBar(in: h.host) != nil }
+        #expect(segmented(labelled: "原文", in: h.host) != nil)
     }
 }

@@ -10,6 +10,7 @@ struct ReaderView: View {
     @Bindable var handoff: ClaudeHandoffController
     let imageLoader: ReaderImageLoader
     let suggestions: ThemeSuggestionModel?
+    let summaries: ArticleSummaryModel?
     @AppStorage(OnDeviceAISetting.key) private var aiEnabled = true
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
@@ -18,6 +19,9 @@ struct ReaderView: View {
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var noteLayout = NoteLayout()
+    @State private var paneMode = ReaderPaneMode.original
+    /// The summary that was adopted into the note, so its button reads 「採用しました」 until a new summary is made.
+    @State private var adoptedSummary: ArticleSummaryModel.Summary?
     /// Where the cursor was in each theme's note. In memory only: it is restored after a face round trip, not after a restart.
     @State private var noteSelections: [UUID: TextSelection] = [:]
     @State private var saveError: String?
@@ -41,7 +45,8 @@ struct ReaderView: View {
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles,
-         suggestions: ThemeSuggestionModel? = nil) {
+         suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil) {
+        self.summaries = summaries
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader; self.suggestions = suggestions
         _loading = State(initialValue: ArticleLoadingController(store: store))
@@ -95,6 +100,10 @@ struct ReaderView: View {
     var body: some View {
         reader
         .onAppear { if onNoteFace { noteLayout.enterNoteFace(); applyColumns() } }
+        .onChange(of: selection) { _, _ in summaries?.reset(); adoptedSummary = nil }
+        .onChange(of: showsSummary) { _, shown in
+            if shown { if originalPage.url != nil { closeOriginal() } } else { summaries?.reset(); adoptedSummary = nil }
+        }
         .onChange(of: onNoteFace) { _, on in
             if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
             applyColumns()
@@ -109,6 +118,7 @@ struct ReaderView: View {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
+            summaries?.reset(); adoptedSummary = nil          // a summary belongs to the theme it was made in
             workspace.scope = new ?? .all
             enterScope()
         }
@@ -405,7 +415,64 @@ struct ReaderView: View {
     }
 
     /// The reader, with the original page sliding over it.
-    private var readerColumn: some View {
+    @ViewBuilder private var readerColumn: some View {
+        if showsSummary, let summaries, case .theme(let themeID) = scope {
+            summaryPane(summaries, themeID: themeID)
+        } else { originalColumn }
+    }
+
+    /// The summary card replaces the article only on the note face, with AI on, when the person chose 「AI要約」.
+    private var showsSummary: Bool { onNoteFace && aiEnabled && paneMode == .summary }
+
+    @ViewBuilder private func summaryPane(_ summaries: ArticleSummaryModel, themeID: UUID) -> some View {
+        if let article = selectedArticle {
+            // A summary made for another article is never shown or adopted here, whatever the model still holds.
+            let shown: ArticleSummaryModel.State = { if case .ready(let value) = summaries.state, value.articleID != article.id { return .idle }; return summaries.state }()
+            let ready: ArticleSummaryModel.Summary? = { if case .ready(let value) = shown { return value }; return nil }()
+            ArticleSummaryCard(state: shown, articleTitle: article.title, adopted: ready != nil && ready == adoptedSummary,
+                               onRequest: { adoptedSummary = nil; summaries.request(articleID: article.id, themeID: themeID) },
+                               onCancel: { summaries.cancel() },
+                               onAdopt: { adopt($0, article: article, themeID: themeID) },
+                               onShowOriginal: { paneMode = .original })
+        } else {
+            VStack(spacing: 10) {
+                Label("AIによる要約", systemImage: "sparkles").font(.headline)
+                Text("上のバーで記事を選ぶと、ここで要約を頼めます。").font(.callout).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(nsColor: .textBackgroundColor))
+        }
+    }
+
+    private func adopt(_ summary: ArticleSummaryModel.Summary, article: Article, themeID: UUID) {
+        guard summary.articleID == article.id else { return }
+        guard let theme = store.theme(id: themeID) else { saveError = "テーマが見つかりません。"; return }
+        let note = theme.note
+        let result = NoteInsertion.adopted(summary: summary.text, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0)?.absoluteString },
+                                           into: note, selectionEndUTF16: noteSelectionEnd(themeID, in: note))
+        do {
+            try store.saveNote(themeID: themeID, text: result.note, at: .now)
+            adoptedSummary = summary
+            let index = result.note.index(result.note.startIndex, offsetBy: min(result.cursorOffset, result.note.count))
+            noteSelections[themeID] = TextSelection(insertionPoint: index)
+        } catch { saveError = error.localizedDescription }
+    }
+
+    /// An index from an older copy of the note can lie past its end; `utf16Offset(in:)` traps on that, so it is checked first.
+    private func safeUTF16Offset(_ index: String.Index, in note: String) -> Int? {
+        index <= note.endIndex ? index.utf16Offset(in: note) : nil
+    }
+
+    /// The end of the person's selection in the note (or the cursor), as a UTF-16 offset; the end of the note when there is none.
+    private func noteSelectionEnd(_ themeID: UUID, in note: String) -> Int? {
+        guard let selection = noteSelections[themeID] else { return nil }
+        switch selection.indices {
+        case .selection(let range): return safeUTF16Offset(range.upperBound, in: note)
+        case .multiSelection(let set): return set.ranges.last.flatMap { safeUTF16Offset($0.upperBound, in: note) }
+        @unknown default: return nil
+        }
+    }
+
+    private var originalColumn: some View {
         ZStack(alignment: .trailing) {
             detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
             if let url = originalPage.url, let expectedID = originalPage.articleID {
@@ -429,7 +496,8 @@ struct ReaderView: View {
                      canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
                      onPrevious: { guard topBarMayMove else { return }; perform(.previous) },
                      onNext: { guard topBarMayMove else { return }; perform(.next) },
-                     onChoose: { id in if id != selection { ReaderPerformance.selectionStarted(id) }; selectArticle(id) })
+                     onChoose: { id in if id != selection { ReaderPerformance.selectionStarted(id) }; selectArticle(id) },
+                     showsSummarySwitch: aiEnabled && summaries != nil, mode: $paneMode)
     }
 
     @ViewBuilder private var detail: some View {
@@ -460,7 +528,7 @@ struct ReaderView: View {
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
     }
     private func openOriginal() {
-        guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
+        guard originalPage.url == nil, !showsSummary, let article = selectedArticle, let url = article.originalURL else { return }   // not behind the summary card
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
     }

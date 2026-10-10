@@ -10,6 +10,9 @@ struct ReaderTopBar: View {
     let onPrevious: () -> Void
     let onNext: () -> Void
     let onChoose: (UUID) -> Void
+    /// The 「原文｜AI要約」 switch. Not shown when on-device AI is off.
+    var showsSummarySwitch = false
+    @Binding var mode: ReaderPaneMode
 
     var body: some View {
         HStack(spacing: 8) {
@@ -32,6 +35,13 @@ struct ReaderTopBar: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .menuStyle(.borderlessButton).accessibilityLabel("このテーマの記事")
+            if showsSummarySwitch {
+                Picker("表示", selection: $mode) {
+                    Text("原文").tag(ReaderPaneMode.original)
+                    Text("AI要約").tag(ReaderPaneMode.summary)
+                }
+                .pickerStyle(.segmented).labelsHidden().fixedSize().accessibilityLabel("原文とAI要約")
+            }
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 12).padding(.vertical, 8)
