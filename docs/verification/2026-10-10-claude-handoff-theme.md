@@ -26,9 +26,16 @@ I did **not** press 「Claudeで開く」 (Open in Claude) on the review screen,
 
 - Claude Desktop versions, plans, and routes other than the one that was checked earlier (2.19675.0 / Pro / Cowork). A real launch from this screen was not tried in this PR. Whether the Cowork route reads the theme section as intended, and how useful Claude's review is.
 - "全文をコピー" (copy all), the TXT export, and the split export were not run in the live check (tests cover the text and the split; the screen buttons were not pressed).
-- With the questions switch off, the answers switch is greyed out but still shows its checked state. The request ignores it, so nothing is sent. The display could be clearer.
 - IME and VoiceOver on the review screen; the review screen with a very large theme (many articles); macOS 26 CI (checked on this PR's CI).
 
-## Independent review
+## Independent review (opus, fixed commit `547b742`) and what was done
 
-(To be added after the review of a fixed commit.)
+No Critical findings. One Important finding, fixed test-first.
+
+| Finding | What was done |
+|---|---|
+| A managed copy was tied to its theme only when questions were on, and the source rule did not cover a retained article that leaves the theme. So a copy with a full article text survived `removeArticle`, and a copy without questions survived `deleteTheme`, against what decision 0012 and the guides said | Every package made from a theme records its `themeID` (`AIPackage.themeID`), and the copy is deleted when the theme is gone or a source article is no longer in it. Tests written first and seen failing: `aCopyOfARetainedArticleIsRemovedWhenThatArticleLeavesTheTheme` (with and without questions) and `aCopyWithoutQuestionsIsRemovedWhenItsThemeIsDeleted`. Mutation check: removing the membership rule makes the first fail. This also closes the review's note that the earlier deletion tests passed only through the source rule |
+
+Also fixed (smaller findings): the hook runs even if the reload after a deletion fails (`theCleanUpRunsEvenWhenTheReloadAfterADeletionFails`); feed text in single-line fields (theme name, evidence title) is folded to one line and evidence URLs are validated, so a title cannot forge a line that looks like the person's own words (`feedTextCannotForgeTheLinesThatMarkTheUsersOwnWords`, mutation-checked); the review sheet is bound to the theme it was opened for (`.sheet(item:)`) instead of the live selection; turning the questions off also turns the answers off. The architecture paragraph was rewritten in English, the spec banner no longer says acceptance is complete, and the guides now say that renaming keeps a copy and removing an article deletes it.
+
+Deferred: the toolbar button is enabled whenever the theme has articles, even if none can be a source (the sheet then says so); a malformed `themeID` in a copy's metadata makes that folder unreadable (the existing error alert repeats); source titles from feeds are not folded to one line (this predates the PR); the first cold test run of the reviewer exited with 1 after 124 passing tests and was not reproduced in two reruns (cause unknown).
