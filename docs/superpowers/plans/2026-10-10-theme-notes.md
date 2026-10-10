@@ -77,7 +77,7 @@ The PdM's real-device check is the most important next step, so it runs first an
 |---|---|---|---|
 | A. Real-device check and fixes | PdM tests; agent fixes | See the checklist below. Bugs reported here are fixed before any polish (AGENTS.md, Definition of done 1). | The PdM closes the first round and decides D2 and D3. |
 | B. PR 9: article reading size | Agent | Runs beside A. A bug fix from A takes priority over PR 9. See the PR table. | PR 9 merged. D1 approved before its performance result is accepted. |
-| C. Verification sweep | PdM hands needed | Items that automation could not check: real Japanese IME, VoiceOver, the macOS 26 CI result for the merged code, the new Settings display, and the behavior of the AI suggestion card. | Records in `docs/verification/` updated. Open an "Unverified check" issue only for items that need tracking, within what the PdM allows (AGENTS.md, Definition of done 5). |
+| C. Verification sweep | PdM hands needed | Items that automation could not check: real Japanese IME, VoiceOver, the macOS 26 CI result for the merged code, the new Settings display, and the behavior of the AI suggestion card. Also watch for one unexplained result: the first cold (no build cache) test run of an independent reviewer ended with exit code 1 after 124 passing tests, and two later runs did not repeat it (see `docs/verification/2026-10-10-claude-handoff-theme.md`). If it appears again, on CI or locally, investigate it then. | Records in `docs/verification/` updated. Open an "Unverified check" issue only for items that need tracking, within what the PdM allows (AGENTS.md, Definition of done 5). |
 | D. Rename to Unagi Reader | Agent, after D4 | One theme in one PR, started when no other PR is in flight. See "The rename PR". | Rename PR merged, before beta distribution. |
 | E. PR 10 and PR 11 | Agent | After A closes. PR 10 also needs the real-IME result from C. See the PR table. | PRs merged. They do not block the beta. |
 | F. Beta preparation | PdM decides; agent prepares | PdM approval of `docs/specification.md` (its header says it is still required). A check that the user guides match the app. Signing and distribution only on the PdM's instruction (AGENTS.md, Boundaries). | A, D and the spec approval are done. Unverified items may remain if they are listed in the release notes; the PdM decides. |
@@ -87,6 +87,7 @@ Checklist for stage A:
 - 「Claudeで開く…」 (Open in Claude…) on the theme screen opens Claude Desktop. This is the PRD-05 acceptance and it is still unverified.
 - In the question face, the 「AIの案」 (AI suggestion) card appears and can be adopted.
 - On real Stars, the quality of the suggested groupings and of the nearby themes.
+- On the review screen of 「Claudeで開く…」, turn the switch 「自分の答えと根拠の記事を含める」 (include my answers and evidence articles) on and off. The package text, its size, and its SHA-256 must change at once, and your answers must appear only when the switch is on. Do not press the launch button unless you want to open Claude Desktop with this content. (The agent checked this on synthetic data only; see `docs/verification/2026-10-10-claude-handoff-theme.md`.)
 
 ## Roadmap for PR 9 onward
 
