@@ -5,28 +5,15 @@ public enum ReaderWorkspaceScope: Hashable, Sendable {
 }
 
 /// Which face of a theme is showing in the center and right columns.
-public enum ThemeFace: String, Sendable { case articles, questions }
-
-/// What the questions face has selected: the theme's "いまの理解" or one question.
-public enum ThemeQuestionSelection: Hashable, Sendable {
-    case understanding, question(UUID)
-    /// A question that no longer exists (deleted, or from another theme) falls back to the theme's "いまの理解".
-    public func resolved(existing: Set<UUID>) -> ThemeQuestionSelection {
-        if case .question(let id) = self, existing.contains(id) { return self }
-        return .understanding
-    }
-}
+public enum ThemeFace: String, Sendable { case articles, note }
 
 public struct ReaderWorkspaceState {
     public var scope: ReaderWorkspaceScope = .all
     private var readers: [ReaderWorkspaceScope: ReaderSelectionState] = [:]
     private var themeFaces: [UUID: ThemeFace] = [:]
-    private var questionSelections: [UUID: ThemeQuestionSelection] = [:]
     public init() {}
     public func face(of themeID: UUID) -> ThemeFace { themeFaces[themeID] ?? .articles }
-    public func questionSelection(of themeID: UUID) -> ThemeQuestionSelection { questionSelections[themeID] ?? .understanding }
-    public mutating func selectQuestion(_ selection: ThemeQuestionSelection, in themeID: UUID) { questionSelections[themeID] = selection }
-    /// A theme's questions face is not a reading surface: j/k, the article list and scroll memory do not apply.
+    /// A theme's note face is not a reading surface: j/k, the article list and scroll memory do not apply.
     public func isReading(_ scope: ReaderWorkspaceScope) -> Bool {
         if case .theme(let id) = scope { return face(of: id) == .articles }
         return true
@@ -35,7 +22,7 @@ public struct ReaderWorkspaceState {
         guard isReading(scope) else { return }
         readers[scope] = state
     }
-    /// Leaving the articles face saves the reader first; leaving the questions face never overwrites it.
+    /// Leaving the articles face saves the reader first; leaving the note face never overwrites it.
     public mutating func switchFace(of themeID: UUID, to face: ThemeFace, rememberingReader state: ReaderSelectionState) {
         if self.face(of: themeID) == .articles { readers[.theme(themeID)] = state }
         themeFaces[themeID] = face

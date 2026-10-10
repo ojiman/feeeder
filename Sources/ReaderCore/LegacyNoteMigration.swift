@@ -3,6 +3,14 @@ import Foundation
 public struct LegacyNoteMigrationResult: Equatable, Sendable {
     public let themes: Int
     public let questions: Int
+    /// What the person is told once after a migration that changed something; nil when there was nothing to move.
+    public var notice: String? {
+        themes > 0 ? "問いと答えをノートにまとめました（\(themes)件のテーマ）。元の文章は、各テーマの［ノート］にあります。" : nil
+    }
+    /// What the person is told when the migration failed. The old content is untouched, and the next launch tries again.
+    public static func failureMessage(_ error: Error) -> String {
+        "元の問い・答え・いまの理解は消していません。次に起動したとき、もう一度試します。\n\n" + error.localizedDescription
+    }
 }
 
 public enum LegacyNoteMigrationError: LocalizedError {

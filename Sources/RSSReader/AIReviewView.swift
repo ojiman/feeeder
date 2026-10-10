@@ -14,8 +14,6 @@ struct AIReviewView: View {
     @State private var language = "日本語"
     @State private var error: String?
     @State private var copied = false
-    @State private var includeQuestions = true
-    @State private var includeAnswers = false
     private struct Option: Identifiable {
         let id: AIInputSelection
         let articleID: UUID
@@ -40,14 +38,9 @@ struct AIReviewView: View {
                 Picker("出力言語", selection: $language) { Text("日本語").tag("日本語"); Text("English").tag("English") }.frame(width: 250)
                 Text("本文を省略せず、選択した出典と一緒に渡します。").font(.caption).foregroundStyle(.secondary)
             }
-            if let themeID {
-                let hasQuestions = !store.questions(themeID: themeID).isEmpty
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("問いを含める", isOn: $includeQuestions).disabled(!hasQuestions)
-                    Toggle("自分の答えと根拠の記事を含める", isOn: $includeAnswers).disabled(!hasQuestions || !includeQuestions)
-                    Text(hasQuestions ? "答えは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。" : "このテーマには問いがありません。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+            if themeID != nil {
+                // Questions and answers moved into the note (decision 0013). The note joins the package in N6.
+                Text("テーマのノートはまだ Claude へ渡せません。").font(.caption).foregroundStyle(.secondary)
             }
             HSplitView {
                 List(options) { option in
@@ -109,8 +102,6 @@ struct AIReviewView: View {
             generate()
         }
         .onChange(of: language) { _, _ in generate() }
-        .onChange(of: includeQuestions) { _, on in if !on { includeAnswers = false }; generate() }
-        .onChange(of: includeAnswers) { _, _ in generate() }
         .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
         .task(id: review.package?.expiresAt) {
             guard let expiry = review.package?.expiresAt else { return }
@@ -142,7 +133,7 @@ struct AIReviewView: View {
         perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, theme: themeRequest, language: language, at: .now) }
     }
     private var themeRequest: AIThemeRequest? {
-        themeID.map { AIThemeRequest(themeID: $0, includeQuestions: includeQuestions && !store.questions(themeID: $0).isEmpty, includeAnswers: includeAnswers && includeQuestions) }
+        themeID.map { AIThemeRequest(themeID: $0, includeQuestions: false, includeAnswers: false) }
     }
     private func export() {
         perform {

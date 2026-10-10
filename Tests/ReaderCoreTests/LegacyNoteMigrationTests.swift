@@ -136,4 +136,11 @@ import Testing
         let reopened = try ReaderStore(url: library.url, now: at)
         #expect(reopened.themeQuestions.count == 3 && reopened.themes.allSatisfy { $0.note.isEmpty })
     }
+
+    @Test func theNoticeNamesTheNumberOfThemesAndIsAbsentWhenNothingMoved() {
+        #expect(LegacyNoteMigrationResult(themes: 0, questions: 0).notice == nil)
+        #expect(LegacyNoteMigrationResult(themes: 2, questions: 5).notice?.contains("2件") == true)
+        let message = LegacyNoteMigrationResult.failureMessage(LegacyNoteMigrationError.verificationFailed(themeName: "T"))
+        #expect(message.contains("消していません") && message.contains("「T」"))
+    }
 }

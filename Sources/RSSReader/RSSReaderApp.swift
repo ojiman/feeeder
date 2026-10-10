@@ -11,6 +11,8 @@ struct RSSReaderApp: App {
     @State private var suggestions: ThemeSuggestionModel?
     @State private var startupError: String?
     @State private var lifecycleError: String?
+    @State private var migrationError: String?
+    @State private var migrationNotice: String?
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearance = "system"
 
@@ -32,6 +34,9 @@ struct RSSReaderApp: App {
             store.onContentPolicyChanged = { [weak store, weak handoff] in
                 if let store { handoff?.reconcile(with: store, at: .now) }
             }
+            // Questions and answers move into the notes (decision 0013). A failure does not stop the app: nothing was removed.
+            do { _migrationNotice = State(initialValue: try store.migrateLegacyThemeContent(at: .now).notice) }
+            catch { _migrationError = State(initialValue: LegacyNoteMigrationResult.failureMessage(error)) }
             handoff.reconcile(with: store, at: .now)
             _aiReview = State(initialValue: review)
             _handoff = State(initialValue: handoff)
@@ -88,12 +93,27 @@ struct RSSReaderApp: App {
                 Button("再試行") { lifecycleError = nil; purgeContent() }
                 Button("閉じる") { lifecycleError = nil }
             } message: { Text(lifecycleError ?? "") }
+            .alert("ノートへ移せませんでした", isPresented: Binding(get: { migrationError != nil }, set: { if !$0 { migrationError = nil } })) {
+                Button("再試行") { retryMigration() }
+                Button("閉じる") { migrationError = nil }
+            } message: { Text(migrationError ?? "") }
+            .alert("ノートにまとめました", isPresented: Binding(get: { migrationNotice != nil }, set: { if !$0 { migrationNotice = nil } })) {
+                Button("閉じる") { migrationNotice = nil }
+            } message: { Text(migrationNotice ?? "") }
 
         }
         .defaultSize(width: 1240, height: 810)
         .commands { CommandGroup(replacing: .newItem) {} }
         Settings {
             if let store { ReaderSettingsView(store: store, appearance: $appearance, suggestions: suggestions) }
+        }
+    }
+    private func retryMigration() {
+        migrationError = nil
+        // The alert clears its flag after its button runs, so a new message is set on the next turn of the main loop.
+        Task { @MainActor in
+            do { migrationNotice = try store?.migrateLegacyThemeContent(at: .now).notice }
+            catch { migrationError = LegacyNoteMigrationResult.failureMessage(error) }
         }
     }
     private func purgeContent() {

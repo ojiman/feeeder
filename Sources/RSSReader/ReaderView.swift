@@ -38,14 +38,13 @@ struct ReaderView: View {
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles,
-         initialQuestionSelection: ThemeQuestionSelection = .understanding, suggestions: ThemeSuggestionModel? = nil) {
+         suggestions: ThemeSuggestionModel? = nil) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader; self.suggestions = suggestions
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
         initialWorkspace.scope = initialScope
-        if case .theme(let id) = initialScope { initialWorkspace.selectQuestion(initialQuestionSelection, in: id) }
         if case .theme(let id) = initialScope, initialThemeFace != .articles {
             initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
         }
@@ -107,9 +106,7 @@ struct ReaderView: View {
         } content: {
             workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
-            if case .theme(let id) = scope, workspace.face(of: id) == .questions {
-                questionsDetail(id)
-            } else { ZStack(alignment: .trailing) {
+            ZStack(alignment: .trailing) {
                 detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
                 if let url = originalPage.url, let expectedID = originalPage.articleID {
                     OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
@@ -118,7 +115,7 @@ struct ReaderView: View {
                     })
                         .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
                 }
-            }.clipped().frame(minWidth: 360) }
+            }.clipped().frame(minWidth: 360)
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 930, minHeight: 600)
@@ -390,8 +387,8 @@ struct ReaderView: View {
     }
 
     @ViewBuilder private var workspaceList: some View {
-        if case .theme(let id) = scope, workspace.face(of: id) == .questions {
-            ThemeQuestionsPane(store: store, themeID: id, face: faceBinding(id), selection: questionSelectionBinding(id), onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
+        if case .theme(let id) = scope, workspace.face(of: id) == .note {
+            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
     }
@@ -450,25 +447,6 @@ struct ReaderView: View {
         }
     }
 
-    /// A selection that points at a question that no longer exists shows the "いまの理解" instead.
-    private func effectiveQuestionSelection(_ themeID: UUID) -> ThemeQuestionSelection {
-        workspace.questionSelection(of: themeID).resolved(existing: Set(store.questions(themeID: themeID).map(\.id)))
-    }
-    private func questionSelectionBinding(_ themeID: UUID) -> Binding<ThemeQuestionSelection> {
-        Binding(get: { effectiveQuestionSelection(themeID) }, set: { workspace.selectQuestion($0, in: themeID) })
-    }
-    @ViewBuilder private func questionsDetail(_ themeID: UUID) -> some View {
-        switch effectiveQuestionSelection(themeID) {
-        case .understanding: UnderstandingEditor(store: store, themeID: themeID).id(themeID)
-        case .question(let id): QuestionEditor(store: store, themeID: themeID, questionID: id, onOpenArticle: { openArticle($0, in: themeID) }, suggestions: suggestions).id(id)
-        }
-    }
-    /// "読む": back to the articles face with that article selected.
-    private func openArticle(_ articleID: UUID, in themeID: UUID) {
-        setFace(.articles, of: themeID)
-        selectArticle(articleID)
-        listFocused = true
-    }
     private func faceBinding(_ themeID: UUID) -> Binding<ThemeFace> {
         Binding(get: { workspace.face(of: themeID) }, set: { setFace($0, of: themeID) })
     }
