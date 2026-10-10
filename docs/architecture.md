@@ -21,13 +21,15 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（[決定0008](decisions/0008-theme-centered-notes.md)）。置き換えは完了し、`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
 
-`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル。
+`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`、`ThemeQuestion`の8モデル（`ThemeQuestion`は退役済みで、移行前のライブラリのために残る）。
+
+**ノートの移行（N2、[決定0014](decisions/0014-note-migration-format.md)）。** `migrateLegacyThemeContent(at:)`は、アプリの起動時（ストアを開いたあと、ライブラリを開けない場合の経路とは別）に呼ぶ。テーマごとに、`LegacyNoteText.compose`で、既存のノート、いまの理解、問いごとの`# 問い`・答え・`根拠の記事:`の一覧をこの順で作り、`containsEverything`が元の文章をすべて含むと確かめてから、全テーマ分を1回の保存で書き込み、同じ保存で古い問いを削除していまの理解を空にする。確認に失敗したときは保存せず、保存に失敗したときは`rollback`の規則に従い、何も消さない。2回目以降は対象がなく何もしない。問いを消したあとは`onContentPolicyChanged`を呼ぶ。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
-- `Theme`は名前（空にできない）・学習ゴール`goal`（既定は空、200文字まで。長すぎる入力は`goalTooLong`で断り、切らない）・「いまの理解」・作成／更新日時を持つ。名前とゴールは`updateTheme(id:name:goal:at:)`が1回の保存で変える。`updatedAt`は、テーマの中の変更（記事の追加・取り外し、問いの追加・更新・削除、答え、根拠、いまの理解、名前、ゴール）のたびに更新する。同じ時刻の並びは、時刻の次にID（記事の記録はキー）で固定する。
+- `Theme`は名前（空にできない）・学習ゴール`goal`（既定は空、200文字まで。長すぎる入力は`goalTooLong`で断り、切らない）・ノート`note`（既定は空。1つのプレーンテキストで、入力のたびに`saveNote`が入力したままを保存する。長さの上限なし。存在しないテーマへの保存は`missingTheme`で断り、黙って捨てない）・作成／更新日時を持つ。退役した「いまの理解」`understanding`は、移行前のライブラリを開けるようにスキーマに残し、移行が空にする（決定0014）。名前とゴールは`updateTheme(id:name:goal:at:)`が1回の保存で変える。`updatedAt`は、テーマの中の変更（記事の追加・取り外し、ノート、名前、ゴール。移行前は問い・答え・根拠・いまの理解）のたびに更新する。同じ時刻の並びは、時刻の次にID（記事の記録はキー）で固定する。
 - `ThemeArticle`はテーマIDと記事IDの組で一意（多対多）。追加日時と、追加時点のタイトル・原文URL・保持していたRSS要約を所有する（`NoteScrap`と同じ。再取得で元記事のタイトルやURLが変わっても、テーマの記録は変わらない）。要約は読書表示と同じテキスト化を使い、抽出全文で置換しない。再追加は既存の記録を返し、日時・内容を変えない。元記事の本文期限で`Article.summary`が消えても、購読を解除しても、記録は残る。
-- `ThemeQuestion`はテーマID、レンズ（固定の列挙型の生値。自由記述は専用の値）、問い文、答え、根拠の記事ID群、作成／更新日時を持つ。「回答済み」は答えが空でないことから導き、別のフラグを持たない。レンズごとの定型文はコードに持ち、モデルにしない。
+- `ThemeQuestion`（退役。画面から作れず、移行前のライブラリを開けるようスキーマに残す。削除は後続のPR）はテーマID、レンズ（固定の列挙型の生値。自由記述は専用の値）、問い文、答え、根拠の記事ID群、作成／更新日時を持つ。「回答済み」は答えが空でないことから導き、別のフラグを持たない。レンズごとの定型文はコードに持ち、モデルにしない。
 - 「未整理のStar」は、Starが付いていてどの`ThemeArticle`にも無い記事から導く。保存しない。
 - 端末内AIの有効／無効は`AppStorage`で持ち、スキーマを増やさない。埋め込みなどAIの中間結果は保存しない。
 
@@ -54,7 +56,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 - **束ねる**: `NLContextualEmbedding`（日本語）で、記事ごとにタイトル＋要約のトークンベクトルの平均を取り、全体の平均を引いて中心化し、コサイン類似度の平均連結で凝集クラスタリングする。初期の閾値は0.15（合成データでの値で、実データでの妥当性は未検証。調整できる前提にする）。近いテーマの提案は、既存テーマの記事との類似度の順にする。ベクトルは保存せず、必要なときに計算する。
   - 実装（PR 6）: `EmbeddingMath`・`ThemeClustering`・`ThemeRanking`（ReaderCore、純粋関数）、`ThemeSuggestionModel`（要求IDで古い応答を捨て、無効のときは呼ばない）、`OnDeviceThemeAssistant`・`ContextualTextEmbedder`（アプリ側）。中心化の基準にライブラリの新しい40件を足す。日本語とラテン文字の言語は別の空間として扱い、空間の違う記事は比べない。1つの空間が6件未満のときは平均を引けないため、その空間の記事は提案の対象から外す。上限・閾値は`SuggestionTuning`に集め、[決定0010](decisions/0010-on-device-suggestion-defaults.md)に記録する。ソースに`requestAssets`が無いことを試験で守る。
 - **名前**: `FoundationModels`のプレーンテキスト応答に、短い指示と`maximumResponseTokens`（実装は32）を付ける。先頭の一句だけを使い、「」}」や改行以降を切り捨てる。構造化出力の自由な文字列欄と正規表現ガイドは使わない。
-- **レンズの具体化**: 1回1問。定型の問いとテーマの記事（タイトル＋切り詰めた要約）から問いを1つ出させる（プロンプトは50文字以内を求め、検査は10〜80文字、出力トークンは90）。失敗・空・異常な長さは捨て、定型文にテーマ名を差し込んだ問いを使う。
+- **レンズの具体化（退役）**: 画面から外した（N2）。コードと試験は後続の削除PRで消す。1回1問だった。定型の問いとテーマの記事（タイトル＋切り詰めた要約）から問いを1つ出させる（プロンプトは50文字以内を求め、検査は10〜80文字、出力トークンは90）。失敗・空・異常な長さは捨て、定型文にテーマ名を差し込んだ問いを使う。
   - 実装（PR 7）: 生成は`ThemeAssistant.generate(_:)`（アプリ側は`FoundationModelsGenerator`、`LanguageModelSession`のプレーンテキストと`maximumResponseTokens`）で、10秒の期限（`withDeadline`）で打ち切る。プロンプトは`SuggestionPrompts`（新しい16件・各120文字）、出力は`SuggestionText`で検査し（先頭1行・長さ・問いは疑問で終わるもの）、`ThemeSuggestionModel`が無効化・古い応答・編集済みの問いを捨てる。案は別カードに出し、本人が選ぶまで書き換えない。`GenerationError`は型で受けず、すべての失敗を「案なし」にする。[決定0011](decisions/0011-on-device-generation-defaults.md)。
 - **入力量**: コンテキスト窓は4096トークン（入出力の合計）。1回に渡す記事は約20件までとし、新しい順に切る。要約は切り詰める。
 - **利用可否**: `SystemLanguageModel.default.availability`と埋め込み資産の有無を検査する。資産が無い場合に、アプリが自動で取得要求（通信）を起こさない。利用不可・ガードレールの誤検知・上限超過・取消は「提案なし」として扱い、操作を止めない。
@@ -62,9 +64,9 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 3.2 Claudeハンドオフ
 
-テーマからのレビューで、テーマに記録した要約（`themeArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、問いと自分の答えを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。入口はテーマ画面のツールバーのボタン。
+テーマからのレビューで、テーマに記録した要約（`themeArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、問いと自分の答えを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。入口はテーマ画面のツールバーのボタン。N2以降、テーマの問い・答えはなく、レビュー画面はテーマの記事だけを渡す（ノートはN6で加える）。
 
-**Theme content (PR 8).** A package can carry an `AIThemeContext` (theme name, questions, lens, the person's answer, and the title and URL of the evidence articles). It appears in the text between `BEGIN_THEME` and `END_THEME`, with each question between `BEGIN_QUESTION` and `END_QUESTION` (both carry IDs). Answers are included only when the person turns them on (off by default). The person's words and article text are data: marker-like lines inside them are kept as they are, and feed text in single-line fields (theme name, evidence title) is folded to one line so it cannot start a line of its own. `AIPackageReview.reconcile` rebuilds the context from the store and marks the review `changed` if it is not equal to the one that was reviewed. A managed copy's metadata records `themeID` for every package made from a theme, plus `questionIDs` when questions are included (both optional, so older copies still decode). The copy is deleted when the theme, an included question, or an included source article is gone or no longer in the theme. The cleanup runs through `onContentPolicyChanged`, which `deleteTheme`, `removeArticle` and `deleteQuestion` call after their save, even if the reload that follows fails. Editing an answer or renaming the theme does not delete a copy: it is a snapshot, and its 24-hour limit still applies. [Decision 0012](decisions/0012-claude-handoff-from-themes.md).
+**Theme content (PR 8; paused by N2 until N6).** After N2 the review screen no longer asks for questions or answers (`AIThemeRequest` is made with both off, so a package carries only the theme link and the articles). The migration calls `onContentPolicyChanged`, so a review or managed copy built from old questions is dropped. A package can carry an `AIThemeContext` (theme name, questions, lens, the person's answer, and the title and URL of the evidence articles). It appears in the text between `BEGIN_THEME` and `END_THEME`, with each question between `BEGIN_QUESTION` and `END_QUESTION` (both carry IDs). Answers are included only when the person turns them on (off by default). The person's words and article text are data: marker-like lines inside them are kept as they are, and feed text in single-line fields (theme name, evidence title) is folded to one line so it cannot start a line of its own. `AIPackageReview.reconcile` rebuilds the context from the store and marks the review `changed` if it is not equal to the one that was reviewed. A managed copy's metadata records `themeID` for every package made from a theme, plus `questionIDs` when questions are included (both optional, so older copies still decode). The copy is deleted when the theme, an included question, or an included source article is gone or no longer in the theme. The cleanup runs through `onContentPolicyChanged`, which `deleteTheme`, `removeArticle` and `deleteQuestion` call after their save, even if the reload that follows fails. Editing an answer or renaming the theme does not delete a copy: it is a snapshot, and its 24-hour limit still applies. [Decision 0012](decisions/0012-claude-handoff-from-themes.md).
 
 `ClaudeLink`は[公式案内](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link)にある`claude://cowork/new`の`q`へ短い依頼文、`file`へ生成TXTの絶対パスをURLエンコードして渡す。本文はUTF-8 TXT内に置き、起動URLへ詰め込まない（`q`は約14,000文字で切り詰められる）。通常Chatが利用者の希望だが、自動添付は未検証のため現行経路はCowork。通常Chat用の起動リンクに未文書化のファイル添付パラメータがあるとは仮定せず、推測したパラメータを実装しない。起動処理とパッケージ生成は分離する。
 
@@ -133,7 +135,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 6.1 3カラムと入力・遷移
 
-`NavigationSplitView`を共通枠とし、Feeds／テーマの選択・スクロール記憶を分けて復元し、テーマごとに最後に開いた面（記事／問い）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高96pt、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
+`NavigationSplitView`を共通枠とし、Feeds／テーマの選択・スクロール記憶を分けて復元し、テーマごとに最後に開いた面（記事／ノート）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高96pt、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
 
 左カラムはFeeds（すべての記事・未読・Star）／テーマ（未整理のStar・各テーマ）／購読元（フォルダ・購読）の順で、購読元の区画は畳める。左のHide Sidebarは`toolbar(removing: .sidebarToggle)`で除去。追加・更新を`NSTitlebarAccessoryViewController`のleftへ置き、sidebar右端に追随させる。sidebarの非表示・view取り外し時にaccessoryも外すが、**原文開閉ではcolumnVisibilityを変更せず、装着・列幅を維持する。** 購読のフォルダ指定は`importFeed`で記事と同じ保存に含め、通常更新は所属を保持する。フォルダ切替等で新mountした一覧はwindow接続時にフォーカスを得る。
 
@@ -141,7 +143,7 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 上下遷移は再利用するネイティブviewportのlayerへ64pt・0.22秒・ease-outと控えめな透明度変化を`CAAnimationGroup`で適用する。次／前の方向は一覧ID順から求める。同記事の本文更新・画像到着では再生せず、Reduce Motionでは`article-motion`を除去する。原文開閉も上下・0.22秒。読書ツールバーはStar／テーマ／外部ブラウザ、AIの入口はテーマ、外観はSettingsで`AppStorage("appearance")`を共有する。
 
-テーマを選ぶと、中央の上部に[記事｜問い]の切り替えを置く。記事は購読元・フォルダと同じ`NSTableView`の一覧と読書面を再利用する。問いは、先頭に「いまの理解」、続いて問いの一覧（回答済みの印つき）で、選ぶと右に問いと答えの編集面（根拠の記事の一覧つき）を出す。`t`とツールバーのアイコンは同じ選択ポップオーバー（近いテーマの提案・既存テーマ・新しいテーマ名）を開き、テキスト入力・IME変換・修飾キーを優先する既存の規則に従う。ドラッグ&ドロップは候補で必須ではない。
+テーマを選ぶと、中央の上部に[記事｜ノート]の切り替えを置く。記事は購読元・フォルダと同じ`NSTableView`の一覧と読書面を再利用する。ノートの面は、中央にノートの編集面（`TextEditor`。N3までの仮の配置）、右は直前に選んだ記事の読書面のままにする。この面は読書面ではないため、`j`/`k`・一覧・スクロール記憶は効かない。`t`とツールバーのアイコンは同じ選択ポップオーバー（近いテーマの提案・既存テーマ・新しいテーマ名）を開き、テキスト入力・IME変換・修飾キーを優先する既存の規則に従う。ドラッグ&ドロップは候補で必須ではない。
 
 `NSTextView`はリンク属性・引用の字下げと縦線、末尾一箇所のカバー範囲を描く。クリック時にもURLを検証する。再取得は明示操作で、失敗時も保存本文を保ち結果を示す。
 

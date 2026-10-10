@@ -65,8 +65,8 @@ The window has three columns. In Settings you can choose the appearance: follow 
 | Column | What it shows |
 |---|---|
 | Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Themes (未整理のStar unsorted stars, and each theme), and Sources (folders and subscriptions). |
-| Middle | The list of articles. For a theme, a switch at the top chooses [記事｜問い] (Articles \| Questions). |
-| Right | The article, or the editor for a theme's 「いまの理解」 (Current understanding). |
+| Middle | The list of articles. For a theme, a switch at the top chooses [記事｜ノート] (Articles \| Note). |
+| Right | The article. On the note face it keeps showing the article you selected last. |
 
 ### Subscriptions and folders
 
@@ -105,27 +105,25 @@ Focus the article list, then use these keys:
 - When you add an article to a theme, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
 - Create a theme with 「新しいテーマ」 (New theme) in the sidebar. The sheet asks for a name and, if you want, a learning goal (what you want to learn in this theme, up to 200 characters). The goal is shown under the face switch at the top of the theme; click it, or right-click the theme and choose 「名前とゴールを編集…」 (Edit Name and Goal…), to change the name or the goal. Right-click a theme to edit or delete it. Deleting a theme does not delete its articles or Stars.
 
-### Questions and answers in a theme
+### The note in a theme
 
-Select a theme. Use the switch [記事｜問い] (Articles | Questions) at the top of the middle column.
+Select a theme. Use the switch [記事｜ノート] (Articles | Note) at the top of the middle column.
 
 - **Articles** shows the same list and reading view as a source or a folder.
-- **Questions** shows 「いまの理解」 (Current understanding) at the top, then the questions of this theme.
-- Choose 「問いを立てる」 (Ask a question) and pick a lens: question the premise, exceptions and counterarguments, conditions for it to hold, trade-offs, or your own case. The app puts a draft question with the theme name in it. You can also write a question freely. You can edit the text of a question later.
-- For each question, write your own answer. Check the articles in the theme that support your answer. Use 「読む」 (Read) to jump to an article. A question with an answer has a mark.
-- Right-click a question to delete it. Articles are not deleted.
-- **The AI never writes into your answers or your current understanding.**
+- **Note** shows the one note of this theme in the middle column. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. The right column keeps showing the article you selected last, so you can read while you write. On this face `j` and `k` do not move between articles; switch to 「記事」 for that. (A version with previous and next buttons on this face comes later.)
+- **The AI never writes into your note.**
+
+**Questions and answers from an older version.** Earlier versions had questions with lenses, answers, evidence articles, and 「いまの理解」 (Current understanding). The first time this version opens your library, the app moves them into the note of each theme: the old 「いまの理解」 text first, then for each question a heading line `# <question>`, your answer under it, and the line `根拠の記事:` (Evidence articles:) with a list of the article titles and links. The app checks that the note contains all of your old text. Then it saves the notes and removes the old records in one step. It tells you once with a message, 「ノートにまとめました」. The name of the lens, the "answered" mark, and the dates of questions are not kept. If something goes wrong, nothing is removed. The app says so and tries again at the next start; you can also choose 「再試行」 (Retry). **Before you start this version for the first time, copy the whole `Feeeder` folder** (see "Back up the library by hand" above), because this change cannot be undone.
 
 ## 4. On-device AI
 
-The AI features run on your Mac only. Nothing is sent out. They never write into your answers or your current understanding. You can turn them off in Settings under 「端末内AI」 (On-device AI). When they are off, the app does not call the model. You can also see their state there.
+The AI features run on your Mac only. Nothing is sent out. They never write into your note. You can turn them off in Settings under 「端末内AI」 (On-device AI). When they are off, the app does not call the model. You can also see their state there.
 
 If the language assets are not on your Mac, the app does not download them. Suggestions just do not appear.
 
 - **Near themes.** When you press `t`, themes with content close to the article come first and have a 「近い」 (Near) mark. Once you start typing or pressing ↑↓, the order stops moving.
 - **Suggested groups.** Open 「未整理のStar」 (Unsorted Stars). A card 「まとまりの提案」 (Suggested groups) shows groups of articles with similar content. From a group you can give a name and create a theme.
 - **Theme-name idea.** When you create a theme from a group, a line "案: … ［使う］" (Idea: … [Use]) appears under the name field. The field is not filled by itself.
-- **Question idea.** When you ask a question with a lens, a standard question is put in right away. After a short time a card 「AIの案」 (AI idea) can appear. The question is replaced only if you press 「採用」 (Accept). There are also 「別の案」 (Another idea) and 「閉じる」 (Close). If you edit the question yourself, the idea goes away.
 - Ideas are made by the on-device model and stop after 10 seconds. If the model is not available or fails, nothing appears.
 
 ## 5. How long data is kept
@@ -133,7 +131,7 @@ If the language assets are not on your Mac, the app does not download them. Sugg
 - Article bodies and RSS summaries are kept for 30 days by default. In Settings you can choose 7, 30, 90, or 365 days.
 - For an unread article the 30 days start when it is first received. For a read article they start at the first read.
 - Shortening the period, or deleting all bodies at once, asks you to confirm what will be removed.
-- **The record in a theme is never deleted automatically.** This means the article title, link, and the summary saved at that time, your 「いまの理解」, and the links between questions, answers, and evidence.
+- **The record in a theme is never deleted automatically.** This means the article title, link, and the summary saved at that time, and your notes.
 - A Star or adding an article to a theme does not extend the life of its body.
 
 ## 6. Hand-off to Claude Desktop
@@ -146,11 +144,9 @@ The entry point is the toolbar button 「Claudeで開く…」 (Open in Claude�
 
 On the review screen you can also choose:
 
-- **問いを含める** (include the questions). On by default. The theme's questions go into the package, between `BEGIN_THEME` and `END_THEME`.
-- **自分の答えと根拠の記事を含める** (include my answers and evidence articles). **Off by default.** Your answers are your own writing. If you turn this on, exactly what the screen shows leaves your Mac (it goes to Claude). It cannot be turned on while the questions are off.
-- The theme's "current understanding" (「いまの理解」) is never included. At least one source is required; a package with only questions and answers cannot be sent.
+- The theme's note is not included yet. Your questions and answers moved into the note, so the review screen says 「テーマのノートはまだ Claude へ渡せません。」 (The theme's note can not be handed to Claude yet.). A later version will let you include the note (off by default). At least one source is required.
 
-After you review, if an included question, answer, the theme name, or an evidence title changes, the review becomes invalid and you must make it again.
+After you review, if the theme name or the title of an included source changes, the review becomes invalid and you must make it again.
 
 Facts you should know:
 
@@ -159,9 +155,9 @@ Facts you should know:
 - **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Feeeder puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
 - A successful launch does not mean the file was attached, the message was sent, or the file was read.
 - If you cancel or the launch fails, you can try again with the same review. You can also copy the full text or export it as a TXT file. If there is a size limit, you can export UTF-8 files split to 1 MiB or less. This split size is not the limit of Claude.
-- The copy that the app manages is deleted when its theme, a question it includes, or a source it includes is deleted. The copy is also deleted when an article it contains is removed from the theme. If you only edit an answer or rename the theme after the copy was made, the copy is not deleted; it stays as a snapshot until its time limit. The copy is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
+- The copy that the app manages is deleted when its theme or a source it includes is deleted. The copy is also deleted when an article it contains is removed from the theme. If you only rename the theme after the copy was made, the copy is not deleted; it stays as a snapshot until its time limit. The copy is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
 - A place that you chose for an export, and what has already gone to Claude, are not removed by this.
-- You paste a reply into your own answer by yourself. There is no automatic sending and no automatic writing of replies.
+- You paste a reply into your note by yourself. There is no automatic sending and no automatic writing of replies.
 
 ## 7. For developers: tests, CI, and compatibility checks
 
