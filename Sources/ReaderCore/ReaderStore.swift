@@ -8,6 +8,7 @@ import SwiftData
     public private(set) var contentRevision = 0
     public private(set) var settings: ReaderSettings?
     public var retentionDays: Int { settings?.retentionDays ?? 30 }
+    /// Called when something a review or a managed Claude copy may contain is deleted or removed (content policy, a theme, a question, or a theme's article).
     @ObservationIgnored public var onContentPolicyChanged: (@MainActor () -> Void)?
     public private(set) var memberships: [FeedMembership] = []
     public private(set) var themes: [Theme] = []

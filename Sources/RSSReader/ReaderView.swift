@@ -20,6 +20,7 @@ struct ReaderView: View {
     @State private var saveError: String?
     @State private var themeMessage: String?
     @State private var pickingTheme = false
+    @State private var reviewingTheme: ThemeSheet?
     @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
@@ -57,6 +58,14 @@ struct ReaderView: View {
     private var selectedExpiry: Date? {
         guard let article = selectedArticle, article.contentDeletedAt == nil else { return nil }
         return RetentionPolicy(days: store.retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
+    }
+    /// Every theme article as two choices: the retained article text first (so it is the default), then the saved RSS summary.
+    private func claudeSelections(themeID: UUID) -> [AIInputSelection] {
+        store.themeArticles.filter { $0.themeID == themeID }
+            .sorted { $0.addedAt != $1.addedAt ? $0.addedAt > $1.addedAt : $0.key < $1.key }
+            .flatMap { link -> [AIInputSelection] in
+                (store.article(id: link.articleID) == nil ? [] : [.article(link.articleID)]) + [.themeArticle(link.key)]
+            }
     }
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
@@ -118,6 +127,13 @@ struct ReaderView: View {
         .frame(minWidth: 930, minHeight: 600)
         .tint(.orange)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if case .theme(let id) = scope {
+                    Button { reviewingTheme = ThemeSheet(id: id) } label: { Image(systemName: "paperplane") }
+                        .help("Claudeで開く…").accessibilityLabel("Claudeで開く")
+                        .disabled(claudeSelections(themeID: id).isEmpty)
+                }
+            }
             ToolbarItemGroup(placement: .primaryAction) {
                 if workspace.isReading(scope ?? .all), let article = selectedArticle {
                     Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
@@ -268,6 +284,9 @@ struct ReaderView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
+        }
+        .sheet(item: $reviewingTheme) { sheet in
+            AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: sheet.id), themeID: sheet.id)
         }
         .alert("新しいテーマ", isPresented: $creatingTheme) {
             TextField("テーマの名前", text: $newThemeName)
@@ -494,3 +513,6 @@ struct ReaderView: View {
 }
 
 private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }
+
+/// The theme a review sheet was opened for, kept for the sheet's life even if the selection moves.
+private struct ThemeSheet: Identifiable { let id: UUID }

@@ -138,11 +138,19 @@ If the language assets are not on your Mac, the app does not download them. Sugg
 
 ## 6. Hand-off to Claude Desktop
 
-**The current build has no entry point for Claude.** It is being moved to the theme view and will return in a later update. This is how the hand-off works.
+The entry point is the toolbar button 「Claudeで開く…」 (Open in Claude…), which appears when you select a theme (on both the Articles face and the Questions face). It opens the review screen. This is how the hand-off works.
 
 1. On the review screen you choose the output language and the sources.
 2. The screen separates saved RSS summaries from articles that are still stored. You review the complete text, the coverage, and the source URLs.
 3. You press 「Claudeで開く」 (Open in Claude).
+
+On the review screen you can also choose:
+
+- **問いを含める** (include the questions). On by default. The theme's questions go into the package, between `BEGIN_THEME` and `END_THEME`.
+- **自分の答えと根拠の記事を含める** (include my answers and evidence articles). **Off by default.** Your answers are your own writing. If you turn this on, exactly what the screen shows leaves your Mac (it goes to Claude). It cannot be turned on while the questions are off.
+- The theme's "current understanding" (「いまの理解」) is never included. At least one source is required; a package with only questions and answers cannot be sent.
+
+After you review, if an included question, answer, the theme name, or an evidence title changes, the review becomes invalid and you must make it again.
 
 Facts you should know:
 
@@ -151,7 +159,7 @@ Facts you should know:
 - **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Feeeder puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
 - A successful launch does not mean the file was attached, the message was sent, or the file was read.
 - If you cancel or the launch fails, you can try again with the same review. You can also copy the full text or export it as a TXT file. If there is a size limit, you can export UTF-8 files split to 1 MiB or less. This split size is not the limit of Claude.
-- The copy that the app manages is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
+- The copy that the app manages is deleted when its theme, a question it includes, or a source it includes is deleted. The copy is also deleted when an article it contains is removed from the theme. If you only edit an answer or rename the theme after the copy was made, the copy is not deleted; it stays as a snapshot until its time limit. The copy is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
 - A place that you chose for an export, and what has already gone to Claude, are not removed by this.
 - You paste a reply into your own answer by yourself. There is no automatic sending and no automatic writing of replies.
 

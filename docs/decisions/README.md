@@ -37,6 +37,7 @@
 | [0009](0009-on-device-ai-principles.md) | AIは端末内の提案に限る | 有効 |
 | [0010](0010-on-device-suggestion-defaults.md) | 端末内の提案（近いテーマ・まとまり）の既定 | 有効 |
 | [0011](0011-on-device-generation-defaults.md) | 端末内の生成（テーマ名の案・問いの具体化）の既定 | 有効 |
+| [0012](0012-claude-handoff-from-themes.md) | Claude hand-off from themes | valid |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
