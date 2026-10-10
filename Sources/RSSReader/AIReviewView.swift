@@ -8,7 +8,7 @@ struct AIReviewView: View {
     @Bindable var handoff: ClaudeHandoffController
     let selections: [AIInputSelection]
     var themeID: UUID? = nil
-    /// True when the review was started from the note panel's button: then the goal and the note are both switched on.
+    /// True when the review was started from the note panel's button: then the note is switched on.
     var fromNotePanel = false
     @Environment(\.dismiss) private var dismiss
     @State private var selected = Set<AIInputSelection>()
@@ -16,7 +16,6 @@ struct AIReviewView: View {
     @State private var language = "日本語"
     @State private var error: String?
     @State private var copied = false
-    @State private var includeGoal = false
     @State private var includeNote = false
     private struct Option: Identifiable {
         let id: AIInputSelection
@@ -43,12 +42,11 @@ struct AIReviewView: View {
                 Text("本文を省略せず、選択した出典と一緒に渡します。").font(.caption).foregroundStyle(.secondary)
             }
             if let themeID, let theme = store.theme(id: themeID) {
-                let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: fromNotePanel)
+                let switches = HandoffDefaults.switches(note: theme.note, fromNotePanel: fromNotePanel)
                 VStack(alignment: .leading, spacing: 4) {
-                    Toggle("ゴールを含める", isOn: $includeGoal).disabled(!switches.goalEnabled)
                     Toggle("ノートを含める", isOn: $includeNote).disabled(!switches.noteEnabled)
-                    Text(!switches.goalEnabled && !switches.noteEnabled ? "このテーマにはゴールもノートもありません。"
-                         : "ゴールとノートは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。ノートを含めると、ノートをゴールに照らしてレビューする依頼になります。")
+                    Text(!switches.noteEnabled ? "このテーマにはノートがありません。"
+                         : "ノートは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。ノートを含めると、ノートそのもののレビューを頼む依頼になります。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -75,7 +73,7 @@ struct AIReviewView: View {
                         Text("SHA-256: \(package.sha256)").font(.caption2.monospaced()).textSelection(.enabled)
                     } else {
                         ContentUnavailableView("再生成して確認してください", systemImage: "doc.text.magnifyingglass",
-                            description: Text(review.reason ?? "本文を利用できる記事か、ゴール・ノートを選んでください。"))
+                            description: Text(review.reason ?? "本文を利用できる記事か、ノートを選んでください。"))
                     }
                 }.frame(minWidth: 400)
             }
@@ -83,7 +81,7 @@ struct AIReviewView: View {
             if let message = handoff.error ?? handoff.maintenanceError { Text(message).foregroundStyle(.secondary).font(.caption) }
             if handoff.opened { Text("Claudeに確認画面を開きました。添付完了・送信・読取の確認はClaude側で行ってください。").font(.callout) }
             HStack {
-                Button("再生成してレビュー", action: generate).disabled(selected.isEmpty && !includeGoal && !includeNote)
+                Button("再生成してレビュー", action: generate).disabled(selected.isEmpty && !includeNote)
                 Spacer()
                 Button(copied ? "コピーしました" : "全文をコピー") {
                     perform {
@@ -108,15 +106,14 @@ struct AIReviewView: View {
         .onAppear {
             handoff.resetStatus(); refreshOptions()
             if let themeID, let theme = store.theme(id: themeID) {
-                let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: fromNotePanel)
-                includeGoal = switches.goalOn; includeNote = switches.noteOn
+                let switches = HandoffDefaults.switches(note: theme.note, fromNotePanel: fromNotePanel)
+                includeNote = switches.noteOn
             }
             var seen = Set<UUID>()
             selected = Set(options.filter { $0.available && seen.insert($0.articleID).inserted }.map(\.id))
             generate()
         }
         .onChange(of: language) { _, _ in generate() }
-        .onChange(of: includeGoal) { _, _ in generate() }
         .onChange(of: includeNote) { _, _ in generate() }
         .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
         .task(id: review.package?.expiresAt) {
@@ -149,7 +146,7 @@ struct AIReviewView: View {
         perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, theme: themeRequest, language: language, at: .now) }
     }
     private var themeRequest: AIThemeRequest? {
-        themeID.map { AIThemeRequest(themeID: $0, includeGoal: includeGoal, includeNote: includeNote) }
+        themeID.map { AIThemeRequest(themeID: $0, includeNote: includeNote) }
     }
     private func export() {
         perform {

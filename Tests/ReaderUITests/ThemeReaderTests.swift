@@ -39,7 +39,7 @@ import Testing
                 let (rowL, rowR) = ((lhs.1.maxY / 12).rounded(), (rhs.1.maxY / 12).rounded())
                 return rowL != rowR ? rowL > rowR : lhs.1.minX < rhs.1.minX
             }.map(\.0)
-        // The goal strip is a button too and sorts before the two chevrons (the narrow icon buttons); the list starts at the chevrons.
+        // The review button is wider and sorts before the two chevrons (the narrow icon buttons); the list starts at the chevrons.
         guard let first = rows.firstIndex(where: { $0.convert($0.bounds, to: nil).width <= 20 }) else { return rows }
         return Array(rows[first...])
     }
@@ -159,9 +159,9 @@ import Testing
 @Suite(.serialized) @MainActor struct HandoffEntryTests {
     private let t = ThemeReaderTests()
 
-    private func make(goal: String, note: String, articles: Int) throws -> ThemeReaderTests.Harness {
+    private func make(note: String, articles: Int) throws -> ThemeReaderTests.Harness {
         try t.harness(scope: { store in .theme(store.themes[0].id) }, noteOpen: true) { store in
-            let theme = try store.createTheme(name: "A", goal: goal, at: .now)
+            let theme = try store.createTheme(name: "A", at: .now)
             for index in 0..<articles { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
             if !note.isEmpty { try store.saveNote(themeID: theme.id, text: note, at: .now) }
         }
@@ -180,21 +180,21 @@ import Testing
         return find(sheet)
     }
 
-    @Test func theNotePanelsButtonOpensTheReviewWithTheGoalAndTheNote() async throws {
-        let h = try make(goal: "目標を書いた", note: "# 見出し\n本文のノート", articles: 1)
+    @Test func theNotePanelsButtonOpensTheReviewWithTheNote() async throws {
+        let h = try make(note: "# 見出し\n本文のノート", articles: 1)
         defer { t.finish(h) }
         h.window.makeKeyAndOrderFront(nil)
         try await t.settle(h.host) { reviewButton(h) != nil }
         reviewButton(h)?.performClick(nil)
         try await t.settle(h.host) { packageText(h) != nil }
         let text = try #require(packageText(h))
-        #expect(text.contains("Goal (written by the user):\n目標を書いた") && text.contains("Note (written by the user):\n# 見出し\n本文のノート"))
+        #expect(!text.contains("Goal") && text.contains("Note (written by the user):\n# 見出し\n本文のノート"))
         #expect(text.contains("ノートに書かれていることを「ない」と言わないでください"))                // the review request
         h.window.endSheet(try #require(h.window.attachedSheet))
     }
 
     @Test func theButtonIsAbsentWhenThereIsNothingToHandOver() async throws {
-        let h = try make(goal: "", note: "", articles: 0)
+        let h = try make(note: "", articles: 0)
         defer { t.finish(h) }
         try await t.settle(h.host) { t.panelButtons(in: h).count >= 2 }                    // the chevrons are there
         pumpRunLoop(0.3)

@@ -90,7 +90,7 @@ public enum HandoffFiles {
             }
             let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
             let expiries = selections.compactMap { validInputExpiries[$0] }
-            // A package made of the person's goal or note alone has no article, so nothing earlier than its own 24 hours applies.
+            // A package made of the person's note alone has no article, so nothing earlier than its own 24 hours applies.
             guard expiries.count == selections.count, let earliest = expiries.min() ?? (selections.isEmpty ? metadata.expiresAt : nil) else {
                 try manager.removeItem(at: folder); return
             }
@@ -161,7 +161,7 @@ public enum HandoffFiles {
               let size = values[.size] as? NSNumber, size.intValue <= 1_048_576 else { throw HandoffError.unsafeFile }
         let metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: file))
         guard folder.lastPathComponent == metadata.packageID.uuidString + (metadata.split ? "-parts" : ""),
-              !metadata.articleIDs.isEmpty || metadata.themeID != nil,     // a package of the goal or the note alone has no article
+              !metadata.articleIDs.isEmpty || metadata.themeID != nil,     // a package of the note alone has no article
               !metadata.files.isEmpty,
               metadata.files.enumerated().allSatisfy({ index, record in
                   record.name == (metadata.split ? "Feeeder-review-part-\(index + 1).txt" : "Feeeder-review.txt") && record.sha256.count == 64

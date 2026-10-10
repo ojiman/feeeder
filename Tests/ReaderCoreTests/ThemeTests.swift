@@ -232,10 +232,7 @@ import Testing
         #expect(throws: (any Error).self) { try store.createTheme(name: "失われる束", adding: [ids[0], ids[1]], at: at) }
         #expect(store.themes.count == themeCount && store.themeArticles.count == linkCount)
         gate.failNext = true
-        #expect(throws: (any Error).self) { try store.updateTheme(id: theme.id, name: "失われる名前", goal: "失われるゴール", at: at) }
-        #expect(store.theme(id: theme.id)?.name == "成功" && store.theme(id: theme.id)?.goal == "")
-        gate.failNext = true
-        #expect(throws: (any Error).self) { try store.createTheme(name: "失われる", goal: "ゴール", at: at) }
+        #expect(throws: (any Error).self) { try store.createTheme(name: "失われる", at: at) }
         #expect(store.themes.count == themeCount)
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.removeArticle(ids[1], fromTheme: theme.id, at: at) }
@@ -321,9 +318,6 @@ import Testing
         try store.renameTheme(id: themeID, to: "新しい名前", at: at)
         #expect(store.theme(id: themeID)?.name == "新しい名前")
         induceFailedRecovery()
-        try store.updateTheme(id: themeID, name: "新しい名前", goal: "新しいゴール", at: at)
-        #expect(store.theme(id: themeID)?.goal == "新しいゴール")
-        induceFailedRecovery()
         try store.saveNote(themeID: themeID, text: "回復後のノート", at: at)
         #expect(store.theme(id: themeID)?.note == "回復後のノート")
         induceFailedRecovery()
@@ -341,9 +335,6 @@ import Testing
         induceFailedRecovery()
         let grouped = try store.createTheme(name: "束", adding: [ids[3]], at: at)
         #expect(store.themeArticleCount(themeID: grouped.id) == 1)
-        induceFailedRecovery()
-        let withGoal = try store.createTheme(name: "ゴールつき", goal: "回復後のゴール", at: at)
-        #expect(store.theme(id: withGoal.id)?.goal == "回復後のゴール")
     }
 
     @Test func recordKeepsTheTitleAndURLFromTheTimeOfAdding() throws {
@@ -448,68 +439,16 @@ import Testing
         #expect(store.themes.count == 1)
     }
 
-    @Test func aGoalIsSavedTrimmedOnOneLineAndKeptAfterReopen() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let themeID = try {
-            let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-            let theme = try store.createTheme(name: "Rates", goal: "  Understand how rates\naffect households  ", at: at)
-            #expect(theme.goal == "Understand how rates affect households")
-            return theme.id
-        }()
-        let reopened = try ReaderStore(url: library.url, now: at)
-        #expect(reopened.theme(id: themeID)?.goal == "Understand how rates affect households")
-        #expect(try ReaderStore(url: library.url, now: at).createTheme(name: "Empty goal", at: at).goal.isEmpty)
-    }
-
-    @Test func theGoalLimitIsInCharactersAndALongGoalIsRefusedNotCut() throws {
+    @Test func renamingFoldsTheNameToOneLineIsOneChangeAndRejectsBadInput() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-        let exact = String(repeating: "学", count: Theme.goalLimit)
-        #expect(try store.createTheme(name: "A", goal: exact, at: at).goal == exact)
-        let emoji = String(repeating: "👨‍👩‍👧", count: Theme.goalLimit)                 // 200 characters, many scalars
-        #expect(try store.createTheme(name: "B", goal: emoji, at: at).goal == emoji)
-        #expect(throws: ThemeError.self) { try store.createTheme(name: "C", goal: exact + "学", at: at) }
-        let before = store.themes.count
-        #expect(throws: ThemeError.self) { try store.createTheme(name: "D", goal: exact + "学", at: at) }
-        #expect(store.themes.count == before)                                          // nothing was created
-    }
-
-    @Test func editingNameAndGoalTogetherIsOneChangeAndRejectsBadInput() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-        let theme = try store.createTheme(name: "Old", goal: "Old goal", at: at)
-        try store.updateTheme(id: theme.id, name: " New\nname ", goal: " New goal ", at: at.addingTimeInterval(5))
-        #expect(theme.name == "New name" && theme.goal == "New goal" && theme.updatedAt == at.addingTimeInterval(5))
-        try store.updateTheme(id: theme.id, name: "New name", goal: "", at: at.addingTimeInterval(6))   // clearing the goal is allowed
-        #expect(theme.goal.isEmpty)
-        let stamp = theme.updatedAt
-        try store.updateTheme(id: theme.id, name: "New name", goal: "", at: at.addingTimeInterval(9))   // nothing changed
-        #expect(theme.updatedAt == stamp)
-        #expect(throws: ThemeError.self) { try store.updateTheme(id: theme.id, name: " \n ", goal: "A good goal", at: at) }
-        #expect(throws: ThemeError.self) { try store.updateTheme(id: theme.id, name: "Name", goal: String(repeating: "x", count: 201), at: at) }
-        #expect(throws: ThemeError.self) { try store.updateTheme(id: UUID(), name: "Name", goal: "Goal", at: at) }
-        #expect(theme.name == "New name" && theme.goal.isEmpty)                         // a rejected edit changes nothing
-    }
-
-    @Test func aNameOnlyChangeIsSavedAndCountedAsAChange() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-        let theme = try store.createTheme(name: "Old", goal: "Same goal", at: at)
-        try store.updateTheme(id: theme.id, name: "Other", goal: "Same goal", at: at.addingTimeInterval(5))
-        #expect(theme.name == "Other" && theme.goal == "Same goal" && theme.updatedAt == at.addingTimeInterval(5))
-        try store.updateTheme(id: theme.id, name: "Other", goal: "Changed goal", at: at.addingTimeInterval(6))   // a goal-only change
-        #expect(theme.name == "Other" && theme.goal == "Changed goal" && theme.updatedAt == at.addingTimeInterval(6))
-    }
-
-    @Test func theLimitIsCheckedAfterTrimmingAndTheCounterMeasuresTheSameThing() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-        let padded = "  " + String(repeating: "学", count: Theme.goalLimit) + " \n "
-        #expect(Theme.goalLength(padded) == Theme.goalLimit)                         // what the sheet's counter shows
-        #expect(try store.createTheme(name: "A", goal: padded, at: at).goal.count == Theme.goalLimit)
-        #expect(Theme.goalLength(String(repeating: "学", count: Theme.goalLimit + 1)) == Theme.goalLimit + 1)
-        #expect(throws: ThemeError.goalTooLong) { try store.createTheme(name: "B", goal: String(repeating: "学", count: Theme.goalLimit + 1), at: at) }
-        #expect(throws: ThemeError.missingName) { try store.updateTheme(id: UUID(), name: " ", goal: "x", at: at) }
-        #expect(throws: ThemeError.missingTheme) { try store.updateTheme(id: UUID(), name: "N", goal: "x", at: at) }
+        let theme = try store.createTheme(name: "Old", at: at)
+        try store.renameTheme(id: theme.id, to: " New\nname ", at: at.addingTimeInterval(5))
+        #expect(theme.name == "New name" && theme.updatedAt == at.addingTimeInterval(5))
+        try store.renameTheme(id: theme.id, to: "New name", at: at.addingTimeInterval(9))               // nothing changed
+        #expect(theme.updatedAt == at.addingTimeInterval(5))
+        #expect(throws: ThemeError.missingName) { try store.renameTheme(id: theme.id, to: " \n ", at: at) }
+        #expect(throws: ThemeError.self) { try store.createTheme(name: "  ", at: at) }
+        #expect(theme.name == "New name")                                                              // a rejected edit changes nothing
     }
 }

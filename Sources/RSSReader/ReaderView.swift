@@ -59,11 +59,11 @@ struct ReaderView: View {
         guard canAskReview(themeID) else { return nil }
         return { reviewingTheme = ThemeSheet(id: themeID, fromNotePanel: true) }
     }
-    /// Something to hand over: an article source, or the person's goal or note.
+    /// Something to hand over: an article source, or the person's note.
     private func canAskReview(_ themeID: UUID) -> Bool {
         guard let theme = store.theme(id: themeID) else { return false }
-        let switches = HandoffDefaults.switches(goal: theme.goal, note: theme.note, fromNotePanel: false)
-        return !claudeSelections(themeID: themeID).isEmpty || switches.goalEnabled || switches.noteEnabled
+        let switches = HandoffDefaults.switches(note: theme.note, fromNotePanel: false)
+        return !claudeSelections(themeID: themeID).isEmpty || switches.noteEnabled
     }
     /// Every theme article as two choices: the retained article text first (so it is the default), then the saved RSS summary.
     private func claudeSelections(themeID: UUID) -> [AIInputSelection] {
@@ -256,7 +256,7 @@ struct ReaderView: View {
                     sidebarRow(theme.name, symbol: "square.stack", count: store.themeArticleCount(themeID: theme.id))
                         .tag(LibraryScope.theme(theme.id))
                         .contextMenu {
-                            Button("名前とゴールを編集…") { themeEditor = ThemeEditorTarget(themeID: theme.id) }
+                            Button("名前を編集…") { themeEditor = ThemeEditorTarget(themeID: theme.id) }
                             Button("削除…", role: .destructive) { deletingTheme = theme.id }
                         }
                 }
@@ -372,16 +372,14 @@ struct ReaderView: View {
             }
         }
         .safeAreaInset(edge: .top) {
-            if case .theme(let id) = scope {
+            // While the note is open the sidebar is folded; this button brings it back (and folds it again).
+            if noteOpen {
                 HStack(spacing: 0) {
-                    // While the note is open the sidebar is folded; this button brings it back (and folds it again).
-                    if noteOpen {
-                        Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
-                            .buttonStyle(.borderless).padding(.leading, 12)
-                            .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                            .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                    }
-                    ThemeGoalStrip(goal: store.theme(id: id)?.goal ?? "", onEdit: { themeEditor = ThemeEditorTarget(themeID: id) })
+                    Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
+                        .buttonStyle(.borderless).padding(.leading, 12).padding(.vertical, 6)
+                        .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
+                        .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
+                    Spacer(minLength: 0)
                 }.background(.bar)
             }
         }
@@ -402,7 +400,6 @@ struct ReaderView: View {
                       canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
-                      onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) },
                       onAskReview: askReviewAction(id))
             .id(id)
         } else { EmptyView() }

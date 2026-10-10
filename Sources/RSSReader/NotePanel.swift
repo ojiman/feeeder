@@ -1,7 +1,7 @@
 import SwiftUI
 import ReaderCore
 
-/// The note, opened beside the article as the inspector: the theme's name and goal with previous and next article buttons, and the
+/// The note, opened beside the article as the inspector: the theme's name with previous and next article buttons, and the
 /// editor. Every button is borderless: a borderless SwiftUI button is an AppKit button, so a test can press it.
 struct NotePanel: View {
     @Bindable var store: ReaderStore
@@ -10,8 +10,7 @@ struct NotePanel: View {
     let canNext: Bool
     let onPrevious: () -> Void
     let onNext: () -> Void
-    let onEditGoal: () -> Void
-    /// Nil when there is nothing to hand over (no goal, no note, no article).
+    /// Nil when there is nothing to hand over (no note, no article).
     let onAskReview: (() -> Void)?
 
     var body: some View {
@@ -39,7 +38,6 @@ struct NotePanel: View {
                     .disabled(!canNext).help("次の記事 (⌥⌘↓)").accessibilityLabel("次の記事")
             }
             .buttonStyle(.borderless).padding(.horizontal, 12).padding(.vertical, 8)
-            ThemeGoalStrip(goal: store.theme(id: themeID)?.goal ?? "", onEdit: onEditGoal)
         }
         .background(.bar)
     }
