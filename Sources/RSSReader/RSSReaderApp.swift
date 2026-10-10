@@ -10,6 +10,7 @@ struct RSSReaderApp: App {
     @State private var imageLoader: ReaderImageLoader?
     @State private var suggestions: ThemeSuggestionModel?
     @State private var summaries: ArticleSummaryModel?
+    @State private var noteActions: NoteActionModel?
     @State private var startupError: String?
     @State private var lifecycleError: String?
     @State private var migrationError: String?
@@ -44,6 +45,7 @@ struct RSSReaderApp: App {
             let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "Feeeder/Images")
             _imageLoader = State(initialValue: ReaderImageLoader(directory: cache))
             _summaries = State(initialValue: ArticleSummaryModel(store: store, assistant: OnDeviceThemeAssistant(), isEnabled: { OnDeviceAISetting.isEnabled }))
+            _noteActions = State(initialValue: NoteActionModel(assistant: OnDeviceThemeAssistant(), isEnabled: { OnDeviceAISetting.isEnabled }))
             _suggestions = State(initialValue: ThemeSuggestionModel(store: store, assistant: OnDeviceThemeAssistant(),
                                                                     isEnabled: { OnDeviceAISetting.isEnabled }))
             _lifecycleError = State(initialValue: handoff.maintenanceError)
@@ -55,7 +57,7 @@ struct RSSReaderApp: App {
     var body: some Scene {
         Window("Feeeder", id: "reader") {
             Group {
-                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader, suggestions: suggestions, summaries: summaries) }
+                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader, suggestions: suggestions, summaries: summaries, noteActions: noteActions) }
                 else {
                     ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
                         description: Text(startupError ?? "不明なエラーです。"))

@@ -11,7 +11,8 @@ struct ReaderView: View {
     let imageLoader: ReaderImageLoader
     let suggestions: ThemeSuggestionModel?
     let summaries: ArticleSummaryModel?
-    @AppStorage(OnDeviceAISetting.key) private var aiEnabled = true
+    let noteActions: NoteActionModel?
+    @AppStorage private var aiEnabled: Bool
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
@@ -20,6 +21,8 @@ struct ReaderView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var noteLayout = NoteLayout()
     @State private var paneMode = ReaderPaneMode.original
+    /// The note editor's text view, for edits that can be undone with ⌘Z.
+    @State private var noteHandle = NoteTextHandle()
     /// The summary that was adopted into the note, so its button reads 「採用しました」 until a new summary is made.
     @State private var adoptedSummary: ArticleSummaryModel.Summary?
     /// Where the cursor was in each theme's note. In memory only: it is restored after a face round trip, not after a restart.
@@ -45,8 +48,10 @@ struct ReaderView: View {
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles,
-         suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil) {
-        self.summaries = summaries
+         suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil, noteActions: NoteActionModel? = nil,
+         defaults: UserDefaults = .standard) {
+        _aiEnabled = AppStorage(wrappedValue: true, OnDeviceAISetting.key, store: defaults)   // tests pass their own store
+        self.summaries = summaries; self.noteActions = noteActions
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader; self.suggestions = suggestions
         _loading = State(initialValue: ArticleLoadingController(store: store))
@@ -104,7 +109,9 @@ struct ReaderView: View {
         .onChange(of: showsSummary) { _, shown in
             if shown { if originalPage.url != nil { closeOriginal() } } else { summaries?.reset(); adoptedSummary = nil }
         }
+        .onChange(of: aiEnabled) { _, on in if !on { noteActions?.reset() } }
         .onChange(of: onNoteFace) { _, on in
+            noteActions?.reset()
             if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
             applyColumns()
         }
@@ -118,7 +125,7 @@ struct ReaderView: View {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
-            summaries?.reset(); adoptedSummary = nil          // a summary belongs to the theme it was made in
+            summaries?.reset(); adoptedSummary = nil; noteActions?.reset()          // a summary or a card belongs to the theme it was made in
             workspace.scope = new ?? .all
             enterScope()
         }
@@ -409,7 +416,8 @@ struct ReaderView: View {
 
     @ViewBuilder private var workspaceList: some View {
         if case .theme(let id) = scope, workspace.face(of: id) == .note {
-            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), selection: noteSelectionBinding(id), sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
+            ThemeNotePane(store: store, themeID: id, face: faceBinding(id), selection: noteSelectionBinding(id), noteActions: noteActions, handle: noteHandle, aiEnabled: aiEnabled,
+                          onAdopted: { range in DispatchQueue.main.async { noteHandle.textView?.setSelectedRange(range) } }, onError: { saveError = $0 }, sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
     }
@@ -447,10 +455,16 @@ struct ReaderView: View {
         guard summary.articleID == article.id else { return }
         guard let theme = store.theme(id: themeID) else { saveError = "テーマが見つかりません。"; return }
         let note = theme.note
+        let selectionEnd = noteHandle.selectedRange.map { NSMaxRange($0) } ?? noteSelectionEnd(themeID, in: note)
         let result = NoteInsertion.adopted(summary: summary.text, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0)?.absoluteString },
-                                           into: note, selectionEndUTF16: noteSelectionEnd(themeID, in: note))
+                                           into: note, selectionEndUTF16: selectionEnd)
         do {
-            try store.saveNote(themeID: themeID, text: result.note, at: .now)
+            // One undo step when the note's text view is mounted; the plain save otherwise.
+            let saver: (String) throws -> Void = { [store] text in try store.saveNote(themeID: themeID, text: text, at: .now) }
+            let whole = NSRange(location: 0, length: (note as NSString).length)
+            noteHandle.expectedText = { [store] in store.theme(id: themeID)?.note }
+            noteHandle.onUndoError = { saveError = $0 }
+            if try !noteHandle.replace(whole, with: result.note, actionName: "要約の採用", save: saver) { try saver(result.note) }
             adoptedSummary = summary
             let index = result.note.index(result.note.startIndex, offsetBy: min(result.cursorOffset, result.note.count))
             noteSelections[themeID] = TextSelection(insertionPoint: index)
