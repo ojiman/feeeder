@@ -6,6 +6,8 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 
 | Path | Role |
 |---|---|
+| README.md | English public overview: concept, status, how to try it. Derived from the spec; it does not define product behavior. |
+| docs/user-guide.md, docs/user-guide.ja.md | Operations, data retention and backup, Claude hand-off, verification steps. English and Japanese; keep them in step. |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
 | docs/architecture.md | Technical choices and the four-axis agent harness (§4). |
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |
@@ -68,6 +70,15 @@ A new thread starts without the previous one's memory. Rebuild the state from Gi
 6. A change in product behavior or policy updates the spec/architecture in the same PR and adds a decision record. Do not edit an "approved" header to imply an approval that did not happen.
 7. Never report success for a save or change the user asked for when it did not happen (for example `try?` discarding a save or reload failure, or user-entered text dropped because its target is gone). Legitimate no-ops are fine and should be kept distinct: cancellation, a stale async response after the selection moved, and an optional action with nothing to act on.
 8. Risky changes (store/model, concurrency, external writes) get an independent review of a fixed commit using docs/review-checklist.md. A review that finds nothing lists what it checked and what it did not.
+
+## Language
+
+The project is meant to be used and read worldwide, so new project text is written in English. Many readers are not native English speakers, so write plain English: short sentences, common words, no idioms, and the same term for the same thing.
+
+- Write in English: commit messages, PR titles and bodies, new decision records, new documentation, and new code comments.
+- Leave existing text alone. Old commits, PRs, Japanese documents, and decision records stay as they are. Do not rewrite Git history or translate old records unless the user asks. A document may be translated into a new file (for example `docs/user-guide.md` from `docs/user-guide.ja.md`); when the content changes, update both files in the same PR or say which one is behind.
+- The app's labels are currently Japanese only. Quote a label as it appears and add an English gloss when it helps the reader. Changing the app's language is a product decision and needs the user's instruction.
+- Issues and discussion may be in Japanese or English.
 
 ## Data policy
 

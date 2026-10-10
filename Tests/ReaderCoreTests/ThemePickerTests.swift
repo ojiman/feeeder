@@ -67,4 +67,21 @@ struct ThemePickerTests {
         #expect(explicit("LLMの実用設計") == .toggle(llm))      // exact name: never a duplicate
         #expect(explicit("") == nil && explicit("  ") == nil)
     }
+
+    @Test func suggestedThemesComeFirstOnlyWhileTheQueryIsEmptyAndAreFlagged() {
+        let rows = ThemePicker.rows(themes: themes, memberOf: [], query: "", suggested: [llm])
+        #expect(rows.map(\.kind) == [.theme(llm), .theme(finance)])
+        #expect(rows.map(\.suggested) == [true, false])
+        let typed = ThemePicker.rows(themes: themes, memberOf: [], query: "金", suggested: [llm])
+        #expect(typed.map(\.kind) == [.theme(finance), .create("金")] && typed.allSatisfy { !$0.suggested })
+        let all = ThemePicker.rows(themes: themes, memberOf: [], query: " ", suggested: [llm, finance])
+        #expect(all.map(\.kind) == [.theme(llm), .theme(finance)])      // the suggestion's own order is kept
+    }
+
+    @Test func unknownOrRepeatedSuggestionsAreIgnoredAndNoSuggestionChangesNothing() {
+        let rows = ThemePicker.rows(themes: themes, memberOf: [llm], query: "", suggested: [UUID(), finance, finance])
+        #expect(rows.map(\.kind) == [.theme(finance), .theme(llm)] && rows.map(\.suggested) == [true, false])
+        #expect(ThemePicker.rows(themes: themes, memberOf: [llm], query: "") == ThemePicker.rows(themes: themes, memberOf: [llm], query: "", suggested: []))
+        #expect(ThemePicker.defaultHighlight(rows: rows, query: "") == 0)
+    }
 }
