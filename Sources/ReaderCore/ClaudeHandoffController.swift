@@ -42,9 +42,8 @@ import Observation
         do {
             let selections = try HandoffFiles.sourceSelections(directory: directory)
             let expiries = try store.availableInputExpiries(selections: selections, at: at)
-            try HandoffFiles.reconcile(directory: directory, validInputExpiries: expiries, themeContextIsValid: { themeID, questionIDs, sourceArticleIDs in
+            try HandoffFiles.reconcile(directory: directory, validInputExpiries: expiries, themeContextIsValid: { themeID, sourceArticleIDs in
                 store.theme(id: themeID) != nil
-                    && Set(questionIDs).isSubset(of: Set(store.questions(themeID: themeID).map(\.id)))
                     && Set(sourceArticleIDs).isSubset(of: Set(store.themeArticleIDs(themeID: themeID)))
             }, at: at)
             nextExpiry = try HandoffFiles.nextExpiry(directory: directory)
