@@ -78,8 +78,10 @@ public struct AIPackage: Sendable {
     public let text: String
     public let sha256: String
     public let theme: AIThemeContext?
+    /// The theme this package was made from, even when no questions are included. Managed copies follow it.
+    public let themeID: UUID?
     func shorteningExpiry(to date: Date) -> AIPackage {
-        AIPackage(id: id, createdAt: createdAt, expiresAt: min(expiresAt, date), language: language, sources: sources, text: text, sha256: sha256, theme: theme)
+        AIPackage(id: id, createdAt: createdAt, expiresAt: min(expiresAt, date), language: language, sources: sources, text: text, sha256: sha256, theme: theme, themeID: themeID)
     }
 }
 
@@ -98,7 +100,7 @@ public enum AIPackageError: LocalizedError {
 }
 
 public enum AIPackageBuilder {
-    public static func build(sources: [AISource], theme: AIThemeContext? = nil, language: String, createdAt: Date, expiresAt: Date) throws -> AIPackage {
+    public static func build(sources: [AISource], theme: AIThemeContext? = nil, themeID: UUID? = nil, language: String, createdAt: Date, expiresAt: Date) throws -> AIPackage {
         guard !sources.isEmpty else { throw AIPackageError.empty }
         guard expiresAt > createdAt, !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               language.utf8.count <= 80, Set(sources.map(\.articleID)).count == sources.count,
@@ -134,7 +136,7 @@ public enum AIPackageBuilder {
         }
         text += "END_PACKAGE\n"
         return AIPackage(id: UUID(), createdAt: createdAt, expiresAt: min(expiresAt, createdAt.addingTimeInterval(86_400)), language: language,
-            sources: sources, text: text, sha256: hash(Data(text.utf8)), theme: theme)
+            sources: sources, text: text, sha256: hash(Data(text.utf8)), theme: theme, themeID: themeID ?? theme?.themeID)
     }
     static func themeSection(_ theme: AIThemeContext) -> String {
         var text = "BEGIN_THEME \(theme.themeID.uuidString)\nTheme: \(theme.themeName)\nQuestions: \(theme.questions.count)\nAnswers: \(theme.includesAnswers ? "included" : "not included")\n\n"
@@ -181,13 +183,18 @@ extension ReaderStore {
         guard request.includeQuestions, let theme = theme(id: request.themeID) else { return nil }
         let questions = self.questions(themeID: request.themeID)
         guard !questions.isEmpty else { return nil }
-        return AIThemeContext(themeID: theme.id, themeName: theme.name, questions: questions.map { question in
+        return AIThemeContext(themeID: theme.id, themeName: Self.oneLine(theme.name), questions: questions.map { question in
             AIThemeContext.Question(id: question.id, lens: question.lens.title, text: question.text,
                 answer: request.includeAnswers ? question.answer : nil,
                 evidence: request.includeAnswers ? question.evidenceArticleIDs.compactMap { id in
-                    themeArticles.first { $0.themeID == theme.id && $0.articleID == id }.map { AIThemeContext.Evidence(title: $0.title, url: $0.url) }
+                    themeArticles.first { $0.themeID == theme.id && $0.articleID == id }.map { AIThemeContext.Evidence(title: Self.oneLine($0.title), url: $0.url.flatMap { ArticleURL.validated($0)?.absoluteString }) }
                 } : [])
         }, includesAnswers: request.includeAnswers)
+    }
+    /// Feed text goes into single-line fields, so a line break in it must not start a line of its own
+    /// (for example a forged line that looks like the person's own words).
+    static func oneLine(_ text: String) -> String {
+        text.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " ")
     }
     public func aiSources(articleIDs: [UUID], at: Date) throws -> [AISource] {
         var seen = Set<UUID>()
@@ -253,7 +260,7 @@ extension ReaderStore {
                 guard let current = store.aiThemeContext(theme) else { throw AIPackageError.noQuestions }
                 context = current
             }
-            package = try AIPackageBuilder.build(sources: sources, theme: context, language: language, createdAt: at, expiresAt: expiry)
+            package = try AIPackageBuilder.build(sources: sources, theme: context, themeID: theme?.themeID, language: language, createdAt: at, expiresAt: expiry)
         } catch { reason = error.localizedDescription; throw error }
     }
     public func reconcile(at: Date) {

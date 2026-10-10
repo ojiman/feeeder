@@ -109,7 +109,7 @@ struct AIReviewView: View {
             generate()
         }
         .onChange(of: language) { _, _ in generate() }
-        .onChange(of: includeQuestions) { _, _ in generate() }
+        .onChange(of: includeQuestions) { _, on in if !on { includeAnswers = false }; generate() }
         .onChange(of: includeAnswers) { _, _ in generate() }
         .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
         .task(id: review.package?.expiresAt) {

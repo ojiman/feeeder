@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import ReaderCore
 
@@ -280,5 +281,59 @@ import Testing
         #expect(FileManager.default.fileExists(atPath: folder.path) && controller.maintenanceError == nil)
         try store.removeArticle(link.articleID, fromTheme: store.themes[0].id, at: at)
         #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the source rule still applies to it
+    }
+
+    /// A copy made from a theme with retained-article sources (the default choice on the review screen).
+    private func retainedCopy(_ at: Date, questions: Bool) throws -> (library: TestLibrary, store: ReaderStore, theme: Theme, article: Article, controller: ClaudeHandoffController, folder: URL) {
+        let library = try TestLibrary()
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]
+        let theme = try store.createTheme(name: "Rates", at: at)
+        try store.addArticle(article.id, toTheme: theme.id, at: at)
+        let question = try store.addQuestion(themeID: theme.id, lens: .assumption, text: "What does this assume?", at: at)
+        try store.saveAnswer(questionID: question.id, answer: "My private answer", at: at)
+        let review = AIPackageReview(store: store, now: { at })
+        let root = library.directory.appending(path: "handoff")
+        let controller = ClaudeHandoffController(directory: root, review: review, launcher: ProbeLauncher(), now: { at })
+        store.onContentPolicyChanged = { [weak store, weak controller] in if let store { controller?.reconcile(with: store, at: at) } }
+        try review.build(selections: [.article(article.id)], theme: AIThemeRequest(themeID: theme.id, includeQuestions: questions, includeAnswers: questions), language: "English", at: at)
+        let file = try HandoffFiles.write(try #require(review.package), directory: root)
+        return (library, store, theme, article, controller, file.deletingLastPathComponent())
+    }
+
+    @Test func aCopyOfARetainedArticleIsRemovedWhenThatArticleLeavesTheTheme() throws {
+        let at = Date.now
+        for questions in [true, false] {
+            let (library, store, theme, article, controller, folder) = try retainedCopy(at, questions: questions); defer { library.cleanup() }
+            controller.reconcile(with: store, at: at)
+            #expect(FileManager.default.fileExists(atPath: folder.path))
+            try store.removeArticle(article.id, fromTheme: theme.id, at: at)
+            #expect(!FileManager.default.fileExists(atPath: folder.path), "questions \(questions)")
+        }
+    }
+
+    @Test func aCopyWithoutQuestionsIsRemovedWhenItsThemeIsDeleted() throws {
+        let at = Date.now
+        let (library, store, theme, _, controller, folder) = try retainedCopy(at, questions: false); defer { library.cleanup() }
+        controller.reconcile(with: store, at: at)
+        #expect(FileManager.default.fileExists(atPath: folder.path))
+        try store.deleteTheme(id: theme.id)
+        #expect(!FileManager.default.fileExists(atPath: folder.path))
+    }
+
+    @Test func theCleanUpRunsEvenWhenTheReloadAfterADeletionFails() throws {
+        let at = Date.now
+        let library = try TestLibrary(); defer { library.cleanup() }
+        final class Gate { var failReload = false; var calls = 0 }
+        let gate = Gate()
+        let schema = ReaderStore.schema
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration("Reader", schema: schema, url: library.url, cloudKitDatabase: .none)])
+        let store = try ReaderStore(container: container, seedDemo: true, now: at, saveHook: nil, reloadHook: { if gate.failReload { throw CocoaError(.fileReadUnknown) } })
+        let theme = try store.createTheme(name: "A", at: at)
+        let question = try store.addQuestion(themeID: theme.id, lens: .assumption, text: "A question?", at: at)
+        store.onContentPolicyChanged = { gate.calls += 1 }
+        gate.failReload = true
+        #expect(throws: (any Error).self) { try store.deleteQuestion(id: question.id, at: at) }
+        #expect(gate.calls == 1)                                                          // the deletion was saved, so the cleanup must run
     }
 }

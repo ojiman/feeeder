@@ -20,7 +20,7 @@ struct ReaderView: View {
     @State private var saveError: String?
     @State private var themeMessage: String?
     @State private var pickingTheme = false
-    @State private var reviewingTheme = false
+    @State private var reviewingTheme: ThemeSheet?
     @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
@@ -129,7 +129,7 @@ struct ReaderView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 if case .theme(let id) = scope {
-                    Button { reviewingTheme = true } label: { Image(systemName: "paperplane") }
+                    Button { reviewingTheme = ThemeSheet(id: id) } label: { Image(systemName: "paperplane") }
                         .help("Claudeで開く…").accessibilityLabel("Claudeで開く")
                         .disabled(claudeSelections(themeID: id).isEmpty)
                 }
@@ -285,10 +285,8 @@ struct ReaderView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
         }
-        .sheet(isPresented: $reviewingTheme) {
-            if case .theme(let id) = scope {
-                AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: id), themeID: id)
-            }
+        .sheet(item: $reviewingTheme) { sheet in
+            AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(themeID: sheet.id), themeID: sheet.id)
         }
         .alert("新しいテーマ", isPresented: $creatingTheme) {
             TextField("テーマの名前", text: $newThemeName)
@@ -515,3 +513,6 @@ struct ReaderView: View {
 }
 
 private struct ClusterTrigger: Hashable { let active: Bool; let count: Int }
+
+/// The theme a review sheet was opened for, kept for the sheet's life even if the selection moves.
+private struct ThemeSheet: Identifiable { let id: UUID }
