@@ -41,6 +41,7 @@
 | [0013](0013-goal-and-note-for-themes.md) | A learning goal and one note per theme (replaces questions and answers of 0008) | valid |
 | [0014](0014-note-migration-format.md) | The note migration: format, what stays, what pauses | valid (approved by merging the N2 plan) |
 | [0015](0015-article-summary-details.md) | The article summary: budget, insertion point, and limits | valid (approved by merging the N4 plan) |
+| [0016](0016-note-actions.md) | Note actions: two actions, their limits, and how an adopt is undone | valid (approved by merging the N5 plan) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
