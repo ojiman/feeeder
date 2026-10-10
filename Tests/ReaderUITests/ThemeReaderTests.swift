@@ -42,6 +42,7 @@ import Testing
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
                          summaries: ((ReaderStore) -> ArticleSummaryModel)? = nil,
+                         noteActions: ((ReaderStore) -> NoteActionModel)? = nil,
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -55,7 +56,7 @@ import Testing
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
             handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialThemeFace: face, summaries: summaries?(store))
+            initialScope: try scope(store), initialThemeFace: face, summaries: summaries?(store), noteActions: noteActions?(store))
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-theme-reader")
@@ -327,5 +328,127 @@ private struct StubAssistant: ThemeAssistant {
         defer { t.finish(h) }
         try await t.settle(h.host) { t.topBar(in: h.host) != nil }
         #expect(segmented(labelled: "原文", in: h.host) != nil)
+    }
+}
+
+/// The two note actions below the note (N5). A suite of its own; run each test alone (see the N4 verification record).
+@Suite(.serialized) @MainActor struct NoteActionTests {
+    private let t = ThemeReaderTests()
+    private static let note = "# 見出し\n元の文章です。分からない。\n\n# 次\n別の節。"
+
+    private func make(answer: String? = "読みやすい文章です。", enabled: EnabledSwitch = EnabledSwitch(), note: String = NoteActionTests.note) throws -> (ThemeReaderTests.Harness, NoteActionModel) {
+        var model: NoteActionModel?
+        let h = try t.harness(scope: { store in .theme(store.themes[0].id) }, face: .note, noteActions: { _ in
+            let made = NoteActionModel(assistant: StubAssistant(answer: answer), isEnabled: { enabled.on })
+            model = made; return made
+        }) { store in
+            let theme = try store.createTheme(name: "A", goal: "金利を学ぶ", at: .now)
+            try store.saveNote(themeID: theme.id, text: note, at: .now)
+        }
+        return (h, try #require(model))
+    }
+    private func noteView(_ h: ThemeReaderTests.Harness) -> NSTextView? {
+        func find(_ v: NSView) -> NSTextView? { if let tv = v as? NSTextView, tv.isEditable, !tv.isFieldEditor { return tv }; return v.subviews.lazy.compactMap(find).first }
+        return find(h.host)
+    }
+    /// The bottom row of AppKit buttons is the action bar; the row above it is the card. Found by position, left to right.
+    private func bottomRow(_ h: ThemeReaderTests.Harness, above: CGFloat = 0, upTo: CGFloat = 30) -> [NSButton] {
+        t.buttons(in: h.host).filter { !($0 is NSPopUpButton) }
+            .map { ($0, $0.convert($0.bounds, to: nil)) }
+            .filter { $0.1.minY >= above && $0.1.minY < upTo && $0.1.width > 0 }
+            .sorted { $0.1.minX < $1.1.minX }.map(\.0)
+    }
+    private func placeCursor(_ h: ThemeReaderTests.Harness, in marker: String) throws {
+        h.window.makeKeyAndOrderFront(nil)
+        try #require(noteView(h)).window?.makeFirstResponder(noteView(h))
+        let range = (Self.note as NSString).range(of: marker)
+        noteView(h)?.setSelectedRange(NSRange(location: range.location + 1, length: 0))
+    }
+    private func waitForCard(_ model: NoteActionModel, _ h: ThemeReaderTests.Harness) async {
+        for _ in 0..<200 {
+            if case .ready = model.state { return }
+            h.host.layoutSubtreeIfNeeded()
+            await Task.yield()
+            pumpRunLoop(0.01)
+        }
+    }
+
+    @Test func theBarIsShownWhenAIIsOnAndHiddenWhenItIsOff() async throws {
+        let (h, _) = try make()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { bottomRow(h).count == 2 }
+        let defaults = UserDefaults.standard
+        let before = defaults.object(forKey: OnDeviceAISetting.key)
+        defaults.set(false, forKey: OnDeviceAISetting.key)
+        defer { if let before { defaults.set(before, forKey: OnDeviceAISetting.key) } else { defaults.removeObject(forKey: OnDeviceAISetting.key) } }
+        let (off, _) = try make()
+        defer { t.finish(off) }
+        try await t.settle(off.host) { noteView(off) != nil }
+        pumpRunLoop(0.2)
+        #expect(bottomRow(off).isEmpty)
+    }
+
+    @Test func aRewriteReplacesOnlyTheSectionsTextAndUndoBringsItBack() async throws {
+        let (h, model) = try make()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { bottomRow(h).count == 2 && noteView(h) != nil }
+        try placeCursor(h, in: "元の文章")
+        try #require(bottomRow(h).first).performClick(nil)                               // わかりやすく
+        await waitForCard(model, h)
+        guard case .ready(let card) = model.state else { Issue.record("no card: \(model.state)"); return }
+        #expect(card.answer == "読みやすい文章です。" && card.target.text == "元の文章です。分からない。")
+        try await t.settle(h.host) { bottomRow(h, above: 30, upTo: 400).count == 3 }      // 採用 / 別の案 / 閉じる
+        let theme = h.store.themes[0]
+        #expect(theme.note == Self.note)                                                  // nothing written yet
+        try #require(bottomRow(h, above: 30, upTo: 400).first).performClick(nil)         // 採用
+        let adopted = "# 見出し\n読みやすい文章です。\n\n# 次\n別の節。"
+        try await t.settle(h.host) { theme.note == adopted && noteView(h)?.string == adopted }
+        #expect(model.state == .idle)
+        let undo = try #require(noteView(h)?.undoManager)
+        undo.undo()
+        try await t.settle(h.host) { theme.note == Self.note && noteView(h)?.string == Self.note }   // ⌘Z: the original text, in the store and the view
+    }
+
+    @Test func theEssenceIsInsertedAfterTheSectionAsThreeBulletLines() async throws {
+        let (h, model) = try make(answer: "1. 一つ目\n2. 二つ目\n3. 三つ目")
+        defer { t.finish(h) }
+        try await t.settle(h.host) { bottomRow(h).count == 2 && noteView(h) != nil }
+        try placeCursor(h, in: "元の文章")
+        try #require(bottomRow(h).last).performClick(nil)                                 // 3行の要点
+        await waitForCard(model, h)
+        try await t.settle(h.host) { bottomRow(h, above: 30, upTo: 400).count == 3 }
+        try #require(bottomRow(h, above: 30, upTo: 400).first).performClick(nil)
+        let theme = h.store.themes[0]
+        let expected = "# 見出し\n元の文章です。分からない。\n\n・一つ目\n・二つ目\n・三つ目\n\n# 次\n別の節。"
+        try await t.settle(h.host) { theme.note == expected }
+    }
+
+    @Test func movingTheCursorOrTypingDropsTheCard() async throws {
+        let (h, model) = try make()
+        defer { t.finish(h) }
+        try await t.settle(h.host) { bottomRow(h).count == 2 && noteView(h) != nil }
+        try placeCursor(h, in: "元の文章")
+        try #require(bottomRow(h).first).performClick(nil)
+        await waitForCard(model, h)
+        #expect({ if case .ready = model.state { return true } else { return false } }())
+        noteView(h)?.setSelectedRange(NSRange(location: (Self.note as NSString).range(of: "別の節").location + 1, length: 0))   // another section
+        try await t.settle(h.host) { model.state == .idle }
+        try placeCursor(h, in: "元の文章")
+        try #require(bottomRow(h).first).performClick(nil)
+        await waitForCard(model, h)
+        let theme = h.store.themes[0]
+        noteView(h)?.insertText("追記", replacementRange: NSRange(location: 0, length: 0))       // one more edit in the note
+        try await t.settle(h.host) { theme.note.hasPrefix("追記") && model.state == .idle }
+    }
+
+    @Test func aTextOverTheLimitIsRefusedForARewriteWithoutAnyCall() async throws {
+        let long = "# 長い\n" + String(repeating: "あ", count: 1_301)
+        let (h, model) = try make(note: long)
+        defer { t.finish(h) }
+        try await t.settle(h.host) { bottomRow(h).count == 2 && noteView(h) != nil }
+        h.window.makeKeyAndOrderFront(nil)
+        noteView(h)?.window?.makeFirstResponder(noteView(h)); noteView(h)?.setSelectedRange(NSRange(location: 6, length: 0))
+        try #require(bottomRow(h).first).performClick(nil)
+        try await t.settle(h.host) { model.state == .unavailable(.tooLong) }
     }
 }

@@ -32,11 +32,22 @@ struct ThemeNotePane: View {
     let themeID: UUID
     @Binding var face: ThemeFace
     @Binding var selection: TextSelection?
+    /// Nil when the app has no note actions (the AI switch is then not shown either).
+    var noteActions: NoteActionModel? = nil
+    var handle: NoteTextHandle? = nil
+    var aiEnabled = true
+    var onAdopted: (NSRange) -> Void = { _ in }
+    var onError: (String) -> Void = { _ in }
     let sidebarFolded: Bool
     let onToggleSidebar: () -> Void
     let onEditGoal: () -> Void
     var body: some View {
         NoteEditor(store: store, themeID: themeID, selection: $selection)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if aiEnabled, let noteActions, let handle {
+                    NoteActionPanel(store: store, themeID: themeID, model: noteActions, handle: handle, selection: selection, onAdopted: onAdopted, onError: onError)
+                }
+            }
             .navigationTitle(store.theme(id: themeID)?.name ?? "テーマ")
             .navigationSubtitle("ノート")
             .safeAreaInset(edge: .top) { VStack(spacing: 0) { ThemeFacePicker(face: $face, onToggleSidebar: onToggleSidebar, sidebarFolded: sidebarFolded); ThemeGoalStrip(goal: store.theme(id: themeID)?.goal ?? "", onEdit: onEditGoal) } }
