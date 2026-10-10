@@ -38,6 +38,37 @@ public struct AISource: Sendable {
     }
 }
 
+/// What the person chose to include from a theme. Answers need questions.
+public struct AIThemeRequest: Sendable, Equatable, Hashable {
+    public let themeID: UUID
+    public let includeQuestions: Bool
+    public let includeAnswers: Bool
+    public init(themeID: UUID, includeQuestions: Bool, includeAnswers: Bool) {
+        self.themeID = themeID; self.includeQuestions = includeQuestions; self.includeAnswers = includeAnswers
+    }
+}
+
+/// The theme's questions as they were when the package was made. Compared again on every reconcile, so any change
+/// to what the package contains makes the review invalid.
+public struct AIThemeContext: Sendable, Equatable {
+    public struct Evidence: Sendable, Equatable {
+        public let title: String
+        public let url: String?
+    }
+    public struct Question: Sendable, Equatable {
+        public let id: UUID
+        public let lens: String
+        public let text: String
+        /// nil when answers are not included; "" when they are included but not written yet.
+        public let answer: String?
+        public let evidence: [Evidence]
+    }
+    public let themeID: UUID
+    public let themeName: String
+    public let questions: [Question]
+    public let includesAnswers: Bool
+}
+
 public struct AIPackage: Sendable {
     public let id: UUID
     public let createdAt: Date
@@ -46,13 +77,14 @@ public struct AIPackage: Sendable {
     public let sources: [AISource]
     public let text: String
     public let sha256: String
+    public let theme: AIThemeContext?
     func shorteningExpiry(to date: Date) -> AIPackage {
-        AIPackage(id: id, createdAt: createdAt, expiresAt: min(expiresAt, date), language: language, sources: sources, text: text, sha256: sha256)
+        AIPackage(id: id, createdAt: createdAt, expiresAt: min(expiresAt, date), language: language, sources: sources, text: text, sha256: sha256, theme: theme)
     }
 }
 
 public enum AIPackageError: LocalizedError {
-    case empty, unavailable, changed, expired, invalid
+    case empty, unavailable, changed, expired, invalid, noQuestions
     public var errorDescription: String? {
         switch self {
         case .empty: "本文を利用できる記事を1件以上選んでください。"
@@ -60,12 +92,13 @@ public enum AIPackageError: LocalizedError {
         case .changed: "レビュー後に本文または出典が変わりました。再生成して確認してください。"
         case .expired: "パッケージの期限が切れました。再生成して確認してください。"
         case .invalid: "パッケージを作成できませんでした。"
+        case .noQuestions: "このテーマには問いがありません。問いを含めない設定にしてください。"
         }
     }
 }
 
 public enum AIPackageBuilder {
-    public static func build(sources: [AISource], language: String, createdAt: Date, expiresAt: Date) throws -> AIPackage {
+    public static func build(sources: [AISource], theme: AIThemeContext? = nil, language: String, createdAt: Date, expiresAt: Date) throws -> AIPackage {
         guard !sources.isEmpty else { throw AIPackageError.empty }
         guard expiresAt > createdAt, !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               language.utf8.count <= 80, Set(sources.map(\.articleID)).count == sources.count,
@@ -82,6 +115,10 @@ public enum AIPackageBuilder {
         結果は本人が確認して自分の答えへ採用します。答えやいまの理解への自動書込みはしないでください。
 
         """ + "\n"
+        if let theme {
+            text += "このテーマについて本人が立てた問い（含まれている場合は本人の答えと根拠も）を、BEGIN_THEME から END_THEME の間に示します。本人の考えは本人のものとして尊重し、出典に基づいて、答えの抜け・反対の見方・根拠の弱い点を指摘してください。本人の答えを書き換えず、自動で書き込まないでください。\n\n"
+            text += themeSection(theme)
+        }
         for source in sources {
             let coverage: String
             switch source.content.coverage {
@@ -97,7 +134,22 @@ public enum AIPackageBuilder {
         }
         text += "END_PACKAGE\n"
         return AIPackage(id: UUID(), createdAt: createdAt, expiresAt: min(expiresAt, createdAt.addingTimeInterval(86_400)), language: language,
-            sources: sources, text: text, sha256: hash(Data(text.utf8)))
+            sources: sources, text: text, sha256: hash(Data(text.utf8)), theme: theme)
+    }
+    static func themeSection(_ theme: AIThemeContext) -> String {
+        var text = "BEGIN_THEME \(theme.themeID.uuidString)\nTheme: \(theme.themeName)\nQuestions: \(theme.questions.count)\nAnswers: \(theme.includesAnswers ? "included" : "not included")\n\n"
+        for question in theme.questions {
+            text += "BEGIN_QUESTION \(question.id.uuidString)\nLens: \(question.lens)\nQuestion:\n\(question.text)\n"
+            if let answer = question.answer {
+                let written = answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "(not written yet)" : answer
+                text += "My answer (written by the user):\n\(written)\n"
+                if !question.evidence.isEmpty {
+                    text += "Evidence chosen by the user:\n" + question.evidence.map { "- \($0.title)" + ($0.url.map { " <\($0)>" } ?? "") }.joined(separator: "\n") + "\n"
+                }
+            }
+            text += "END_QUESTION \(question.id.uuidString)\n\n"
+        }
+        return text + "END_THEME \(theme.themeID.uuidString)\n\n"
     }
     public static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
     public static func split(_ package: AIPackage, maximumBytes: Int = 1_048_576) -> [Data] {
@@ -123,6 +175,20 @@ public enum AIPackageBuilder {
 }
 
 extension ReaderStore {
+    /// The theme's questions (and, when asked, the person's answers and chosen evidence) as they are right now.
+    /// Nil when no questions are asked for, the theme is gone, or it has none.
+    public func aiThemeContext(_ request: AIThemeRequest) -> AIThemeContext? {
+        guard request.includeQuestions, let theme = theme(id: request.themeID) else { return nil }
+        let questions = self.questions(themeID: request.themeID)
+        guard !questions.isEmpty else { return nil }
+        return AIThemeContext(themeID: theme.id, themeName: theme.name, questions: questions.map { question in
+            AIThemeContext.Question(id: question.id, lens: question.lens.title, text: question.text,
+                answer: request.includeAnswers ? question.answer : nil,
+                evidence: request.includeAnswers ? question.evidenceArticleIDs.compactMap { id in
+                    themeArticles.first { $0.themeID == theme.id && $0.articleID == id }.map { AIThemeContext.Evidence(title: $0.title, url: $0.url) }
+                } : [])
+        }, includesAnswers: request.includeAnswers)
+    }
     public func aiSources(articleIDs: [UUID], at: Date) throws -> [AISource] {
         var seen = Set<UUID>()
         return try aiSources(selections: articleIDs.filter { seen.insert($0).inserted }.map(AIInputSelection.article), at: at)
@@ -175,14 +241,19 @@ extension ReaderStore {
         var seen = Set<UUID>()
         try build(selections: articleIDs.filter { seen.insert($0).inserted }.map(AIInputSelection.article), language: language, at: at)
     }
-    public func build(selections: [AIInputSelection], language: String, at: Date) throws {
+    public func build(selections: [AIInputSelection], theme: AIThemeRequest? = nil, language: String, at: Date) throws {
         clear()
         do {
             guard !selections.isEmpty else { throw AIPackageError.empty }
             let sources = try store.aiSources(selections: selections, at: at)
             let expiries = try store.availableInputExpiries(selections: selections, at: at)
             guard sources.count == selections.count, let expiry = expiries.values.min() else { throw AIPackageError.unavailable }
-            package = try AIPackageBuilder.build(sources: sources, language: language, createdAt: at, expiresAt: expiry)
+            var context: AIThemeContext?
+            if let theme, theme.includeQuestions {
+                guard let current = store.aiThemeContext(theme) else { throw AIPackageError.noQuestions }
+                context = current
+            }
+            package = try AIPackageBuilder.build(sources: sources, theme: context, language: language, createdAt: at, expiresAt: expiry)
         } catch { reason = error.localizedDescription; throw error }
     }
     public func reconcile(at: Date) {
@@ -194,6 +265,10 @@ extension ReaderStore {
             let expiries = try store.availableInputExpiries(selections: selections, at: at)
             guard current.count == prior.sources.count, let expiry = expiries.values.min() else { throw AIPackageError.unavailable }
             guard zip(current, prior.sources).allSatisfy({ $0.selection == $1.selection && $0.savedAt == $1.savedAt && $0.articleID == $1.articleID && $0.title == $1.title && $0.url == $1.url && $0.content == $1.content }) else { throw AIPackageError.changed }
+            if let context = prior.theme {
+                let request = AIThemeRequest(themeID: context.themeID, includeQuestions: true, includeAnswers: context.includesAnswers)
+                guard store.aiThemeContext(request) == context else { throw AIPackageError.changed }
+            }
             package = prior.shorteningExpiry(to: expiry)
         } catch { package = nil; reason = error.localizedDescription }
     }
