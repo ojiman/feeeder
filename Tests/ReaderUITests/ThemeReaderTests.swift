@@ -24,6 +24,17 @@ import Testing
         if let field = view as? NSTextView, field.string == text { return true }
         return view.subviews.contains { containsText(text, in: $0) }
     }
+    private func buttons(in view: NSView) -> [NSButton] {
+        (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap { buttons(in: $0) }
+    }
+    /// The reader's top bar: the last two plain buttons in the tree are previous and next (the menu is a pop-up button; the sidebar
+    /// button is earlier, in the middle column). SwiftUI gives these buttons no label or tool tip that AppKit can read.
+    private func topBar(in view: NSView) -> (previous: NSButton, next: NSButton, menu: NSPopUpButton)? {
+        let all = buttons(in: view)
+        let plain = all.filter { !($0 is NSPopUpButton) }
+        guard plain.count >= 2, let menu = all.compactMap({ $0 as? NSPopUpButton }).first else { return nil }
+        return (plain[plain.count - 2], plain[plain.count - 1], menu)
+    }
     private struct Harness {
         let store: ReaderStore
         let host: NSHostingView<ReaderView>
@@ -125,5 +136,61 @@ import Testing
         try await Task.sleep(for: .milliseconds(300))
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 0 }
         try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+    }
+
+    private func noteFaceHarness() throws -> Harness {
+        try harness(scope: { store in .theme(store.themes[0].id) }, face: .note) { store in
+            let theme = try store.createTheme(name: "A", at: .now)
+            for index in 0..<3 { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
+            try store.saveNote(themeID: theme.id, text: "ノートの本文", at: .now)
+        }
+    }
+
+    @Test func theTopBarMovesBetweenTheThemesArticlesFromTheNoteFace() async throws {
+        let h = try noteFaceHarness()
+        defer { finish(h) }
+        try await settle(h.host) { containsText("ノートの本文", in: h.host) && topBar(in: h.host) != nil }
+        let next = try #require(topBar(in: h.host)).next
+        next.performClick(nil)                                   // nothing shown: next opens the first
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        let previous = try #require(topBar(in: h.host)).previous
+        try await settle(h.host) { !previous.isEnabled }              // at the first article
+        next.performClick(nil)
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+        next.performClick(nil)
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 2") == true }
+        try await settle(h.host) { !next.isEnabled }                  // at the last article
+        #expect(containsText("ノートの本文", in: h.host))                            // the note stayed
+    }
+
+    @Test func theArticleChosenOnTheNoteFaceIsTheOneTheArticlesFaceShows() async throws {
+        let h = try noteFaceHarness()
+        defer { finish(h) }
+        try await settle(h.host) { topBar(in: h.host) != nil }
+        let next = try #require(topBar(in: h.host)).next
+        next.performClick(nil); try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        next.performClick(nil); try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+        let control = try #require(find(NSSegmentedControl.self, in: h.host))
+        control.selectedSegment = 0
+        control.performClick(nil)
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 3 }
+        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.selectedRow == 1 }
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
+    }
+
+    @Test func aShownArticleThatLeftTheThemeDoesNotBreakTheTopBar() async throws {
+        let h = try noteFaceHarness()
+        defer { finish(h) }
+        try await settle(h.host) { topBar(in: h.host) != nil }
+        let next = try #require(topBar(in: h.host)).next
+        next.performClick(nil)
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true }
+        let themeID = h.store.themes[0].id
+        try h.store.removeArticle(h.store.articles[0].id, fromTheme: themeID, at: .now)
+        for _ in 0..<10 { h.host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(20)) }   // let the update land
+        #expect(find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 0") == true)   // still shown
+        #expect(topBar(in: h.host) != nil)
+        next.performClick(nil)
+        try await settle(h.host) { find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 1") == true }
     }
 }

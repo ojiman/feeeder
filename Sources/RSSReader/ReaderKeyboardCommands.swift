@@ -16,11 +16,18 @@ enum ReaderCommand: String {
     static func listHasFocus(declared: Bool, responder: NSResponder?) -> Bool {
         declared || responder is NSTableView
     }
+    /// An editable text view (the note) or a text field takes the keys. The reader's text view is read-only and does not.
+    static func isTextInput(_ responder: NSResponder?) -> Bool {
+        if let view = responder as? NSTextView { return view.isEditable }
+        return responder is NSTextField
+    }
+    static func hasMarkedText(_ responder: NSResponder?) -> Bool {
+        (responder as? NSTextInputClient)?.hasMarkedText() == true
+    }
     static func permits(sheet: Bool, originalPage: Bool) -> Bool {
         let responder = NSApp.keyWindow?.firstResponder
-        let input = responder as? NSTextInputClient
-        return ReaderShortcutPolicy.permits(textInput: responder is NSTextView || responder is NSTextField,
-            markedText: input?.hasMarkedText() == true, sheet: sheet || NSApp.keyWindow?.attachedSheet != nil, originalPage: originalPage)
+        return ReaderShortcutPolicy.permits(textInput: isTextInput(responder), markedText: hasMarkedText(responder),
+            sheet: sheet || NSApp.keyWindow?.attachedSheet != nil, originalPage: originalPage)
     }
 }
 

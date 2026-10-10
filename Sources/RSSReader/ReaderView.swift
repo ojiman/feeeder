@@ -50,10 +50,7 @@ struct ReaderView: View {
             initialWorkspace.switchFace(of: id, to: initialThemeFace, rememberingReader: ReaderSelectionState())
         }
         _workspace = State(initialValue: initialWorkspace)
-        if case .theme(let id) = initialScope, initialWorkspace.face(of: id) == .note {
-            var layout = NoteLayout(); layout.enterNoteFace()
-            _noteLayout = State(initialValue: layout); _columnVisibility = State(initialValue: .doubleColumn)
-        }
+
     }
 
     private var selectedExpiry: Date? {
@@ -96,6 +93,7 @@ struct ReaderView: View {
     var body: some View {
         reader
 
+        .onAppear { if onNoteFace { noteLayout.enterNoteFace(); applyColumns() } }
         .onChange(of: onNoteFace) { _, on in
             if on { noteLayout.enterNoteFace() } else { noteLayout.leaveNoteFace() }
             applyColumns()
@@ -121,16 +119,11 @@ struct ReaderView: View {
         } content: {
             workspaceList.navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
-            ZStack(alignment: .trailing) {
-                detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
-                if let url = originalPage.url, let expectedID = originalPage.articleID {
-                    OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
-                        guard selection == expectedID, originalPage.articleID == expectedID else { return }
-                        perform(command)
-                    })
-                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
-                }
-            }.clipped().frame(minWidth: 360)
+            VStack(spacing: 0) {
+                if case .theme(let id) = scope, onNoteFace { readerTopBar(id) }
+                readerColumn
+            }
+            .frame(minWidth: 360)
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 930, minHeight: 600)
@@ -406,6 +399,29 @@ struct ReaderView: View {
             ThemeNotePane(store: store, themeID: id, face: faceBinding(id), sidebarFolded: noteLayout.sidebarFolded, onToggleSidebar: toggleSidebar, onEditGoal: { themeEditor = ThemeEditorTarget(themeID: id) }).id(id)
         }
         else { articleList.id(scope) }
+    }
+
+    /// The reader, with the original page sliding over it.
+    private var readerColumn: some View {
+        ZStack(alignment: .trailing) {
+            detail.allowsHitTesting(originalPage.url == nil).accessibilityHidden(originalPage.url != nil)
+            if let url = originalPage.url, let expectedID = originalPage.articleID {
+                OriginalPageView(url: url, onClose: closeOriginal, onCommand: { command in
+                    guard selection == expectedID, originalPage.articleID == expectedID else { return }
+                    perform(command)
+                })
+                    .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
+            }
+        }.clipped()
+    }
+
+    private func readerTopBar(_ themeID: UUID) -> some View {
+        ReaderTopBar(entries: store.themeArticleEntries(themeID: themeID, selection: selection),
+                     canPrevious: ThemeArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
+                     canNext: ThemeArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
+                     onPrevious: { guard !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder) else { return }; perform(.previous) },
+                     onNext: { guard !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder) else { return }; perform(.next) },
+                     onChoose: { id in if id != selection { ReaderPerformance.selectionStarted(id) }; selectArticle(id) })
     }
 
     @ViewBuilder private var detail: some View {
