@@ -13,7 +13,6 @@ import SwiftData
     public private(set) var memberships: [FeedMembership] = []
     public private(set) var themes: [Theme] = []
     public private(set) var themeArticles: [ThemeArticle] = []
-    public private(set) var themeQuestions: [ThemeQuestion] = []
     @ObservationIgnored var themeMembers: [UUID: Set<UUID>] = [:]
     @ObservationIgnored var articleThemeIDs: [UUID: Set<UUID>] = [:]
     public private(set) var starCount = 0
@@ -37,7 +36,7 @@ import SwiftData
 
     public static var schema: Schema {
         Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, ReaderSettings.self,
-                Theme.self, ThemeArticle.self, ThemeQuestion.self])
+                Theme.self, ThemeArticle.self])
     }
 
     public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
@@ -85,9 +84,6 @@ import SwiftData
         }
         themeArticles = try context.fetch(FetchDescriptor<ThemeArticle>()).sorted {
             $0.addedAt == $1.addedAt ? $0.key < $1.key : $0.addedAt < $1.addedAt
-        }
-        themeQuestions = try context.fetch(FetchDescriptor<ThemeQuestion>()).sorted {
-            $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
         }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
         feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })

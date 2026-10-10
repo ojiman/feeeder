@@ -65,7 +65,7 @@ import SwiftData
             let article = try #require(store.articles.first)
             try store.markDisplayed(articleID: article.id, at: start)
             let theme = try store.createTheme(name: "記録", at: start)
-            try store.saveUnderstanding(themeID: theme.id, text: "残す理解", at: start)
+            try store.saveNote(themeID: theme.id, text: "残すノート", at: start)
             try store.addArticle(article.id, toTheme: theme.id, at: start)
             try store.deleteContent(articleIDs: [article.id], at: start)
             try store.unsubscribe(feed)
@@ -75,7 +75,7 @@ import SwiftData
             return theme.id
         }
         let reopened = try ReaderStore(url: library.url, now: start.addingTimeInterval(90 * day))
-        #expect(reopened.theme(id: themeID)?.understanding == "残す理解")
+        #expect(reopened.theme(id: themeID)?.note == "残すノート")
         #expect(reopened.themeArticles.first?.url == "https://publisher.example/posts/1")
         #expect(reopened.articles.count == 1 && reopened.articles.first?.summary == "")
     }

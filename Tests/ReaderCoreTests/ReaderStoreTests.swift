@@ -85,7 +85,6 @@ struct ReaderStoreTests {
         let article = try #require(store.articles.first)
         let theme = try store.createTheme(name: "保存済み", at: at)
         let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
-        let question = try store.addQuestion(themeID: theme.id, lens: .custom, text: "保存済みの問い", at: at)
         failSave = true; failReload = true
         #expect(throws: (any Error).self) { try store.setRead(article, true) }
         failSave = false
@@ -104,16 +103,11 @@ struct ReaderStoreTests {
             { _ = try store.importFeed(parsed, receivedAt: at) },
             { _ = try store.createTheme(name: "変更", at: at) },
             { try store.renameTheme(id: theme.id, to: "変更", at: at) },
-            { try store.saveUnderstanding(themeID: theme.id, text: "捨ててはいけない変更", at: at) },
+            { try store.saveNote(themeID: theme.id, text: "捨ててはいけない変更", at: at) },
             { _ = try store.addArticle(article.id, toTheme: theme.id, at: at) },
             { _ = try store.toggleTheme(theme.id, for: article.id, at: at) },
             { _ = try store.createTheme(name: "変更", adding: article.id, at: at) },
             { try store.removeArticle(article.id, fromTheme: theme.id, at: at) },
-            { _ = try store.addQuestion(themeID: theme.id, lens: .custom, text: "変更", at: at) },
-            { try store.updateQuestion(id: question.id, text: "変更", at: at) },
-            { try store.saveAnswer(questionID: question.id, answer: "捨ててはいけない変更", at: at) },
-            { try store.setEvidence(questionID: question.id, articleIDs: [article.id], at: at) },
-            { try store.deleteQuestion(id: question.id, at: at) },
             { try store.deleteTheme(id: theme.id) },
             { try store.applyRetention(days: 7, at: at) },
             { try store.deleteContent(articleIDs: [article.id], at: at) },
@@ -125,12 +119,12 @@ struct ReaderStoreTests {
         #expect(saveAttempts == attempts)
         failReload = false
         try store.setRead(article, true)
-        try store.saveUnderstanding(themeID: theme.id, text: "再試行した理解", at: at)
+        try store.saveNote(themeID: theme.id, text: "再試行したノート", at: at)
         let reopened = try ReaderStore(url: url, now: at)
         #expect(reopened.article(id: article.id)?.isRead == true)
         #expect(reopened.feed(id: feed.id)?.title == parsed.title && reopened.feed(id: feed.id)?.folder == "")
         #expect(reopened.themeArticles.first?.key == link.key)
         #expect(reopened.retentionDays == 30 && reopened.article(id: article.id)?.starredAt == nil)
-        #expect(reopened.theme(id: theme.id)?.understanding == "再試行した理解" && reopened.themeQuestions.first?.answer == "")
+        #expect(reopened.theme(id: theme.id)?.note == "再試行したノート")
     }
 }
