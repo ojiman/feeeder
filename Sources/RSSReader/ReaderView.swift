@@ -119,7 +119,7 @@ struct ReaderView: View {
                         guard selection == expectedID, originalPage.articleID == expectedID else { return }
                         perform(command)
                     })
-                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .bottom))
+                        .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
                 }
             }.clipped().frame(minWidth: 360) }
         }
