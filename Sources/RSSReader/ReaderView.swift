@@ -134,21 +134,24 @@ struct ReaderView: View {
                         .disabled(claudeSelections(themeID: id).isEmpty)
                 }
             }
+            // Always present, disabled when no article is open. If these buttons came and went with the selection,
+            // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
-                if workspace.isReading(scope ?? .all), let article = selectedArticle {
-                    Button { perform(.toggleStar) } label: { Image(systemName: article.starredAt == nil ? "star" : "star.fill") }
-                        .help("Starを切り替える (s)").accessibilityLabel(article.starredAt == nil ? "Starを付ける" : "Starを外す")
-                    Button { perform(.themePicker) } label: {
-                        Image(systemName: store.isInAnyTheme(articleID: article.id) ? "square.stack.fill" : "square.stack")
-                    }
-                    .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
-                    .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
-                        ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }, suggestions: suggestions)
-                    }
-                    Button(action: openExternal) { Image(systemName: "globe") }
-                        .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
-                        .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
+                let article = workspace.isReading(scope ?? .all) ? selectedArticle : nil
+                Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
+                    .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
+                    .disabled(article == nil)
+                Button { perform(.themePicker) } label: {
+                    Image(systemName: article.map { store.isInAnyTheme(articleID: $0.id) } == true ? "square.stack.fill" : "square.stack")
                 }
+                .help("テーマに入れる (t)").accessibilityLabel("テーマに入れる")
+                .disabled(article == nil)
+                .popover(isPresented: $pickingTheme, arrowEdge: .bottom) {
+                    if let article { ThemePickerView(store: store, articleID: article.id, onMessage: { themeMessage = $0 }, suggestions: suggestions) }
+                }
+                Button(action: openExternal) { Image(systemName: "globe") }
+                    .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
+                    .disabled(article?.originalURL.flatMap { ArticleURL.validated($0) } == nil)
             }
         }
         .task(id: selectedExpiry) {
