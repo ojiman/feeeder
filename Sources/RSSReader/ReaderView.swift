@@ -12,7 +12,7 @@ struct ReaderView: View {
     let suggestions: ThemeSuggestionModel?
     let summaries: ArticleSummaryModel?
     let noteActions: NoteActionModel?
-    @AppStorage(OnDeviceAISetting.key) private var aiEnabled = true
+    @AppStorage private var aiEnabled: Bool
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
     @State private var selection: UUID?
@@ -48,7 +48,9 @@ struct ReaderView: View {
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialThemeFace: ThemeFace = .articles,
-         suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil, noteActions: NoteActionModel? = nil) {
+         suggestions: ThemeSuggestionModel? = nil, summaries: ArticleSummaryModel? = nil, noteActions: NoteActionModel? = nil,
+         defaults: UserDefaults = .standard) {
+        _aiEnabled = AppStorage(wrappedValue: true, OnDeviceAISetting.key, store: defaults)   // tests pass their own store
         self.summaries = summaries; self.noteActions = noteActions
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader; self.suggestions = suggestions

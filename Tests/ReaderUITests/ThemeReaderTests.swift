@@ -34,6 +34,12 @@ import Testing
         guard let index = all.firstIndex(where: { $0 is NSPopUpButton }), index >= 2, let menu = all[index] as? NSPopUpButton else { return nil }
         return (all[index - 2], all[index - 1], menu)         // previous and next come right before the menu in the tree
     }
+    /// The AI setting is on in a store of its own, so these tests do not depend on (or change) the Mac's real setting.
+    fileprivate static func aiOnDefaults() -> UserDefaults {
+        let defaults = UserDefaults(suiteName: "feeeder-test-\(UUID().uuidString)")!
+        defaults.set(true, forKey: OnDeviceAISetting.key)
+        return defaults
+    }
     fileprivate struct Harness {
         let store: ReaderStore
         let host: NSHostingView<ReaderView>
@@ -43,6 +49,7 @@ import Testing
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, face: ThemeFace = .articles,
                          summaries: ((ReaderStore) -> ArticleSummaryModel)? = nil,
                          noteActions: ((ReaderStore) -> NoteActionModel)? = nil,
+                         defaults: UserDefaults? = nil,
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -56,7 +63,7 @@ import Testing
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
             handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialThemeFace: face, summaries: summaries?(store), noteActions: noteActions?(store))
+            initialScope: try scope(store), initialThemeFace: face, summaries: summaries?(store), noteActions: noteActions?(store), defaults: defaults ?? Self.aiOnDefaults())
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-theme-reader")
@@ -247,12 +254,19 @@ private struct StubAssistant: ThemeAssistant {
 @Suite(.serialized) @MainActor struct AISummaryTests {
     private let t = ThemeReaderTests()
 
-    private func make(answer: String? = "これは要約です。", enabled: EnabledSwitch = EnabledSwitch()) throws -> (ThemeReaderTests.Harness, ArticleSummaryModel) {
+    /// A private settings store, so a test never changes the shared setting that other suites read.
+    private static func privateDefaults(aiEnabled: Bool) -> (UserDefaults, String) {
+        let name = "feeeder-test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.set(aiEnabled, forKey: OnDeviceAISetting.key)
+        return (defaults, name)
+    }
+    private func make(answer: String? = "これは要約です。", enabled: EnabledSwitch = EnabledSwitch(), defaults: UserDefaults? = nil) throws -> (ThemeReaderTests.Harness, ArticleSummaryModel) {
         var model: ArticleSummaryModel?
         let h = try t.harness(scope: { store in .theme(store.themes[0].id) }, face: .note, summaries: { store in
             let made = ArticleSummaryModel(store: store, assistant: StubAssistant(answer: answer), isEnabled: { enabled.on })
             model = made; return made
-        }) { store in
+        }, defaults: defaults) { store in
             let theme = try store.createTheme(name: "A", at: .now)
             for index in 0..<3 { try store.addArticle(store.articles[index].id, toTheme: theme.id, at: .now) }
             try store.saveNote(themeID: theme.id, text: "前の文章", at: .now)
@@ -279,11 +293,9 @@ private struct StubAssistant: ThemeAssistant {
     }
 
     @Test func theSwitchIsHiddenWhenOnDeviceAIIsOff() async throws {
-        let defaults = UserDefaults.standard
-        let before = defaults.object(forKey: OnDeviceAISetting.key)
-        defaults.set(false, forKey: OnDeviceAISetting.key)
-        defer { if let before { defaults.set(before, forKey: OnDeviceAISetting.key) } else { defaults.removeObject(forKey: OnDeviceAISetting.key) } }
-        let (h, _) = try make()
+        let (defaults, name) = Self.privateDefaults(aiEnabled: false)
+        defer { defaults.removePersistentDomain(forName: name) }
+        let (h, _) = try make(defaults: defaults)
         defer { t.finish(h) }
         try await t.settle(h.host) { t.topBar(in: h.host) != nil }
         #expect(segmented(labelled: "原文", in: h.host) == nil)
@@ -336,12 +348,18 @@ private struct StubAssistant: ThemeAssistant {
     private let t = ThemeReaderTests()
     private static let note = "# 見出し\n元の文章です。分からない。\n\n# 次\n別の節。"
 
-    private func make(answer: String? = "読みやすい文章です。", enabled: EnabledSwitch = EnabledSwitch(), note: String = NoteActionTests.note) throws -> (ThemeReaderTests.Harness, NoteActionModel) {
+    private static func privateDefaults(aiEnabled: Bool) -> (UserDefaults, String) {
+        let name = "feeeder-test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.set(aiEnabled, forKey: OnDeviceAISetting.key)
+        return (defaults, name)
+    }
+    private func make(answer: String? = "読みやすい文章です。", enabled: EnabledSwitch = EnabledSwitch(), note: String = NoteActionTests.note, defaults: UserDefaults? = nil) throws -> (ThemeReaderTests.Harness, NoteActionModel) {
         var model: NoteActionModel?
         let h = try t.harness(scope: { store in .theme(store.themes[0].id) }, face: .note, noteActions: { _ in
             let made = NoteActionModel(assistant: StubAssistant(answer: answer), isEnabled: { enabled.on })
             model = made; return made
-        }) { store in
+        }, defaults: defaults) { store in
             let theme = try store.createTheme(name: "A", goal: "金利を学ぶ", at: .now)
             try store.saveNote(themeID: theme.id, text: note, at: .now)
         }
@@ -377,11 +395,9 @@ private struct StubAssistant: ThemeAssistant {
         let (h, _) = try make()
         defer { t.finish(h) }
         try await t.settle(h.host) { bottomRow(h).count == 2 }
-        let defaults = UserDefaults.standard
-        let before = defaults.object(forKey: OnDeviceAISetting.key)
-        defaults.set(false, forKey: OnDeviceAISetting.key)
-        defer { if let before { defaults.set(before, forKey: OnDeviceAISetting.key) } else { defaults.removeObject(forKey: OnDeviceAISetting.key) } }
-        let (off, _) = try make()
+        let (defaults, name) = Self.privateDefaults(aiEnabled: false)
+        defer { defaults.removePersistentDomain(forName: name) }
+        let (off, _) = try make(defaults: defaults)
         defer { t.finish(off) }
         try await t.settle(off.host) { noteView(off) != nil }
         pumpRunLoop(0.2)
