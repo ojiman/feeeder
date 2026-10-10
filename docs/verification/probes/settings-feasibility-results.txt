@@ -1,0 +1,62 @@
+Historical record at f87bca5; superseded by settings-po-results.txt. Not the current runner output.
+
+Settings feasibility review rerun — 2026-10-10 JST
+Product source: e9bcd933873fe920fc3751ba417afe561ff2a99c
+Environment: macOS 27.0.1 (26A434), Apple Silicon, Xcode 27.0 (27A266a), Swift 6.4 (swiftlang-6.4.0.34.1)
+Command: bash docs/verification/probes/run-settings-feasibility.sh
+Exit status: 0
+Synthetic data only; actual Settings scene and actual Japanese IME NOT_RUN.
+
+SHA256 of assets (patch blank context whitespace normalized after run; application checked against fixed source):
+ecbdcc9ae6bd2ad6253089e221950e371bcd53c37dabe12a5dbcb7895a320c16  settings-feasibility.swift
+4f73504f0295f6f720359b20cbe2460d6322767d3f18a87e56e73c59a47df79d  settings-typography.patch
+6a8e60384f2585cd147eb9de7fe6db00f3aeabac87390b170fd47307281313c5  run-settings-feasibility.sh
+
+Final run (verbatim excerpt):
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SettingsFeasibilityProbe started.
+◇ Test fiveCategoryContentsRender() started.
+PROBE five category contents rendered; navigation and Settings scene not exercised
+✔ Test fiveCategoryContentsRender() passed after 2.267 seconds.
+◇ Test editorUpdateAndMarkedTextControls() started.
+PROBE native font-only marked preserved=true
+PROBE SwiftUI notifyBinding=false, bindingMatchesBefore=false, markedBefore={3, 4}, markedAfter={57, 0}, textPreserved=false
+PROBE SwiftUI notifyBinding=true, bindingMatchesBefore=true, markedBefore={3, 4}, markedAfter={3, 4}, textPreserved=true
+PROBE separate-window responder resignation=true, markedAfter=true, textPreserved=true
+✔ Test editorUpdateAndMarkedTextControls() passed after 5.091 seconds.
+◇ Test parameterizedProductionInstallAndWidth() started.
+PROBE parameterized production install/setFrameSize: 108 combinations
+✔ Test parameterizedProductionInstallAndWidth() passed after 11.810 seconds.
+◇ Test windowBackedReadingPosition() started.
+PROBE mounted scroll: viewport=(1000.0, 480.0), paragraph UTF16 length=774, heights=936.0->390.0, anchor=paragraph-7/80.0->paragraph-7/80.0, topUTF16=5505->5597
+✔ Test windowBackedReadingPosition() passed after 0.079 seconds.
+◇ Test onDeviceAvailabilityOnly() started.
+PROBE FoundationModels availability: available
+PROBE Japanese embedding assets present: true
+✔ Test onDeviceAvailabilityOnly() passed after 0.011 seconds.
+✔ Suite SettingsFeasibilityProbe passed after 19.260 seconds.
+✔ Test run with 5 tests in 1 suite passed after 19.260 seconds.
+
+Negative control: normal paragraph size parameter replaced with literal 16 in temporary source only.
+Command: swift test [same package/scratch/version flags as runner] --filter parameterizedProductionInstallAndWidth
+Exit status: 1 (expected)
+✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:164:29: Expectation failed: font.pointSize == size && style.lineSpacing == spacing
+↳ font.pointSize == size && style.lineSpacing == spacing → false
+↳   font.pointSize == size → false
+↳   style.lineSpacing == spacing → <not evaluated>
+✘ Test parameterizedProductionInstallAndWidth() recorded an issue at SettingsFeasibilityProbe.swift:164:29: Expectation failed: font.pointSize == size && style.lineSpacing == spacing
+✘ Suite SettingsFeasibilityProbe failed after 11.070 seconds with 3240 issues.
+✘ Test run with 1 test in 1 suite failed after 11.070 seconds with 3240 issues.
+Note: Some test targets reported failures:
+  - ReaderUITests (Swift Testing)
+Control source restored; final run above used a fresh archived source and current patch.
+
+Initial baseline related tests (verbatim summary; unchanged product source, no integration claim):
+✔ Suite QuestionEditorTests passed after 0.804 seconds.
+✔ Suite NativeArticleTextTests passed after 0.929 seconds.
+✔ Suite ThemeReaderTests passed after 1.921 seconds.
+✔ Test run with 17 tests in 3 suites passed after 1.921 seconds.
+✔ Suite ContentRetentionTests passed after 0.114 seconds.
+✔ Test run with 6 tests in 1 suite passed after 0.114 seconds.

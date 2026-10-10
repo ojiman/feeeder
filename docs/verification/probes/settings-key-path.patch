@@ -1,0 +1,191 @@
+--- a/Sources/RSSReader/ArticleDetailView.swift
++++ b/Sources/RSSReader/ArticleDetailView.swift
+@@ -2,6 +2,7 @@
+ import ReaderCore
+
+ struct ArticleDetailView: View {
++    @AppStorage("readingSize", store: SettingsKeyProbe.defaults) private var readingSize = 16.0
+     let article: Article
+     let content: ArticleContent?
+     let expiry: Date?
+@@ -45,7 +46,7 @@
+                 unavailable: available ? nil : (article.contentDeletedAt != nil ? "本文とRSS要約は削除済みです。" : "本文を利用できません。"),
+                 initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
+                 imageLoader: imageLoader, heroURL: available ? article.imageURL.flatMap { ArticleURL.validated($0) } : nil,
+-                bodyParagraphs: available ? content!.bodyParagraphs : nil, pageForward: pageForward)
++                bodyParagraphs: available ? content!.bodyParagraphs : nil, pageForward: pageForward, readingSize: CGFloat(readingSize))
+         }.background(Color(nsColor: .textBackgroundColor))
+     }
+ }
+--- a/Sources/RSSReader/NativeArticleText.swift
++++ b/Sources/RSSReader/NativeArticleText.swift
+@@ -5,6 +5,7 @@
+
+ // A single native text layout replaces per-paragraph SwiftUI geometry/preferences.
+ @MainActor final class ArticleTextView: NSTextView, NSTextViewDelegate {
++    private var probeReadingSize: CGFloat = 16
+     private var maximumBodyWidth: CGFloat = 670
+     private var paragraphRanges: [NSRange] = []
+     private var paragraphYs: [CGFloat] = []
+@@ -44,6 +45,7 @@
+         positionHero()
+     }
+     func install(title: String, publisher: String, date: String, coverage: String, paragraphs: [String], unavailable: String?, hero: Bool = false, bodyParagraphs: [BodyParagraph]? = nil, bodyFontSize: CGFloat = 16, bodyLineSpacing: CGFloat = 8, maximumBodyWidth: CGFloat = 670) {
++        probeReadingSize = bodyFontSize; SettingsKeyProbe.installed()
+         self.maximumBodyWidth = maximumBodyWidth
+         let width = max(1, min(maximumBodyWidth, frame.width - 84))
+         textContainer?.containerSize.width = width
+@@ -187,6 +189,7 @@
+         scroll.contentView.scroll(to: NSPoint(x: 0, y: target))
+         scroll.reflectScrolledClipView(scroll.contentView)
+         selectedRanges = selection
++        probeReadingSize = size
+         needsDisplay = true
+     }
+
+@@ -199,6 +202,7 @@
+     }
+     override func draw(_ dirtyRect: NSRect) {
+         super.draw(dirtyRect)
++        SettingsKeyProbe.drawn(size: probeReadingSize, view: self)
+         if let manager = layoutManager, let container = textContainer {
+             NSColor.separatorColor.setFill()
+             for (range, indent) in quoteRanges {
+@@ -246,9 +250,11 @@
+     var heroURL: URL? = nil
+     var bodyParagraphs: [BodyParagraph]? = nil
+     var pageForward = true
++    var readingSize: CGFloat = 16
+
+     @MainActor final class Coordinator {
+         var signature: [String] = []
++        var readingSize: CGFloat?
+         var bodyParagraphs: [BodyParagraph]?
+         nonisolated(unsafe) var observer: NSObjectProtocol?
+         var restoring = false
+@@ -308,11 +314,22 @@
+             text.configureHero(context.coordinator.hero)
+         } else { text.configureHero(nil); context.coordinator.hero = nil }
+         if reduceMotion { scroll.layer?.removeAnimation(forKey: "article-motion") }
+-        guard changed else { return }
++        guard changed else {
++            guard context.coordinator.readingSize != readingSize else { return }
++            context.coordinator.restoring = true
++            SettingsKeyProbe.updating()
++            text.updateReadingSize(readingSize)
++            SettingsKeyProbe.updated()
++            context.coordinator.readingSize = readingSize
++            context.coordinator.restoring = false
++            text.recordScroll()
++            return
++        }
++        context.coordinator.readingSize = readingSize
+         context.coordinator.restoring = true
+         context.coordinator.signature = signature
+         context.coordinator.bodyParagraphs = bodyParagraphs
+-        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs)
++        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs, bodyFontSize: readingSize, bodyLineSpacing: readingSize / 2, maximumBodyWidth: 670 * readingSize / 16)
+         text.restore(anchor: initialAnchor, offset: initialOffset)
+         context.coordinator.restoring = false
+         context.coordinator.animatePage(in: scroll, articleID: articleID, forward: pageForward, reduceMotion: reduceMotion)
+--- a/Sources/RSSReader/ReaderView.swift
++++ b/Sources/RSSReader/ReaderView.swift
+@@ -112,6 +112,7 @@
+                 }
+             }.clipped().frame(minWidth: 360) }
+         }
++        .background(SettingsProbeKeys(enabled: { workspace.isReading(scope ?? .all) && selectedArticle != nil && originalPage.url == nil && !addingSubscription && !pickingTheme }, firstRead: { selectedArticle?.firstReadAt?.timeIntervalSince1970 }))
+         .navigationSplitViewStyle(.balanced)
+         .frame(minWidth: 930, minHeight: 600)
+         .tint(.orange)
+--- a/Sources/RSSReader/ReaderSettingsView.swift
++++ b/Sources/RSSReader/ReaderSettingsView.swift
+@@ -2,6 +2,7 @@
+ import ReaderCore
+
+ struct ReaderSettingsView: View {
++    @AppStorage("readingSize", store: SettingsKeyProbe.defaults) private var readingSize = 16.0
+     @Bindable var store: ReaderStore
+     @Binding var appearance: String
+     @State private var days = 30
+@@ -18,6 +19,9 @@
+                     Text("ライト").tag("light")
+                     Text("ダーク").tag("dark")
+                 }.pickerStyle(.segmented)
++                Picker("本文サイズ（接続検証）", selection: $readingSize) {
++                    ForEach(SettingsKeyProbe.sizes, id: \.self) { Text("\(Int($0)) pt").tag($0) }
++                }
+                 Text("システムに合わせると、Macの外観設定に追従します。")
+                     .font(.caption).foregroundStyle(.secondary)
+             }.formStyle(.grouped).padding()
+--- a/Sources/RSSReader/RSSReaderApp.swift
++++ b/Sources/RSSReader/RSSReaderApp.swift
+@@ -11,11 +11,13 @@
+     @State private var startupError: String?
+     @State private var lifecycleError: String?
+     @Environment(\.scenePhase) private var scenePhase
+-    @AppStorage("appearance") private var appearance = "system"
++    @AppStorage("appearance", store: SettingsKeyProbe.defaults) private var appearance = "system"
+
+     init() {
+         do {
+             let args = ProcessInfo.processInfo.arguments
++            guard args.contains("--data-directory"), args.contains("--seed-demo") else { fatalError("Synthetic launch only") }
++            SettingsKeyProbe.start()
+             let directory: URL
+             if let index = args.firstIndex(of: "--data-directory"), args.indices.contains(index + 1) {
+                 directory = URL(fileURLWithPath: args[index + 1], isDirectory: true)
+@@ -43,7 +45,7 @@
+     }
+
+     var body: some Scene {
+-        Window("Feeeder", id: "reader") {
++        Window("Feeeder Settings Probe", id: "reader") {
+             Group {
+                 if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader) }
+                 else {
+--- a/Sources/ReaderCore/ArticleLoadingController.swift
++++ b/Sources/ReaderCore/ArticleLoadingController.swift
+@@ -15,6 +15,7 @@
+     }
+     public func clear() { state = ArticleLoadingState(); displayed = nil; availableUpdate = nil; loading = false }
+     public func load(articleID: UUID, refresh: Bool = false) async {
++        NotificationCenter.default.post(name: Notification.Name("SettingsProbe.load"), object: nil)
+         let generation = state.begin(articleID: articleID)
+         error = nil; availableUpdate = nil
+         do { displayed = try store.content(articleID: articleID, at: now()) } catch { self.error = error.localizedDescription; displayed = nil }
+@@ -22,6 +23,7 @@
+               let article = store.articles.first(where: { $0.id == articleID }), store.isContentAvailable(article, at: now()),
+               let url = article.originalURL.flatMap({ ArticleURL.validated($0) }) else { loading = false; return }
+         loading = true
++        NotificationCenter.default.post(name: Notification.Name("SettingsProbe.fetch"), object: nil)
+         let result = await fetcher.fetch(url: url)
+         guard !Task.isCancelled, state.accept(articleID: articleID, generation: generation) else { return }
+         loading = false
+--- a/Sources/ReaderCore/ReaderStore.swift
++++ b/Sources/ReaderCore/ReaderStore.swift
+@@ -260,6 +260,7 @@
+     }
+
+     public func markDisplayed(articleID: UUID, at: Date) throws {
++        NotificationCenter.default.post(name: Notification.Name("SettingsProbe.markDisplayed"), object: nil)
+         try reloadIfNeeded()
+         guard let article = articleIndex[articleID],
+               try content(articleID: articleID, at: at) != nil else { return }
+--- a/Sources/ReaderCore/DemoLibrary.swift
++++ b/Sources/ReaderCore/DemoLibrary.swift
+@@ -76,9 +76,13 @@
+             let article = Article(feedID: feeds[entry.0].id, title: entry.1, summary: entry.2,
+                                   publisher: ["dev.example", "tech.example", "weekend.example"][entry.0],
+                                   publishedAt: reference.addingTimeInterval(Double(-index * 3600)), receivedAt: receivedAt)
++            let count = [3, 30, 200, 10, 100, 3][index]
++            article.title = "合成 \(count)段落（キー接続検証）"
++            let args = ProcessInfo.processInfo.arguments
++            if let i = args.firstIndex(of: "--probe-original-url") { article.originalURL = args[i + 1] }
+             context.insert(article)
+             context.insert(FeedMembership(feedID: article.feedID, articleID: article.id, sourceID: article.id.uuidString))
+-            context.insert(ContentSnapshot(articleID: article.id, text: entry.3))
++            context.insert(ContentSnapshot(articleID: article.id, text: (0..<count).map { "合成段落\($0)。" + String(repeating: "日本語とEnglish🙂を読みます。", count: 35) }.joined(separator: "\n\n"), coverage: .extracted))
+         }
+     }
+ }

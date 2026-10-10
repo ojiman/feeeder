@@ -1,0 +1,776 @@
+[
+  {
+    "eventTimestamp" : 296119.712741333,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 18
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 21.786958677694201,
+    "eventToUpdateMS" : 14.366417017299682,
+    "firstReadAfter" : 1791607217.6804581,
+    "firstReadBefore" : 1791607217.6804581,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 18,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 1.7268750234507024,
+    "updateMS" : 5.6936666369438171,
+    "utf16" : 2069,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296120.24650520802,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 11.536375328432769,
+    "eventToUpdateMS" : 3.6563336616382003,
+    "firstReadAfter" : 1791607217.6804581,
+    "firstReadBefore" : 1791607217.6804581,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 16,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 2.2595833288505673,
+    "updateMS" : 5.620458337944001,
+    "utf16" : 2069,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296121.07910874998,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "no-op",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296133.34241616598,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 18
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 59.929000679403543,
+    "eventToUpdateMS" : 9.2299590469338,
+    "firstReadAfter" : 1791607236.2734032,
+    "firstReadBefore" : 1791607236.2734032,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 18,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 2.8056666487827897,
+    "updateMS" : 47.893374983686954,
+    "utf16" : 20235,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296134.36218737502,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 74.82325000455603,
+    "eventToUpdateMS" : 11.112458305433393,
+    "firstReadAfter" : 1791607236.2734032,
+    "firstReadBefore" : 1791607236.2734032,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 16,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 3.022374992724508,
+    "updateMS" : 60.688416706398129,
+    "utf16" : 20235,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296135.775566875,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "no-op",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296145.24708845798,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 18
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 340.41875036200508,
+    "eventToUpdateMS" : 9.8556253942660987,
+    "firstReadAfter" : 1791607251.6666021,
+    "firstReadBefore" : 1791607251.6666021,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 18,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 7.3864583391696215,
+    "updateMS" : 323.17666662856936,
+    "utf16" : 134749,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296146.09237520798,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 20
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 317.73220869945362,
+    "eventToUpdateMS" : 2.4594587157480419,
+    "firstReadAfter" : 1791607251.6666021,
+    "firstReadBefore" : 1791607251.6666021,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 20,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 6.7382499692030251,
+    "updateMS" : 308.53450001450256,
+    "utf16" : 134749,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296146.925876458,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "no-op",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 20
+  },
+  {
+    "eventTimestamp" : 296147.70928291598,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 18
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 318.60695901559666,
+    "eventToUpdateMS" : 2.6505423593334854,
+    "firstReadAfter" : 1791607251.6666021,
+    "firstReadBefore" : 1791607251.6666021,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 18,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 7.4604166438803077,
+    "updateMS" : 308.49600001238286,
+    "utf16" : 134749,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296148.562571791,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 315.0486673694104,
+    "eventToUpdateMS" : 3.8287090137600899,
+    "firstReadAfter" : 1791607251.6666021,
+    "firstReadBefore" : 1791607251.6666021,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 16,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 6.828666664659977,
+    "updateMS" : 304.39129169099033,
+    "utf16" : 134749,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296149.41208912502,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 14
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 306.05387501418591,
+    "eventToUpdateMS" : 4.3250416638329625,
+    "firstReadAfter" : 1791607251.6666021,
+    "firstReadBefore" : 1791607251.6666021,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 14,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 7.1485416847281158,
+    "updateMS" : 294.58029166562483,
+    "utf16" : 134749,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296150.26113912498,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "accepted",
+    "repeat" : false,
+    "responder" : "ArticleTextView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "countsDelta" : [
+      {
+        "delta" : 0,
+        "name" : "load"
+      },
+      {
+        "delta" : 0,
+        "name" : "install"
+      },
+      {
+        "delta" : 0,
+        "name" : "fetch"
+      },
+      {
+        "delta" : 0,
+        "name" : "markDisplayed"
+      }
+    ],
+    "eventToDrawMS" : 317.46554170968011,
+    "eventToUpdateMS" : 5.6315833935514092,
+    "firstReadAfter" : 1791607251.6666021,
+    "firstReadBefore" : 1791607251.6666021,
+    "phase" : "drawn",
+    "selectionPreserved" : true,
+    "size" : 16,
+    "topCharacterPreserved" : true,
+    "updatedToDrawMS" : 6.7855416564270854,
+    "updateMS" : 305.04841665970162,
+    "utf16" : 134749,
+    "viewportHeight" : 733,
+    "viewportWidth" : 607
+  },
+  {
+    "eventTimestamp" : 296174.07831249997,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296174.07831249997,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296174.09376645798,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296174.09376645798,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296174.10086758301,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296174.10086758301,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296184.74307354097,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296184.74307354097,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296184.75683716597,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296184.76235416601,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296184.75683716597,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296184.76235416601,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296188.15451787499,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296188.16184695798,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296188.15451787499,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296188.16184695798,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296188.17582816601,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296188.17582816601,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296199.67968004098,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296199.69188300002,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296199.67968004098,
+    "ignoringModifiers" : "+",
+    "key" : "=",
+    "keyCode" : 24,
+    "modifiers" : 1179648,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296199.69188300002,
+    "ignoringModifiers" : "-",
+    "key" : "-",
+    "keyCode" : 27,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296199.70843150001,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  },
+  {
+    "eventTimestamp" : 296199.70843150001,
+    "ignoringModifiers" : "0",
+    "key" : "0",
+    "keyCode" : 29,
+    "modifiers" : 1048576,
+    "phase" : "ignored",
+    "repeat" : false,
+    "responder" : "OriginalReaderWebView",
+    "sheet" : false,
+    "size" : 16
+  }
+]
