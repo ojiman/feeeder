@@ -18,7 +18,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | Sources/ReaderCore | Models, store, parsing, retention, handoff. No UI. |
 | Sources/RSSReader | SwiftUI/AppKit app. |
 | Tests/ReaderCoreTests, Tests/ReaderUITests | Tests. Synthetic data only. |
-| scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`, `fetch-ci-app.sh` (tested by `test-fetch-ci-app.sh`). |
+| scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`, `fetch-ci-app.sh` (tested by `test-fetch-ci-app.sh`), `ci-gate.sh` (the `check` job; tested by `test-ci-gate.sh`). |
 
 ## Commands
 
@@ -41,7 +41,7 @@ bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
 FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 ```
 
-CI runs two jobs (`regression`, `release`) on macOS 26 / Xcode 26.6 / Swift 6.3.3. Changes that touch only `docs/**` or Markdown skip CI, so such a PR shows no checks. The local toolchain is macOS 27 / Swift 6.4 and is the only place the support floor (macOS 27.0, decision 0007) is exercised; CI verifies only the build floor (macOS 26.6) because no macOS 27 runner exists yet. Do not use APIs that need the macOS 27 SDK until CI can build them.
+CI runs two jobs (`regression`, `release`) on macOS 26 / Xcode 26.6 / Swift 6.3.3. A third job, `check`, always runs on a pull request and is the one status the `main` ruleset requires: for a PR that touches only `docs/**` or Markdown it skips the macOS jobs and passes; otherwise it passes only when both macOS jobs pass (`scripts/ci-gate.sh`, tested by `scripts/test-ci-gate.sh`). The local toolchain is macOS 27 / Swift 6.4 and is the only place the support floor (macOS 27.0, decision 0007) is exercised; CI verifies only the build floor (macOS 26.6) because no macOS 27 runner exists yet. Do not use APIs that need the macOS 27 SDK until CI can build them.
 
 ## Starting or resuming work
 
