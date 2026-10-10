@@ -46,7 +46,7 @@ extension ReaderStore {
             let note = compose(theme.note, understanding, legacy)
             // Compose and check everything first: a failure here changes nothing.
             guard LegacyNoteText.containsEverything(note, understanding: understanding, questions: legacy),
-                  theme.note.isEmpty || note.contains(theme.note.trimmingCharacters(in: .whitespacesAndNewlines))
+                  theme.note.isEmpty || LegacyNoteText.contains(note, theme.note.trimmingCharacters(in: .whitespacesAndNewlines))
             else { throw LegacyNoteMigrationError.verificationFailed(themeName: theme.name) }
             plans.append(Plan(theme: theme, note: note, questions: questions))
         }
@@ -58,7 +58,9 @@ extension ReaderStore {
         }
         try save()
         defer { if removed > 0 { onContentPolicyChanged?() } }
-        try reload()
+        // The migration is saved, so a reload that fails now must not be reported as a failed migration. `reload()` marks the store
+        // as needing a reload first, so the next change recovers it (the same rule as `rollback`).
+        try? reload()
         return LegacyNoteMigrationResult(themes: plans.count, questions: removed)
     }
 }

@@ -16,7 +16,7 @@ public enum LegacyNoteText {
     }
 
     /// The note after migration: the existing note first, then the understanding, then each question as a `#` heading with its answer
-    /// and evidence list. Blocks are separated by one blank line and the text ends with one line break. Nothing is trimmed inside a block.
+    /// and evidence list. Blocks are separated by one blank line and the text ends with one line break. Only blank lines at the ends of a block, and the spaces around a heading line, are trimmed.
     public static func compose(existingNote: String, understanding: String, questions: [Question]) -> String {
         var blocks: [String] = []
         for text in [existingNote, understanding] {
@@ -46,7 +46,13 @@ public enum LegacyNoteText {
             pieces.append(trimmingBlankLines(question.answer))
             for item in question.evidence { pieces.append(oneLine(item.title)); if let url = item.url { pieces.append(url) } }
         }
-        return pieces.allSatisfy { $0.isEmpty || note.contains($0) }
+        return pieces.allSatisfy { $0.isEmpty || contains(note, $0) }
+    }
+
+    /// Exact text search. `String.contains` compares by Character, so a CR at the end of a piece (which the note joins with the next
+    /// line break into one CRLF) or a combining mark would not match. A literal search compares the characters themselves.
+    static func contains(_ note: String, _ piece: String) -> Bool {
+        note.range(of: piece, options: .literal) != nil
     }
 
     private static func listLine(_ item: Evidence) -> String {

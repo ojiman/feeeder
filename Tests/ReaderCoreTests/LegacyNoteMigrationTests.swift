@@ -143,4 +143,46 @@ import Testing
         let message = LegacyNoteMigrationResult.failureMessage(LegacyNoteMigrationError.verificationFailed(themeName: "T"))
         #expect(message.contains("消していません") && message.contains("「T」"))
     }
+
+    @Test func anAnswerThatEndsInCRLFStillMigrates() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "T", at: at)
+        try store.saveUnderstanding(themeID: theme.id, text: "理解\r\n", at: at)
+        let question = try store.addQuestion(themeID: theme.id, lens: .custom, text: "問い", at: at)
+        try store.saveAnswer(questionID: question.id, answer: "一行目\r\n二行目\r\n", at: at)
+        #expect(try store.migrateLegacyThemeContent(at: at).questions == 1)
+        #expect(theme.note.contains("一行目\r\n二行目") && store.themeQuestions.isEmpty)
+    }
+
+    @Test func aReloadThatFailsAfterASuccessfulSaveIsStillASuccess() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let reload = SaveGate()
+        let schema = ReaderStore.schema
+        let container = try ModelContainer(for: schema, configurations: [
+            ModelConfiguration("Reader", schema: schema, url: library.url, cloudKitDatabase: .none)])
+        let store = try ReaderStore(container: container, seedDemo: true, now: at, reloadHook: {
+            if reload.failNext { reload.failNext = false; throw CocoaError(.fileReadUnknown) }
+        })
+        let l = try fill(store)
+        let counter = Counter(); store.onContentPolicyChanged = { counter.count += 1 }
+        reload.failNext = true
+        #expect(try store.migrateLegacyThemeContent(at: at) == LegacyNoteMigrationResult(themes: 3, questions: 3))   // no error: it was saved
+        #expect(counter.count == 1)
+        #expect(try store.createTheme(name: "After", at: at).name == "After")                                    // the store recovers on its next change
+        #expect(store.theme(id: l.a.id)?.note == expectedA(store) && store.themeQuestions.isEmpty)
+        #expect(try store.migrateLegacyThemeContent(at: at) == LegacyNoteMigrationResult(themes: 0, questions: 0))
+    }
+
+    @Test func theExistingNoteMustSurviveInTheComposedText() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let theme = try store.createTheme(name: "T", at: at)
+        try store.saveNote(themeID: theme.id, text: "守るべきノート", at: at)
+        try store.addQuestion(themeID: theme.id, lens: .custom, text: "問い", at: at)
+        #expect(throws: LegacyNoteMigrationError.self) {
+            try store.migrateLegacyThemeContent(at: at) { _, _, _ in "# 問い\n" }                              // drops the existing note
+        }
+        #expect(theme.note == "守るべきノート" && store.themeQuestions.count == 1)
+    }
 }

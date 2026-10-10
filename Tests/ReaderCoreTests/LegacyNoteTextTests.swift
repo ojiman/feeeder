@@ -50,4 +50,19 @@ struct LegacyNoteTextTests {
             #expect(!LegacyNoteText.containsEverything(damaged, understanding: "理解", questions: questions), "\(piece)")
         }
     }
+
+    @Test func textEndingInCarriageReturnsOrStartingWithACombiningMarkPassesTheCheck() {
+        // The composed note joins a trailing CR with the line break after it into one Character (CRLF); the check must still find it.
+        let cases: [(String, [Q])] = [
+            ("", [Q(text: "問い", answer: "a\r\nb\r\n", evidence: [])]),
+            ("理解\r\n", []),
+            ("理解\r", []),
+            ("", [Q(text: "問い", answer: "行末が改行だけのCR\r", evidence: [])]),
+            ("", [Q(text: " \u{301}結合文字で始まる問い", answer: "", evidence: [])]),
+        ]
+        for (understanding, questions) in cases {
+            let note = LegacyNoteText.compose(existingNote: "", understanding: understanding, questions: questions)
+            #expect(LegacyNoteText.containsEverything(note, understanding: understanding, questions: questions), "\(understanding.debugDescription) \(questions)")
+        }
+    }
 }
