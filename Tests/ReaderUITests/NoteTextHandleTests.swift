@@ -17,6 +17,7 @@ import Testing
         window.contentView = scroll
         let handle = NoteTextHandle(); handle.attach(view)
         window.makeFirstResponder(view)
+        handle.expectedText = { [unowned view] in String(view.string) }        // the bare view's own text is the saved text
         return (window, view, handle)
     }
 
@@ -95,7 +96,55 @@ import Testing
         for _ in 0..<100 { if theme.note == "# 見出し\n読みやすい文章です。" && handle.string == theme.note { break }; pump(0.02) }
         #expect(theme.note == "# 見出し\n読みやすい文章です。" && handle.string == theme.note)
     }
+
+    @Test func anEditIsRefusedWhenTheTextViewDoesNotShowTheSavedNote() throws {
+        let (window, view, handle) = hostedTextView("画面の文章")
+        defer { window.close() }
+        handle.expectedText = { "保存されている別の文章" }                                  // e.g. Japanese text still being composed
+        #expect(try !handle.replace(NSRange(location: 0, length: 2), with: "x", save: save(into: view)))
+        #expect(view.string == "画面の文章")
+        handle.expectedText = { nil }
+        #expect(try !handle.replace(NSRange(location: 0, length: 2), with: "x", save: save(into: view)))
+    }
+
+    @Test func anUndoNeverPutsAnOldCopyOverNewerText() throws {
+        let (window, view, handle) = hostedTextView("元の文章です。")
+        defer { window.close() }
+        var saved = "元の文章です。"
+        handle.expectedText = { saved }
+        let saver: (String) throws -> Void = { text in saved = text; view.string = text }
+        #expect(try handle.replace(NSRange(location: 0, length: 2), with: "書き直した", save: saver))
+        #expect(saved == "書き直した文章です。")
+        pump(0.05)
+        saved += "あとから足した文。"; view.string = saved                                  // the person typed after the adopt
+        let undo = try #require(view.undoManager)
+        undo.undo()
+        #expect(saved == "書き直した文章です。あとから足した文。")                           // the typed text survives; the stale step did nothing
+        saved = "別のテーマのノート"; view.string = saved                                    // another note is on screen
+        pump(0.05)
+        undo.undo(); undo.redo()
+        #expect(saved == "別のテーマのノート")
+    }
+
+    @Test func anUndoThatCannotBeSavedIsReportedAndNoRedoIsRegistered() throws {
+        let (window, view, handle) = hostedTextView("元")
+        defer { window.close() }
+        var saved = "元"
+        handle.expectedText = { saved }
+        var failNext = false
+        struct Refused: LocalizedError { var errorDescription: String? { "保存できません" } }
+        let saver: (String) throws -> Void = { text in if failNext { throw Refused() }; saved = text; view.string = text }
+        var told: [String] = []
+        handle.onUndoError = { told.append($0) }
+        #expect(try handle.replace(NSRange(location: 0, length: 1), with: "新", save: saver))
+        pump(0.05)
+        failNext = true
+        let undo = try #require(view.undoManager)
+        undo.undo()
+        #expect(told == ["保存できません"] && saved == "新" && !undo.canRedo)
+    }
 }
+
 
 @MainActor private final class SelectionBox { var value: TextSelection? }
 

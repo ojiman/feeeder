@@ -19,7 +19,7 @@ struct NoteActionPromptTests {
         let made = try #require(request(NoteActionPrompt.make(.clearer, text: "本文です。", goal: "金利を学ぶ")))
         #expect(!made.0.prompt.contains("金利を学ぶ") && made.0.prompt == "文章:\n本文です。")
         let i = NoteActionPrompt.clearerInstructions
-        #expect(i.count < 300 && i.contains("意味を変えずに") && i.contains("留保") && i.contains("一人称はそのまま") && i.contains("新しい情報を足しません"))
+        #expect(i.count < 300 && i.contains("意味を変えずに") && i.contains("留保") && i.contains("一人称と文章の言語はそのまま") && i.contains("新しい情報を足しません"))
         #expect(i.contains("書き直した文章だけを出力"))
     }
 

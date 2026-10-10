@@ -145,4 +145,25 @@ import Testing
         await settle(model); try await Task.sleep(for: .milliseconds(100))
         if case .ready(let card) = model.state { #expect(card.action == .essence) } else { Issue.record("got \(model.state)") }
     }
+
+    @Test func aRewriteThatIsMuchShorterThanItsInputIsTreatedAsCutOffNotOffered() async throws {
+        let body = String(repeating: "金利が上がると返済が増える。", count: 30)                  // 420 characters
+        let longNote = "# 見出し\n" + body
+        let cut = FakeAssistant(); await cut.scriptGeneration(["金利が上がると返済が増える。金利が上がると"])    // far shorter than the input
+        let model = make(cut)
+        model.request(.clearer, note: longNote, selection: NSRange(location: 8, length: 0), goal: "")
+        await settle(model)
+        #expect(model.state == .failed)
+        let fine = FakeAssistant(); await fine.scriptGeneration([String(repeating: "金利が上がると返済額が増える。", count: 30)])
+        let ok = make(fine)
+        ok.request(.clearer, note: longNote, selection: NSRange(location: 8, length: 0), goal: "")
+        await settle(ok)
+        if case .ready = ok.state {} else { Issue.record("got \(ok.state)") }
+        // A short text may legitimately get a short answer.
+        let short = FakeAssistant(); await short.scriptGeneration(["短く。"])
+        let shortModel = make(short)
+        shortModel.request(.clearer, note: note, selection: inFirst, goal: "")
+        await settle(shortModel)
+        if case .ready = shortModel.state {} else { Issue.record("got \(shortModel.state)") }
+    }
 }

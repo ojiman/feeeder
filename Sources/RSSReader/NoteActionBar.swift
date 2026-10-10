@@ -34,7 +34,7 @@ struct NoteActionPanel: View {
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.bar)
-        .onAppear { handle.expectedText = { [store, themeID] in store.theme(id: themeID)?.note } }
+        .onAppear { handle.expectedText = { [store, themeID] in store.theme(id: themeID)?.note }; handle.onUndoError = onError }
         // A card, or a request in flight, is dropped as soon as the note's text or the selection is no longer what it was made for.
         .onChange(of: note) { _, text in model.noteDidChange(note: text, selection: currentSelection(in: text)) }
         .onChange(of: selection) { _, _ in model.noteDidChange(note: note, selection: currentSelection(in: note)) }
@@ -101,9 +101,11 @@ struct NoteActionPanel: View {
             var after = card.target.range
             switch card.action {
             case .clearer:
-                let applied = try handle.replace(card.target.range, with: card.answer, actionName: "書き直しの採用", save: saver)
-                if !applied { try saver(ns.replacingCharacters(in: card.target.range, with: card.answer)) }
-                after = NSRange(location: card.target.range.location, length: (card.answer as NSString).length)
+                // A CRLF note keeps its line break style.
+                let answer = note.contains("\r\n") ? card.answer.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\n", with: "\r\n") : card.answer
+                let applied = try handle.replace(card.target.range, with: answer, actionName: "書き直しの採用", save: saver)
+                if !applied { try saver(ns.replacingCharacters(in: card.target.range, with: answer)) }
+                after = NSRange(location: card.target.range.location, length: (answer as NSString).length)
             case .essence:
                 let offset = NoteInsertion.characterOffset(forUTF16Offset: card.target.insertionOffset, in: note)
                 let result = NoteInsertion.insert(card.answer, into: note, atCharacterOffset: offset)

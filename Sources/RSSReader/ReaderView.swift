@@ -460,6 +460,8 @@ struct ReaderView: View {
             // One undo step when the note's text view is mounted; the plain save otherwise.
             let saver: (String) throws -> Void = { [store] text in try store.saveNote(themeID: themeID, text: text, at: .now) }
             let whole = NSRange(location: 0, length: (note as NSString).length)
+            noteHandle.expectedText = { [store] in store.theme(id: themeID)?.note }
+            noteHandle.onUndoError = { saveError = $0 }
             if try !noteHandle.replace(whole, with: result.note, actionName: "要約の採用", save: saver) { try saver(result.note) }
             adoptedSummary = summary
             let index = result.note.index(result.note.startIndex, offsetBy: min(result.cursorOffset, result.note.count))

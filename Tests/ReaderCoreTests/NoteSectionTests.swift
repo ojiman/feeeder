@@ -14,7 +14,7 @@ struct NoteSectionTests {
         let range = (note as NSString).range(of: "本文。\n続き")
         let result = try #require(target(note, range))
         #expect(result.kind == .selection && result.range == range && result.text == "本文。\n続き")
-        #expect(result.insertionOffset == range.location + range.length)
+        #expect((note as NSString).substring(from: result.insertionOffset).hasPrefix("\n\n# 二つ目"))     // a selection's paragraph goes after its line
         #expect(target(note, NSRange(location: (note as NSString).range(of: "前置き").location, length: 1))?.text == "前")
     }
 
@@ -77,5 +77,21 @@ struct NoteSectionTests {
     @Test func aCursorOutsideTheNoteIsClamped() throws {
         #expect(try #require(target(note, NSRange(location: 9_999, length: 0))).text == "二つ目の本文。")
         #expect(try #require(target(note, NSRange(location: -5, length: 0))).text == "前置き")
+    }
+
+    @Test func whiteSpaceAtTheEdgesOfASelectionIsNotPartOfIt() throws {
+        let text = "A文。\nB文。"
+        let tripleClick = try #require(target(text, NSRange(location: 0, length: 4)))        // 「A文。」 and its line break
+        #expect(tripleClick.range == NSRange(location: 0, length: 3) && tripleClick.text == "A文。")
+        #expect(tripleClick.insertionOffset == 3)
+        let spaced = try #require(target("  前 後  \n次", NSRange(location: 0, length: 8)))
+        #expect(spaced.text == "前 後" && spaced.range == NSRange(location: 2, length: 3))
+    }
+
+    @Test func aSelectionsInsertionPointIsTheEndOfItsLineNotTheMiddleOfIt() throws {
+        let text = "一行目です。\n二行目の途中までを選ぶ。続き。\n三行目"
+        let selected = (text as NSString).range(of: "二行目の途中")
+        let result = try #require(target(text, selected))
+        #expect((text as NSString).substring(to: result.insertionOffset).hasSuffix("続き。") && (text as NSString).substring(from: result.insertionOffset) == "\n三行目")
     }
 }

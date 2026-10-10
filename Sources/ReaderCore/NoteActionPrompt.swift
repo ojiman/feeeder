@@ -11,7 +11,7 @@ public enum NoteActionPrompt {
     public static let clearerOutputTokens = 1_200
     public static let essenceOutputTokens = 300
 
-    public static let clearerInstructions = "あなたは文章の推敲を手伝います。与えられた文章を、意味を変えずに、読みやすい日本語に書き直します。事実・数字・否定・留保（「分からない」「かもしれない」などの不確かさ）は変えず、強めも弱めもしません。一人称はそのままにし、新しい情報を足しません。書き直した文章だけを出力し、前置き・説明・引用符は付けません。"
+    public static let clearerInstructions = "あなたは文章の推敲を手伝います。与えられた文章を、意味を変えずに、読みやすい日本語に書き直します。事実・数字・否定・留保（「分からない」「かもしれない」などの不確かさ）は変えず、強めも弱めもしません。一人称と文章の言語はそのままにし、新しい情報を足しません。書き直した文章だけを出力し、前置き・説明・引用符は付けません。"
     public static let essenceInstructions = "あなたは読書ノートの整理を手伝います。与えられた文章の要点を、日本語の短い3行にまとめます。各行は1文で、書かれていることだけを使い、不確かさの表現は保ちます。学習ゴールが示されていれば、それに関わる点を優先します。3行だけを出力し、見出し・前置き・説明は付けません。"
 
     public enum Outcome: Equatable, Sendable {

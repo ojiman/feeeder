@@ -26,7 +26,7 @@ import Observation
     private var task: Task<Void, Never>?
     private var pending: (note: String, selection: NSRange)?
 
-    public init(assistant: (any ThemeAssistant)?, isEnabled: @escaping @MainActor () -> Bool = { true }, deadline: Double = 20) {
+    public init(assistant: (any ThemeAssistant)?, isEnabled: @escaping @MainActor () -> Bool = { true }, deadline: Double = 30) {
         self.assistant = assistant; self.isEnabled = isEnabled; self.deadline = deadline
     }
 
@@ -57,7 +57,9 @@ import Observation
                 let raw = try await withDeadline(self.deadline) { try await assistant.generate(made) }
                 guard self.token == mine, !Task.isCancelled else { return }
                 guard self.isEnabled() else { self.state = .unavailable(.disabled); return }
-                if let answer = NoteActionPrompt.clean(raw, for: action) {
+                // A rewrite that is much shorter than its input was probably cut off at the token cap: do not offer it for replacing.
+                let cutOff = action == .clearer && target.text.count >= 200 && (NoteActionPrompt.clean(raw, for: action)?.count ?? 0) * 2 < target.text.count
+                if !cutOff, let answer = NoteActionPrompt.clean(raw, for: action) {
                     self.state = .ready(Card(action: action, target: target, noteText: note, selection: selection, answer: answer, wasCut: wasCut))
                 } else { self.state = .failed }
             } catch {
