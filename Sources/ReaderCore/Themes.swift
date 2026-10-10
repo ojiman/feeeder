@@ -119,6 +119,7 @@ extension ReaderStore {
         for question in themeQuestions where question.themeID == id { context.delete(question) }
         context.delete(theme)
         try save(); try reload()
+        onContentPolicyChanged?()
     }
 
     @discardableResult public func addArticle(_ articleID: UUID, toTheme themeID: UUID, at: Date) throws -> ThemeArticle {
@@ -146,6 +147,7 @@ extension ReaderStore {
         context.delete(link)
         theme(id: themeID)?.updatedAt = at
         try save(); try reload()
+        onContentPolicyChanged?()
     }
 
     public func themeArticleIDs(themeID: UUID, keeping: UUID? = nil) -> [UUID] {
@@ -278,6 +280,7 @@ extension ReaderStore {
         theme(id: question.themeID)?.updatedAt = at
         context.delete(question)
         try save(); try reload()
+        onContentPolicyChanged?()
     }
 }
 

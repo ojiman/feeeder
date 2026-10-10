@@ -24,6 +24,8 @@ public enum HandoffFiles {
         var expiresAt: Date
         let split: Bool
         let files: [Record]
+        let themeID: UUID?
+        let questionIDs: [UUID]?
     }
     private static var manager: FileManager { .default }
     public static func write(_ package: AIPackage, directory: URL) throws -> URL {
@@ -56,7 +58,7 @@ public enum HandoffFiles {
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
             let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
-                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records)
+                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, themeID: package.theme?.themeID, questionIDs: package.theme?.questions.map(\.id))
             try saveMetadata(metadata, folder: folder)
         } catch {
             // This folder was just created by this operation, and contains only its generated copies.
@@ -78,9 +80,13 @@ public enum HandoffFiles {
             if min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400)) <= at { try manager.removeItem(at: folder) }
         }
     }
-    public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date], at: Date) throws {
+    public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date],
+                                 themeContextIsValid: (UUID, [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
         try maintain(directory: directory) { folder, record in
             var metadata = record
+            if let themeID = metadata.themeID, !themeContextIsValid(themeID, metadata.questionIDs ?? []) {
+                try manager.removeItem(at: folder); return
+            }
             let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
             let expiries = selections.compactMap { validInputExpiries[$0] }
             guard expiries.count == selections.count, let earliest = expiries.min() else {

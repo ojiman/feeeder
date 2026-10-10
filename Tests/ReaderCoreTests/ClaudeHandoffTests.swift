@@ -203,4 +203,82 @@ import Testing
         #expect(throws: (any Error).self) { try HandoffFiles.cleanup(directory: root, at: package.expiresAt) }
         #expect(FileManager.default.fileExists(atPath: library.url.path))
     }
+
+    /// Store + theme with one question, a package that includes the theme's questions and answers, and a controller that is wired
+    /// the way the app wires it (a store change calls the controller's reconcile).
+    private func themeCopy(_ at: Date) throws -> (library: TestLibrary, store: ReaderStore, theme: Theme, link: ThemeArticle, question: ThemeQuestion, controller: ClaudeHandoffController, folder: URL, launcher: ProbeLauncher) {
+        let library = try TestLibrary()
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = store.articles[0]; article.summary = "Recorded synthetic summary"
+        let theme = try store.createTheme(name: "Rates", at: at)
+        let link = try store.addArticle(article.id, toTheme: theme.id, at: at)
+        let question = try store.addQuestion(themeID: theme.id, lens: .assumption, text: "What does this assume?", at: at)
+        try store.saveAnswer(questionID: question.id, answer: "My private answer", at: at)
+        let review = AIPackageReview(store: store, now: { at })
+        let launcher = ProbeLauncher()
+        let root = library.directory.appending(path: "handoff")
+        let controller = ClaudeHandoffController(directory: root, review: review, launcher: launcher, now: { at })
+        store.onContentPolicyChanged = { [weak store, weak controller] in if let store { controller?.reconcile(with: store, at: at) } }
+        try review.build(selections: [.themeArticle(link.key)], theme: AIThemeRequest(themeID: theme.id, includeQuestions: true, includeAnswers: true), language: "English", at: at)
+        let package = try #require(review.package)
+        let file = try HandoffFiles.write(package, directory: root)
+        return (library, store, theme, link, question, controller, file.deletingLastPathComponent(), launcher)
+    }
+
+    @Test func aCopyWithAnswersIsRemovedWhenItsThemeAQuestionOrASourceIsDeleted() async throws {
+        let at = Date.now
+        for removal in 0..<3 {
+            let (library, store, theme, link, question, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
+            #expect(FileManager.default.fileExists(atPath: folder.path))
+            controller.reconcile(with: store, at: at)
+            #expect(FileManager.default.fileExists(atPath: folder.path))                  // nothing was removed yet
+            switch removal {
+            case 0: try store.deleteTheme(id: theme.id)
+            case 1: try store.deleteQuestion(id: question.id, at: at)
+            default: try store.removeArticle(link.articleID, fromTheme: theme.id, at: at)
+            }
+            #expect(!FileManager.default.fileExists(atPath: folder.path), "removal \(removal)")
+            #expect(controller.maintenanceError == nil)
+        }
+    }
+
+    @Test func editingAnAnswerOrRenamingTheThemeKeepsTheCopyUntilItExpires() throws {
+        let at = Date.now
+        let (library, store, theme, _, question, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
+        try store.saveAnswer(questionID: question.id, answer: "Edited later", at: at)
+        try store.renameTheme(id: theme.id, to: "Renamed", at: at)
+        controller.reconcile(with: store, at: at)
+        #expect(FileManager.default.fileExists(atPath: folder.path))
+        let text = try String(contentsOf: folder.appending(path: "Feeeder-review.txt"), encoding: .utf8)
+        #expect(text.contains("My private answer") && !text.contains("Edited later"))      // a labelled snapshot, as promised
+        controller.reconcile(with: store, at: at.addingTimeInterval(86_401))
+        #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the 24-hour limit still applies
+    }
+
+    @Test func aThemeCopyIsOpenedOnlyAfterItsPackageIsStillValid() async throws {
+        let at = Date.now
+        let (library, store, _, _, question, controller, _, launcher) = try themeCopy(at); defer { library.cleanup() }
+        let review = AIPackageReview(store: store, now: { at })
+        let theme = try #require(store.themes.first)
+        let link = try #require(store.themeArticles.first)
+        try review.build(selections: [.themeArticle(link.key)], theme: AIThemeRequest(themeID: theme.id, includeQuestions: true, includeAnswers: true), language: "English", at: at)
+        let second = ClaudeHandoffController(directory: library.directory.appending(path: "handoff2"), review: review, launcher: launcher, now: { at })
+        let package = try #require(review.package)
+        try store.saveAnswer(questionID: question.id, answer: "Changed after review", at: at)
+        await second.open(package: package)
+        #expect(launcher.urls.isEmpty && second.error != nil && !second.opened)            // changed after review: nothing is opened
+    }
+
+    @Test func copiesFromOlderVersionsWithoutThemeFieldsStillReconcile() throws {
+        let at = Date.now
+        let (library, store, _, link, _, controller, folder, _) = try themeCopy(at); defer { library.cleanup() }
+        let metadataFile = folder.appending(path: "metadata.json")
+        var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+        metadata.removeValue(forKey: "themeID"); metadata.removeValue(forKey: "questionIDs")
+        try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+        controller.reconcile(with: store, at: at)
+        #expect(FileManager.default.fileExists(atPath: folder.path) && controller.maintenanceError == nil)
+        try store.removeArticle(link.articleID, fromTheme: store.themes[0].id, at: at)
+        #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the source rule still applies to it
+    }
 }

@@ -42,7 +42,9 @@ import Observation
         do {
             let selections = try HandoffFiles.sourceSelections(directory: directory)
             let expiries = try store.availableInputExpiries(selections: selections, at: at)
-            try HandoffFiles.reconcile(directory: directory, validInputExpiries: expiries, at: at)
+            try HandoffFiles.reconcile(directory: directory, validInputExpiries: expiries, themeContextIsValid: { themeID, questionIDs in
+                store.theme(id: themeID) != nil && Set(questionIDs).isSubset(of: Set(store.questions(themeID: themeID).map(\.id)))
+            }, at: at)
             nextExpiry = try HandoffFiles.nextExpiry(directory: directory)
             if let file, !FileManager.default.fileExists(atPath: file.path) { self.file = nil; opened = false }
             maintenanceError = nil
