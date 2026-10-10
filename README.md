@@ -1,25 +1,31 @@
 # Feeeder
 
-A fast, keyboard-driven RSS reader for macOS that helps you go from skimming to understanding.
+*The product name is Unagi Reader. The name changes in the app and the docs in one rename PR (roadmap, stage D); until then the repository, the code and the app bundle say Feeeder.*
 
-Skim hundreds of articles in a smooth three-column reader. Send an AI summary of an article you care about to a note, and write the rest in your own words. Everything stays on your Mac.
-
-> **Direction (decision 0019).** V1 is being simplified: themes, goals and the AI suggestions give way to plain Markdown notes, one button that sends an article's summary to a note, and Claude as a function of the note. The list under "What it does today" describes the current build; it changes as the stages in [decision 0019](docs/decisions/0019-v1-simplification-notes.md) are merged. The target is in [the specification](docs/specification.md).
+A fast, keyboard-driven RSS reader for macOS that turns the few articles that matter into your own understanding.
 
 > **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is currently in Japanese only; a language setting is planned before the public release. There are no prebuilt releases yet: you build the app from source. Final product acceptance is still in progress, see [Status](#status).
 
 ## Why
 
-Many more articles are written now than anyone can read. The hard part is finding the few that matter and turning them into something of your own. Most readers stop at "read" and "starred": stars pile up and are never looked at again. Switching to a notes app or an AI chat breaks the flow of reading.
+More articles are written than anyone can read. The hard part is finding the few that matter and turning them into something of your own. Most readers stop at "read" and "starred": stars pile up and are never looked at again. A separate notes app or an AI chat breaks the flow of reading.
 
-Unagi Reader is built for engineers in 2026 who read a lot of feeds every day. Its value is one loop in one app, with no waiting: **read, take notes, ask AI, understand.**
+Unagi Reader (Feeeder) is for engineers in 2026 who read many feeds every day. Its value is **one loop in one app, with no waiting: read, take notes, ask AI, understand.**
 
-- **Read fast.** Three columns, Vim-style keys (`j` / `k`), and a UI built so that scrolling and typing do not wait on a reload, a network request, or AI. Comfort is part of the value.
+- **Read fast.** Three columns, Vim-style keys (`j` / `k`), and a UI built so that scrolling and typing do not wait on a reload, a network request, or AI. A smooth feel is part of the value.
 - **Note it while you read.** One button sends an article's summary (made on your Mac, or just the title, link and feed summary) to a note. The articles you sent sit beside the note, so you write in your own words while you see them.
 - **Ask AI when you choose.** Show the note's full text, then hand it to Claude for a review. Nothing leaves your Mac before you decide.
 - **Keep it yours.** No account, no backend, no sync. Your subscriptions, articles and notes live in a local database.
 
-## What it does today
+The full statement, with the promises and the questions to ask when in doubt, is in the [vision](docs/vision.md).
+
+## Where it is going
+
+V1 is being simplified (decision [0019](docs/decisions/0019-v1-simplification-notes.md)): themes and goals become plain Markdown notes, one button sends an article's summary to a note, and Claude becomes a function of the note. The stages are S1 notes, S2 send a summary, S3 Claude from the note, S4 clean up, S5 light styling of headings and lists. The target is in [the specification](docs/specification.md).
+
+## What the current build does
+
+This list describes the build as it is now. It changes as the stages above are merged (themes, goals and the AI suggestions go away).
 
 - RSS/Atom subscriptions with one level of folders, automatic refresh (on launch, when the app returns, and every 30 minutes while it runs), and offline reading of stored articles.
 - Reading: feed-provided body when available, best-effort extraction otherwise, and the feed summary plus a link to the original when neither is available. It labels which one you are looking at and does not try to bypass access restrictions.
@@ -66,10 +72,11 @@ This is a beta under active development.
 
 ## Documentation
 
-The user guide is available in English and Japanese. The other documents are currently in Japanese only.
+The vision and the user guide are available in English and Japanese. The other documents are currently in Japanese only.
 
 | | |
 |---|---|
+| [Vision](docs/vision.md) ([Japanese](docs/vision.ja.md)) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
 | [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, data retention and backup, Claude Desktop hand-off, verification steps |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |
