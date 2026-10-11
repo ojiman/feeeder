@@ -20,7 +20,7 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleExecutable</key><string>RSSReader</string>
-<key>CFBundleIdentifier</key><string>jp.ojiman.UnagiReader.Development</string>
+<key>CFBundleIdentifier</key><string>xyz.ojima.UnagiReader</string>
 <key>CFBundleName</key><string>Unagi Reader</string>
 <key>CFBundleDisplayName</key><string>Unagi Reader</string>
 <key>CFBundlePackageType</key><string>APPL</string>

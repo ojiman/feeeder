@@ -16,4 +16,11 @@ import Testing
         #expect(AppIdentity.reviewFileName == "UnagiReader-review.txt")
         #expect(AppIdentity.reviewPartPrefix == "UnagiReader-review-part-")
     }
+    @Test func theBundleIdentifierInTheBuildScriptMatchesTheCode() throws {
+        let script = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "scripts/build-app.sh")
+        let text = try String(contentsOf: script, encoding: .utf8)
+        #expect(AppIdentity.bundleIdentifier == "xyz.ojima.UnagiReader")
+        #expect(text.contains("<key>CFBundleIdentifier</key><string>\(AppIdentity.bundleIdentifier)</string>"))
+    }
 }

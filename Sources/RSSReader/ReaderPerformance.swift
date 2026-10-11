@@ -1,9 +1,10 @@
 import AppKit
 import os
+import ReaderCore
 
 // Opt-in local diagnostics for synthetic acceptance runs. No article IDs, text or URLs are logged.
 @MainActor enum ReaderPerformance {
-    private static let signposter = OSSignposter(subsystem: "jp.ojiman.UnagiReader", category: "ReaderUI")
+    private static let signposter = OSSignposter(subsystem: AppIdentity.bundleIdentifier, category: "ReaderUI")
     private static var pending: (UUID, Double, OSSignpostIntervalState)?
     private static var samples: [Double] = []
     private static var gaps: [Double] = []

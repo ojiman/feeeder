@@ -57,7 +57,7 @@ public struct ArticleFetcher: Sendable {
     private let http: any HTTPFetching
     public init(http: any HTTPFetching = HTTPClient(followsRedirects: false)) { self.http = http }
     public func fetch(url: URL) async -> ExtractionResult? {
-        let signposter = OSSignposter(subsystem: "jp.ojiman.UnagiReader", category: "Extraction")
+        let signposter = OSSignposter(subsystem: AppIdentity.bundleIdentifier, category: "Extraction")
         let interval = signposter.beginInterval("Extraction")
         defer { signposter.endInterval("Extraction", interval) }
         do {
