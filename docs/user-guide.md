@@ -77,7 +77,7 @@ The window has three columns. In Settings you can choose the appearance: follow 
 
 ### Refresh
 
-The app refreshes on launch, when it returns, and every 30 minutes while it runs. You can also refresh from the toolbar. If a download fails, you can still read the articles already saved.
+The app refreshes on launch, when it returns, and every 30 minutes while it runs. You can also refresh from the toolbar. While it works, the arrow of the refresh button turns. New articles slide in from the top of the list and push the older rows down; if you have scrolled down the list, it stays where you are reading. The motion is the same for manual and automatic refresh, and it is off when Reduce Motion is on. If a download fails, you can still read the articles already saved.
 
 ### Reading and keys
 
