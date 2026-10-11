@@ -39,6 +39,9 @@ struct ReaderView: View {
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
+    /// The note whose name (its first line) is being changed, and the name typed so far.
+    @State private var renamingNoteID: UUID?
+    @State private var noteName = ""
     @State private var folderExpansion = FolderExpansion()
     /// The subscription whose 「フォルダへ移動…」 chooser is open.
     @State private var movingFeedID: UUID?
@@ -287,6 +290,15 @@ struct ReaderView: View {
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
+        .alert("ノート名を変更", isPresented: Binding(get: { renamingNoteID != nil }, set: { if !$0 { renamingNoteID = nil } })) {
+            TextField("ノート名", text: $noteName.singleLine())
+            Button("変更") {
+                guard let id = renamingNoteID else { return }
+                perform { try store.renameNote(id: id, to: noteName, at: .now) }
+                renamingNoteID = nil
+            }
+            Button("キャンセル", role: .cancel) { renamingNoteID = nil }
+        } message: { Text("ノートの最初の行を書き換えます。") }
         .alert("フォルダ名を変更", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
             TextField("フォルダ名", text: $folderName.singleLine())
             Button("保存") {
@@ -319,7 +331,10 @@ struct ReaderView: View {
                 ForEach(store.notesNewestEditFirst) { note in
                     sidebarRow(note.title, symbol: "note.text", count: store.noteArticleCount(noteID: note.id))
                         .tag(LibraryScope.note(note.id))
-                        .contextMenu { Button("削除…", role: .destructive) { deletingNote = note.id } }
+                        .contextMenu {
+                            Button("名前を変更…") { noteName = note.title == NoteTitle.untitled ? "" : note.title; renamingNoteID = note.id }
+                            Button("削除…", role: .destructive) { deletingNote = note.id }
+                        }
                 }
                 Button { createNote() } label: { Label { Text("新しいノート") } icon: { Image(systemName: "plus").foregroundStyle(.secondary) } }
                     .buttonStyle(.plain).foregroundStyle(.secondary).padding(.vertical, 4)
@@ -515,7 +530,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || renamingNoteID != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }

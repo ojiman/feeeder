@@ -17,4 +17,25 @@ public enum NoteTitle {
         }
         return untitled
     }
+
+    /// The text of a note after renaming it: only the title line changes (its `#` marks and its line ending stay), so the person's own
+    /// writing is not touched. A note without a title line gets the name as a heading in front. Nil when the name is empty.
+    public static func renamed(_ text: String, to name: String) -> String? {
+        let name = SingleLineText.name(name)
+        guard !name.isEmpty else { return nil }
+        var start = text.startIndex
+        while start < text.endIndex {
+            let range = text.lineRange(for: start..<start)
+            var core = Substring(text[range]), terminator = ""
+            while let last = core.last, last.isNewline { terminator = String(last) + terminator; core.removeLast() }
+            var prefix = String(core.prefix(while: { $0 == "#" || $0.isWhitespace }))
+            let title = core.dropFirst(prefix.count).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty {
+                if prefix.contains("#"), !prefix.hasSuffix(" ") { prefix += " " }
+                return String(text[..<range.lowerBound]) + prefix + name + terminator + String(text[range.upperBound...])
+            }
+            start = range.upperBound
+        }
+        return text.isEmpty ? "# " + name : "# " + name + "\n" + text
+    }
 }

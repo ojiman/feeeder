@@ -112,6 +112,15 @@ extension ReaderStore {
         note.text = text; note.updatedAt = at
         try save()
     }
+    /// Renames a note by changing its first line (the title is the first line, decision 0019), through the same save as typing.
+    /// Returns whether anything changed: the same name, or an empty one, saves nothing.
+    @discardableResult public func renameNote(id: UUID, to name: String, at: Date) throws -> Bool {
+        try reloadIfNeeded()
+        guard let note = note(id: id) else { throw NoteError.missingNote }
+        guard let text = NoteTitle.renamed(note.text, to: name), text != note.text else { return false }
+        try saveNote(noteID: id, text: text, at: at)
+        return true
+    }
     public func deleteNote(id: UUID) throws {
         try reloadIfNeeded()
         guard let note = note(id: id) else { return }
