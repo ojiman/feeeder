@@ -57,7 +57,7 @@ public struct ArticleFetcher: Sendable {
     private let http: any HTTPFetching
     public init(http: any HTTPFetching = HTTPClient(followsRedirects: false)) { self.http = http }
     public func fetch(url: URL) async -> ExtractionResult? {
-        let signposter = OSSignposter(subsystem: "jp.ojiman.Feeeder", category: "Extraction")
+        let signposter = OSSignposter(subsystem: "jp.ojiman.UnagiReader", category: "Extraction")
         let interval = signposter.beginInterval("Extraction")
         defer { signposter.endInterval("Extraction", interval) }
         do {
@@ -67,7 +67,7 @@ public struct ArticleFetcher: Sendable {
             let robots = try await http.fetch(url: robotsURL, headers: [:], maximumBytes: 512 * 1024)
             guard robots.finalURL.host == url.host, robots.finalURL.port == url.port, robots.finalURL.scheme == url.scheme else { return nil }
             if robots.statusCode == 200 {
-                guard let text = String(data: robots.data, encoding: .utf8), RobotsPolicy.permits(url: url, robotsText: text, userAgent: "Feeeder") else { return nil }
+                guard let text = String(data: robots.data, encoding: .utf8), RobotsPolicy.permits(url: url, robotsText: text, userAgent: AppIdentity.userAgentToken) else { return nil }
             } else if robots.statusCode != 404 && robots.statusCode != 410 { return nil }
             try Task.checkCancellation()
             let response = try await http.fetch(url: url, headers: ["Accept": "text/html"], maximumBytes: 5 * 1024 * 1024)

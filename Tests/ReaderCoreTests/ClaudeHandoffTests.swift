@@ -15,7 +15,7 @@ import Testing
         let expired = try HandoffFiles.write(package, directory: root)
         let orphan = root.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: orphan, withIntermediateDirectories: false)
-        try Data("合成の中断コピー".utf8).write(to: orphan.appending(path: "Feeeder-review.txt"))
+        try Data("合成の中断コピー".utf8).write(to: orphan.appending(path: "UnagiReader-review.txt"))
         let launcher = ProbeLauncher()
         let controller = ClaudeHandoffController(directory: root, review: review, launcher: launcher)
         controller.reconcile(with: store, at: package.expiresAt)
@@ -94,7 +94,7 @@ import Testing
         await controller.open(package: package)
         #expect(controller.opened && launcher.urls.count == 2 && controller.file == file)
         #expect(try Data(contentsOf: file) == original)
-        #expect(Set(try FileManager.default.contentsOfDirectory(atPath: file.deletingLastPathComponent().path)) == ["Feeeder-review.txt", "metadata.json"])
+        #expect(Set(try FileManager.default.contentsOfDirectory(atPath: file.deletingLastPathComponent().path)) == ["UnagiReader-review.txt", "metadata.json"])
         let permissions = try FileManager.default.attributesOfItem(atPath: file.path)[.posixPermissions] as? NSNumber
         #expect(permissions?.intValue == 0o600)
         #expect((try FileManager.default.attributesOfItem(atPath: file.deletingLastPathComponent().path)[.posixPermissions] as? NSNumber)?.intValue == 0o700)
@@ -166,7 +166,7 @@ import Testing
         try store.saveNote(noteID: note.id, text: "Edited later", at: at)
         controller.reconcile(with: store, at: at)
         #expect(FileManager.default.fileExists(atPath: folder.path))
-        let text = try String(contentsOf: folder.appending(path: "Feeeder-review.txt"), encoding: .utf8)
+        let text = try String(contentsOf: folder.appending(path: "UnagiReader-review.txt"), encoding: .utf8)
         #expect(text.contains("My private note") && !text.contains("Edited later"))        // a labelled snapshot, as promised
         controller.reconcile(with: store, at: at.addingTimeInterval(86_401))
         #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the 24-hour limit still applies

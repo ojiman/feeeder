@@ -6,7 +6,7 @@ case "$configuration" in debug|release) ;; *) echo "Usage: build-app.sh [debug|r
 if [ "$configuration" = release ]; then build_dir=/private/tmp/feeeder-v1-release; else build_dir=/private/tmp/rss-reader-build; fi
 swift build -c "$configuration" --scratch-path "$build_dir"
 binary_dir=$(swift build -c "$configuration" --scratch-path "$build_dir" --show-bin-path)
-app_dir="$PWD/.build/Feeeder.app"
+app_dir="$PWD/.build/UnagiReader.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp ThirdPartyNotices.md "$app_dir/Contents/Resources/ThirdPartyNotices.md"
 # Replace the inode: overwriting an executable previously launched on macOS
@@ -20,9 +20,9 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleExecutable</key><string>RSSReader</string>
-<key>CFBundleIdentifier</key><string>jp.ojiman.RSSReader.Development</string>
-<key>CFBundleName</key><string>Feeeder</string>
-<key>CFBundleDisplayName</key><string>Feeeder</string>
+<key>CFBundleIdentifier</key><string>jp.ojiman.UnagiReader.Development</string>
+<key>CFBundleName</key><string>Unagi Reader</string>
+<key>CFBundleDisplayName</key><string>Unagi Reader</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleVersion</key><string>2</string>
 <key>CFBundleShortVersionString</key><string>0.2.0</string>

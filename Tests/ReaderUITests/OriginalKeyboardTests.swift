@@ -81,7 +81,7 @@ import Testing
             if !view.isLoading { break }
             try await Task.sleep(for: .milliseconds(20))
         }
-        let result = try await script("typeof window.webkit?.messageHandlers?.feeederReaderKey", in: view)
+        let result = try await script("typeof window.webkit?.messageHandlers?.unagiReaderKey", in: view)
         #expect(result == "undefined")
         _ = try await script("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'s',bubbles:true}));'done'", in: view)
         try await Task.sleep(for: .milliseconds(30))
@@ -98,8 +98,8 @@ import Testing
         // CLI tests cannot become the application's key window. Exercise the
         // production isolated-world script with a receiver that records its output.
         let controller = view.configuration.userContentController
-        controller.removeScriptMessageHandler(forName: "feeederReaderKey", contentWorld: OriginalKeyboardBridge.world)
-        controller.add(receiver, contentWorld: OriginalKeyboardBridge.world, name: "feeederReaderKey")
+        controller.removeScriptMessageHandler(forName: "unagiReaderKey", contentWorld: OriginalKeyboardBridge.world)
+        controller.add(receiver, contentWorld: OriginalKeyboardBridge.world, name: "unagiReaderKey")
         defer { bridge.uninstall(); window.close() }
         view.loadHTMLString("""
         <html><body tabindex='0'><input id='input'><textarea id='text'></textarea>

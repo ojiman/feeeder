@@ -2,7 +2,7 @@ import AppKit
 import WebKit
 
 @MainActor final class OriginalKeyboardBridge: NSObject, WKScriptMessageHandler {
-    static let world = WKContentWorld.world(name: "FeeederReaderKeys")
+    static let world = WKContentWorld.world(name: "UnagiReaderKeys")
     private weak var view: WKWebView?
     private let onCommand: (ReaderCommand) -> Void
     private let allowsSendToNote: Bool
@@ -12,7 +12,7 @@ import WebKit
     func install(in view: WKWebView) {
         self.view = view
         let controller = view.configuration.userContentController
-        controller.add(self, contentWorld: Self.world, name: "feeederReaderKey")
+        controller.add(self, contentWorld: Self.world, name: "unagiReaderKey")
         let source = """
         (() => {
           const keys = new Set(\(allowsSendToNote ? "['j','k','s','n','Escape']" : "['j','k','s','Escape']"));
@@ -25,14 +25,14 @@ import WebKit
             const active = document.activeElement;
             if (!active || active.matches('input,textarea,select,iframe,[role="textbox"],[role="combobox"]') || active.isContentEditable || active.tagName.includes('-')) return;
             event.preventDefault(); event.stopImmediatePropagation();
-            window.webkit.messageHandlers.feeederReaderKey.postMessage(event.key);
+            window.webkit.messageHandlers.unagiReaderKey.postMessage(event.key);
           }, true);
         })();
         """
         controller.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: Self.world))
     }
     func uninstall() {
-        view?.configuration.userContentController.removeScriptMessageHandler(forName: "feeederReaderKey", contentWorld: Self.world)
+        view?.configuration.userContentController.removeScriptMessageHandler(forName: "unagiReaderKey", contentWorld: Self.world)
         view = nil
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

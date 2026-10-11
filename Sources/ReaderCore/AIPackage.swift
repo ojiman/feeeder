@@ -37,7 +37,7 @@ public enum AIPackageBuilder {
     public static func build(note: AINoteContext, language: String, createdAt: Date) throws -> AIPackage {
         guard !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, language.utf8.count <= 80 else { throw AIPackageError.invalid }
         var text = """
-        Feeeder reading review
+        \(AppIdentity.productName) reading review
         Output language: \(language)
         Created at: \(createdAt.ISO8601Format())
 
@@ -72,7 +72,7 @@ public enum AIPackageBuilder {
     public static func split(_ package: AIPackage, maximumBytes: Int = 1_048_576) -> [Data] {
         let bytes = Array(package.text.utf8)
         // Every part declares its exact byte range; concatenating payloads is lossless.
-        let base = "Feeeder split package\nSHA-256: \(package.sha256)\n"
+        let base = "\(AppIdentity.productName) split package\nSHA-256: \(package.sha256)\n"
         let overhead = (base + "Part: \(Int.max)/\(Int.max)\nPayload bytes: \(Int.max)..<\(Int.max)\n\n").utf8.count
         let capacity = maximumBytes - overhead
         guard capacity >= 4 else { return [] }

@@ -1,6 +1,6 @@
-# Feeeder user guide
+# Unagi Reader user guide
 
-This guide explains how to start Feeeder, how it handles your data, and how to use it. For a short overview, read the [README](../README.md) first.
+This guide explains how to start Unagi Reader, how it handles your data, and how to use it. For a short overview, read the [README](../README.md) first.
 
 This is an English translation of the [Japanese user guide](user-guide.ja.md). The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "新しいノート (New note)".
 
@@ -14,7 +14,7 @@ You need a Mac with macOS 27.0 or later and the Swift toolchain from Xcode. From
 bash scripts/build-app.sh release
 ```
 
-SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/Feeeder.app`. Open it from Finder.
+SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/UnagiReader.app`. Open it from Finder.
 
 - The app is ad hoc signed for local development. It is not signed with a Developer ID and it is not notarized.
 - The release build writes temporary files to `/private/tmp/feeeder-v1-release`. The debug build writes to `/private/tmp/rss-reader-build`. For the debug build you can leave out the argument.
@@ -23,7 +23,7 @@ SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.
 
 ### Where the data is
 
-A normal start begins with an empty library. The library is stored in `Application Support/Feeeder/Reader.store`. If you restart the same version of the app, your subscriptions, articles, read times, stars, and notes are kept.
+A normal start begins with an empty library. The library is stored in `Application Support/UnagiReader/Reader.store`. If you restart the same version of the app, your subscriptions, articles, read times, stars, and notes are kept.
 
 ### Updates during the beta
 
@@ -33,27 +33,39 @@ A normal start begins with an empty library. The library is stored in `Applicati
 - Release notes for beta versions will state this limit. A check that data survived in one past version does not promise the same for later beta versions.
 - There is no migration of data from the earlier prototype.
 - **The daily notes, weekly notes, and scraps of the older version are not moved to the note-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
-- **Earlier "themes" are not carried over.** The learning goal, theme names, notes, recorded articles, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes are not moved to this version. Your subscriptions, articles, read times, and stars stay. **The first time this version starts, the old theme content is gone, and this cannot be undone.** Back up the `Feeeder` folder first (see the steps below).
+- **Earlier "themes" are not carried over.** The learning goal, theme names, notes, recorded articles, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes are not moved to this version. Your subscriptions, articles, read times, and stars stay. **The first time this version starts, the old theme content is gone, and this cannot be undone.** Back up the `UnagiReader` folder first (see the steps below).
+
+### If you used the app when it was called Feeeder
+
+The app was renamed from Feeeder to Unagi Reader. It now keeps its library in `Application Support/UnagiReader/` and no longer reads `Application Support/Feeeder/`. A new build therefore starts with an empty library, and its settings (for example the note panel width and the summary options) start from their defaults. To keep your library:
+
+1. Quit the old app and the new app.
+2. In Finder, open `~/Library/Application Support/` (Go > Go to Folder).
+3. If a new, empty `UnagiReader` folder already exists, rename it, for example to `UnagiReader-empty`.
+4. Rename the `Feeeder` folder to `UnagiReader`.
+5. Start Unagi Reader. Check your subscriptions and notes before you delete anything.
+
+Saved files that the old app made for Claude (in its hand-off folder) are removed with the old folder or when they expire. This step was not tested on a real Mac.
 
 ### Back up the library by hand
 
 Do this before you update a beta version, or if the app cannot open the library and you want to start again with an empty one. We have not yet tested these steps on a real Mac.
 
-1. Quit Feeeder with ⌘Q.
+1. Quit Unagi Reader with ⌘Q.
 2. In Finder, choose Go > Go to Folder (the Japanese menu is 移動 → フォルダへ移動) and open `~/Library/Application Support/`.
-3. Rename the whole `Feeeder` folder, for example to `Feeeder-backup-20261007-2100`. Keep `Reader.store` together with `Reader.store-shm` and `Reader.store-wal` if they exist. Do not copy only the database file. The folder also holds note data and hand-off management data.
-4. Start Feeeder. It creates a new `Feeeder` folder and an empty library. Keep the renamed folder until you have checked the new one. A backup is not a promise that the data can be converted or restored.
+3. Rename the whole `UnagiReader` folder, for example to `UnagiReader-backup-20261007-2100`. Keep `Reader.store` together with `Reader.store-shm` and `Reader.store-wal` if they exist. Do not copy only the database file. The folder also holds note data and hand-off management data.
+4. Start Unagi Reader. It creates a new `UnagiReader` folder and an empty library. Keep the renamed folder until you have checked the new one. A backup is not a promise that the data can be converted or restored.
 
 ### Try the app with synthetic data
 
 To look around without touching your real library, start a separate instance with its own data directory and demo subscriptions:
 
 ```sh
-open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
 ```
 
 - `--data-directory <path>` is for development checks. It sets where the app stores its data.
-- Use `open -n` so that a new instance starts. Without it, `open` can reuse a Feeeder that is already running and drop the arguments.
+- Use `open -n` so that a new instance starts. Without it, `open` can reuse an Unagi Reader that is already running and drop the arguments.
 - Before you do anything, check the process arguments (for example with `pgrep -fl RSSReader`) and check that the window shows the demo subscriptions.
 - The demo URLs end in `.example`. No real pages exist there. Do not add real subscriptions, articles, or notes to Git. See [AGENTS.md](../AGENTS.md) for details. We have not re-run this procedure on macOS since it was written down.
 
@@ -135,7 +147,7 @@ AI output is marked 「（AI要約）」 on its source line. With AI off, unavai
 
 The share button at the top of the note panel is the only entry point. It offers three actions:
 
-- 「Claudeで開く…」 (Open in Claude…) opens a review screen. It always contains the note only: the full text, the request, output language, byte size, expiry and SHA-256. The request asks Claude to quote what is already solid, identify gaps only from what the note does not say, suggest opposing views worth checking, and suggest what to read or write next. It asks Claude to treat the note as data and not to guess, rewrite it, or write into Feeeder. There is no article or source selector.
+- 「Claudeで開く…」 (Open in Claude…) opens a review screen. It always contains the note only: the full text, the request, output language, byte size, expiry and SHA-256. The request asks Claude to quote what is already solid, identify gaps only from what the note does not say, suggest opposing views worth checking, and suggest what to read or write next. It asks Claude to treat the note as data and not to guess, rewrite it, or write into Unagi Reader. There is no article or source selector.
 - 「Markdownをコピー」 (Copy Markdown) copies the note's exact text. 「Markdownとして書き出す…」 (Export as Markdown) saves those same UTF-8 bytes to a `.md` file using a safe version of the note title. The save panel handles an existing file. Neither action adds a newline or sends the text to Claude.
 
 On the review screen, 「全文をコピー」 (Copy all), TXT export, split export, and the file passed to Claude all use the exact review package shown in the preview. Editing the note while this screen is open invalidates the review. Rebuild it before copying, exporting or opening Claude. Nothing leaves your Mac until you press 「Claudeで開く」 on this confirmation screen.
@@ -143,7 +155,7 @@ Facts you should know:
 
 - **What was checked:** Claude Desktop 2.19675.0 with Pro and Cowork. Automatic attachment to normal Chat, other versions, and other plans have not been checked.
 - The app passes a short request text and the path of a TXT file in a launch link. The note text stays inside the TXT file.
-- **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Feeeder puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
+- **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Unagi Reader puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
 - A successful launch does not mean the file was attached, the message was sent, or the file was read.
 - If you cancel or the launch fails, you can try again with the same review. You can also copy the full text or export it as a TXT file. If there is a size limit, you can export UTF-8 files split to 1 MiB or less. This split size is not the limit of Claude.
 - The copy that the app manages is deleted when its note is deleted or 24 hours after creation. Editing the note keeps the copy as a snapshot until that deadline. Article retention and removal do not affect the copy. Older copies follow their note when its id is present and expire within 24 hours; obsolete article and question fields are ignored.

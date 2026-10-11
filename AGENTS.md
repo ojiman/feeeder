@@ -1,4 +1,4 @@
-# Feeeder development
+# Unagi Reader development
 
 Instructions for coding agents (Codex, Claude Code) and for the person reviewing them. Keep this file short: it says where things are, how to verify, and where the boundaries are. Details live in the linked documents.
 
@@ -25,14 +25,14 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 ```sh
 swift test --scratch-path /private/tmp/feeeder-dogfooding-build          # local tests
 swift test --scratch-path /private/tmp/feeeder-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
-bash scripts/build-app.sh release                                        # ad hoc signed .build/Feeeder.app (debug is the default)
+bash scripts/build-app.sh release                                        # ad hoc signed .build/UnagiReader.app (debug is the default)
 bash scripts/fetch-ci-app.sh <PR number>                                  # a PR's CI-built app without a browser, so no quarantine attribute (needs macOS and gh)
 bash scripts/test-fetch-ci-app.sh                                         # control-flow tests for that script with stubbed tools (no macOS, network or gh needed)
-open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
 git diff --check
 ```
 
-Use `open -n` for the synthetic run. Without it, `open` can reuse a Feeeder that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `RSSReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl RSSReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
+Use `open -n` for the synthetic run. Without it, `open` can reuse an Unagi Reader that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `RSSReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl RSSReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
 
 Opt-in store compatibility check (skipped unless `FEEEDER_V1_FIXTURE_DIR` is set; not part of CI during beta; `FEEEDER_PRE0019_FIXTURE_DIR` is the same for a fixture made from commit `52429b4`, the build before decision 0019):
 
