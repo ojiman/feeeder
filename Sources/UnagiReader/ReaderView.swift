@@ -342,15 +342,6 @@ struct ReaderView: View {
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
             visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,
             onAdd: { addingSubscription = true }, onRefresh: { Task { await refresh.refresh() } }))
-        .safeAreaInset(edge: .bottom) {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("ローカルライブラリ", systemImage: "books.vertical").font(.caption.weight(.medium))
-                Text("＋からURLで購読。\n30分ごとに記事を更新します。")
-                    .font(.caption2).foregroundStyle(.secondary).lineSpacing(3)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-        }
         .sheet(item: $reviewingNote) { sheet in reviewSheet(sheet) }
         .confirmationDialog("このノートを削除しますか？", isPresented: Binding(get: { deletingNote != nil }, set: { if !$0 { deletingNote = nil } })) {
             Button("ノートを削除", role: .destructive) {
@@ -444,11 +435,6 @@ struct ReaderView: View {
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("n 要約を送る"); Text("b/v 原文") }
-                .font(.caption2.monospaced()).foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity).padding(.vertical, 10).background(AppPalette.surfaceColor)
-        }
     }
 
     /// The note beside the reader (the inspector). It is there only inside a note.
