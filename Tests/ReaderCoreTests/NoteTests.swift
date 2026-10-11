@@ -238,7 +238,6 @@ import Testing
         #expect(store.note(id: note.id)?.text == "再試行のノート")
         gate.failNext = true
         let noteCount = store.notes.count, linkCount = store.noteArticles.count
-        gate.failNext = true
         #expect(throws: (any Error).self) { try store.createNote(text: "# 失われる束\n", adding: ids[0], at: at) }
         #expect(store.notes.count == noteCount && store.noteArticles.count == linkCount)
         gate.failNext = true

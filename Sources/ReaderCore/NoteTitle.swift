@@ -5,11 +5,15 @@ import Foundation
 public enum NoteTitle {
     public static let untitled = "新規ノート"
 
+    /// Scans line by line and stops at the first line with a title, so a long note costs only its first lines (every sidebar row
+    /// asks for its title after every keystroke).
     public static func make(from text: String) -> String {
-        for line in text.components(separatedBy: .newlines) {
-            let title = String(line.drop(while: { $0 == "#" || $0.isWhitespace }))
-                .trimmingCharacters(in: .whitespaces)
+        var start = text.startIndex
+        while start < text.endIndex {
+            let range = text.lineRange(for: start..<start)
+            let title = String(text[range].drop(while: { $0 == "#" || $0.isWhitespace })).trimmingCharacters(in: .whitespacesAndNewlines)
             if !title.isEmpty { return title }
+            start = range.upperBound
         }
         return untitled
     }

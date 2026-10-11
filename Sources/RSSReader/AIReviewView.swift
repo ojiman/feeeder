@@ -45,7 +45,7 @@ struct AIReviewView: View {
                 let switches = HandoffDefaults.switches(note: note.text, fromNotePanel: fromNotePanel)
                 VStack(alignment: .leading, spacing: 4) {
                     Toggle("ノートを含める", isOn: $includeNote).disabled(!switches.noteEnabled)
-                    Text(!switches.noteEnabled ? "このノートにはノートがありません。"
+                    Text(!switches.noteEnabled ? "このノートは空です。"
                          : "ノートは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。ノートを含めると、ノートそのもののレビューを頼む依頼になります。")
                         .font(.caption).foregroundStyle(.secondary)
                 }

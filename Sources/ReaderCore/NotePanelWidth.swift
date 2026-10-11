@@ -25,4 +25,11 @@ public enum NotePanelWidth {
         guard let saved else { return true }
         return abs(clamped(new) - saved) > 1
     }
+    /// Whether a measured width is one the person chose. The layout reports the first width it gave the panel and may squeeze it below
+    /// the minimum in a small window; neither is a choice. A width counts when it is inside the range we offer, differs from the first
+    /// one seen for this panel by more than 1 pt, and is not already saved.
+    public static func shouldSave(new: Double, saved: Double?, firstSeen: Double?) -> Bool {
+        guard new.isFinite, range.contains(new), let firstSeen, firstSeen.isFinite, abs(new - firstSeen) > 1 else { return false }
+        return needsSaving(new: new, saved: saved)
+    }
 }

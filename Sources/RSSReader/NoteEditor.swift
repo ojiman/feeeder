@@ -17,7 +17,7 @@ struct NoteEditor: View {
             .padding(.horizontal, 16).padding(.vertical, 12)
             .overlay(alignment: .topLeading) {
                 if note.text.isEmpty {
-                    Text("このノートについて、自分の言葉で書きます。「#」で始まる行は見出しです。")
+                    Text("自分の言葉で書きます。最初の行がタイトルになり、「#」で始まる行は見出しです。")
                         .font(.body).foregroundStyle(.tertiary).padding(.horizontal, 21).padding(.vertical, 12).allowsHitTesting(false)
                 }
             }

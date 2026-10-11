@@ -38,7 +38,7 @@ import Testing
         try HandoffFiles.cleanup(directory: root, at: at.addingTimeInterval(86_400))
         #expect(!FileManager.default.fileExists(atPath: savedFile.path))
     }
-    /// A copy written before the rename to notes names its theme (`themeID`) and its theme sources (`themeArticle`). It lives at most a day;
+    /// A copy written before the rename to notes with theme sources (`themeArticle`) cannot be read (the selection becomes unresolvable); it lives at most a day;
     /// the new code cannot read it, so maintenance removes it instead of failing again and again (decision 0019, S1b).
     @Test func aCopyWrittenBeforeTheRenameToNotesIsRemovedWithoutFailingMaintenance() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
@@ -273,6 +273,25 @@ import Testing
         #expect(text.contains("My private note") && !text.contains("Edited later"))        // a labelled snapshot, as promised
         controller.reconcile(with: store, at: at.addingTimeInterval(86_401))
         #expect(!FileManager.default.fileExists(atPath: folder.path))                       // the 24-hour limit still applies
+    }
+
+    /// A copy written by the build before the rename names its note under the old key `themeID`. Its note must still be found, so that
+    /// deleting the note removes the copy, and a copy of the note alone (no articles) is not left behind as unreadable.
+    @Test func aCopyWrittenBeforeTheRenameStillFollowsItsNote() throws {
+        let at = Date.now
+        for sources in [false, true] {
+            let (library, store, note, _, controller, folder, _) = try noteCopy(at, sources: sources); defer { library.cleanup() }
+            let metadataFile = folder.appending(path: "metadata.json")
+            var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+            metadata["themeID"] = metadata.removeValue(forKey: "noteID")                  // the old key
+            if sources { metadata["selections"] = (metadata["selections"] as? [[String: Any]])?.map { _ in ["article": ["_0": store.articles[0].id.uuidString]] } }
+            try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+            controller.reconcile(with: store, at: at)
+            #expect(FileManager.default.fileExists(atPath: folder.path) && controller.maintenanceError == nil, "kept while the note exists, sources \(sources)")
+            try store.deleteNote(id: note.id)
+            #expect(!FileManager.default.fileExists(atPath: folder.path), "sources \(sources)")
+            #expect(controller.maintenanceError == nil)
+        }
     }
 
     @Test func aCopyOfTheNoteAloneIsKeptForADayAndRemovedWithItsNote() throws {

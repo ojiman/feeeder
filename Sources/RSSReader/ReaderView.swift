@@ -21,6 +21,8 @@ struct ReaderView: View {
     /// The panel's width when the app started (the ideal width of the inspector), and the width it has now while the person drags.
     @State private var startingPanelWidth = NotePanelWidth.load()
     @State private var panelWidth: Double?
+    /// The first width the layout gave this panel: only a change from it can be the person's drag.
+    @State private var firstPanelWidth: Double?
     @State private var saveError: String?
     @State private var noteMessage: String?
     @State private var pickingNote = false
@@ -108,7 +110,7 @@ struct ReaderView: View {
         }
         .onAppear { if noteOpen { noteLayout.noteOpened(windowWidth: windowWidth); applyColumns() } }
         .onChange(of: noteOpen) { _, open in
-            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed() }
+            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed(); firstPanelWidth = nil; panelWidth = nil }
             applyColumns()
         }
         .onChange(of: columnVisibility) { _, visibility in
@@ -152,7 +154,7 @@ struct ReaderView: View {
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
                 let article = selectedArticle
-                Button { toggleNote() } label: { Image(systemName: "note.text") }
+                Button { togglePanel() } label: { Image(systemName: "note.text") }
                     .keyboardShortcut("i", modifiers: [.option, .command])
                     .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
                     .disabled(noteScopeID == nil)
@@ -333,7 +335,7 @@ struct ReaderView: View {
 
     private func sidebarRow(_ title: String, symbol: String, count: Int) -> some View {
         HStack {
-            Label(title, systemImage: symbol)
+            Label(title, systemImage: symbol).lineLimit(1)
             Spacer()
             Text(count.formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
         }.padding(.vertical, 4)
@@ -403,12 +405,15 @@ struct ReaderView: View {
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
                       onAskReview: askReviewAction(id))
-            .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { panelWidth = $0 }
+            .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
+                if firstPanelWidth == nil { firstPanelWidth = width }
+                panelWidth = width
+            }
             .task(id: panelWidth) {
                 // Keep the width after the person lets go: wait for the drag to settle, then save it once.
                 guard let width = panelWidth else { return }
                 try? await Task.sleep(for: .milliseconds(600))
-                guard !Task.isCancelled, NotePanelWidth.needsSaving(new: width, saved: UserDefaults.standard.object(forKey: NotePanelWidth.key) as? Double) else { return }
+                guard !Task.isCancelled, NotePanelWidth.shouldSave(new: width, saved: UserDefaults.standard.object(forKey: NotePanelWidth.key) as? Double, firstSeen: firstPanelWidth) else { return }
                 NotePanelWidth.save(width)
             }
             .id(id)
@@ -499,7 +504,7 @@ struct ReaderView: View {
     private func createNote() {
         perform { scope = .note(try store.createNote(at: .now).id) }
     }
-    private func toggleNote() {
+    private func togglePanel() {
         guard let id = noteScopeID else { return }
         workspace.setNote(open: !workspace.isNoteOpen(of: id), of: id)
     }

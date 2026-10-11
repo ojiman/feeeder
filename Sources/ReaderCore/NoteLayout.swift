@@ -17,13 +17,13 @@ public struct NoteLayout: Equatable, Sendable {
     public init() {}
     public mutating func noteOpened(windowWidth: Double) {
         panelOpen = true; chosenByHand = false
-        sidebarFolded = windowWidth < Self.foldBelow
+        sidebarFolded = windowWidth > 0 && windowWidth < Self.foldBelow          // 0: the width is not known yet; the first measurement decides
     }
     public mutating func noteClosed() { panelOpen = false; chosenByHand = false; sidebarFolded = false }
     public mutating func toggleSidebar() { sidebarFolded.toggle(); chosenByHand = true }
     /// The window was resized.
     public mutating func windowWidthChanged(to width: Double) {
-        guard panelOpen, !chosenByHand else { return }
+        guard panelOpen, !chosenByHand, width > 0 else { return }
         sidebarFolded = width < Self.foldBelow
     }
     /// The window changed the columns by itself (for example a drag); follow it so the next toggle goes the right way.

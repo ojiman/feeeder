@@ -42,4 +42,18 @@ struct NotePanelWidthTests {
         #expect(NotePanelWidth.needsSaving(new: 450, saved: nil) == true)
         #expect(NotePanelWidth.needsSaving(new: .nan, saved: 400) == false)
     }
+
+    /// Only a width the person chose is kept: not the first width the layout gave the panel, and not one the layout squeezed below the
+    /// minimum (a 270 pt panel in a 1,240 pt window must not turn the default 380 into 300).
+    @Test func aWidthIsKeptOnlyWhenThePersonChoseIt() {
+        #expect(NotePanelWidth.shouldSave(new: 270, saved: nil, firstSeen: 270) == false)     // the layout's own width
+        #expect(NotePanelWidth.shouldSave(new: 270, saved: nil, firstSeen: 380) == false)     // squeezed below the minimum
+        #expect(NotePanelWidth.shouldSave(new: 380, saved: nil, firstSeen: 380) == false)     // not moved
+        #expect(NotePanelWidth.shouldSave(new: 450, saved: nil, firstSeen: 380) == true)      // dragged wider
+        #expect(NotePanelWidth.shouldSave(new: 320, saved: 450, firstSeen: 450) == true)      // dragged narrower
+        #expect(NotePanelWidth.shouldSave(new: 450.5, saved: 450, firstSeen: 380) == false)   // already saved
+        #expect(NotePanelWidth.shouldSave(new: 700, saved: nil, firstSeen: 380) == false)     // beyond the maximum: not a width we offer
+        #expect(NotePanelWidth.shouldSave(new: .nan, saved: nil, firstSeen: 380) == false)
+        #expect(NotePanelWidth.shouldSave(new: 450, saved: nil, firstSeen: nil) == false)     // nothing to compare with yet
+    }
 }

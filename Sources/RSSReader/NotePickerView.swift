@@ -20,7 +20,7 @@ struct NotePickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("ノートに入れる").font(.headline)
-            TextField("ノートを探す、または新しい名前", text: $query.singleLine())
+            TextField("ノートを探す、または新しいノートの題", text: $query.singleLine())
                 .focused($fieldFocused)
                 .onSubmit(activateHighlighted)
                 .onKeyPress(.return) {
@@ -30,7 +30,7 @@ struct NotePickerView: View {
                 }
                 .onKeyPress(.upArrow) { highlighted = NotePicker.move(highlighted, by: -1, count: rows.count); return .handled }
                 .onKeyPress(.downArrow) { highlighted = NotePicker.move(highlighted, by: 1, count: rows.count); return .handled }
-                .accessibilityLabel("ノートを探す、または新しい名前")
+                .accessibilityLabel("ノートを探す、または新しいノートの題")
             if rows.isEmpty {
                 Text("まだノートがありません。名前を入力すると、新しく作ってこの記事を入れられます。")
                     .font(.caption).foregroundStyle(.secondary)

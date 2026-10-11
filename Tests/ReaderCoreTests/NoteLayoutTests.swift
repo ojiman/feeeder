@@ -44,6 +44,16 @@ struct NoteLayoutTests {
         #expect(layout.columns == .all)
     }
 
+    @Test func anUnknownWidthDoesNotFoldAndTheFirstMeasurementDecides() {
+        var layout = NoteLayout()
+        layout.noteOpened(windowWidth: 0)                                       // the view has not been measured yet
+        #expect(layout.columns == .all)
+        layout.windowWidthChanged(to: 0)
+        #expect(layout.columns == .all)
+        layout.windowWidthChanged(to: narrow)
+        #expect(layout.columns == .doubleColumn)
+    }
+
     @Test func aResizeWithNoPanelOpenChangesNothing() {
         var layout = NoteLayout()
         layout.windowWidthChanged(to: narrow)

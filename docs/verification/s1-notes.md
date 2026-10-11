@@ -45,9 +45,9 @@ No Critical finding; the store upgrade was re-run by the reviewer and passes. Fi
 | A panel is open at first and a closed one stays closed per note while the app runs | PASS, `ReaderWorkspaceTests` (failed first); opening the panel does not take the keyboard: `openingThePanelDoesNotTakeKeyboardFocus` |
 | The sidebar folds when a panel opens only below 1,300 pt, a hand choice holds until the panel closes, a resize while open folds and unfolds | PASS, `NoteLayoutTests` (6). The fold itself cannot be seen in a headless window |
 | The panel width: clamped to 300-640, a missing, text or NaN value falls back to 380, a saved value returns after a restart, tiny changes are not written again | PASS, `NotePanelWidthTests` (4; written first) |
-| A managed Claude copy written before the rename (old keys `themeID`, `themeArticle`) is removed by maintenance and nothing fails later | PASS, `aCopyWrittenBeforeTheRenameToNotesIsRemovedWithoutFailingMaintenance` |
+| A managed Claude copy written before the rename: one with theme sources (old selection key `themeArticle`) is removed by maintenance and nothing fails later; one that names its note under the old key `themeID` (note alone, or articles only) is read as its note, so it is kept while the note exists and removed with it | PASS, `aCopyWrittenBeforeTheRenameToNotesIsRemovedWithoutFailingMaintenance`, `aCopyWrittenBeforeTheRenameStillFollowsItsNote` (failed first) |
 | The package: no goal, no title line, `BEGIN_NOTE`/`END_NOTE`, the note text verbatim | PASS, `AIPackageTests` |
-| Whole run | 204 tests in 34 suites (ReaderCore) pass; UI suites run alone: `NoteReaderTests` 10, `NotePanelTests` 5, `HandoffEntryTests` 2 pass |
+| Whole run | 207 tests in 34 suites (ReaderCore) pass; UI suites run alone: `NoteReaderTests` 10, `NotePanelTests` 5, `HandoffEntryTests` 2 pass |
 | Release build and `git diff --check` | build succeeds; clean |
 
 ## Real-window check (a copy of the app with its own bundle identifier and synthetic data; the owner's library and running app were not touched)
@@ -66,3 +66,15 @@ No Critical finding; the store upgrade was re-run by the reviewer and passes. Fi
 - Dragging the panel edge, the saved width after a relaunch, and the fold in a narrow window (all need a real mouse and a real window).
 - Real Japanese input in the note, VoiceOver, macOS 26 CI, the owner's real library.
 - The decision of the plan to show the first article when a note is opened was **not built** (displaying an article marks it as read, so entering a note would mark an article the person never chose).
+
+## Independent review (opus, fixed commit b1a6f3e)
+
+No Critical finding; the old-store checks were re-run by the reviewer with both fixtures. Fix pass:
+
+| Finding | Outcome |
+|---|---|
+| Important: a note-only managed copy written before the rename (old key `themeID`) was unreadable: never removed, and maintenance failed at every launch (an article-only one stopped following its note) | Fixed test first: `aCopyWrittenBeforeTheRenameStillFollowsItsNote` failed, then passed; the metadata reads `themeID` as `noteID` |
+| Important: the saved panel width recorded widths the person did not choose (the first width, or one squeezed below the minimum), so the default 380 could become 300 | Fixed test first: `NotePanelWidth.shouldSave` (inside 300-640, differs from the first width seen, not already saved); the view uses it |
+| Minor, fixed: an unknown window width (0) folded the sidebar at the first appearance; a long first line made a tall sidebar row and `NoteTitle` scanned the whole text per call; words that changed meaning in the rename (「このノートにはノートがありません」, the editor placeholder, the picker placeholder, the demo text); `toggleNote` named twice; a broken sentence in the architecture; a duplicate `failNext` in a test | Fixed (`anUnknownWidthDoesNotFoldAndTheFirstMeasurementDecides`; `NoteTitle` stops at the first non-empty line) |
+| Minor, deferred: a sidebar change made by the window (a divider drag) is not treated as the person's choice (the app cannot tell it from its own change); a new note from the picker with a name made of marks or markup gets a different title than typed, and several empty notes look the same; the picker toast has no line limit; the panel width is stored in `UserDefaults.standard`, shared with a synthetic run of the same bundle; the delete-then-reload-fails and the from-a-scope-change focus cases are not tested | Ledgered for S2 or later |
+
