@@ -61,7 +61,7 @@ public enum HandoffFiles {
                 try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
-            let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
+            let metadata = Metadata(packageID: package.id, articleIDs: [], selections: [], createdAt: package.createdAt,
                 expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, noteID: package.noteID, questionIDs: nil)
             try saveMetadata(metadata, folder: folder)
         } catch {

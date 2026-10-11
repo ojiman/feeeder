@@ -115,7 +115,6 @@ struct ReaderStoreTests {
             { try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "変更", coverage: .extracted, sourceURL: parsed.sourceURL), at: at) }
         ]
         for change in changes { #expect(throws: (any Error).self) { try change() } }
-        #expect(throws: (any Error).self) { _ = try store.aiSources(selections: [.noteArticle(link.key)], at: at) }
         #expect(saveAttempts == attempts)
         failReload = false
         try store.setRead(article, true)

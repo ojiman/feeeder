@@ -16,7 +16,7 @@ struct NotePackageGoldenTests {
             String(repeating: "日本語😀\n", count: 100_000)]
         let hashes = ["2e8742930fad596ee420c95eb43e0f7aa4d1df103ac3a0a82d1952e299af595d", "d7e6874f74889b32e99245adb528e7547d18189227f2ebf2b698288c794eb560", "44a8dd05a03cab817f4bc2c6a20f3d5ce6d4795bd89673296ba5a20e70a19547", "5da2dcb8b69a7da152c4a249eccec7da2d55ea5626bff02bf2bc7da5baad9173", "7cfbd0ae72ff3ad1f67a846e4817d50456fb4ad73bbb5b2fa55266fa3bd0cd4c", "20def94ef6008a70abc63d9a1880cbfcd4e132cc7278538b578f2e6196a5bf91"]
         for (index, text) in notes.enumerated() {
-            let package = try AIPackageBuilder.build(sources: [], note: AINoteContext(noteID: id, text: text), language: "日本語", createdAt: at, expiresAt: at.addingTimeInterval(86_400))
+            let package = try AIPackageBuilder.build(note: AINoteContext(noteID: id, text: text), language: "日本語", createdAt: at)
             #expect(Data(package.text.utf8) == Data((prefix + text + suffix).utf8))
             #expect(package.sha256 == hashes[index])
             if index == notes.count - 1 {
