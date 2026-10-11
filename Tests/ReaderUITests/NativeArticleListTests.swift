@@ -110,7 +110,7 @@ import ReaderCore
         }
         #expect(handled == ["s"])
     }
-    @Test func noteKeyRoutesAndTheOldScrapKeyDoesNot() throws {
+    @Test func summaryKeyRoutesAndTheOldPickerKeyDoesNot() throws {
         let table = NativeArticleList.Table()
         var handled: [String] = []
         table.keyHandler = { handled.append($0); return true }
@@ -121,8 +121,8 @@ import ReaderCore
         }
         try press("t", keyCode: 17)
         try press("n", keyCode: 45)
-        try press("t", keyCode: 17, flags: .command)
-        #expect(handled == ["t"])
+        try press("n", keyCode: 45, flags: .command)
+        #expect(handled == ["n"])
     }
     @Test func backgroundInsertionAndReorderPreserveSelectedArticleAndTopOffset() {
         let original = (0..<40).map { _ in UUID() }

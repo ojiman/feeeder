@@ -88,20 +88,22 @@ Focus the article list, then use these keys:
 | `j` / `k` | Next / previous article |
 | `m` | Mark read / unread |
 | `s` | Add or remove a Star |
-| `t` | Choose the notes for the article (the icon at the top right does the same) |
+| `n` | Send a summary to a new or recent note (the icon at the top right does the same) |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page inside the app |
 | `Esc` | Go back to reading |
 
 - Scrolling the list does not mark an article as read. The first read time is saved when the body or the RSS summary is actually shown.
-- The in-app browser contacts the site you chose and does not keep you signed in. `j`, `k`, `s`, and `t` also work on the original page. The app gives priority to text fields and to keys used with modifier keys.
+- The in-app browser contacts the site you chose and does not keep you signed in. `j`, `k`, `s`, and `n` also work on the original page. The app gives priority to text fields and to keys used with modifier keys.
 - Text extraction is best effort. The app labels the text as one of 「フィード提供本文」 (body provided by the feed), 「抽出本文・全文保証なし」 (extracted body, not guaranteed to be complete), or 「RSS要約のみ」 (RSS summary only). If the body cannot be fetched, you still get the summary and a link to the original. The app does not try to get around access limits.
 - The list shows favicons and, when available, article thumbnails. The article shows images in the text. Images are best effort. While an image loads or if it fails, the frame keeps its height. The image cache is 64 MiB. Successes are kept for 7 days and failures for 10 minutes. At most 4 images load at the same time.
 
 ### Stars and notes
 
 - Press `s` (or use the button at the top right) to star an article. You can read starred articles again from the Star list.
-- Press `t` (or use the icon at the top right) to choose the notes for an article. Check existing notes to add the article or remove it. You can also create a new note and add the article to it (the name you type becomes the heading on its first line). An article can be in many notes.
+- Press `n` (or 「ノートに要約を送る」 at the top right). Choose 「新しいノート」 (New note) or one of the 8 most recently edited notes. Use ↑/↓, Return to send, and Esc to close. A new note starts with the article title; an existing note receives the summary and source line at its end. The article is linked once; sending again appends again.
+- The result offers 「取り消す」 (Undo) for 8 seconds. It restores only what the send made, and refuses if you edited the note. During AI generation, 「中止」 (Cancel) writes nothing. You can keep reading while it runs.
+- In a note's article list, right-click 「このノートから外す」 (Remove from this note) to remove the link. It does not change the note text or Star. There is no separate linking picker or `t` key.
 - A Star and a note are separate. If you remove the Star, the article stays in its notes.
 - When you add an article to a note, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
 - Create a note with 「新しいノート」 (New note) in the sidebar. It is empty and opens at once. Right-click a note and choose 「削除…」 (Delete…) to delete it. Deleting a note does not delete its articles or Stars.
@@ -112,14 +114,14 @@ Select a note in the sidebar (the most recently edited is first). The middle col
 
 - A note is one Markdown document. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. A note has no name: **its title is its first line** (without the leading `#` marks and spaces; an empty note is called 「新規ノート」). Only when the window is narrow (under about 1,300 pt), opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. You can drag the edge of the panel to change its width, and the app keeps the width for the next launch (this is still being checked in a real window).
 - The top of the note panel has the button 「Claudeでレビューを頼む」 (Ask Claude to review) and two small arrows for the previous and next article.
-- Keys: `j` and `k` move between articles in the list, and `s`, `t`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
-- **The AI never writes into your note.**
+- Keys: `j` and `k` move between articles in the list, and `s`, `n`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
+- **AI writes a summary only when you choose to send it.** It never rewrites your own text.
 
 ## 4. On-device AI
 
-The AI runs on your Mac only. Nothing is sent out. You can turn it off in Settings under 「端末内AI」 (On-device AI); when it is off, the app does not call the model. You can also see its state there. If the language assets are not on your Mac, the app does not download them.
+The AI runs on your Mac only. Nothing is sent out. Settings → 「要約」 (Summary) holds 「AIで要約する（この Mac の中だけ）」 (Summarize on this Mac), length (1 / up to 3 / up to 5 sentences), format (prose / bullets), and an optional one-line instruction of up to 200 characters. Its words are yours; fixed accuracy rules still apply. The app does not download missing model assets.
 
-In this version the AI has no visible feature: the suggestions (near notes, suggested groups, name ideas), the summary card in the note panel and the note actions (「わかりやすく」, 「3行の要点」) are gone (decision 0019). The summary returns in the next stage as 「ノートに要約を送る」 (Send a summary to a note); see the [roadmap](roadmap.md).
+AI output is marked 「（AI要約）」 on its source line. With AI off, unavailable, failed, blank or timed out after 20 seconds, the app sends the retained RSS summary and source, or only the title and URL, without the AI mark. The message tells you what was sent. Turning AI off while a request runs cancels the write. Save or reload errors are shown as failures; after a successful save, a reload failure can leave the write committed, so check the note before sending again.
 
 ## 5. How long data is kept
 

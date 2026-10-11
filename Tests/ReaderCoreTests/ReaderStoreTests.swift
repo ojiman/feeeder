@@ -85,6 +85,7 @@ struct ReaderStoreTests {
         let article = try #require(store.articles.first)
         let note = try store.createNote(text: "# 保存済み\n", at: at)
         let link = try store.addArticle(article.id, toNote: note.id, at: at)
+        let send = try store.sendArticle(article.id, to: note.id, block: "summary", newNoteTitle: "", at: at)
         failSave = true; failReload = true
         #expect(throws: (any Error).self) { try store.setRead(article, true) }
         failSave = false
@@ -108,6 +109,8 @@ struct ReaderStoreTests {
             { _ = try store.createNote(text: "# 変更\n", adding: article.id, at: at) },
             { try store.removeArticle(article.id, fromNote: note.id, at: at) },
             { try store.deleteNote(id: note.id) },
+            { _ = try store.sendArticle(article.id, to: note.id, block: "blocked", newNoteTitle: "", at: at) },
+            { _ = try store.undoSend(send, at: at) },
             { try store.applyRetention(days: 7, at: at) },
             { try store.deleteContent(articleIDs: [article.id], at: at) },
             { try store.markDisplayed(articleID: article.id, at: at) },

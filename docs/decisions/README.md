@@ -38,6 +38,8 @@
 | [0017](0017-note-beside-the-article.md) | The note beside the article | refined by 0019 |
 | [0019](0019-v1-simplification-notes.md) | V1 simplification: notes replace themes | valid (approved by merging the PR that adds it) |
 
+| [0020](0020-summary-send-contract.md) | Summary sending and undo (S2) | valid (PR #69) |
+
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
 置き換わった記録（0004、0008、0010、0011、0013、0014、0016、0018）は、2026-10のprune PRで作業ツリーから外しました。内容と来歴はGit履歴にあります（`git log --follow -- docs/decisions/<ファイル名>`）。
