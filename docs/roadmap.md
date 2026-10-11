@@ -14,7 +14,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 | S2 | **Done.** 「ノートに要約を送る」 (button, menu, `n`), automatic links and removal, summary settings, the AI mark and 「取り消す」. The picker and `t` are removed. | Plan approved in PR #69. |
 | S3 | **Done.** Note-panel share menu, exact Markdown copy/export, and note-only Claude review. | Plan approved in PR #71. |
 | S4 | Done: unused note helpers, article package paths and managed-copy source metadata removed; note bytes and stored schema preserved. [Decision](decisions/0022-note-only-package-clean-up.md), [verification](verification/s4-clean-up.md). | Plan approved in [PR #74](https://github.com/ojiman/feeeder/pull/74). |
-| S5 | ([plan](superpowers/plans/2026-10-11-s5-editor-styling.md)) Light styling of headings and lists in the editor. Does not block the beta. | Merging the plan. |
+| S5 | **Done.** Light styling of headings and lists in the editor (display only; the text never changes). | Plan approved in PR #72. |
 
 ## After S3
 

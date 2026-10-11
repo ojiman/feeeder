@@ -1,7 +1,8 @@
 import SwiftUI
 import ReaderCore
 
-/// The note editor. Plain Markdown text; a line that starts with `#` is a heading. Saved as it is typed, exactly as typed.
+/// The note editor. Plain Markdown text; a line that starts with `#` is a heading and a line that starts with `-` or `1.` is a list item
+/// (only their look changes, see `NoteTextEditor`). Saved as it is typed, exactly as typed.
 /// Nothing but the person writes here (decision 0019: a summary the person sends is the only text that arrives from elsewhere).
 struct NoteEditor: View {
     @Bindable var store: ReaderStore
@@ -9,12 +10,9 @@ struct NoteEditor: View {
     @State private var error: String?
     var body: some View {
         if let note = store.note(id: noteID) {
-            TextEditor(text: Binding(get: { note.text }, set: { text in
-                do { try store.saveNote(noteID: noteID, text: text, at: .now) } catch { self.error = error.localizedDescription }
-            }))
-            .font(.body).accessibilityLabel("ノート")
-            .scrollContentBackground(.hidden)
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            NoteTextEditor(text: note.text) { text in
+                do { try store.saveNote(noteID: noteID, text: text, at: .now); return true } catch { self.error = error.localizedDescription; return false }
+            }
             .overlay(alignment: .topLeading) {
                 if note.text.isEmpty {
                     Text("自分の言葉で書きます。最初の行がタイトルになり、「#」で始まる行は見出しです。")
