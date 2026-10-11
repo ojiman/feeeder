@@ -6,17 +6,21 @@ struct SidebarSectionHeader: View {
     let title: String
     let help: String
     let action: () -> Void
+    /// Shows the + without the pointer (snapshots and tests).
+    var forceVisible = false
     @State private var hovering = false
 
     var body: some View {
         HStack {
             Text(title)
             Spacer()
-            Button(action: action) { Image(systemName: "plus").imageScale(.small).frame(width: 18, height: 18) }
+            // The + ends where the counts of the rows end, and is drawn in the accent colour of the + at the top left.
+            Button(action: action) { Image(systemName: "plus").imageScale(.medium).fontWeight(.semibold).frame(width: 18, height: 18) }
                 .buttonStyle(.plain)
                 // Not `.opacity(0)`: that removes the button from the accessibility tree. A clear icon stays reachable.
-                .foregroundStyle(hovering ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.clear))
+                .foregroundStyle((hovering || forceVisible) ? AnyShapeStyle(AppPalette.accentColor) : AnyShapeStyle(Color.clear))
                 .help(help).accessibilityLabel(help)
+                .padding(.trailing, 9)
         }
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
