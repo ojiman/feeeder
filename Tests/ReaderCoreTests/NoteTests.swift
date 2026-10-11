@@ -422,3 +422,57 @@ import Testing
     }
 
 }
+
+extension NoteTests {
+    @Test func sendAndUndoKeepTheTextAndLinkTogether() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let article = try #require(store.articles.first)
+        let result = try store.sendArticle(article.id, to: nil, block: "summary", newNoteTitle: "Title", at: at)
+        #expect(store.note(id: result.noteID)?.text == "# Title\n\nsummary\n")
+        #expect(store.noteArticleCount(noteID: result.noteID) == 1)
+        #expect(try store.undoSend(result, at: at))
+        #expect(store.note(id: result.noteID) == nil && store.noteArticles.isEmpty)
+        let note = try store.createNote(text: "mine", at: at)
+        let first = try store.sendArticle(article.id, to: note.id, block: "one", newNoteTitle: "", at: at)
+        let second = try store.sendArticle(article.id, to: note.id, block: "two", newNoteTitle: "", at: at)
+        #expect(store.noteArticleCount(noteID: note.id) == 1)
+        #expect(try store.undoSend(second, at: at))
+        #expect(store.note(id: note.id)?.text == "mine\n\none\n" && store.noteArticleCount(noteID: note.id) == 1)
+        try store.saveNote(noteID: note.id, text: "changed", at: at)
+        #expect(try !store.undoSend(first, at: at))
+        #expect(store.note(id: note.id)?.text == "changed")
+        #expect(throws: NoteError.self) { try store.sendArticle(UUID(), to: note.id, block: "x", newNoteTitle: "", at: at) }
+        #expect(throws: NoteError.self) { try store.sendArticle(article.id, to: UUID(), block: "x", newNoteTitle: "", at: at) }
+    }
+    @Test func aFailedSendOrUndoDoesNotPartiallySave() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let schema = ReaderStore.schema
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration("Reader", schema: schema, url: library.url, cloudKitDatabase: .none)])
+        var fail = false, reloadFail = false
+        let store = try ReaderStore(container: container, seedDemo: true, now: at, saveHook: {
+            if fail { throw CocoaError(.fileWriteUnknown) }
+        }, reloadHook: { if reloadFail { throw CocoaError(.fileReadUnknown) } })
+        let article = try #require(store.articles.first)
+        let initialNotes = store.notes.count, initialLinks = store.noteArticles.count
+        fail = true
+        #expect(throws: (any Error).self) { try store.sendArticle(article.id, to: nil, block: "new", newNoteTitle: "T", at: at) }
+        #expect(store.notes.count == initialNotes && store.noteArticles.count == initialLinks)
+        fail = false
+        let note = try store.createNote(text: "mine", at: at)
+        fail = true
+        #expect(throws: (any Error).self) { try store.sendArticle(article.id, to: note.id, block: "new", newNoteTitle: "", at: at) }
+        #expect(store.note(id: note.id)?.text == "mine" && store.noteArticleCount(noteID: note.id) == 0)
+        fail = false
+        let result = try store.sendArticle(article.id, to: note.id, block: "new", newNoteTitle: "", at: at)
+        fail = true
+        #expect(throws: (any Error).self) { try store.undoSend(result, at: at) }
+        #expect(store.note(id: note.id)?.text == "mine\n\nnew\n" && store.noteArticleCount(noteID: note.id) == 1)
+        fail = false; reloadFail = true
+        #expect(throws: (any Error).self) { try store.sendArticle(article.id, to: note.id, block: "again", newNoteTitle: "", at: at) }
+        #expect(throws: (any Error).self) { try store.undoSend(result, at: at) }
+        reloadFail = false
+        try store.reloadIfNeeded()
+        #expect(store.note(id: note.id)?.text == "mine\n\nnew\n\nagain\n")
+    }
+}
