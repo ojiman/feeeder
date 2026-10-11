@@ -171,6 +171,7 @@ import Testing
         #expect(without.note == nil && !without.text.contains("BEGIN_NOTE") && !without.text.contains("Monthly payments"))
         #expect(!without.text.contains("ノートに書かれていることを「ない」") && without.text.contains("主要な論点、出典間の共通点と相違点"))   // the old request for the sources
         #expect(without.noteID == note.id)                                                       // still tied to the note for managed copies
+        #expect(with.text.contains("含まれている出典に照らして") && with.text.contains("根拠の弱い点"))
     }
 
     @Test func anEmptyNoteIsNotIncludedAndANoteWithoutOneCannotBeSentWithoutSources() throws {
@@ -196,7 +197,10 @@ import Testing
         try review.build(selections: [], note: request(note), language: "English", at: at)
         let package = try #require(review.package)
         #expect(package.sources.isEmpty && package.expiresAt == at.addingTimeInterval(86_400) && !package.text.contains("BEGIN_SOURCE"))
-        #expect(package.text.contains("ノートで既にできていること") && !package.text.contains("含まれている出典に照らして"))   // no sources: no line about them
+        #expect(package.text.contains("ノートですでにできていること") && package.text.contains("ノートの文を引用"))
+        #expect(package.text.contains("ノートに書かれていないことだけ") && package.text.contains("反対の見方"))
+        #expect(package.text.contains("次に読む・書くとよいこと") && package.text.contains("アプリへ書き込んだり"))
+        #expect(!package.text.contains("含まれている出典に照らして") && !package.text.contains("Goal") && !package.text.contains("Source ID"))
         #expect(package.sha256 == AIPackageBuilder.hash(Data(package.text.utf8)) && package.text.hasSuffix("END_PACKAGE\n"))
         _ = try review.validated(at: at.addingTimeInterval(3_600))                                   // still valid an hour later
         #expect(throws: (any Error).self) { try review.validated(at: at.addingTimeInterval(86_401)) }

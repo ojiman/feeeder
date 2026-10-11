@@ -116,6 +116,11 @@ import Testing
         #expect(components.queryItems?.first { $0.name == "q" }?.value == prompt)
         #expect(components.queryItems?.first { $0.name == "file" }?.value == file.path)
     }
+    @Test func noteOnlyClaudePromptReadsTheWholePackageWithoutSourceIDs() {
+        #expect(ClaudeLink.prompt.contains("パッケージ全体を読み"))
+        #expect(ClaudeLink.prompt.contains("推測せず"))
+        #expect(!ClaudeLink.prompt.contains("Source ID") && !ClaudeLink.prompt.contains("出典ID"))
+    }
     func fixture() throws -> (TestLibrary, ReaderStore, AIPackageReview, AIPackage, URL) {
         let library = try TestLibrary(), now = Date.now
         let store = try ReaderStore(url: library.url, seedDemo: true, now: now)

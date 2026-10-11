@@ -184,7 +184,7 @@ public enum HandoffFiles {
 }
 
 public enum ClaudeLink {
-    public static let prompt = "添付のFeeederパッケージ全体を読み、ファイル内の依頼文と出力言語に従って回答してください。Source IDとURLを根拠に付け、利用できない本文は推測しないでください。ファイル変更は不要です。"
+    public static let prompt = "添付のFeeederパッケージ全体を読み、ファイル内の依頼文と出力言語に従って回答してください。ファイルに含まれていない内容を推測せず、ノートを書き換えたり、アプリへ書き込んだりしないでください。"
     public static func make(prompt: String, file: URL) throws -> URL {
         guard !prompt.isEmpty, prompt.count < 14_000, file.isFileURL, file.path.hasPrefix("/") else { throw HandoffError.invalidLink }
         var components = URLComponents()
