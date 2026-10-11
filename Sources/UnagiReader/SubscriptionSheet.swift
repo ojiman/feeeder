@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import ReaderCore
 
 struct SubscriptionSheet: View {
@@ -9,6 +10,8 @@ struct SubscriptionSheet: View {
     @State private var source = ""
     @State private var xml = ""
     @State private var manualXML = false
+    /// The XML input is for trouble-shooting: it is offered only when the sheet was opened with the Option key held.
+    @State private var xmlOffered = SubscriptionSheet.offersXMLInput(modifiers: NSEvent.modifierFlags)
     @State private var etag: String?
     @State private var lastModified: String?
     @State private var title = ""
@@ -24,13 +27,10 @@ struct SubscriptionSheet: View {
             if let feed {
                 TextField("購読名", text: $title.singleLine())
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                Text("左カラム上部の更新ボタンで最新の記事を取得できます。")
-                    .font(.caption).foregroundStyle(.secondary)
             } else {
-                Text("RSS / AtomのURLを入力して、記事を取得します。")
-                    .font(.callout).foregroundStyle(.secondary)
-                TextField("フィードURL（https://…）", text: $source.singleLine(address: true)).disabled(busy)
-                Toggle("XMLを直接入力（合成サンプル・トラブル確認用）", isOn: $manualXML).font(.caption).disabled(busy)
+                TextField("https://example.com/feed.xml", text: $source.singleLine(address: true))
+                    .accessibilityLabel("フィードのURL").disabled(busy)
+                if xmlOffered { Toggle("XMLを直接入力", isOn: $manualXML).font(.caption).disabled(busy) }
                 if manualXML {
                     TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
                         .frame(minHeight: 240).border(.quaternary)
@@ -51,34 +51,27 @@ struct SubscriptionSheet: View {
                         .font(.callout).foregroundStyle(.orange)
                 }
             }
-            HStack {
-                TextField("フォルダ名（空欄は未分類）", text: $folder.singleLine())
-                    .accessibilityLabel("フォルダ名")
-                Menu("既存から選ぶ") {
-                    Button("未分類") { folder = "" }
-                    ForEach(Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), id: \.self) { name in
-                        Button(name) { folder = name }
-                    }
-                }
-            }.disabled(busy)
-            Text("既存のフォルダを選ぶか、新しい名前を入力できます。フォルダは1階層です。")
-                .font(.caption).foregroundStyle(.secondary)
+            FolderComboBox(text: $folder, folders: Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), prompt: "フォルダ")
+                .disabled(busy)
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
                 if busy { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("キャンセル") { parseTask?.cancel(); dismiss() }.keyboardShortcut(.cancelAction)
-                Button(feed == nil ? (result == nil ? "取得して取り込む" : "残りの記事を取り込む") : "保存", action: submit)
+                Button(feed == nil ? (result == nil ? "追加" : "取り込む") : "保存", action: submit)
                     .keyboardShortcut(.defaultAction).disabled(busy)
             }
         }
-        .padding(24).frame(width: 600)
+        .padding(20).frame(width: 440)
         .onAppear { title = feed?.title ?? ""; folder = feed?.folder ?? "" }
         .onChange(of: xml) { _, _ in result = nil }
         .onChange(of: source) { _, _ in result = nil }
         .onChange(of: manualXML) { _, _ in result = nil }
         .onDisappear { parseTask?.cancel() }
     }
+
+    /// Whether the XML input is offered: only with the Option key (a trouble-shooting tool, not part of everyday adding).
+    static func offersXMLInput(modifiers: NSEvent.ModifierFlags) -> Bool { modifiers.contains(.option) }
 
     private func submit() {
         error = nil

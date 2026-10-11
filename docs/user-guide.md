@@ -71,7 +71,7 @@ The window has three columns. In Settings you can choose the appearance: follow 
 
 ### Subscriptions and folders
 
-- Click "＋" at the top right of the left column and enter an RSS or Atom URL. Then choose "unfiled" or an existing folder, or type a new folder name. The refresh button is next to it. You can also import feed XML by hand and a synthetic sample.
+- Click "＋" at the top right of the left column and enter an RSS or Atom URL. Then, in the "フォルダ" (folder) field, choose an existing folder from the list or type a new name (empty means unfiled), and press "追加" (Add). The refresh button is next to it. Hold ⌥ (Option) while you open "＋" to get the trouble-shooting tools: typing feed XML by hand and a synthetic sample.
 - Right-click a subscription to rename it, put it in a one-level folder, move it, or unsubscribe.
 - When you select a folder, the list shows the articles of all subscriptions in it. Right-click a folder to rename or merge it.
 
