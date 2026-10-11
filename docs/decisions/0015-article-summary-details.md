@@ -1,6 +1,6 @@
 # 0015 The article summary: budget, insertion point, and limits
 
-- Status: valid in part; refined by [0019](0019-v1-simplification-notes.md) (the summary is sent straight to a note; the input budget and the source line stay)
+- Status: valid in part; refined by [0019](0019-v1-simplification-notes.md) (the summary is sent straight to a note; the input budget and the source line stay) and by [0033](0033-rss-first.md) (a short feed text is replaced, for the AI only and at send time, by the text of the original page)
 - Date: 2026-10-10
 - Decider: the owner (PdM) approved the N4 plan, 2026-10-10-ai-summary.md (Git history). The Product Owner (the agent) proposed the points.
 - Builds on: decision 0013 (Git history) (points 5 and 6) and [0009](0009-on-device-ai-principles.md). It refines 0013 where the two differ (see 1 and 2).

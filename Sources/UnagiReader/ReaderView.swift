@@ -493,7 +493,7 @@ struct ReaderView: View {
     @ViewBuilder private var detail: some View {
         if let article = selectedArticle {
             ArticleDetailView(article: article, content: displayedContent?.articleID == article.id ? displayedContent : nil,
-                expiry: selectedExpiry, loading: loading.loading, updateAvailable: loading.availableUpdate?.articleID == article.id,
+                expiry: selectedExpiry, canFetchPage: store.isContentAvailable(article, at: .now), loading: loading.loading, updateAvailable: loading.availableUpdate?.articleID == article.id,
                 error: loading.error, initialAnchor: scrollMemory.state.scrollAnchors[article.id], initialOffset: scrollMemory.state.scrollOffsets[article.id] ?? 0,
                 onScroll: { anchor, offset in scrollMemory.state.recordScroll(articleID: article.id, anchor: anchor, offset: offset) },
                 onInteraction: { loading.recordInteraction(articleID: article.id) },

@@ -28,7 +28,7 @@ import Observation
         guard !Task.isCancelled, state.accept(articleID: articleID, generation: generation) else { return }
         loading = false
         guard let result else {
-            if refresh { error = displayed == nil ? "本文を取得できませんでした。" : "本文を再取得できませんでした。保存済み本文を表示しています。" }
+            error = displayed == nil ? "全文を取得できませんでした。" : "全文を取得できませんでした。今の本文を表示しています。"
             return
         }
         do {

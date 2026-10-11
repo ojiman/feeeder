@@ -5,6 +5,14 @@ import Testing
 
 final class AskedFlag: @unchecked Sendable { var value = false }
 
+/// A page request that stays open until the test lets it finish.
+actor PageGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+    var isWaiting: Bool { continuation != nil }
+    func wait() async { await withCheckedContinuation { continuation = $0 } }
+    func release() { continuation?.resume(); continuation = nil }
+}
+
 @MainActor struct SummarySenderTests {
     let at = Date(timeIntervalSince1970: 1_800_000_000)
     private func settle(_ sender: SummarySender) async throws {
@@ -51,6 +59,36 @@ final class AskedFlag: @unchecked Sendable { var value = false }
         let request = try #require(await generator.generateCalls.first)
         #expect(request.prompt.contains("ページの本文です。"))                                   // the AI read the page, not only the short feed text
         #expect((try store.content(articleID: article.id, at: at)?.text.count ?? 0) < 1000)     // and nothing was stored: the reader still shows the feed text
+    }
+    @Test func noPageIsRequestedForExpiredTextOrWhenTheModelCannotRun() async throws {
+        for mode in ["expired", "unavailable"] {
+            let library = try TestLibrary(); defer { library.cleanup() }
+            let store = try ReaderStore(url: library.url, now: at)
+            let article = try shortArticle(in: store)
+            let generator = FakeGenerator()
+            await generator.scriptGeneration(["要約"], availability: mode == "unavailable" ? .unsupported : .available)
+            let asked = AskedFlag()
+            let time = mode == "expired" ? at.addingTimeInterval(400 * 86400) : at
+            let sender = SummarySender(store: store, assistant: generator, pageText: { _ in asked.value = true; return nil }, now: { time })
+            #expect(sender.start(articleID: article.id, noteID: nil))
+            try await settle(sender)
+            #expect(!asked.value, "mode \(mode): a page must not be requested")                // expired text is never revived; no model, no use for a page
+            #expect(await generator.generateCalls.isEmpty)
+        }
+    }
+    @Test func cancellingWhileThePageIsFetchedNeverRunsTheModel() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, now: at)
+        let article = try shortArticle(in: store)
+        let generator = FakeGenerator(); await generator.scriptGeneration(["要約"])
+        let gate = PageGate()
+        let sender = SummarySender(store: store, assistant: generator, pageText: { _ in await gate.wait(); return nil }, now: { at })
+        #expect(sender.start(articleID: article.id, noteID: nil))
+        while !(await gate.isWaiting) { try await Task.sleep(for: .milliseconds(5)) }
+        sender.cancel()
+        await gate.release()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(await generator.generateCalls.isEmpty)
     }
     @Test func theFeedTextIsUsedWhenItIsLongOrThePageCannotBeUsed() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }

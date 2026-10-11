@@ -241,6 +241,16 @@ import SwiftData
         try save(); try reload()
     }
 
+    /// `discardExtractedBodies` once per library: the marker is a file in the library's folder, so a copy or a renamed folder of the library
+    /// keeps it, and bodies the person fetches later with 「全文を取得」 are not removed by a second run. Returns nil when it was done before;
+    /// a failure leaves no marker, so it is tried again at the next start.
+    @discardableResult public func discardExtractedBodiesOnce(marker: URL) throws -> Int? {
+        guard !FileManager.default.fileExists(atPath: marker.path) else { return nil }
+        let removed = try discardExtractedBodies()
+        try Data().write(to: marker)
+        return removed
+    }
+
     /// Removes the bodies that an earlier version took from the original pages by itself when an article was opened. They can be wrong
     /// (a page's menus and counters instead of the article). The article keeps its RSS summary and the next feed refresh brings back the
     /// feed's own body. Returns how many bodies were removed.

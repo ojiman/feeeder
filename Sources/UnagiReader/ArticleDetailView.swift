@@ -5,6 +5,8 @@ struct ArticleDetailView: View {
     let article: Article
     let content: ArticleContent?
     let expiry: Date?
+    /// The article is within retention, so its page may be fetched even when the feed gave no text at all (「全文を取得」).
+    var canFetchPage = false
     let loading: Bool
     let updateAvailable: Bool
     let error: String?
@@ -24,7 +26,7 @@ struct ArticleDetailView: View {
     private var date: String { article.publishedAt == .distantPast ? "公開日時不明" : article.publishedAt.formatted(.dateTime.year().month().day()) }
     var body: some View {
         VStack(spacing: 0) {
-            if available && !loading {
+            if (available || canFetchPage) && !loading {
                 HStack {
                     Spacer()
                     Button(content?.coverage == .extracted ? "本文を再取得" : "全文を取得", action: onReload).buttonStyle(.link)

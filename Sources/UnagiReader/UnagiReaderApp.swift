@@ -24,12 +24,9 @@ struct UnagiReaderApp: App {
             }
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let store = try ReaderStore(url: directory.appending(path: "Reader.store"), seedDemo: args.contains("--seed-demo"))
-            // Once per library: remove the bodies an earlier version took from the original pages by itself (see decision 0033). A failure is
-            // not recorded as done, so it is tried again at the next start.
-            let discardKey = "discardedAutoExtractedBodies.v1." + directory.path
-            if !UserDefaults.standard.bool(forKey: discardKey), (try? store.discardExtractedBodies()) != nil {
-                UserDefaults.standard.set(true, forKey: discardKey)
-            }
+            // Once per library: remove the bodies an earlier version took from the original pages by itself (decision 0033). The marker is a
+            // file in the library's folder; a failure leaves no marker, so it is tried again at the next start.
+            _ = try? store.discardExtractedBodiesOnce(marker: directory.appending(path: ".extracted-bodies-discarded-v1"))
             _store = State(initialValue: store)
             _refresh = State(initialValue: FeedRefreshController(store: store))
             let review = AIPackageReview(store: store)

@@ -38,6 +38,12 @@ struct ArticleExtractorTests {
         #expect(ExtractionQuality.isArticleText([BodyParagraph(text: "見出し"), BodyParagraph(text: "最初の段落です。これは合成の日本語本文です。"), BodyParagraph(text: "次の段落です。")]))
         #expect(!ExtractionQuality.isArticleText([]))
     }
+    @Test func anArticleWithManyShortHeadingsAndListItemsStillCounts() {
+        func long(_ i: Int) -> BodyParagraph { BodyParagraph(text: "第\(i)の段落です。" + String(repeating: "本文の説明がここに続きます。", count: 4)) }
+        let tiny = ["はじめに", "環境", "手順", "まとめ", "macOS", "Swift", "Xcode", "卵2個", "7.5", "OK", "→", "A"].map { BodyParagraph(text: $0) }
+        #expect(ExtractionQuality.isArticleText(tiny + (1...10).map(long)))                       // 12 tiny, 10 real paragraphs
+        #expect(ExtractionQuality.isArticleText(tiny + tiny + [BodyParagraph(text: "x")] + (1...20).map(long)))   // more tiny ones than real ones, but plenty of text
+    }
     @Test func mainAndMalformedHTMLRemainReadable() throws {
         let html = "<main><p>壊れたHTMLでも日本語の段落を保持します。<p>次の段落も読みやすく表示できる合成本文です。"
         let result = try #require(try extract(html))

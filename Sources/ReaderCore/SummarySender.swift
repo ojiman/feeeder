@@ -53,13 +53,19 @@ import Observation
             var input = content.flatMap { ArticleSummaryPrompt.make(title: title, text: $0.text, settings: options) }
             let feedLength = content?.text.count ?? 0
             let pageURL = url.flatMap { ArticleURL.validated($0) }
+            let retained = store.isContentAvailable(article, at: now())      // expired text is never brought back, not even through a page
             task = Task { [weak self, pageText] in
                 guard let self else { return }
                 // The AI reads the page when the feed gave only a short text. This is the answer to the person pressing the button: it is not
                 // stored and not shown, and a page that cannot be used leaves the feed text as the input.
-                if enabled, self.assistant != nil, feedLength < Self.shortFeedText, let pageText, let pageURL,
-                   let page = try? await withDeadline(Self.pageDeadline, { await pageText(pageURL) }), page.text.count > feedLength,
-                   let better = ArticleSummaryPrompt.make(title: title, text: page.text, settings: options) { input = better }
+                // Only when the model can run: a page that no model reads is a request for nothing.
+                if enabled, retained, let assistant = self.assistant, feedLength < Self.shortFeedText, let pageText, let pageURL,
+                   await assistant.generationAvailability() == .available {
+                    let page = try? await withDeadline(Self.pageDeadline, { await pageText(pageURL) })
+                    guard self.token == mine, !Task.isCancelled else { return }
+                    guard self.isEnabled() else { self.state = .message("AIをオフにしたため、送信を中止しました"); return }
+                    if let page, page.text.count > feedLength, let better = ArticleSummaryPrompt.make(title: title, text: page.text, settings: options) { input = better }
+                }
                 var summary: String?
                 if enabled, let assistant = self.assistant, let input {
                     do {
