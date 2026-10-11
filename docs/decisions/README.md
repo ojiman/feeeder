@@ -52,6 +52,7 @@
 | [0031](0031-less-clutter.md) | Less clutter in the window | valid (with the clean-up PR) |
 | [0032](0032-simple-add-subscription.md) | A simple "add subscription" sheet | valid (with the sheet PR) |
 | [0033](0033-rss-first.md) | RSS first: the feed's own text is shown | valid (with the RSS-first PR) |
+| [0034](0034-move-to-folder-chooser.md) | 「フォルダへ移動…」 is a chooser with a text field | valid (with the chooser PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

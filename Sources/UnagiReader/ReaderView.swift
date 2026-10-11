@@ -40,8 +40,8 @@ struct ReaderView: View {
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
     @State private var folderExpansion = FolderExpansion()
-    /// The subscription that is being moved to a folder that does not exist yet (a folder is made by moving the first subscription into it).
-    @State private var creatingFolderFor: Feed?
+    /// The subscription whose 「フォルダへ移動…」 chooser is open.
+    @State private var movingFeedID: UUID?
     @State private var folderName = ""
     @State private var deletingNote: UUID?
     @State private var originalPage = OriginalPageState()
@@ -287,16 +287,6 @@ struct ReaderView: View {
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
-        .alert("新しいフォルダ", isPresented: Binding(get: { creatingFolderFor != nil }, set: { if !$0 { creatingFolderFor = nil } })) {
-            TextField("フォルダ名", text: $folderName.singleLine())
-            Button("移動") {
-                guard let feed = creatingFolderFor else { return }
-                let name = SingleLineText.name(folderName)
-                if !name.isEmpty { moveFeeds([feed.id], to: name) }
-                creatingFolderFor = nil
-            }
-            Button("キャンセル", role: .cancel) { creatingFolderFor = nil }
-        } message: { Text("この購読を、新しいフォルダへ移します。") }
         .alert("フォルダ名を変更", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
             TextField("フォルダ名", text: $folderName.singleLine())
             Button("保存") {
@@ -380,17 +370,13 @@ struct ReaderView: View {
         }.padding(.vertical, 4)
             .draggable(FeedDrag(id: feed.id))
             .tag(LibraryScope.feed(feed.id))
+            .popover(isPresented: Binding(get: { movingFeedID == feed.id }, set: { if !$0 { movingFeedID = nil } }), arrowEdge: .trailing) {
+                MoveToFolderView(folders: folders, current: feed.folder, onMove: { folder in movingFeedID = nil; moveFeeds([feed.id], to: folder) }, onClose: { movingFeedID = nil })
+            }
             .contextMenu {
                 Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
                 Button("購読名を編集…") { editingFeed = feed }
-                Menu("フォルダへ移動") {
-                    Button("未分類") { moveFeeds([feed.id], to: "") }
-                    ForEach(folders, id: \.self) { folder in
-                        Button(folder) { moveFeeds([feed.id], to: folder) }
-                    }
-                    Divider()
-                    Button("新しいフォルダ…") { folderName = ""; creatingFolderFor = feed }
-                }
+                Button("フォルダへ移動…") { movingFeedID = feed.id }
                 Button("購読を解除…", role: .destructive) { removingFeed = feed }
             }
     }
@@ -529,7 +515,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || creatingFolderFor != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
