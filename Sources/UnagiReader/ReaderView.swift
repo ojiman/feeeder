@@ -57,7 +57,7 @@ struct ReaderView: View {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
         self.imageLoader = imageLoader
-        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }))
+        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
@@ -501,7 +501,7 @@ struct ReaderView: View {
     @ViewBuilder private var detail: some View {
         if let article = selectedArticle {
             ArticleDetailView(article: article, content: displayedContent?.articleID == article.id ? displayedContent : nil,
-                expiry: selectedExpiry, loading: loading.loading, updateAvailable: loading.availableUpdate?.articleID == article.id,
+                expiry: selectedExpiry, canFetchPage: store.isContentAvailable(article, at: .now), loading: loading.loading, updateAvailable: loading.availableUpdate?.articleID == article.id,
                 error: loading.error, initialAnchor: scrollMemory.state.scrollAnchors[article.id], initialOffset: scrollMemory.state.scrollOffsets[article.id] ?? 0,
                 onScroll: { anchor, offset in scrollMemory.state.recordScroll(articleID: article.id, anchor: anchor, offset: offset) },
                 onInteraction: { loading.recordInteraction(articleID: article.id) },

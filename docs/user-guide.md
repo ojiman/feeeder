@@ -95,6 +95,7 @@ Focus the article list, then use these keys:
 
 - Scrolling the list does not mark an article as read. The first read time is saved when the body or the RSS summary is actually shown.
 - The in-app browser contacts the site you chose and does not keep you signed in. `j`, `k`, `s`, and `n` also work on the original page. The app gives priority to text fields and to keys used with modifier keys.
+- When you open an article, the app shows the text the feed provides (or the RSS summary) as it is. For more, press "v" (the original page in the app) or "b" (your browser). "全文を取得" (Get full text) takes the text from the original page and shows it (menus of the page may be mixed in). When you send a summary to a note and the feed text is short, the AI reads the text of the original page (it is neither saved nor shown). Bodies that earlier versions took from pages are removed at the first start of this version (including ones you fetched on purpose); the feed text comes back for articles that are still in the feed, and "全文を取得" fetches it again.
 - Text extraction is best effort. The app labels the text as one of 「フィード提供本文」 (body provided by the feed), 「抽出本文・全文保証なし」 (extracted body, not guaranteed to be complete), or 「RSS要約のみ」 (RSS summary only). If the body cannot be fetched, you still get the summary and a link to the original. The app does not try to get around access limits.
 - The list shows favicons and, when available, article thumbnails. The article shows images in the text. Images are best effort. While an image loads or if it fails, the frame keeps its height. The image cache is 64 MiB. Successes are kept for 7 days and failures for 10 minutes. At most 4 images load at the same time.
 
@@ -121,7 +122,7 @@ Select a note in the sidebar (the most recently edited is first). The middle col
 
 The AI runs on your Mac only. Nothing is sent out. Settings → 「要約」 (Summary) holds 「AIで要約する（この Mac の中だけ）」 (Summarize on this Mac), length (1 / up to 3 / up to 5 sentences), format (prose / bullets), and an optional one-line instruction of up to 200 characters. Its words are yours; fixed accuracy rules still apply. The app does not download missing model assets.
 
-AI output is marked 「（AI要約）」 on its source line. With AI off, unavailable, failed, blank or timed out after 20 seconds, the app sends the retained RSS summary and source, or only the title and URL, without the AI mark. The message tells you what was sent. Turning AI off while a request runs cancels the write. Save or reload errors are shown as failures; after a successful save, a reload failure can leave the write committed, so check the note before sending again.
+AI output is marked 「（AI要約）」 on its source line. When the feed text is short, the AI first reads the original page (up to 10 seconds more). With AI off, unavailable, failed, blank or timed out after 20 seconds, the app sends the retained RSS summary and source, or only the title and URL, without the AI mark. The message tells you what was sent. Turning AI off while a request runs cancels the write. Save or reload errors are shown as failures; after a successful save, a reload failure can leave the write committed, so check the note before sending again.
 
 ## 5. How long data is kept
 

@@ -26,6 +26,7 @@ public enum ArticleExtractor {
         guard let root = try document.select("article").first() ?? document.select("main").first(),
               !(try root.select("p, pre").isEmpty()) else { return nil }
         let paragraphs = ArticleMarkup.render(root, base: response.finalURL)
+        guard ExtractionQuality.isArticleText(paragraphs) else { return nil }     // mostly page chrome: not the article
         let text = paragraphs.map(\.text).joined(separator: "\n\n")
         // A quality floor, not a claim that the complete article was obtained.
         guard text.filter({ $0.isLetter || $0.isNumber }).count >= 25 else { return nil }

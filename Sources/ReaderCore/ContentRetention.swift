@@ -29,7 +29,7 @@ public enum RetentionError: LocalizedError {
 }
 
 extension ReaderStore {
-    func isContentAvailable(_ article: Article, at: Date) -> Bool {
+    public func isContentAvailable(_ article: Article, at: Date) -> Bool {
         article.contentDeletedAt == nil &&
         RetentionPolicy(days: retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt) > at
     }

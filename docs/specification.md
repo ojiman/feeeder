@@ -56,7 +56,7 @@ V1は本人のMacで使う。Backend、アカウント、複数端末同期は�
 
 本文またはRSS要約が記事ペインに実表示された時点で初回既読日時を記録する。一覧スクロール・本文取得だけでは既読にしない。再受信・再表示でも初回日時を更新しない。全文取得に失敗してもRSS要約と原文リンクを示し、paywall・ログイン・robots制限などを回避しない。
 
-RSS提供内容と抽出本文のリンク・引用構造を保持し、リンクはクリックして既定ブラウザへ開ける。引用は本文と区別し、本文カバー範囲は末尾に一度だけ控えめに示す。書式情報のない保存本文はテキストとして読める。「本文を再取得」で更新でき、失敗時は保存済み本文を保って失敗を示す。
+RSS提供内容と抽出本文のリンク・引用構造を保持し、リンクはクリックして既定ブラウザへ開ける。引用は本文と区別し、本文カバー範囲は末尾に一度だけ控えめに示す。書式情報のない保存本文はテキストとして読める。記事を開いたときは、フィードが提供した本文（なければRSS要約）をそのまま出し、元ページの取得も本文の差し替えもしない（RSS優先）。詳しくは「v」（アプリ内の原文）か「b」（ブラウザ）で見る。「全文を取得」（取得済みなら「本文を再取得」）を押したときだけ、原文のページから本文を抽出して出す。抽出は、短い断片が過半の（ページのメニューや数字ばかりの）結果を本文とせず、失敗時は今の本文を保って失敗を示す。要約をノートへ送るとき、フィード本文が1,000文字未満なら、AIの入力にだけ元ページの抽出本文を使う（保存も表示もしない。取れなければフィード本文）。
 
 ### 3.2 Starとノートへの送信
 
@@ -97,9 +97,9 @@ RSS提供内容と抽出本文のリンク・引用構造を保持し、リン�
 
 ### 5.1 端末内AI（記事の要約）
 
-AIは端末内のモデルだけで動かし、外部通信・アカウント・APIキーを使わない。アプリが自動でシステム資産の取得などの通信を起こさない（[決定0009](decisions/0009-on-device-ai-principles.md)）。AIの機能は**記事の要約をノートに送ること**だけで、本人が「ノートに要約を送る」（第3.2節）を押したときだけ動く。何もしなければ何も作らない。The S2 plan ([PR #69](https://github.com/ojiman/unagi-reader/pull/69)) approves an unmarked RSS-summary/source fallback for an unavailable model, refusal, failure, blank answer or the 20-second deadline. The message states what was sent. Cancellation and turning AI off during a request write nothing. A save or reload error is shown as failure; a reload error after a successful save does not undo the committed write.
+AIは端末内のモデルだけで動かし、AIの計算のために外部通信・アカウント・APIキーを使わない。アプリが自動でシステム資産の取得などの通信を起こさない（例外は、本人が「ノートに要約を送る」を押し、AIがオンでモデルが使え、フィード本文が1,000文字未満のときの、元ページ1件の取得だけ。第3.1節・[決定0033](decisions/0033-rss-first.md)）（[決定0009](decisions/0009-on-device-ai-principles.md)）。AIの機能は**記事の要約をノートに送ること**だけで、本人が「ノートに要約を送る」（第3.2節）を押したときだけ動く。何もしなければ何も作らない。The S2 plan ([PR #69](https://github.com/ojiman/unagi-reader/pull/69)) approves an unmarked RSS-summary/source fallback for an unavailable model, refusal, failure, blank answer or the 20-second deadline. The message states what was sent. Cancellation and turning AI off during a request write nothing. A save or reload error is shown as failure; a reload error after a successful save does not undo the committed write.
 
-入力は、保持中の本文の先頭約3,000文字（切ったときは結果で示す）で、期限切れの本文は使わない（[決定0015](decisions/0015-article-summary-details.md)）。Settingsの「要約」で、次を選べる（[決定0019](decisions/0019-v1-simplification-notes.md)）。
+入力は、保持中の本文の先頭約3,000文字（切ったときは結果で示す）で、期限切れの本文は使わない（[決定0015](decisions/0015-article-summary-details.md)）。保持中でフィード本文が1,000文字未満の記事は、AIがオンでモデルが使えるときに限り、元ページの抽出本文を入力に使う（保存も表示もしない。取得は最長10秒で、robotsを守り、転送先へは進まない。取れなければフィード本文。[決定0033](decisions/0033-rss-first.md)）。Settingsの「要約」で、次を選べる（[決定0019](decisions/0019-v1-simplification-notes.md)）。
 
 - **作り方**: 「AIで要約する（この Mac の中だけ）」（モデルが使えるときの既定）、または「要約せず、タイトル・URL・RSS要約を送る」。AIを使わない選択でも、送信はすべて使える。
 - **長さ**: 1文、3文以内（既定）、5文以内。**形式**: 文章（既定）、箇条書き。
@@ -151,7 +151,7 @@ AIの質は保証せず、事実性をアプリが保証しない。AIが作っ�
 | PRD-10 | 読書中に要約をノートへ送る | 通常／原文表示から`n`／アイコンで、新しいノートまたは最近のノートへ要約を送り、選択・位置を保つ。送った記事がそのノートの一覧に並び、外せる。Starと独立で、進行・結果・失敗が示され、取り消せる。AIが使えなくても送れる。期限・購読解除・再起動後も記録を保ち、保存失敗は成功と示さない |
 | PRD-11 | 多くの記事を読み分ける | フォルダ操作・重複しない集約・購読アイコン／記事画像が成立し、画像到着・失敗・オフラインで行高・選択・位置を変えない |
 | PRD-12 | （欠番） | 決定0019で、「未整理のStar」とテーマの提案を削除した。番号は他の文書の参照のため残す |
-| PRD-13 | 端末内AIが使えない | 無効・利用不可・失敗でも、ノートの作成・編集・要約を使わない送信が手動で完結し、アプリが通信を起こさない |
+| PRD-13 | 端末内AIが使えない | 無効・利用不可・失敗でも、ノートの作成・編集・要約を使わない送信が手動で完結し、アプリが通信を起こさない（AIが使えないときは、元ページの取得もしない） |
 
 ### 7.1 1.0の出荷条件
 

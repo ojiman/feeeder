@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import ReaderCore
 
@@ -27,7 +28,7 @@ import Testing
         let loading = ArticleLoadingController(store: store, fetcher: ArticleFetcher(http: ExtractionHTTP(mode: "deny")))
         await loading.load(articleID: article.id, refresh: true)
         #expect(loading.displayed == before)
-        #expect(loading.error?.contains("保存済み本文") == true && !loading.loading)
+        #expect(loading.error?.contains("今の本文") == true && !loading.loading)
         #expect(article.firstReadAt == nil)
     }
     @Test func lateExtractionDoesNotReplaceSelectedArticle() throws {
@@ -73,6 +74,57 @@ import Testing
             #expect(await http.count == (mode == "deny" || mode == "timeout" ? 1 : 2))
         }
     }
+    @Test func discardingAutomaticallyExtractedBodiesKeepsTheFeedTextAndTheSummary() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        let xml = "<rss><channel><title>合成</title><item><guid>a</guid><link>https://synthetic.example/posts/a</link><description>Aの要約</description></item><item><guid>b</guid><link>https://synthetic.example/posts/b</link><description>Bの要約</description><content:encoded xmlns:content=\"http://purl.org/rss/1.0/modules/content/\">Bのフィード本文です。</content:encoded></item></channel></rss>"
+        _ = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!))
+        let a = try #require(store.articles.first { $0.originalURL?.hasSuffix("/a") == true })
+        let b = try #require(store.articles.first { $0.originalURL?.hasSuffix("/b") == true })
+        try store.saveExtractedContent(articleID: a.id, result: ExtractionResult(text: "トップ\n\n27\n\n以前に自動で抽出した本文", coverage: .extracted, sourceURL: ArticleExtractorTests.url), at: .now)
+        #expect(try store.content(articleID: a.id, at: .now)?.coverage == .extracted)
+        #expect(try store.discardExtractedBodies() == 1)                                         // only a's
+        #expect(try store.content(articleID: a.id, at: .now)?.text == "Aの要約")                 // back to what the feed said
+        #expect(try store.content(articleID: a.id, at: .now)?.coverage == .summaryOnly)
+        #expect(try store.content(articleID: b.id, at: .now)?.coverage == .feedProvided)         // the feed's own body is not touched
+        #expect(try store.discardExtractedBodies() == 0)
+    }
+    @Test func theCleanupRunsOncePerLibraryAndAFailedSaveIsRetried() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "cleanup-" + UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let schema = ReaderStore.schema
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration("Reader", schema: schema, url: url.appending(path: "Reader.store"), cloudKitDatabase: .none)])
+        var failSave = false
+        let store = try ReaderStore(container: container, now: .now, saveHook: { if failSave { throw CocoaError(.fileWriteUnknown) } })
+        let xml = "<rss><channel><title>合成</title><item><guid>a</guid><link>https://synthetic.example/posts/a</link><description>Aの要約</description></item></channel></rss>"
+        _ = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!))
+        let article = try #require(store.articles.first)
+        try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "以前に自動で抽出した本文です。", coverage: .extracted, sourceURL: ArticleExtractorTests.url), at: .now)
+        let marker = url.appending(path: ".extracted-bodies-discarded-v1")
+        failSave = true
+        #expect(throws: (any Error).self) { try store.discardExtractedBodiesOnce(marker: marker) }
+        #expect(!FileManager.default.fileExists(atPath: marker.path))                           // not recorded as done: tried again at the next start
+        #expect(try store.content(articleID: article.id, at: .now)?.coverage == .extracted)
+        failSave = false
+        #expect(try store.discardExtractedBodiesOnce(marker: marker) == 1)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        // The text the person asks for later with 「全文を取得」 is not removed by a second run (the marker lives with the library).
+        try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "あとで本人が取得した全文です。", coverage: .extracted, sourceURL: ArticleExtractorTests.url), at: .now)
+        #expect(try store.discardExtractedBodiesOnce(marker: marker) == nil)
+        #expect(try store.content(articleID: article.id, at: .now)?.coverage == .extracted)
+    }
+    @Test func openingAnArticleShowsTheFeedTextAndNeverFetchesThePage() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        _ = try store.importFeed(ArticleMarkupTests.feed())
+        let article = try #require(store.articles.first)
+        let http = ExtractionHTTP(mode: "ok")
+        let loading = ArticleLoadingController(store: store, fetcher: ArticleFetcher(http: http))
+        await loading.load(articleID: article.id)
+        #expect(await http.count == 0)                                                          // RSS first: no request, nothing waits
+        #expect(loading.displayed?.coverage == .feedProvided && !loading.loading)
+    }
     @Test func noRSSBodyCanBeExtractedWithoutRecordingRead() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url)
@@ -81,6 +133,8 @@ import Testing
         let article = try #require(store.articles.first)
         let loading = ArticleLoadingController(store: store, fetcher: ArticleFetcher(http: ExtractionHTTP(mode: "ok")))
         await loading.load(articleID: article.id)
+        #expect(loading.displayed?.coverage == .summaryOnly || loading.displayed == nil)        // on opening, only what the feed gave
+        await loading.load(articleID: article.id, refresh: true)                                // the full text only when it is asked for
         #expect(loading.displayed?.coverage == .extracted)
         #expect(article.firstReadAt == nil)
     }
@@ -93,9 +147,9 @@ import Testing
         let b = try #require(store.articles.first { $0.originalURL?.hasSuffix("/b") == true })
         let gate = ArticleGate()
         let loading = ArticleLoadingController(store: store, fetcher: ArticleFetcher(http: gate))
-        let first = Task { await loading.load(articleID: a.id) }
+        let first = Task { await loading.load(articleID: a.id, refresh: true) }
         while !(await gate.isWaiting("/posts/a")) { await Task.yield() }
-        let second = Task { await loading.load(articleID: b.id) }
+        let second = Task { await loading.load(articleID: b.id, refresh: true) }
         while !(await gate.isWaiting("/posts/b")) { await Task.yield() }
         loading.recordInteraction(articleID: b.id)
         await gate.release("/posts/a"); await first.value
@@ -133,4 +187,5 @@ private actor ExtractionHTTP: HTTPFetching {
         let data = robots ? Data("User-agent: *\nDisallow: \(mode == "deny" ? "/" : "")\n".utf8) : Data(ArticleExtractorTests.html.utf8)
         return HTTPResponse(data: data, finalURL: url, statusCode: robots ? 200 : Int(mode) ?? 200, headers: [:])
     }
+
 }

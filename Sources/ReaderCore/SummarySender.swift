@@ -17,15 +17,20 @@ import Observation
     private let isEnabled: @MainActor () -> Bool
     private let settings: @MainActor () -> SummarySettings
     private let deadline: Double
+    /// Gets the text of the original page for the AI when the feed gave only a short text. Nil: never (tests, or no network use).
+    private let pageText: (@Sendable (URL) async -> ExtractionResult?)?
+    /// A feed text shorter than this is a summary, not an article.
+    static let shortFeedText = 1_000
+    static let pageDeadline = 10.0
     private let now: () -> Date
     private var token = UUID()
     private var task: Task<Void, Never>?
 
     public init(store: ReaderStore, assistant: (any TextGenerator)?, isEnabled: @escaping @MainActor () -> Bool = { true },
                 settings: @escaping @MainActor () -> SummarySettings = { SummarySettings.load() },
-                deadline: Double = 20, now: @escaping () -> Date = { .now }) {
+                deadline: Double = 20, pageText: (@Sendable (URL) async -> ExtractionResult?)? = nil, now: @escaping () -> Date = { .now }) {
         self.store = store; self.assistant = assistant; self.isEnabled = isEnabled
-        self.settings = settings; self.deadline = deadline; self.now = now
+        self.settings = settings; self.deadline = deadline; self.pageText = pageText; self.now = now
     }
     public var isWorking: Bool { state == .working }
     public var canUndo: Bool {
@@ -45,9 +50,22 @@ import Observation
             let title = article.title, url = article.originalURL
             let enabled = isEnabled(), options = settings()
             let content = try store.content(articleID: articleID, at: now())
-            let input = content.flatMap { ArticleSummaryPrompt.make(title: title, text: $0.text, settings: options) }
-            task = Task { [weak self] in
+            var input = content.flatMap { ArticleSummaryPrompt.make(title: title, text: $0.text, settings: options) }
+            let feedLength = content?.text.count ?? 0
+            let pageURL = url.flatMap { ArticleURL.validated($0) }
+            let retained = store.isContentAvailable(article, at: now())      // expired text is never brought back, not even through a page
+            task = Task { [weak self, pageText] in
                 guard let self else { return }
+                // The AI reads the page when the feed gave only a short text. This is the answer to the person pressing the button: it is not
+                // stored and not shown, and a page that cannot be used leaves the feed text as the input.
+                // Only when the model can run: a page that no model reads is a request for nothing.
+                if enabled, retained, let assistant = self.assistant, feedLength < Self.shortFeedText, let pageText, let pageURL,
+                   await assistant.generationAvailability() == .available {
+                    let page = try? await withDeadline(Self.pageDeadline, { await pageText(pageURL) })
+                    guard self.token == mine, !Task.isCancelled else { return }
+                    guard self.isEnabled() else { self.state = .message("AIをオフにしたため、送信を中止しました"); return }
+                    if let page, page.text.count > feedLength, let better = ArticleSummaryPrompt.make(title: title, text: page.text, settings: options) { input = better }
+                }
                 var summary: String?
                 if enabled, let assistant = self.assistant, let input {
                     do {
