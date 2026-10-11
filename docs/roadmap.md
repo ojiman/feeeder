@@ -13,7 +13,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 | S1 | **Done** (two PRs, S1a and S1b). Notes: rename; no goal and no name (title from the first line); remove the suggestions, the note actions, the summary card in the panel and the article hand-off; the panel opens at once, is resizable and remembers its width; the sidebar folds only when the window is narrow. The picker and `t` stay as the only way to link an article until S2. | Merging the plan. |
 | S2 | **Done.** 「ノートに要約を送る」 (button, menu, `n`), automatic links and removal, summary settings, the AI mark and 「取り消す」. The picker and `t` are removed. | Plan approved in PR #69. |
 | S3 | **Done.** Note-panel share menu, exact Markdown copy/export, and note-only Claude review. | Plan approved in PR #71. |
-| S4 | ([plan](superpowers/plans/2026-10-11-s4-clean-up.md)) Clean up: dead code and tests (article packages and sources, theme assistant parts, the migration code, old settings), then the architecture and the user guides. | Merging the plan. |
+| S4 | Done: unused note helpers, article package paths and managed-copy source metadata removed; note bytes and stored schema preserved. [Decision](decisions/0022-note-only-package-clean-up.md), [verification](verification/s4-clean-up.md). | Plan approved in [PR #74](https://github.com/ojiman/feeeder/pull/74). |
 | S5 | ([plan](superpowers/plans/2026-10-11-s5-editor-styling.md)) Light styling of headings and lists in the editor. Does not block the beta. | Merging the plan. |
 
 ## After S3
