@@ -20,6 +20,12 @@ struct NativeArticleList: NSViewRepresentable {
     var onTopOffset: ((UUID, Double) -> Void)? = nil
     var onRemoveFromNote: ((UUID) -> Void)? = nil
 
+    /// The list is drawn on the same surface as the article and the note.
+    static func applySurface(scroll: NSScrollView, table: NSTableView) {
+        table.backgroundColor = AppPalette.surface
+        scroll.drawsBackground = true; scroll.backgroundColor = AppPalette.surface
+    }
+
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
         let scroll = NSScrollView()
@@ -40,6 +46,7 @@ struct NativeArticleList: NSViewRepresentable {
         }
         table.rowMenu = { [weak coordinator = context.coordinator] row in coordinator?.menu(for: row) }
         scroll.documentView = table
+        Self.applySurface(scroll: scroll, table: table)
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         context.coordinator.table = table

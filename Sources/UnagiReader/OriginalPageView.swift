@@ -27,7 +27,7 @@ struct OriginalPageView: View {
                 OriginalWebView(url: url, onClose: onClose, onCommand: onCommand, onFailure: { loading = false; failure = $0 }, onLoading: { loading = $0 })
             }
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(AppPalette.surfaceColor)
     }
 }
 

@@ -32,7 +32,7 @@ import ReaderCore
         isVerticallyResizable = true; isHorizontallyResizable = false
         minSize = NSSize(width: 0, height: 0); maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         autoresizingMask = [.width]
-        drawsBackground = true; backgroundColor = .textBackgroundColor
+        drawsBackground = true; backgroundColor = AppPalette.surface
         textContainerInset = NSSize(width: 42, height: 44)
         setAccessibilityLabel("記事本文")
     }
@@ -236,7 +236,7 @@ struct NativeArticleText: NSViewRepresentable {
         proposal.replacingUnspecifiedDimensions(by: CGSize(width: 600, height: 400))
     }
     func makeNSView(context: Context) -> NSScrollView {
-        let scroll = ArticleScrollView(); scroll.hasVerticalScroller = true; scroll.drawsBackground = true; scroll.backgroundColor = .textBackgroundColor
+        let scroll = ArticleScrollView(); scroll.hasVerticalScroller = true; scroll.drawsBackground = true; scroll.backgroundColor = AppPalette.surface
         let text = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         scroll.documentView = text
         scroll.contentView.postsBoundsChangedNotifications = true
