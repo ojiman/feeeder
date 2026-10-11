@@ -308,7 +308,7 @@ struct ReaderView: View {
                 sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
                 sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
             }
-            Section("ノート") {
+            Section {
                 ForEach(store.notesNewestEditFirst) { note in
                     sidebarRow(note.title, symbol: "note.text", count: store.noteArticleCount(noteID: note.id))
                         .tag(LibraryScope.note(note.id))
@@ -317,8 +317,10 @@ struct ReaderView: View {
                 Button { createNote() } label: { Label { Text("新しいノート") } icon: { Image(systemName: "plus").foregroundStyle(.secondary) } }
                     .buttonStyle(.plain).foregroundStyle(.secondary).padding(.vertical, 4)
                     .accessibilityLabel("新しいノートを作る")
+            } header: {
+                SidebarSectionHeader(title: "ノート", help: "新しいノートを作る") { createNote() }
             }
-            Section("購読元") {
+            Section {
                 ForEach(grouped[""] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                 ForEach(folders, id: \.self) { folder in
                     DisclosureGroup {
@@ -328,6 +330,8 @@ struct ReaderView: View {
                             .contextMenu { Button("フォルダ名を変更…") { folderName = folder; renamingFolder = folder } }
                     }
                 }
+            } header: {
+                SidebarSectionHeader(title: "購読元", help: "購読元を追加") { addingSubscription = true }
             }
         }
         .listStyle(.sidebar)
