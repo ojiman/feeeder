@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct ReaderStoreTests {
     private func temporaryStoreURL() throws -> URL {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "rss-reader-test-" + UUID().uuidString)
+        let directory = FileManager.default.temporaryDirectory.appending(path: "unagi-reader-test-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory.appending(path: "Reader.store")
     }

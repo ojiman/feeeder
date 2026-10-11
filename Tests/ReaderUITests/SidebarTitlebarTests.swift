@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import RSSReader
+@testable import UnagiReader
 
 @MainActor struct SidebarTitlebarTests {
     @Test func controlsFollowSidebarWidthAndDetachWithSidebar() throws {

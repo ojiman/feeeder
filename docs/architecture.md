@@ -23,7 +23,7 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 `ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Note`、`NoteArticle`の7モデル。
 
-**S1の削除と改名（決定0019）。** 学習ゴール・問い（`ThemeQuestion`）・「いまの理解」・起動時の移行は、S1aでモデルとコードから消えた。S1bで保存するエンティティ`Theme`・`ThemeArticle`は`Note`・`NoteArticle`になった。以前のライブラリは新しいスキーマで開き、購読・記事・既読・Starは残るが、以前のテーマ（名前・ノート・記事の記録）は引き継がない（エンティティ名が変わるため。決定0019の10。テストデータなので許容）。`PreNoteStoreUpgradeTests`が、`52429b4`（決定0019の前）とS1a直後（`ae8aa78`）で作った合成ストアで確かめる（opt-in。`scripts/prepare-v1-store-fixture.sh`と`FEEEDER_PRE0019_FIXTURE_DIR`）。
+**S1の削除と改名（決定0019）。** 学習ゴール・問い（`ThemeQuestion`）・「いまの理解」・起動時の移行は、S1aでモデルとコードから消えた。S1bで保存するエンティティ`Theme`・`ThemeArticle`は`Note`・`NoteArticle`になった。以前のライブラリは新しいスキーマで開き、購読・記事・既読・Starは残るが、以前のテーマ（名前・ノート・記事の記録）は引き継がない（エンティティ名が変わるため。決定0019の10。テストデータなので許容）。`PreNoteStoreUpgradeTests`が、`52429b4`（決定0019の前）とS1a直後（`ae8aa78`）で作った合成ストアで確かめる（opt-in。`scripts/prepare-v1-store-fixture.sh`と`UNAGI_READER_PRE0019_FIXTURE_DIR`）。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
@@ -109,7 +109,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 `regression`はCore/UI、同じ版の保存／再open、保存／再読み込み失敗と復旧を検証する。`release`はad hoc署名したアプリを組立て、ZIP再圧縮・展開後に署名を検証する。Developer ID署名・公証・自動Release公開はしない。checkout commit（PRは合成merge commit）・PR head・環境・所要時間・失敗ログをartifactへ7日間保存する。CIに修正Agentは置かない。
 
-ベータ間の保持試験は`FEEEDER_V1_FIXTURE_DIR`を指定する手動opt-inで、未指定時だけスキップ、不正fixtureは失敗する。1.0では[PRD §7.1](specification.md#71-10の出荷条件)どおりbaseline・期待値を更新して必須化する。CI成功は実機UX・最終PdM受入の代わりではない。
+ベータ間の保持試験は`UNAGI_READER_V1_FIXTURE_DIR`を指定する手動opt-inで、未指定時だけスキップ、不正fixtureは失敗する。1.0では[PRD §7.1](specification.md#71-10の出荷条件)どおりbaseline・期待値を更新して必須化する。CI成功は実機UX・最終PdM受入の代わりではない。
 
 ## 5. 検証の参照先
 

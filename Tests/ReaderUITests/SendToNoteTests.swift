@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import ReaderCore
 import Testing
-@testable import RSSReader
+@testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct SendToNoteTests {
     private func buttons(_ view: NSView) -> [NSButton] {

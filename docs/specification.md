@@ -2,7 +2,7 @@
 
 更新日: 2026-10-11
 
-本書はV1の製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/feeeder/pull/6)、実装計画は[PR #7](https://github.com/ojiman/feeeder/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
+本書はV1の製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/unagi-reader/pull/6)、実装計画は[PR #7](https://github.com/ojiman/unagi-reader/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
 
 **方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)、V1の簡素化）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め、学習ゴール・端末内AIの提案・ノートへのAI操作をやめる。記事からは「AI要約をノートに送る」だけにし、送った記事がそのノートの記事一覧に並ぶ。Claudeへの依頼はノートの機能として残す。**本書は、この決定に合わせて書き換えた目標仕様である。** 実装は段階S1〜S5（決定0019の表）で行い、各PRが対象の節を更新する。S1（実装済み）で、ゴール・問い・AIの提案・ノートの書き直し・パネルの要約カードを削除し、テーマをノートに改めた（名前は無く、タイトルは最初の行。パネルは初めから開き、狭いウィンドウでだけサイドバーを畳み、幅を覚える）。S2 implements summary sending, automatic article links, safe undo and summary settings; the `t` picker is removed. S3 implements the note-panel share menu and a note-only Claude review. S5 implements the light styling of headings and lists in the note editor (section 3.3).実機受入と最終PdM判断は継続中。旧仕様の来歴は決定0008（Git履歴）・0013（Git履歴）・0018（Git履歴）にある。
 
@@ -97,7 +97,7 @@ RSS提供内容と抽出本文のリンク・引用構造を保持し、リン�
 
 ### 5.1 端末内AI（記事の要約）
 
-AIは端末内のモデルだけで動かし、外部通信・アカウント・APIキーを使わない。アプリが自動でシステム資産の取得などの通信を起こさない（[決定0009](decisions/0009-on-device-ai-principles.md)）。AIの機能は**記事の要約をノートに送ること**だけで、本人が「ノートに要約を送る」（第3.2節）を押したときだけ動く。何もしなければ何も作らない。The S2 plan ([PR #69](https://github.com/ojiman/feeeder/pull/69)) approves an unmarked RSS-summary/source fallback for an unavailable model, refusal, failure, blank answer or the 20-second deadline. The message states what was sent. Cancellation and turning AI off during a request write nothing. A save or reload error is shown as failure; a reload error after a successful save does not undo the committed write.
+AIは端末内のモデルだけで動かし、外部通信・アカウント・APIキーを使わない。アプリが自動でシステム資産の取得などの通信を起こさない（[決定0009](decisions/0009-on-device-ai-principles.md)）。AIの機能は**記事の要約をノートに送ること**だけで、本人が「ノートに要約を送る」（第3.2節）を押したときだけ動く。何もしなければ何も作らない。The S2 plan ([PR #69](https://github.com/ojiman/unagi-reader/pull/69)) approves an unmarked RSS-summary/source fallback for an unavailable model, refusal, failure, blank answer or the 20-second deadline. The message states what was sent. Cancellation and turning AI off during a request write nothing. A save or reload error is shown as failure; a reload error after a successful save does not undo the committed write.
 
 入力は、保持中の本文の先頭約3,000文字（切ったときは結果で示す）で、期限切れの本文は使わない（[決定0015](decisions/0015-article-summary-details.md)）。Settingsの「要約」で、次を選べる（[決定0019](decisions/0019-v1-simplification-notes.md)）。
 

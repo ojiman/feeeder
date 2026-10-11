@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import ReaderCore
 import Testing
-@testable import RSSReader
+@testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct NoteReaderTests {
     fileprivate struct NoLauncher: ClaudeLaunching {
@@ -50,7 +50,7 @@ import Testing
         let directory: URL
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, noteOpen: Bool = false,
-                         pasteboard: NSPasteboard = NSPasteboard(name: .init("feeeder-test-\(UUID())")),
+                         pasteboard: NSPasteboard = NSPasteboard(name: .init("unagi-reader-test-\(UUID())")),
                          markdownSave: @escaping @MainActor @Sendable (String, Data) async throws -> Bool = { _, _ in false },
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -289,7 +289,7 @@ import Testing
 
     @Test func markdownCopyAndExportUseExactNoteBytesWithPrivateDestinations() async throws {
         let note = "# 保存\r\n本文 🐟"
-        let pasteboard = NSPasteboard(name: .init("feeeder-copy-\(UUID())"))
+        let pasteboard = NSPasteboard(name: .init("unagi-reader-copy-\(UUID())"))
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".md")
         defer { try? FileManager.default.removeItem(at: file) }
         let h = try t.harness(scope: { .note($0.notes[0].id) }, noteOpen: true, pasteboard: pasteboard,

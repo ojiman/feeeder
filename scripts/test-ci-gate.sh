@@ -18,7 +18,7 @@ classify() { printf '%s' "$1" | bash "$gate" classify; }
 
 expect_value "docs only"                    false "$(classify $'docs/a.md\ndocs/decisions/b.md\n')"
 expect_value "root markdown only"           false "$(classify $'README.md\nAGENTS.md\n')"
-expect_value "any source file"              true  "$(classify $'docs/a.md\nSources/RSSReader/ReaderView.swift\n')"
+expect_value "any source file"              true  "$(classify $'docs/a.md\nSources/UnagiReader/ReaderView.swift\n')"
 expect_value "workflow change is code"      true  "$(classify $'.github/workflows/ci.yml\n')"
 expect_value "script change is code"        true  "$(classify $'scripts/build-app.sh\n')"
 expect_value "non-docs file named like md"  true  "$(classify $'Sources/notes.txt\n')"
@@ -30,7 +30,7 @@ expect_value "packaging: build script"       true  "$(packaging $'scripts/build-
 expect_value "packaging: package manifest"   true  "$(packaging $'Package.swift\nSources/a.swift\n')"
 expect_value "packaging: workflow"           true  "$(packaging $'.github/workflows/ci.yml\n')"
 expect_value "packaging: notices"            true  "$(packaging $'ThirdPartyNotices.md\n')"
-expect_value "packaging: plain source"       false "$(packaging $'Sources/RSSReader/ReaderView.swift\nTests/a.swift\n')"
+expect_value "packaging: plain source"       false "$(packaging $'Sources/UnagiReader/ReaderView.swift\nTests/a.swift\n')"
 expect_value "packaging: empty list"         false "$(packaging '')"
 
 v() { bash "$gate" verdict "$@"; }

@@ -42,6 +42,7 @@
 | [0021](0021-note-share-menu-and-review.md) | Note sharing and Claude review (S3) | valid (PR #71) |
 | [0022](0022-note-only-package-clean-up.md) | Note-only packages and managed-copy cleanup (S4) | valid (PR #74) |
 | [0023](0023-rename-to-unagi-reader.md) | Rename to Unagi Reader | valid (with the rename PR) |
+| [0024](0024-remove-the-old-name-from-code-and-scratch.md) | Remove the old name from code and scratch paths | valid (with the cleanup PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

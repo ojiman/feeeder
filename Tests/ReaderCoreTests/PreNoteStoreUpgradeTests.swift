@@ -4,7 +4,7 @@ import Testing
 
 /// A store written by the build before decision 0019 (notes with goals, questions and answers) must open with the current schema.
 /// Opt-in: make the fixture with `scripts/prepare-v1-store-fixture.sh <dir> 52429b44c647a4a3ee2c95fb039bf99d5e674f18` and set
-/// `FEEEDER_PRE0019_FIXTURE_DIR` (also valid for a fixture made from the S1a merge commit `ae8aa781856a586ab6fa10d17449e16fa0cddda8`).
+/// `UNAGI_READER_PRE0019_FIXTURE_DIR` (also valid for a fixture made from the S1a merge commit `ae8aa781856a586ab6fa10d17449e16fa0cddda8`).
 
 @MainActor struct PreNoteStoreUpgradeTests {
     struct Expected: Decodable {
@@ -12,10 +12,10 @@ import Testing
         let at, firstReadAt: Double
         let feedID, articleID, themeID: UUID   // the key of the old fixtures' manifest
     }
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["FEEEDER_PRE0019_FIXTURE_DIR"] != nil,
-                   "Opt-in: set FEEEDER_PRE0019_FIXTURE_DIR to a fixture made from 52429b4 or from the S1a merge commit."))
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["UNAGI_READER_PRE0019_FIXTURE_DIR"] != nil,
+                   "Opt-in: set UNAGI_READER_PRE0019_FIXTURE_DIR to a fixture made from 52429b4 or from the S1a merge commit."))
     func aStoreWithGoalsQuestionsAndNotesStillOpens() throws {
-        let path = try #require(ProcessInfo.processInfo.environment["FEEEDER_PRE0019_FIXTURE_DIR"])
+        let path = try #require(ProcessInfo.processInfo.environment["UNAGI_READER_PRE0019_FIXTURE_DIR"])
         let source = URL(fileURLWithPath: path, isDirectory: true)
         let expected = try JSONDecoder().decode(Expected.self, from: Data(contentsOf: source.appending(path: "expected.json")))
         #expect(["52429b44c647a4a3ee2c95fb039bf99d5e674f18", "ae8aa781856a586ab6fa10d17449e16fa0cddda8"].contains(expected.baseline))   // before decision 0019, and after S1a

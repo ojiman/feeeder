@@ -2,16 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "RSSReader",
+    name: "UnagiReader",
     // Build floor, not the support floor (macOS 27.0; see docs/decisions/0007). CI has no macOS 27 runner,
     // so raising this would stop `swift test` there.
     platforms: [.macOS("26.6")],
-    products: [.executable(name: "RSSReader", targets: ["RSSReader"])],
+    products: [.executable(name: "UnagiReader", targets: ["UnagiReader"])],
     dependencies: [.package(url: "https://github.com/scinfu/SwiftSoup.git", exact: "2.13.9")],
     targets: [
         .target(name: "ReaderCore", dependencies: ["SwiftSoup"]),
-        .executableTarget(name: "RSSReader", dependencies: ["ReaderCore"]),
+        .executableTarget(name: "UnagiReader", dependencies: ["ReaderCore"]),
         .testTarget(name: "ReaderCoreTests", dependencies: ["ReaderCore"]),
-        .testTarget(name: "ReaderUITests", dependencies: ["RSSReader"])
+        .testTarget(name: "ReaderUITests", dependencies: ["UnagiReader"])
     ]
 )

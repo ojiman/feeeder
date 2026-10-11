@@ -16,29 +16,29 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | docs/verification/ | Evidence logs per change. Logs, not specs. |
 | docs/roadmap.md | The order of work (stages S1 to S5, then the real-device check, the rename, the beta). A stage's plan lives in docs/superpowers/plans/ only until the stage is merged. |
 | Sources/ReaderCore | Models, store, parsing, retention, handoff. No UI. |
-| Sources/RSSReader | SwiftUI/AppKit app. |
+| Sources/UnagiReader | SwiftUI/AppKit app. |
 | Tests/ReaderCoreTests, Tests/ReaderUITests | Tests. Synthetic data only. |
 | scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`, `fetch-ci-app.sh` (tested by `test-fetch-ci-app.sh`), `ci-gate.sh` (the `check` job; tested by `test-ci-gate.sh`). |
 
 ## Commands
 
 ```sh
-swift test --scratch-path /private/tmp/feeeder-dogfooding-build          # local tests
-swift test --scratch-path /private/tmp/feeeder-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
+swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build          # local tests
+swift test --scratch-path /private/tmp/unagi-reader-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
 bash scripts/build-app.sh release                                        # ad hoc signed .build/UnagiReader.app (debug is the default)
 bash scripts/fetch-ci-app.sh <PR number>                                  # a PR's CI-built app without a browser, so no quarantine attribute (needs macOS and gh)
 bash scripts/test-fetch-ci-app.sh                                         # control-flow tests for that script with stubbed tools (no macOS, network or gh needed)
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
 git diff --check
 ```
 
-Use `open -n` for the synthetic run. Without it, `open` can reuse an Unagi Reader that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `RSSReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl RSSReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
+Use `open -n` for the synthetic run. Without it, `open` can reuse an Unagi Reader that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `UnagiReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl UnagiReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
 
-Opt-in store compatibility check (skipped unless `FEEEDER_V1_FIXTURE_DIR` is set; not part of CI during beta; `FEEEDER_PRE0019_FIXTURE_DIR` is the same for a fixture made from commit `52429b4`, the build before decision 0019):
+Opt-in store compatibility check (skipped unless `UNAGI_READER_V1_FIXTURE_DIR` is set; not part of CI during beta; `UNAGI_READER_PRE0019_FIXTURE_DIR` is the same for a fixture made from commit `52429b4`, the build before decision 0019):
 
 ```sh
-bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
-FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+bash scripts/prepare-v1-store-fixture.sh /private/tmp/unagi-reader-v1-fixture-new
+UNAGI_READER_V1_FIXTURE_DIR=/private/tmp/unagi-reader-v1-fixture-new swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 ```
 
 CI runs two macOS jobs on macOS 26 / Xcode 26.6 / Swift 6.3.3. `regression` (the tests) runs for every change that touches code. `release` (the optimized build, ad hoc signature and packaged app) is the slow one, so a pull request runs it only when it changes `Package.swift`, `Package.resolved`, `ThirdPartyNotices.md`, `scripts/build-app.sh` or `.github/workflows/*`; every push to `main` and every manual run builds it. A third job, `check`, always runs on a pull request and is the one status the `main` ruleset requires: for a PR that touches only `docs/**` or Markdown it skips both macOS jobs and passes; otherwise it passes only when every job that was due passed (`scripts/ci-gate.sh`, tested by `scripts/test-ci-gate.sh`). A PR run therefore usually has no packaged app: `fetch-ci-app.sh` needs the `release` artifact, so run the workflow manually on the branch or build locally with `scripts/build-app.sh release`. The local toolchain is macOS 27 / Swift 6.4 and is the only place the support floor (macOS 27.0, decision 0007) is exercised; CI verifies only the build floor (macOS 26.6) because no macOS 27 runner exists yet. Do not use APIs that need the macOS 27 SDK until CI can build them.

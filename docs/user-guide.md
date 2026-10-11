@@ -17,7 +17,7 @@ bash scripts/build-app.sh release
 SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/UnagiReader.app`. Open it from Finder.
 
 - The app is ad hoc signed for local development. It is not signed with a Developer ID and it is not notarized.
-- The release build writes temporary files to `/private/tmp/feeeder-v1-release`. The debug build writes to `/private/tmp/rss-reader-build`. For the debug build you can leave out the argument.
+- The release build writes temporary files to `/private/tmp/unagi-reader-v1-release`. The debug build writes to `/private/tmp/unagi-reader-debug`. For the debug build you can leave out the argument.
 
 ## 2. Your data and updates
 
@@ -35,18 +35,6 @@ A normal start begins with an empty library. The library is stored in `Applicati
 - **The daily notes, weekly notes, and scraps of the older version are not moved to the note-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
 - **Earlier "themes" are not carried over.** The learning goal, theme names, notes, recorded articles, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes are not moved to this version. Your subscriptions, articles, read times, and stars stay. **The first time this version starts, the old theme content is gone, and this cannot be undone.** Back up the `UnagiReader` folder first (see the steps below).
 
-### If you used the app when it was called Feeeder
-
-The app was renamed from Feeeder to Unagi Reader. It now keeps its library in `Application Support/UnagiReader/` and no longer reads `Application Support/Feeeder/`. A new build therefore starts with an empty library, and its settings (for example the note panel width and the summary options) start from their defaults. To keep your library:
-
-1. Quit the old app and the new app.
-2. In Finder, open `~/Library/Application Support/` (Go > Go to Folder).
-3. If a new, empty `UnagiReader` folder already exists, rename it, for example to `UnagiReader-empty`.
-4. Rename the `Feeeder` folder to `UnagiReader`.
-5. Start Unagi Reader. Check your subscriptions and notes before you delete anything.
-
-Saved files that the old app made for Claude (in its hand-off folder) are removed with the old folder or when they expire. This step was not tested on a real Mac.
-
 ### Back up the library by hand
 
 Do this before you update a beta version, or if the app cannot open the library and you want to start again with an empty one. We have not yet tested these steps on a real Mac.
@@ -61,12 +49,12 @@ Do this before you update a beta version, or if the app cannot open the library 
 To look around without touching your real library, start a separate instance with its own data directory and demo subscriptions:
 
 ```sh
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
 - `--data-directory <path>` is for development checks. It sets where the app stores its data.
 - Use `open -n` so that a new instance starts. Without it, `open` can reuse an Unagi Reader that is already running and drop the arguments.
-- Before you do anything, check the process arguments (for example with `pgrep -fl RSSReader`) and check that the window shows the demo subscriptions.
+- Before you do anything, check the process arguments (for example with `pgrep -fl UnagiReader`) and check that the window shows the demo subscriptions.
 - The demo URLs end in `.example`. No real pages exist there. Do not add real subscriptions, articles, or notes to Git. See [AGENTS.md](../AGENTS.md) for details. We have not re-run this procedure on macOS since it was written down.
 
 ## 3. Using the app
@@ -167,7 +155,7 @@ Facts you should know:
 Run the tests:
 
 ```sh
-swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 ```
 
 - **CI** runs two jobs in parallel during the beta: regression tests and a release build. A change that touches only `docs/**` or Markdown skips CI.
@@ -177,8 +165,8 @@ swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 - **Compatibility between beta versions is not checked by CI.** A normal `swift test` skips the compatibility test when no fixture is given. To run it by hand:
 
 ```sh
-bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
-FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+bash scripts/prepare-v1-store-fixture.sh /private/tmp/unagi-reader-v1-fixture-new
+UNAGI_READER_V1_FIXTURE_DIR=/private/tmp/unagi-reader-v1-fixture-new swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 ```
 
 The fixture directory must not exist yet. The script builds a synthetic database with a fixed commit of a released beta, opens it with the new schema, and checks that the data is kept. When 1.0 ships, the schema will be frozen as `VersionedSchema`, and a check that starts from the 1.0 release tag will be added to CI.

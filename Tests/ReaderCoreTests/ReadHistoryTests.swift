@@ -6,7 +6,7 @@ struct TestLibrary {
     let directory: URL
     var url: URL { directory.appending(path: "Reader.store") }
     init() throws {
-        directory = FileManager.default.temporaryDirectory.appending(path: "feeeder-test-" + UUID().uuidString)
+        directory = FileManager.default.temporaryDirectory.appending(path: "unagi-reader-test-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
     func cleanup() { try? FileManager.default.removeItem(at: directory) }

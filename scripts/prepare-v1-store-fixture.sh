@@ -1,24 +1,25 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-destination=${1:?Usage: prepare-v1-store-fixture.sh /private/tmp/feeeder-...}
+destination=${1:?Usage: prepare-v1-store-fixture.sh /private/tmp/unagi-reader-...}
 python3 - "$destination" <<'PY'
 from pathlib import Path
 import sys
 p = Path(sys.argv[1]).resolve()
-if p.parent != Path('/private/tmp') or not p.name.startswith('feeeder-'):
-    raise SystemExit('Use a dedicated /private/tmp/feeeder-* directory')
+if p.parent != Path('/private/tmp') or not p.name.startswith('unagi-reader-'):
+    raise SystemExit('Use a dedicated /private/tmp/unagi-reader-* directory')
 if p.exists():
     raise SystemExit('Destination already exists; use a new fixture directory')
 p.mkdir()
 PY
-source_dir=$(mktemp -d /private/tmp/feeeder-v1-source.XXXXXX)
+source_dir=$(mktemp -d /private/tmp/unagi-reader-v1-source.XXXXXX)
 baseline=${2:-53102cc42ea665b3379ad2a23d842c3186ad9c3e}
 case "$baseline" in
     53102cc42ea665b3379ad2a23d842c3186ad9c3e|f9db83b49a82947a7031ddf874bc94fcb91ef89d|1007dce64ebc5d1c9d7ac6f0b3e05869c8581ba4|215b901ffc3863b3e1afd1e17a76b18101fc0cb6|52429b44c647a4a3ee2c95fb039bf99d5e674f18|ae8aa781856a586ab6fa10d17449e16fa0cddda8) ;;
     *) echo "Use a tested baseline commit" >&2; exit 2 ;;
 esac
 git archive "$baseline" | tar -x -C "$source_dir"
+# The baselines are old commits, whose app target is still called RSSReader (renamed to UnagiReader afterwards).
 python3 - "$source_dir" <<'PY'
 from pathlib import Path
 import sys

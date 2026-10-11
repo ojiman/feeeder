@@ -13,7 +13,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 | S1 | **Done** (two PRs, S1a and S1b). Notes: rename; no goal and no name (title from the first line); remove the suggestions, the note actions, the summary card in the panel and the article hand-off; the panel opens at once, is resizable and remembers its width; the sidebar folds only when the window is narrow. The picker and `t` stay as the only way to link an article until S2. | Merging the plan. |
 | S2 | **Done.** 「ノートに要約を送る」 (button, menu, `n`), automatic links and removal, summary settings, the AI mark and 「取り消す」. The picker and `t` are removed. | Plan approved in PR #69. |
 | S3 | **Done.** Note-panel share menu, exact Markdown copy/export, and note-only Claude review. | Plan approved in PR #71. |
-| S4 | Done: unused note helpers, article package paths and managed-copy source metadata removed; note bytes and stored schema preserved. [Decision](decisions/0022-note-only-package-clean-up.md), [verification](verification/s4-clean-up.md). | Plan approved in [PR #74](https://github.com/ojiman/feeeder/pull/74). |
+| S4 | Done: unused note helpers, article package paths and managed-copy source metadata removed; note bytes and stored schema preserved. [Decision](decisions/0022-note-only-package-clean-up.md), [verification](verification/s4-clean-up.md). | Plan approved in [PR #74](https://github.com/ojiman/unagi-reader/pull/74). |
 | S5 | **Done.** Light styling of headings and lists in the editor (display only; the text never changes). | Plan approved in PR #72. |
 
 ## After S3 (the rename to Unagi Reader is done: [decision 0023](decisions/0023-rename-to-unagi-reader.md))
