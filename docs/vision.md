@@ -2,8 +2,6 @@
 
 This page is the owner's statement of what Unagi Reader is for. Read it when you doubt a feature, a design or a priority. It is short on purpose. The details are in the [specification](specification.md); the reasons for each choice are in the [decision records](decisions/README.md).
 
-Unagi Reader is the product name. It was called Feeeder before 2026-10-11, and old records and commits still use that name ([decision 0023](decisions/0023-rename-to-unagi-reader.md)).
-
 ## In one line
 
 Find the few articles that matter in a flood of articles, and turn them into your own value.

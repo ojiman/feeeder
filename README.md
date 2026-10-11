@@ -1,7 +1,5 @@
 # Unagi Reader
 
-*Formerly named Feeeder.*
-
 A fast, keyboard-driven RSS reader for macOS that turns the few articles that matter into your own understanding.
 
 > **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is in Japanese only today. There are no prebuilt releases: you build the app from source.

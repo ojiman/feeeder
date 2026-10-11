@@ -35,18 +35,6 @@ A normal start begins with an empty library. The library is stored in `Applicati
 - **The daily notes, weekly notes, and scraps of the older version are not moved to the note-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
 - **Earlier "themes" are not carried over.** The learning goal, theme names, notes, recorded articles, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes are not moved to this version. Your subscriptions, articles, read times, and stars stay. **The first time this version starts, the old theme content is gone, and this cannot be undone.** Back up the `UnagiReader` folder first (see the steps below).
 
-### If you used the app when it was called Feeeder
-
-The app was renamed from Feeeder to Unagi Reader. It now keeps its library in `Application Support/UnagiReader/` and no longer reads `Application Support/Feeeder/`. A new build therefore starts with an empty library, and its settings (for example the note panel width and the summary options) start from their defaults. To keep your library:
-
-1. Quit the old app and the new app.
-2. In Finder, open `~/Library/Application Support/` (Go > Go to Folder).
-3. If a new, empty `UnagiReader` folder already exists, rename it, for example to `UnagiReader-empty`.
-4. Rename the `Feeeder` folder to `UnagiReader`.
-5. Start Unagi Reader. Check your subscriptions and notes before you delete anything.
-
-Saved files that the old app made for Claude (in its hand-off folder) are removed with the old folder or when they expire. This step was not tested on a real Mac.
-
 ### Back up the library by hand
 
 Do this before you update a beta version, or if the app cannot open the library and you want to start again with an empty one. We have not yet tested these steps on a real Mac.
