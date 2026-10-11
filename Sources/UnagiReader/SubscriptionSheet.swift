@@ -26,6 +26,8 @@ struct SubscriptionSheet: View {
     @State private var checker = FeedChecker()
     /// Return was pressed before the check ended: add as soon as it succeeds.
     @State private var addWhenReady = false
+    /// Set once the feed is saved, so a second Return (field and default button) cannot add it twice.
+    @State private var added = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -58,7 +60,7 @@ struct SubscriptionSheet: View {
                 Spacer()
                 Button("キャンセル") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button(feed == nil ? "追加" : "保存", action: submit)
-                    .keyboardShortcut(.defaultAction).disabled(feed == nil && readyFeed == nil)
+                    .keyboardShortcut(.defaultAction).disabled(feed == nil && addableFeed == nil)
             }
         }
         .padding(20).frame(width: 440)
@@ -68,10 +70,10 @@ struct SubscriptionSheet: View {
         .onChange(of: manualXML) { _, _ in recheck(delay: .zero) }
         .onChange(of: checker.state) { _, state in
             guard addWhenReady else { return }
-            switch state {
-            case .ready(let checked): addWhenReady = false; commit(checked)
-            case .failed: addWhenReady = false
-            case .idle, .checking: break
+            switch state.whileWaitingForReturn {
+            case .add(let checked): addWhenReady = false; commit(checked)
+            case .giveUp: addWhenReady = false
+            case .keepWaiting: break
             }
         }
         .onDisappear { checker.cancel() }
@@ -86,7 +88,11 @@ struct SubscriptionSheet: View {
                 HStack(spacing: 6) { ProgressView().controlSize(.small); Text("確認中…") }.foregroundStyle(.secondary)
             case .ready(let checked):
                 VStack(alignment: .leading, spacing: 2) {
-                    Label { Text(checked.parsed.title).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                    if isSubscribed(checked) {
+                        Label { Text("すでに購読しています：\(checked.parsed.title)").lineLimit(1) } icon: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
+                    } else {
+                        Label { Text(checked.parsed.title).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                    }
                     if checked.parsed.skippedEntries > 0 {
                         Text("識別子も記事URLもない\(checked.parsed.skippedEntries)件は取り込めません。")
                             .font(.caption).foregroundStyle(.orange)
@@ -99,9 +105,12 @@ struct SubscriptionSheet: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var readyFeed: CheckedFeed? {
-        if case .ready(let checked) = checker.state { checked } else { nil }
+    /// The feed that Add would save: one that was read and is not subscribed yet (adding it again would only move it).
+    private var addableFeed: CheckedFeed? {
+        if case .ready(let checked) = checker.state, !isSubscribed(checked) { checked } else { nil }
     }
+
+    private func isSubscribed(_ checked: CheckedFeed) -> Bool { store.isSubscribed(to: checked.parsed.sourceURL) }
 
     static func heading(folder: String) -> String { folder.isEmpty ? "購読を追加" : "「\(folder)」に購読を追加" }
 
@@ -120,19 +129,22 @@ struct SubscriptionSheet: View {
             catch { self.error = error.localizedDescription }
             return
         }
-        switch checker.state {
-        case .ready(let checked): commit(checked)
-        case .checking: addWhenReady = true                       // Return before the answer: add when it comes
-        case .idle, .failed:
-            recheck(delay: .zero, asked: true)                     // try again now (a failure may have been a bad moment)
+        switch checker.state.onReturn {
+        case .add(let checked): commit(checked)
+        case .waitForAnswer: addWhenReady = true                  // Return before the answer: add when it comes
+        case .checkAgain:
+            recheck(delay: .zero, asked: true)
             addWhenReady = true
         }
     }
 
     private func commit(_ checked: CheckedFeed) {
+        // Already subscribed: the status line says so, and there is nothing to add.
+        guard !added, !isSubscribed(checked) else { return }
         do {
             let feed = try store.importFeed(checked.parsed, folder: folder)
             if checked.fetched { try store.recordFetch(feed, etag: checked.etag, lastModified: checked.lastModified, at: .now) }
+            added = true
             onImported(feed.id); dismiss()
         }
         catch { self.error = error.localizedDescription }

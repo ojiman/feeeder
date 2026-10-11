@@ -2,8 +2,10 @@ import Foundation
 
 /// One plain sentence for each reason an address could not be added: what happened and, where it helps, what to do.
 public enum FeedCheckMessage {
-    public static func text(for error: any Error) -> String {
+    /// `pastedXML` is true on the Option-key path, where the person supplied the text and the publisher is not to blame.
+    public static func text(for error: any Error, pastedXML: Bool = false) -> String {
         switch error {
+        case FeedImportError.invalidXML where pastedXML: return "貼り付けたXMLに誤りがあり、読めませんでした。"
         case HTTPError.status(let code):
             switch code {
             case 404, 410: return "ページが見つかりません（\(code)）。URLを確認してください。"

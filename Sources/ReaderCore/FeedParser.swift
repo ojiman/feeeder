@@ -69,6 +69,7 @@ public enum FeedParser {
         guard data.count <= 2 * 1024 * 1024 else { throw FeedImportError.tooLarge }
         guard let source = ArticleURL.validated(sourceURL.absoluteString) else { throw FeedImportError.invalidURL }
         guard !looksLikeHTML(data) else { throw FeedImportError.htmlPage }
+        guard !looksLikeJSON(data) else { throw FeedImportError.unsupported }
         do { return try parseDocument(data, source: source, baseURL: baseURL) }
         catch FeedImportError.invalidXML {
             // A control character that XML forbids is a common slip in real feeds; read the rest once more without it.
@@ -94,18 +95,32 @@ public enum FeedParser {
                           sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped, siteURL: reader.siteURL, iconURL: reader.iconURL ?? reader.logoURL)
     }
 
+    /// The start of a document without the whitespace, comments and XML declaration that may come before the markup.
+    private static func markupStart(_ data: Data) -> Substring {
+        var head = Substring(String(decoding: data.prefix(1024), as: UTF8.self))
+        while true {
+            head = head.drop { $0 == "\u{FEFF}" || $0.isWhitespace }
+            if head.hasPrefix("<?"), let end = head.range(of: "?>") { head = head[end.upperBound...] }
+            else if head.hasPrefix("<!--"), let end = head.range(of: "-->") { head = head[end.upperBound...] }
+            else { return head }
+        }
+    }
+
     /// A web page (the address of a site, not of its feed) starts with an HTML doctype or tag.
     private static func looksLikeHTML(_ data: Data) -> Bool {
-        let head = String(decoding: data.prefix(256), as: UTF8.self).drop { $0 == "\u{FEFF}" || $0.isWhitespace }.lowercased()
+        let head = markupStart(data).lowercased()
         return head.hasPrefix("<!doctype html") || head.hasPrefix("<html")
     }
 
-    /// The bytes without the C0 controls XML 1.0 forbids, or nil when there are none or the text is not an
-    /// ASCII-compatible encoding (UTF-16 and UTF-32 use zero bytes for ordinary characters).
+    /// JSON Feed is a format this app does not read.
+    private static func looksLikeJSON(_ data: Data) -> Bool { markupStart(data).hasPrefix("{") }
+
+    /// The bytes without the C0 controls XML 1.0 forbids, or nil when there are none or removing them is not safe:
+    /// UTF-16 and UTF-32 use zero bytes for ordinary characters, and ISO-2022-JP uses ESC (0x1B) in its shift sequences.
     private static func removingForbiddenControlCharacters(_ data: Data) -> Data? {
         guard !data.prefix(4).contains(0), !data.starts(with: [0xFF, 0xFE]), !data.starts(with: [0xFE, 0xFF]) else { return nil }
         let forbidden: (UInt8) -> Bool = { $0 < 0x20 && $0 != 0x09 && $0 != 0x0A && $0 != 0x0D }
-        guard data.contains(where: forbidden) else { return nil }
+        guard data.contains(where: forbidden), !data.contains(0x1B) else { return nil }
         return Data(data.filter { !forbidden($0) })
     }
 }

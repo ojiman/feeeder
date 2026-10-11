@@ -22,7 +22,26 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
         case idle, checking
         case ready(CheckedFeed)
         case failed(String)
+
+        public var onReturn: ReturnAction {
+            switch self {
+            case .ready(let feed): .add(feed)
+            case .checking: .waitForAnswer
+            case .idle, .failed: .checkAgain               // a failure may have been a bad moment: try once more
+            }
+        }
+        public var whileWaitingForReturn: WaitingAction {
+            switch self {
+            case .ready(let feed): .add(feed)
+            case .failed: .giveUp
+            case .idle, .checking: .keepWaiting
+            }
+        }
     }
+    /// What pressing Return means in a state.
+    public enum ReturnAction: Equatable { case add(CheckedFeed), waitForAnswer, checkAgain }
+    /// What an answer means to a person who already pressed Return and is waiting.
+    public enum WaitingAction: Equatable { case add(CheckedFeed), keepWaiting, giveUp }
     public private(set) var state = State.idle
     private let fetch: @Sendable (FeedCheckRequest) async throws -> CheckedFeed
     private let sleep: @Sendable (Duration) async throws -> Void
@@ -41,9 +60,11 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
         generation += 1
         state = .idle
         let mine = generation
-        let request = FeedCheckRequest.make(source: source, xml: xml, manual: manual)
-        var hint = request == nil ? FeedCheckRequest.hint(source: source) : nil
-        if asked, request == nil, hint == nil, !source.allSatisfy(\.isWhitespace) { hint = manual ? "URLとXMLを入れてください。" : "URLを最後まで入れてください。" }
+        let request = FeedCheckRequest.make(source: source, xml: xml, manual: manual, asked: asked)
+        var hint: String?
+        if request == nil {
+            hint = asked && manual && ArticleURL.validated(source) != nil ? "XMLを入れてください。" : FeedCheckRequest.hint(source: source, asked: asked)
+        }
         guard request != nil || hint != nil else { return }
         task = Task { [fetch, sleep] in
             do {
@@ -56,7 +77,7 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
                 state = .ready(feed)
             } catch {
                 guard mine == generation, !Task.isCancelled, !(error is CancellationError) else { return }
-                state = .failed(FeedCheckMessage.text(for: error))
+                state = .failed(FeedCheckMessage.text(for: error, pastedXML: manual))
             }
         }
     }

@@ -117,6 +117,25 @@ struct FeedParserTests {
             #expect(throws: FeedImportError.htmlPage) { try FeedParser.parse(Data(page.utf8), sourceURL: URL(string: "https://feed.example/")!) }
         }
     }
+    @Test func aPageThatStartsWithACommentOrADeclarationIsStillAPage() {
+        for page in ["<!-- cached -->\n<!DOCTYPE html><html></html>", "<?xml version=\"1.0\"?>\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"x.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"></html>"] {
+            #expect(throws: FeedImportError.htmlPage) { try FeedParser.parse(Data(page.utf8), sourceURL: URL(string: "https://feed.example/")!) }
+        }
+        #expect(throws: FeedImportError.unsupported) { try FeedParser.parse(Data("{\"version\":\"https://jsonfeed.org/version/1.1\",\"items\":[]}".utf8), sourceURL: URL(string: "https://feed.example/feed.json")!) }
+    }
+    @Test func theControlCharacterCleanUpNeverTouchesOtherEncodingsOrHidesADTD() throws {
+        let url = URL(string: "https://feed.example/rss")!
+        // ISO-2022-JP uses ESC (0x1B) in its shift sequences: cutting it out would turn the title into mojibake.
+        var jis = try #require("<?xml version=\"1.0\" encoding=\"ISO-2022-JP\"?><rss><channel><title>合成</title></channel></rss>".data(using: .iso2022JP))
+        jis.insert(0x08, at: jis.count - 2)
+        #expect(throws: FeedImportError.invalidXML) { try FeedParser.parse(jis, sourceURL: url) }
+        // UTF-16 with a forbidden character stays an error (no byte is removed).
+        let utf16 = try #require("<?xml version=\"1.0\" encoding=\"UTF-16\"?><rss><channel><title>合成\u{08}</title></channel></rss>".data(using: .utf16))
+        #expect(throws: FeedImportError.invalidXML) { try FeedParser.parse(utf16, sourceURL: url) }
+        // A DTD split by a control character is checked again after the clean-up.
+        let hidden = "<!DOC\u{01}TYPE rss [<!ENTITY x 'expanded'>]><rss><channel><title>&x;</title></channel></rss>"
+        #expect(throws: FeedImportError.entities) { try FeedParser.parse(Data(hidden.utf8), sourceURL: url) }
+    }
     @Test func strayControlCharactersDoNotSinkAnOtherwiseGoodFeed() throws {
         let xml = "<rss><channel><title>合成\u{08}ニュース</title><item><guid>a</guid><title>A\u{0B}</title><link>https://feed.example/a</link><description>x\u{1F}y</description></item></channel></rss>"
         let result = try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://feed.example/rss")!)

@@ -10,10 +10,20 @@ import Testing
         func request(_ source: String) -> FeedCheckRequest? { FeedCheckRequest.make(source: source, xml: "", manual: false) }
         #expect(request("https://example.com/feed.xml") == .url(URL(string: "https://example.com/feed.xml")!))
         #expect(request("  https://example.com/feed.xml \n") != nil)                  // pasted with spaces
+        #expect(request("https://example.co.uk/feed") != nil && request("https://192.168.10.5/feed") != nil)
         for partial in ["", "h", "https://", "https://exa", "https://example", "https://example.c", "https://example.",
+                        "https://foo.12", "https://192.16", "https://192.168.10", "https://192.168.10.",
                         "example.com/feed", "ftp://example.com/feed", "https://name:secret@example.com/feed"] {
-            #expect(request(partial) == nil, "\(partial)")                           // nothing is sent to a half-typed host
+            #expect(request(partial) == nil, "\(partial)")                           // nothing is sent to a host that does not look complete
         }
+    }
+    @Test func returnAcceptsAnyValidAddressSuchAsALocalName() {
+        func request(_ source: String, asked: Bool) -> FeedCheckRequest? { FeedCheckRequest.make(source: source, xml: "", manual: false, asked: asked) }
+        for local in ["https://localhost/feed", "https://nas/feed", "https://[::1]/feed"] {
+            #expect(request(local, asked: false) == nil, "\(local)")                 // not while typing
+            #expect(request(local, asked: true) != nil, "\(local)")                  // but the person pressed Return
+        }
+        #expect(request("https://name:secret@example.com/feed", asked: true) == nil)
     }
     @Test func manualXMLIsParsedLocallyAndNeedsAnAddressAndText() {
         #expect(FeedCheckRequest.make(source: "https://example.com/rss", xml: "<rss/>", manual: true) != nil)
@@ -24,6 +34,14 @@ import Testing
         #expect(FeedCheckRequest.hint(source: "") == nil)
         #expect(FeedCheckRequest.hint(source: "https://exa") == nil)
         #expect(FeedCheckRequest.hint(source: "example.com/feed") == "http:// か https:// で始まるURLを入れてください。")
+        for typingTheScheme in ["h", "http", "https:", "https:/", "HTTPS://"] { #expect(FeedCheckRequest.hint(source: typingTheScheme) == nil, "\(typingTheScheme)") }
+        #expect(FeedCheckRequest.hint(source: "ftp://example.com/feed") == "http:// か https:// で始まるURLを入れてください。")
+    }
+    @Test func returnOnAnAddressThatCannotBeUsedSaysWhy() {
+        #expect(FeedCheckRequest.hint(source: "https://", asked: true) == "URLを最後まで入れてください。")
+        #expect(FeedCheckRequest.hint(source: "https://name:secret@example.com/feed", asked: true) == FeedImportError.invalidURL.localizedDescription)
+        #expect(FeedCheckRequest.hint(source: "ftp://example.com/feed", asked: true) == "http:// か https:// で始まるURLを入れてください。")
+        #expect(FeedCheckRequest.hint(source: "", asked: true) == nil)
     }
     @Test func pastingChecksAtOnceAndTypingWaits() {
         #expect(FeedCheckRequest.delay(from: "https://example.com/fee", to: "https://example.com/feed") == .milliseconds(800))
@@ -38,7 +56,8 @@ import Testing
         return CheckedFeed(parsed: ParsedFeed(title: title, sourceURL: url, entries: [], skippedEntries: 0), etag: "v1", lastModified: nil, fetched: true)
     }
     private func settle(_ checker: FeedChecker) async {
-        for _ in 0..<200 { await Task.yield() }
+        for _ in 0..<20 { await Task.yield() }
+        try? await Task.sleep(for: .milliseconds(60))               // generous: the stubs answer at once, a loaded machine only needs to schedule
     }
 
     @Test func aReadableFeedBecomesReadyAfterTheDelay() async {
@@ -71,10 +90,36 @@ import Testing
         checker.update(source: "", delay: .zero); await settle(checker)
         #expect(checker.state == .idle)
     }
+    @Test func pressingReturnFetchesALocalNameThatTypingWouldNotSend() async {
+        let fetched = Recorder<FeedCheckRequest>()
+        let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in })
+        checker.update(source: "https://localhost/feed", delay: .milliseconds(800)); await settle(checker)
+        #expect(fetched.values.isEmpty)
+        checker.update(source: "https://localhost/feed", delay: .zero, asked: true); await settle(checker)
+        #expect(fetched.values == [.url(URL(string: "https://localhost/feed")!)])
+    }
+    @Test func anEditDuringTheWaitCancelsTheOldCheckBeforeItFetches() async {
+        let gate = SlowGate()
+        let fetched = Recorder<FeedCheckRequest>()
+        let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in await gate.wait() })
+        checker.update(source: "https://example.com/old", delay: .milliseconds(800)); await settle(checker)
+        checker.update(source: "https://example.com/new", delay: .milliseconds(800)); await settle(checker)
+        await gate.open(); await settle(checker)                                  // both waits end; only the newest may fetch
+        #expect(fetched.values == [.url(URL(string: "https://example.com/new")!)])
+    }
+    @Test func theStateSaysWhatReturnAndAnAnswerShouldDo() {
+        let feed = Self.checked()
+        #expect(FeedChecker.State.ready(feed).onReturn == .add(feed))
+        #expect(FeedChecker.State.checking.onReturn == .waitForAnswer)
+        #expect(FeedChecker.State.idle.onReturn == .checkAgain && FeedChecker.State.failed("x").onReturn == .checkAgain)
+        #expect(FeedChecker.State.ready(feed).whileWaitingForReturn == .add(feed))
+        #expect(FeedChecker.State.failed("x").whileWaitingForReturn == .giveUp)
+        #expect(FeedChecker.State.checking.whileWaitingForReturn == .keepWaiting && FeedChecker.State.idle.whileWaitingForReturn == .keepWaiting)
+    }
     @Test func pressingReturnOnAnUnfinishedAddressSaysSo() async {
         let fetched = Recorder<FeedCheckRequest>()
         let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in })
-        checker.update(source: "https://exa", delay: .zero, asked: true); await settle(checker)
+        checker.update(source: "https://", delay: .zero, asked: true); await settle(checker)
         #expect(checker.state == .failed("URLを最後まで入れてください。"))
         checker.update(source: "", delay: .zero, asked: true); await settle(checker)
         #expect(checker.state == .idle && fetched.values.isEmpty)
@@ -133,6 +178,7 @@ import Testing
         #expect(text(HTTPError.tooLarge) == "データが大きすぎます（2MBまで）。")
         #expect(text(FeedImportError.htmlPage) == "フィードではなくWebページです。フィードのURLを入れてください。")
         #expect(text(FeedImportError.invalidXML) == "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。")
+        #expect(FeedCheckMessage.text(for: FeedImportError.invalidXML, pastedXML: true) == "貼り付けたXMLに誤りがあり、読めませんでした。")
     }
 
     @Test func theDefaultFetchReadsTheRealResponse() async throws {
@@ -142,7 +188,7 @@ import Testing
         let feed = try await FeedChecker.fetch(.url(url), client: client)
         #expect(feed.parsed.title == "合成ニュース" && feed.etag == "v9" && feed.fetched)
         StubURLProtocol.register(.init(data: Data("<!doctype html><html><body>top page</body></html>".utf8)), at: url)
-        await #expect(throws: FeedImportError.self) { try await FeedChecker.fetch(.url(url), client: client) }
+        await #expect(throws: FeedImportError.htmlPage) { try await FeedChecker.fetch(.url(url), client: client) }
         let manual = try await FeedChecker.fetch(.xml(Data(FeedParserTests.rss.utf8), url), client: client)
         #expect(!manual.fetched && manual.etag == nil)
     }

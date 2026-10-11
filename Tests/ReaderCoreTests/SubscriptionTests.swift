@@ -19,6 +19,19 @@ import Testing
         #expect(store.feeds.count == 1 && store.articles.count == 1)
     }
 
+    @Test func aSourceIsRecognizedAsSubscribedByItsAddress() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        let url = URL(string: "https://Synthetic.example/subscribed")!
+        #expect(!store.isSubscribed(to: url))
+        let parsed = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: url)
+        let feed = try store.importFeed(parsed, folder: "技術")
+        #expect(store.isSubscribed(to: parsed.sourceURL) && store.isSubscribed(to: url))      // the stored form lower-cases the host
+        #expect(!store.isSubscribed(to: URL(string: "https://synthetic.example/other")!))
+        try store.unsubscribe(feed)
+        #expect(!store.isSubscribed(to: url))
+    }
+
     @Test func importUpdateDeduplicateAndUnsubscribePreservesReadHistory() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "rss-subscriptions-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
