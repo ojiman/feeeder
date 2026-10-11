@@ -54,6 +54,7 @@
 | [0033](0033-rss-first.md) | RSS first: the feed's own text is shown | valid (with the RSS-first PR) |
 | [0034](0034-move-to-folder-chooser.md) | 「フォルダへ移動…」 is a chooser with a text field | valid (with the chooser PR) |
 | [0035](0035-rename-a-note.md) | Renaming a note | valid (with the rename PR) |
+| [0036](0036-check-the-feed-as-you-type.md) | Check the feed while the address is typed | valid (with the check PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

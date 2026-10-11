@@ -30,11 +30,12 @@ public struct ParsedEntry: Sendable {
 }
 
 public enum FeedImportError: LocalizedError {
-    case invalidURL, invalidXML, unsupported, tooLarge, entities, missingTitle
+    case invalidURL, invalidXML, htmlPage, unsupported, tooLarge, entities, missingTitle
     public var errorDescription: String? {
         switch self {
         case .invalidURL: "ユーザー名・パスワードを含まないHTTP(S)のURLを指定してください。"
-        case .invalidXML: "XMLを解析できませんでした。完全なフィードXMLを貼り付けてください。"
+        case .invalidXML: "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。"
+        case .htmlPage: "フィードではなくWebページです。フィードのURLを入れてください。"
         case .unsupported: "RSS 1.0・RSS 2.0・Atomのフィードではありません。"
         case .tooLarge: "XMLは2MB以内、階層は64段以内、記事は5,000件以内にしてください。"
         case .entities: "DTDや独自エンティティを含むXMLは取り込めません。"
@@ -67,6 +68,17 @@ public enum FeedParser {
     public static func parse(_ data: Data, sourceURL: URL, baseURL: URL? = nil) throws -> ParsedFeed {
         guard data.count <= 2 * 1024 * 1024 else { throw FeedImportError.tooLarge }
         guard let source = ArticleURL.validated(sourceURL.absoluteString) else { throw FeedImportError.invalidURL }
+        guard !looksLikeHTML(data) else { throw FeedImportError.htmlPage }
+        guard !looksLikeJSON(data) else { throw FeedImportError.unsupported }
+        do { return try parseDocument(data, source: source, baseURL: baseURL) }
+        catch FeedImportError.invalidXML {
+            // A control character that XML forbids is a common slip in real feeds; read the rest once more without it.
+            guard let cleaned = removingForbiddenControlCharacters(data) else { throw FeedImportError.invalidXML }
+            return try parseDocument(cleaned, source: source, baseURL: baseURL)
+        }
+    }
+
+    private static func parseDocument(_ data: Data, source: URL, baseURL: URL?) throws -> ParsedFeed {
         // Strip NULs only for declaration detection, including UTF-16/32 input. Never resolve a DTD.
         let declarationScan = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\0", with: "")
         guard !declarationScan.contains("<!DOCTYPE"), !declarationScan.contains("<!ENTITY") else { throw FeedImportError.entities }
@@ -81,6 +93,35 @@ public enum FeedParser {
         guard reader.format != nil, reader.sawContainer else { throw FeedImportError.unsupported }
         return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? "フィード") : reader.title,
                           sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped, siteURL: reader.siteURL, iconURL: reader.iconURL ?? reader.logoURL)
+    }
+
+    /// The start of a document without the whitespace, comments and XML declaration that may come before the markup.
+    private static func markupStart(_ data: Data) -> Substring {
+        var head = Substring(String(decoding: data.prefix(1024), as: UTF8.self))
+        while true {
+            head = head.drop { $0 == "\u{FEFF}" || $0.isWhitespace }
+            if head.hasPrefix("<?"), let end = head.range(of: "?>") { head = head[end.upperBound...] }
+            else if head.hasPrefix("<!--"), let end = head.range(of: "-->") { head = head[end.upperBound...] }
+            else { return head }
+        }
+    }
+
+    /// A web page (the address of a site, not of its feed) starts with an HTML doctype or tag.
+    private static func looksLikeHTML(_ data: Data) -> Bool {
+        let head = markupStart(data).lowercased()
+        return head.hasPrefix("<!doctype html") || head.hasPrefix("<html")
+    }
+
+    /// JSON Feed is a format this app does not read.
+    private static func looksLikeJSON(_ data: Data) -> Bool { markupStart(data).hasPrefix("{") }
+
+    /// The bytes without the C0 controls XML 1.0 forbids, or nil when there are none or removing them is not safe:
+    /// UTF-16 and UTF-32 use zero bytes for ordinary characters, and ISO-2022-JP uses ESC (0x1B) in its shift sequences.
+    private static func removingForbiddenControlCharacters(_ data: Data) -> Data? {
+        guard !data.prefix(4).contains(0), !data.starts(with: [0xFF, 0xFE]), !data.starts(with: [0xFE, 0xFF]) else { return nil }
+        let forbidden: (UInt8) -> Bool = { $0 < 0x20 && $0 != 0x09 && $0 != 0x0A && $0 != 0x0D }
+        guard data.contains(where: forbidden), !data.contains(0x1B) else { return nil }
+        return Data(data.filter { !forbidden($0) })
     }
 }
 

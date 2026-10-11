@@ -149,6 +149,12 @@ import SwiftData
         for folder in folders { folderUnreadCounts[folder, default: 0] += delta }
     }
 
+    /// Whether a subscription with this address exists (the stored form lower-cases the host).
+    public func isSubscribed(to url: URL) -> Bool {
+        guard let address = ArticleURL.validated(url.absoluteString)?.absoluteString else { return false }
+        return feeds.contains { $0.sourceURL == address }
+    }
+
     @discardableResult public func importFeed(_ parsed: ParsedFeed, receivedAt: Date = .now, folder: String? = nil) throws -> Feed {
         try reloadIfNeeded()
         let feed = feeds.first { $0.sourceURL == parsed.sourceURL.absoluteString } ?? Feed(title: parsed.title, symbol: "dot.radiowaves.left.and.right")
