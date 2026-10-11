@@ -43,14 +43,14 @@ struct ReaderView: View {
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
     private let notePasteboard: NSPasteboard
-    private let saveMarkdown: @MainActor (String, Data) throws -> Bool
+    private let saveMarkdown: @MainActor (String, Data) async throws -> Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
          notePasteboard: NSPasteboard = .general,
-         saveMarkdown: @escaping @MainActor (String, Data) throws -> Bool = ReaderView.presentMarkdownSave) {
+         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
         self.imageLoader = imageLoader
@@ -71,19 +71,36 @@ struct ReaderView: View {
         AIReviewView(store: store, review: aiReview, handoff: handoff, noteID: sheet.id)
     }
 
-    private static func presentMarkdownSave(_ fileName: String, _ data: Data) throws -> Bool {
+    private static func presentMarkdownSave(_ fileName: String, _ data: Data) async throws -> Bool {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = fileName
         panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
-        guard panel.runModal() == .OK, let url = panel.url else { return false }
-        try data.write(to: url, options: .atomic)
-        return true
+        guard let window = NSApp.keyWindow else { throw CocoaError(.fileWriteUnknown) }
+        return try await withCheckedThrowingContinuation { continuation in
+            panel.beginSheetModal(for: window) { response in
+                guard response == .OK, let url = panel.url else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                do {
+                    try data.write(to: url, options: .atomic)
+                    continuation.resume(returning: true)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
 
     func copyNote(_ id: UUID) -> Bool {
         guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        let item = NSPasteboardItem()
+        guard item.setString(note.text, forType: .string) else {
+            saveError = "ノートをクリップボードへコピーできませんでした。"
+            return false
+        }
         notePasteboard.clearContents()
-        guard notePasteboard.setString(note.text, forType: .string) else {
+        guard notePasteboard.writeObjects([item]) else {
             saveError = "ノートをクリップボードへコピーできませんでした。"
             return false
         }
@@ -91,10 +108,10 @@ struct ReaderView: View {
         return true
     }
 
-    func exportNote(_ id: UUID) -> Bool {
+    func exportNote(_ id: UUID) async -> Bool {
         guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         do {
-            if try saveMarkdown(NoteMarkdown.fileName(forTitle: note.title), NoteMarkdown.data(for: note.text)) {
+            if try await saveMarkdown(NoteMarkdown.fileName(forTitle: note.title), NoteMarkdown.data(for: note.text)) {
                 noteActionMessage = "Markdownを書き出しました"
                 return true
             }
@@ -436,7 +453,7 @@ struct ReaderView: View {
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
                       onClaude: { reviewingNote = NoteSheet(id: id) },
-                      onCopy: { _ = copyNote(id) }, onExport: { _ = exportNote(id) })
+                      onCopy: { _ = copyNote(id) }, onExport: { Task { _ = await exportNote(id) } })
             .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
                 if firstPanelWidth == nil { firstPanelWidth = width }
                 panelWidth = width

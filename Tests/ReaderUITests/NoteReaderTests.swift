@@ -27,17 +27,14 @@ import Testing
     fileprivate func buttons(in view: NSView) -> [NSButton] {
         (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap { buttons(in: $0) }
     }
-    /// The note panel's buttons by position: the inspector is the right-hand strip of the window.
+    /// Only the two narrow chevrons and the share menu in the inspector, ordered left to right.
     fileprivate func panelButtons(in h: Harness) -> [NSButton] {
         let width = h.window.contentView?.bounds.width ?? 1_240
-        let rows = buttons(in: h.host)
+        return buttons(in: h.host)
             .map { ($0, $0.convert($0.bounds, to: nil)) }
-            .filter { $0.1.minX > width - 420 && $0.1.width > 0 }
-            .sorted { lhs, rhs in
-                let (rowL, rowR) = ((lhs.1.maxY / 12).rounded(), (rhs.1.maxY / 12).rounded())
-                return rowL != rowR ? rowL > rowR : lhs.1.minX < rhs.1.minX
-            }.map(\.0)
-        return rows
+            .filter { $0.1.minX > width - 420 && $0.1.width > 0 && ($0.0 is NSPopUpButton || $0.1.width <= 20) }
+            .sorted { $0.1.minX < $1.1.minX }
+            .map(\.0)
     }
     fileprivate struct Harness {
         let store: ReaderStore
@@ -49,7 +46,7 @@ import Testing
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, noteOpen: Bool = false,
                          pasteboard: NSPasteboard = NSPasteboard(name: .init("feeeder-test-\(UUID())")),
-                         markdownSave: @escaping @MainActor @Sendable (String, Data) throws -> Bool = { _, _ in false },
+                         markdownSave: @escaping @MainActor @Sendable (String, Data) async throws -> Bool = { _, _ in false },
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -221,12 +218,12 @@ import Testing
         let h = try openHarness()
         defer { t.finish(h) }
         try await t.settle(h.host) { t.panelButtons(in: h).count >= 2 }
-        t.panelButtons(in: h)[1].performClick(nil)
+        t.panelButtons(in: h)[1].performClick(nil)                                       // next
         try await t.settle(h.host) { shown(h, "合成記事 0") }
         try h.store.removeArticle(h.store.articles[0].id, fromNote: h.store.notes[0].id, at: .now)
         pumpRunLoop(0.3)
         #expect(shown(h, "合成記事 0") && t.containsText("ノートの本文", in: h.host))          // still shown, the note is untouched
-        t.panelButtons(in: h)[1].performClick(nil)
+        t.panelButtons(in: h)[1].performClick(nil)                                       // next
         try await t.settle(h.host) { shown(h, "合成記事 1") }
     }
 }
@@ -281,7 +278,8 @@ import Testing
         #expect(shareButton(h) is NSPopUpButton)
         #expect(t.panelButtons(in: h).count == 3)
         let id = try #require(h.store.notes.first?.id)
-        #expect(!h.host.rootView.copyNote(id) && !h.host.rootView.exportNote(id))
+        #expect(!h.host.rootView.copyNote(id))
+        #expect(!(await h.host.rootView.exportNote(id)))
     }
 
     @Test func markdownCopyAndExportUseExactNoteBytesWithPrivateDestinations() async throws {
@@ -295,9 +293,10 @@ import Testing
         }
         defer { t.finish(h) }
         let id = try #require(h.store.notes.first?.id)
+        #expect(pasteboard.setString("previous clipboard", forType: .string))
         #expect(h.host.rootView.copyNote(id))
         #expect(pasteboard.string(forType: .string) == note)
-        #expect(h.host.rootView.exportNote(id))
+        #expect(await h.host.rootView.exportNote(id))
         #expect(try Data(contentsOf: file) == Data(note.utf8))
     }
 
@@ -307,7 +306,7 @@ import Testing
             _ = try store.createNote(text: "本文", at: .now)
         }
         defer { t.finish(h) }
-        #expect(!h.host.rootView.exportNote(try #require(h.store.notes.first?.id)))
+        #expect(!(await h.host.rootView.exportNote(try #require(h.store.notes.first?.id))))
     }
 
     @Test func editingTheNoteInvalidatesTheOpenReviewAndItsCopy() async throws {
