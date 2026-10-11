@@ -162,7 +162,7 @@ public enum AIPackageBuilder {
         let bytes = Array(package.text.utf8)
         let mapping = package.sources.map { $0.articleID.uuidString }.joined(separator: ", ")
         // Every part declares all package sources and its exact byte range; concatenating payloads is lossless.
-        let base = "Feeeder split package\nSHA-256: \(package.sha256)\nSource IDs: \(mapping)\n"
+        let base = "Feeeder split package\nSHA-256: \(package.sha256)\n" + (mapping.isEmpty ? "" : "Source IDs: \(mapping)\n")
         let overhead = (base + "Part: \(Int.max)/\(Int.max)\nPayload bytes: \(Int.max)..<\(Int.max)\n\n").utf8.count
         let capacity = maximumBytes - overhead
         guard capacity >= 4 else { return [] }

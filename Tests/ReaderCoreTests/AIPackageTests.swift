@@ -258,4 +258,23 @@ import Testing
         for part in parts { restored.append(part[try #require(part.range(of: Data("\n\n".utf8))).upperBound...]) }
         #expect(restored == Data(package.text.utf8))
     }
+
+    @Test func splittingANoteOnlyPackageDoesNotAddASourceLine() throws {
+        let at = Date.now
+        let (library, store, note, _) = try noteFixture(at); defer { library.cleanup() }
+        try store.saveNote(noteID: note.id, text: String(repeating: "A note without article sources.\n", count: 40_000), at: at)
+        let review = AIPackageReview(store: store, now: { at })
+        try review.build(selections: [], note: request(note), language: "English", at: at)
+        let package = try #require(review.package)
+        #expect(package.sources.isEmpty)
+        let parts = AIPackageBuilder.split(package)
+        #expect(parts.count > 1)
+        var restored = Data()
+        for part in parts {
+            let text = try #require(String(data: part, encoding: .utf8))
+            #expect(!text.contains("Source IDs:"))
+            restored.append(part[try #require(part.range(of: Data("\n\n".utf8))).upperBound...])
+        }
+        #expect(restored == Data(package.text.utf8))
+    }
 }
