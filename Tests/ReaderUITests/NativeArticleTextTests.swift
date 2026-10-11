@@ -160,4 +160,15 @@ import ReaderCore
         view.install(title: "期限切れ", publisher: "SYNTHETIC", date: "", coverage: "本文なし", paragraphs: [], unavailable: "本文は利用できません。")
         #expect(!view.hasVisibleBody)
     }
+
+    @Test func theHeadlineIsCalmerThanBodyEmphasis() throws {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        view.install(title: "合成記事", publisher: "合成", date: "", coverage: "RSS要約のみ", paragraphs: ["合成本文"], unavailable: nil)
+        let index = ("合成\n" as NSString).length
+        let font = try #require(view.textStorage?.attribute(.font, at: index, effectiveRange: nil) as? NSFont)
+        #expect(font.pointSize == 26)
+        let traits = font.fontDescriptor.object(forKey: .traits) as? [NSFontDescriptor.TraitKey: Any]
+        let weight = (traits?[.weight] as? NSNumber)?.doubleValue ?? 0
+        #expect(weight > 0.2 && weight <= NSFont.Weight.semibold.rawValue + 0.01)               // semibold, not bold
+    }
 }

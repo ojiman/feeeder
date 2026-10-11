@@ -2,11 +2,11 @@ import AppKit
 import ReaderCore
 
 /// The look of the note editor: system fonts and semantic colours, applied as display attributes only (the text is never changed).
-/// A heading is bold and larger, its `#` marks are drawn in the secondary colour; a list item has its marker in the app's orange and a
+/// A heading is bold and larger, its `#` marks are drawn in the secondary colour; a list item has its marker in the app's soft orange (`AppPalette.accent`) and a
 /// hanging indent, so wrapped lines align with the text after the marker (decision 0019, S5).
 @MainActor enum NoteEditorStyle {
     static var baseFont: NSFont { .preferredFont(forTextStyle: .body) }
-    static let markerColor = NSColor.systemOrange
+    static let markerColor = AppPalette.accent
     static let marksColor = NSColor.secondaryLabelColor
 
     static func baseAttributes() -> [NSAttributedString.Key: Any] {
