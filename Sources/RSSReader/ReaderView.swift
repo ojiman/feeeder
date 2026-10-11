@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 import ReaderCore
 
 private typealias LibraryScope = ReaderWorkspaceScope
@@ -24,6 +26,7 @@ struct ReaderView: View {
     /// The first width the layout gave this panel: only a change from it can be the person's drag.
     @State private var firstPanelWidth: Double?
     @State private var saveError: String?
+    @State private var noteActionMessage: String?
     @State private var sender: SummarySender
     @State private var sendingArticleID: UUID?
     @State private var pickingNote = false
@@ -39,12 +42,17 @@ struct ReaderView: View {
     @State private var deletingNote: UUID?
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
+    private let notePasteboard: NSPasteboard
+    private let saveMarkdown: @MainActor (String, Data) async throws -> Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator()) {
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
+         notePasteboard: NSPasteboard = .general,
+         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
+        self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
         self.imageLoader = imageLoader
         _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
@@ -60,25 +68,55 @@ struct ReaderView: View {
         return RetentionPolicy(days: store.retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
     }
     private func reviewSheet(_ sheet: NoteSheet) -> some View {
-        AIReviewView(store: store, review: aiReview, handoff: handoff, selections: claudeSelections(noteID: sheet.id), noteID: sheet.id, fromNotePanel: sheet.fromNotePanel)
+        AIReviewView(store: store, review: aiReview, handoff: handoff, noteID: sheet.id)
     }
-    private func askReviewAction(_ noteID: UUID) -> (() -> Void)? {
-        guard canAskReview(noteID) else { return nil }
-        return { reviewingNote = NoteSheet(id: noteID, fromNotePanel: true) }
-    }
-    /// Something to hand over: an article source, or the person's note.
-    private func canAskReview(_ noteID: UUID) -> Bool {
-        guard let note = store.note(id: noteID) else { return false }
-        let switches = HandoffDefaults.switches(note: note.text, fromNotePanel: false)
-        return !claudeSelections(noteID: noteID).isEmpty || switches.noteEnabled
-    }
-    /// Every note article as two choices: the retained article text first (so it is the default), then the saved RSS summary.
-    private func claudeSelections(noteID: UUID) -> [AIInputSelection] {
-        store.noteArticles.filter { $0.noteID == noteID }
-            .sorted { $0.addedAt != $1.addedAt ? $0.addedAt > $1.addedAt : $0.key < $1.key }
-            .flatMap { link -> [AIInputSelection] in
-                (store.article(id: link.articleID) == nil ? [] : [.article(link.articleID)]) + [.noteArticle(link.key)]
+
+    private static func presentMarkdownSave(_ fileName: String, _ data: Data) async throws -> Bool {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = fileName
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        guard let window = NSApp.keyWindow else { throw CocoaError(.fileWriteUnknown) }
+        return try await withCheckedThrowingContinuation { continuation in
+            panel.beginSheetModal(for: window) { response in
+                guard response == .OK, let url = panel.url else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                do {
+                    try data.write(to: url, options: .atomic)
+                    continuation.resume(returning: true)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
+        }
+    }
+
+    func copyNote(_ id: UUID) -> Bool {
+        guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        let item = NSPasteboardItem()
+        guard item.setString(note.text, forType: .string) else {
+            saveError = "ノートをクリップボードへコピーできませんでした。"
+            return false
+        }
+        notePasteboard.clearContents()
+        guard notePasteboard.writeObjects([item]) else {
+            saveError = "ノートをクリップボードへコピーできませんでした。"
+            return false
+        }
+        noteActionMessage = "ノートをコピーしました"
+        return true
+    }
+
+    func exportNote(_ id: UUID) async -> Bool {
+        guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        do {
+            if try await saveMarkdown(NoteMarkdown.fileName(forTitle: note.title), NoteMarkdown.data(for: note.text)) {
+                noteActionMessage = "Markdownを書き出しました"
+                return true
+            }
+            return false
+        } catch { saveError = error.localizedDescription; return false }
     }
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
@@ -145,13 +183,6 @@ struct ReaderView: View {
         .frame(minWidth: 960, minHeight: 600)
         .tint(.orange)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                if case .note(let id) = scope {
-                    Button { reviewingNote = NoteSheet(id: id) } label: { Image(systemName: "paperplane") }
-                        .help("Claudeで開く…").accessibilityLabel("Claudeで開く")
-                        .disabled(!canAskReview(id))
-                }
-            }
             // Always present, disabled when no article is open. If these buttons came and went with the selection,
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
@@ -225,6 +256,17 @@ struct ReaderView: View {
                 workspace.setNote(open: true, of: id)
                 scope = .note(id)
             })
+        }
+        .overlay(alignment: .bottomLeading) {
+            if let noteActionMessage {
+                Text(noteActionMessage).font(.callout).padding(10).background(.regularMaterial, in: .rect(cornerRadius: 8)).padding(12)
+            }
+        }
+        .task(id: noteActionMessage) {
+            guard noteActionMessage != nil else { return }
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            noteActionMessage = nil
         }
         .sheet(item: $editingFeed) { feed in
             SubscriptionSheet(store: store, feed: feed) { _ in }
@@ -410,7 +452,8 @@ struct ReaderView: View {
                       canNext: NoteArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
-                      onAskReview: askReviewAction(id))
+                      onClaude: { reviewingNote = NoteSheet(id: id) },
+                      onCopy: { _ = copyNote(id) }, onExport: { Task { _ = await exportNote(id) } })
             .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
                 if firstPanelWidth == nil { firstPanelWidth = width }
                 panelWidth = width
@@ -545,4 +588,4 @@ struct ReaderView: View {
 }
 
 /// The note a review sheet was opened for, kept for the sheet's life even if the selection moves.
-private struct NoteSheet: Identifiable { let id: UUID; var fromNotePanel = false }
+private struct NoteSheet: Identifiable { let id: UUID }

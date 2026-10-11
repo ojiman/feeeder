@@ -14,7 +14,7 @@ Unagi Reader is for engineers in 2026 who read many feeds every day. Its value i
 
 - **Read fast.** Three columns and Vim-style keys. Scrolling and typing never wait on a reload, the network or AI.
 - **Note it while you read.** One button sends an article's summary to a note. The articles you sent sit beside the note, so you write in your own words while you see them.
-- **Ask AI when you choose.** Show the note's full text, then hand it to Claude for a review. Nothing leaves your Mac before you decide.
+- **Ask AI when you choose.** Review the note-only package, copy or export the exact Markdown, or open Claude after checking the full text. Nothing leaves your Mac before you decide.
 - **Keep it yours.** No account, no backend, no sync. Everything lives in a local database.
 
 The full statement, with the promises and the questions to ask when in doubt, is in the [vision](docs/vision.md). The current build is moving to this shape in stages ([decision 0019](docs/decisions/0019-v1-simplification-notes.md)); the target is in the [specification](docs/specification.md).

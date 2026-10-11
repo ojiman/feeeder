@@ -113,7 +113,7 @@ Focus the article list, then use these keys:
 Select a note in the sidebar (the most recently edited is first). The middle column shows the articles you put into it and the right column shows the article you select. The note panel opens beside the article when you select the note. Press the note button in the toolbar, or `⌥⌘I`, to close it and open it again (a note you closed stays closed while the app runs). The button is greyed out when no note is selected.
 
 - A note is one Markdown document. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. A note has no name: **its title is its first line** (without the leading `#` marks and spaces; an empty note is called 「新規ノート」). Only when the window is narrow (under about 1,300 pt), opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. You can drag the edge of the panel to change its width, and the app keeps the width for the next launch (this is still being checked in a real window).
-- The top of the note panel has the button 「Claudeでレビューを頼む」 (Ask Claude to review) and two small arrows for the previous and next article.
+- The top of the note panel has a share button and two small arrows for the previous and next article. The share menu offers 「Claudeで開く…」 (Open in Claude…), 「Markdownをコピー」 (Copy Markdown), and 「Markdownとして書き出す…」 (Export as Markdown). All three are disabled when the note is empty or has only whitespace.
 - Keys: `j` and `k` move between articles in the list, and `s`, `n`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 - **AI writes a summary only when you choose to send it.** It never rewrites your own text.
 
@@ -133,19 +133,12 @@ AI output is marked 「（AI要約）」 on its source line. With AI off, unavai
 
 ## 6. Hand-off to Claude Desktop
 
-There are two entry points: the toolbar button 「Claudeで開く…」 (Open in Claude…), which appears when you select a note, and the button 「Claudeでレビューを頼む」 (Ask Claude to review) at the top of the note panel. Both open the review screen. This is how the hand-off works.
+The share button at the top of the note panel is the only entry point. It offers three actions:
 
-1. On the review screen you choose the output language and the sources.
-2. The screen separates saved RSS summaries from articles that are still stored. You review the complete text, the coverage, and the source URLs.
-3. You press 「Claudeで開く」 (Open in Claude).
+- 「Claudeで開く…」 (Open in Claude…) opens a review screen. It always contains the note only: the full text, the request, output language, byte size, expiry and SHA-256. The request asks Claude to quote what is already solid, identify gaps only from what the note does not say, suggest opposing views worth checking, and suggest what to read or write next. It asks Claude to treat the note as data and not to guess, rewrite it, or write into Feeeder. There is no article or source selector.
+- 「Markdownをコピー」 (Copy Markdown) copies the note's exact text. 「Markdownとして書き出す…」 (Export as Markdown) saves those same UTF-8 bytes to a `.md` file using a safe version of the note title. The save panel handles an existing file. Neither action adds a newline or sends the text to Claude.
 
-On the review screen you can also choose:
-
-- **ノートを含める** (include my note). **Off by default** when you open the screen from the toolbar. When you open it from 「Claudeでレビューを頼む」 in the note panel, it is on, because you asked for a review. A switch for an empty note is off and cannot be turned on. Your note is your own writing: if you turn it on, exactly what the screen shows leaves your Mac (it goes to Claude). With the note on, the request becomes a review of the note itself: what is already done, what is missing (judged only from what the note does not say), weak support and opposing views in the sources, and what to read or write next. Claude is not asked to change your note.
-- You can include the note without any article. Without the note, at least one source is required.
-
-After you review, if the included note or the title of an included source changes, the review becomes invalid and you must make it again.
-
+On the review screen, 「全文をコピー」 (Copy all), TXT export, split export, and the file passed to Claude all use the exact review package shown in the preview. Editing the note while this screen is open invalidates the review. Rebuild it before copying, exporting or opening Claude. Nothing leaves your Mac until you press 「Claudeで開く」 on this confirmation screen.
 Facts you should know:
 
 - **What was checked:** Claude Desktop 2.19675.0 with Pro and Cowork. Automatic attachment to normal Chat, other versions, and other plans have not been checked.

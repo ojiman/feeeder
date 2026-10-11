@@ -6,82 +6,44 @@ struct AIReviewView: View {
     @Bindable var store: ReaderStore
     @Bindable var review: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
-    let selections: [AIInputSelection]
-    var noteID: UUID? = nil
-    /// True when the review was started from the note panel's button: then the note is switched on.
-    var fromNotePanel = false
+    let noteID: UUID
     @Environment(\.dismiss) private var dismiss
-    @State private var selected = Set<AIInputSelection>()
-    @State private var options: [Option] = []
     @State private var language = "日本語"
     @State private var error: String?
     @State private var copied = false
-    @State private var includeNote = false
-    private struct Option: Identifiable {
-        let id: AIInputSelection
-        let articleID: UUID
-        let title: String
-        let coverage: String
-        let available: Bool
+
+    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, noteID: UUID) {
+        self.store = store; self.review = review; self.handoff = handoff; self.noteID = noteID
     }
-    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, articleIDs: [UUID]) {
-        self.init(store: store, review: review, handoff: handoff, selections: articleIDs.map(AIInputSelection.article))
-    }
-    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection], noteID: UUID? = nil, fromNotePanel: Bool = false) {
-        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections; self.noteID = noteID; self.fromNotePanel = fromNotePanel
-    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(noteID == nil ? "AIへの入力を確認" : "Claudeへ渡す内容を確認").font(.title2.bold())
+                Text("Claudeへ渡す内容を確認").font(.title2.bold())
                 Spacer()
                 Button("閉じる") { review.clear(); dismiss() }.keyboardShortcut(.cancelAction)
             }
             HStack {
                 Picker("出力言語", selection: $language) { Text("日本語").tag("日本語"); Text("English").tag("English") }.frame(width: 250)
-                Text("本文を省略せず、選択した出典と一緒に渡します。").font(.caption).foregroundStyle(.secondary)
+                Text("このノート全文だけを使います。Claudeへ渡す前に内容を確認してください。")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            if let noteID, let note = store.note(id: noteID) {
-                let switches = HandoffDefaults.switches(note: note.text, fromNotePanel: fromNotePanel)
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("ノートを含める", isOn: $includeNote).disabled(!switches.noteEnabled)
-                    Text(!switches.noteEnabled ? "このノートは空です。"
-                         : "ノートは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。ノートを含めると、ノートそのもののレビューを頼む依頼になります。")
+            VStack(alignment: .leading, spacing: 8) {
+                if let package = review.package {
+                    Text("ノートのみ · \(Data(package.text.utf8).count.formatted()) bytes · 有効期限 \(package.expiresAt.formatted())")
                         .font(.caption).foregroundStyle(.secondary)
+                    PackageTextView(text: package.text)
+                    Text("SHA-256: \(package.sha256)").font(.caption2.monospaced()).textSelection(.enabled)
+                } else {
+                    ContentUnavailableView("再生成して確認してください", systemImage: "doc.text.magnifyingglass",
+                        description: Text(review.reason ?? "ノートが変更されました。内容を再生成してください。"))
                 }
-            }
-            HSplitView {
-                List(options) { option in
-                    Toggle(isOn: Binding(get: { selected.contains(option.id) }, set: { included in
-                        if included {
-                            for other in options where other.articleID == option.articleID { selected.remove(other.id) }
-                            selected.insert(option.id)
-                        } else { selected.remove(option.id) }
-                        generate()
-                    })) {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(option.title).lineLimit(2)
-                            Text(option.coverage).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }.disabled(!option.available && !selected.contains(option.id)).padding(.vertical, 5)
-                }.frame(minWidth: 200, idealWidth: 250, maxWidth: 340)
-                VStack(alignment: .leading, spacing: 8) {
-                    if let package = review.package {
-                        Text("\(package.sources.count)出典 · \(Data(package.text.utf8).count.formatted()) bytes · 有効期限 \(package.expiresAt.formatted())")
-                            .font(.caption).foregroundStyle(.secondary)
-                        PackageTextView(text: package.text)
-                        Text("SHA-256: \(package.sha256)").font(.caption2.monospaced()).textSelection(.enabled)
-                    } else {
-                        ContentUnavailableView("再生成して確認してください", systemImage: "doc.text.magnifyingglass",
-                            description: Text(review.reason ?? "本文を利用できる記事か、ノートを選んでください。"))
-                    }
-                }.frame(minWidth: 400)
-            }
+            }.frame(minHeight: 350)
             if let message = error ?? review.reason { Text(message).foregroundStyle(.secondary).font(.caption) }
             if let message = handoff.error ?? handoff.maintenanceError { Text(message).foregroundStyle(.secondary).font(.caption) }
             if handoff.opened { Text("Claudeに確認画面を開きました。添付完了・送信・読取の確認はClaude側で行ってください。").font(.callout) }
             HStack {
-                Button("再生成してレビュー", action: generate).disabled(selected.isEmpty && !includeNote)
+                Button("再生成してレビュー", action: generate)
                 Spacer()
                 Button(copied ? "コピーしました" : "全文をコピー") {
                     perform {
@@ -98,56 +60,30 @@ struct AIReviewView: View {
                     Task { await handoff.open(package: package) }
                 }.disabled(review.package == nil || handoff.launching).buttonStyle(.borderedProminent)
             }
-            Text("確認済み: Claude Desktop 2.19675.0 / Pro / Cowork。通常Chatの自動添付は未検証です。Claude側でAttachを確認し、本人が送信してください。送信後に、生成物だけの専用フォルダの読取・変更許可が出る場合があります。処理はcloudで行われ、使用するファイルは端末を離れます。リンク由来の注意表示が出る場合もあります。Coworkを利用できない場合や添付制限時は、コピー・書き出しを選べます。")
+            Text("Claudeに渡す前に、この確認画面で本人が「Claudeで開く」を押します。Claude側でAttachを確認し、本人が送信してください。送信後に、生成物だけの専用フォルダの読取・変更許可が出る場合があります。処理はcloudで行われ、使用するファイルは端末を離れます。Coworkを利用できない場合や添付制限時は、コピー・書き出しを選べます。")
                 .font(.caption).foregroundStyle(.secondary)
             Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、自分のノートへ貼り付け・編集してください。")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 820, minHeight: 640)
-        .onAppear {
-            handoff.resetStatus(); refreshOptions()
-            if let noteID, let note = store.note(id: noteID) {
-                let switches = HandoffDefaults.switches(note: note.text, fromNotePanel: fromNotePanel)
-                includeNote = switches.noteOn
-            }
-            var seen = Set<UUID>()
-            selected = Set(options.filter { $0.available && seen.insert($0.articleID).inserted }.map(\.id))
-            generate()
-        }
+        .onAppear { handoff.resetStatus(); generate() }
         .onChange(of: language) { _, _ in generate() }
-        .onChange(of: includeNote) { _, _ in generate() }
-        .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); refreshOptions(); copied = false }
+        .onChange(of: store.note(id: noteID)?.text) { _, _ in review.reconcile(at: .now); copied = false }
+        .onChange(of: store.contentRevision) { _, _ in review.reconcile(at: .now); copied = false }
         .task(id: review.package?.expiresAt) {
             guard let expiry = review.package?.expiresAt else { return }
             do {
                 try await Task.sleep(for: .seconds(max(0, expiry.timeIntervalSinceNow)))
-                try Task.checkCancellation(); review.reconcile(at: .now); refreshOptions(); copied = false
+                try Task.checkCancellation(); review.reconcile(at: .now); copied = false
             } catch { /* Closing or regenerating cancels the previous deadline. */ }
         }
         .onDisappear { review.clear() }
     }
-    private func refreshOptions() {
-        var seen = Set<AIInputSelection>()
-        options = selections.filter { seen.insert($0).inserted }.compactMap { selection in
-            let source = try? store.aiSources(selections: [selection], at: .now).first
-            switch selection {
-            case .article(let id):
-                guard let article = store.article(id: id) else { return nil }
-                return Option(id: selection, articleID: id, title: article.title, coverage: "保持中の記事 · " + (source?.content.coverage.label ?? "本文期限切れ・削除済み、または本文なし"), available: source != nil)
-            case .noteArticle(let key):
-                guard let saved = store.noteArticles.first(where: { $0.key == key }) else { return nil }
-                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "ノートに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)
-            case .unresolvable:
-                return nil
-            }
-        }
-    }
+
     private func generate() {
         copied = false; error = nil; handoff.resetStatus()
-        perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, note: noteRequest, language: language, at: .now) }
+        perform { try review.build(selections: [], note: AINoteRequest(noteID: noteID, includeNote: true), language: language, at: .now) }
     }
-    private var noteRequest: AINoteRequest? {
-        noteID.map { AINoteRequest(noteID: $0, includeNote: includeNote) }
-    }
+
     private func export() {
         perform {
             _ = try review.validated(at: .now)
@@ -158,6 +94,7 @@ struct AIReviewView: View {
             }
         }
     }
+
     private func exportSplit() {
         perform {
             _ = try review.validated(at: .now)
@@ -177,6 +114,7 @@ struct AIReviewView: View {
             }
         }
     }
+
     private func perform(_ operation: () throws -> Void) { do { try operation(); error = nil } catch { self.error = error.localizedDescription } }
 }
 
