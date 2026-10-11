@@ -24,7 +24,8 @@ struct ReaderView: View {
     /// The first width the layout gave this panel: only a change from it can be the person's drag.
     @State private var firstPanelWidth: Double?
     @State private var saveError: String?
-    @State private var noteMessage: String?
+    @State private var sender: SummarySender
+    @State private var sendingArticleID: UUID?
     @State private var pickingNote = false
     @State private var reviewingNote: NoteSheet?
     @State private var pickerRestoresListFocus = true
@@ -42,9 +43,10 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true) {
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator()) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.imageLoader = imageLoader
+        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
@@ -161,13 +163,16 @@ struct ReaderView: View {
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
-                Button { perform(.notePicker) } label: {
+                Button { perform(.sendToNote) } label: {
                     Image(systemName: article.map { store.isInAnyNote(articleID: $0.id) } == true ? "square.stack.fill" : "square.stack")
                 }
-                .help("ノートに入れる (t)").accessibilityLabel("ノートに入れる")
-                .disabled(article == nil)
+                .help("ノートに要約を送る (n)").accessibilityLabel("ノートに要約を送る")
+                .disabled(article == nil || sender.isWorking)
                 .popover(isPresented: $pickingNote, arrowEdge: .bottom) {
-                    if let article { NotePickerView(store: store, articleID: article.id, onMessage: { noteMessage = $0 }) }
+                    SendToNoteView(store: store, onSend: { noteID in
+                        if let id = sendingArticleID { sender.start(articleID: id, noteID: noteID) }
+                        pickingNote = false
+                    }, onClose: { pickingNote = false })
                 }
                 Button(action: openExternal) { Image(systemName: "globe") }
                     .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
@@ -209,17 +214,16 @@ struct ReaderView: View {
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
-        .onKeyPress("t") { guard shortcutsEnabled else { return .ignored }; perform(.notePicker); return .handled }
+        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.sendToNote); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
         .sheet(isPresented: $addingSubscription) {
             SubscriptionSheet(store: store) { scope = .feed($0) }
         }
         .overlay(alignment: .bottomTrailing) {
-            if let noteMessage { Text(noteMessage).font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding().allowsHitTesting(false) }
-        }
-        .task(id: noteMessage) {
-            guard noteMessage != nil else { return }
-            do { try await Task.sleep(for: .seconds(2)); noteMessage = nil } catch {}
+            SendStatusBar(sender: sender, onOpen: { id in
+                guard store.note(id: id) != nil else { saveError = NoteError.missingNote.localizedDescription; return }
+                scope = .note(id)
+            })
         }
         .sheet(item: $editingFeed) { feed in
             SubscriptionSheet(store: store, feed: feed) { _ in }
@@ -354,14 +358,15 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
-                case "t": perform(.notePicker)
+                case "n": perform(.sendToNote)
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
                 let feed = store.feed(id: article.feedID)
                 return ImageMetadata.favicon(iconURL: feed?.iconURL, siteURL: feed?.siteURL, sourceURL: feed?.sourceURL)
             }, inNote: { store.isInAnyNote(articleID: $0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
-            onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset })
+            onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset },
+            onRemoveFromNote: noteScopeID.map { noteID in { articleID in perform { try store.removeArticle(articleID, fromNote: noteID, at: .now) } } })
         .focused($listFocused)
         .navigationTitle(scopeTitle)
         .navigationSubtitle("\(visibleArticleIDs.count)件の記事")
@@ -369,7 +374,7 @@ struct ReaderView: View {
             if visibleArticleIDs.isEmpty {
                 switch scope ?? .all {
                 case .note: ContentUnavailableView("記事が入っていません", systemImage: "square.stack",
-                    description: Text("記事を選んで t キーを押すと、このノートに入れられます。"))
+                    description: Text("記事を選んで n キーで要約を送ると、ここに並びます。"))
                 default: ContentUnavailableView("記事はありません", systemImage: "tray",
                     description: Text("購読を追加するか、ほかの一覧を選んでください。"))
                 }
@@ -485,8 +490,9 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
-        case .notePicker:
-            guard selectedArticle != nil, !pickingNote else { return }
+        case .sendToNote:
+            guard let article = selectedArticle, !pickingNote, !sender.isWorking else { return }
+            sendingArticleID = article.id
             pickerRestoresListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
             pickingNote = true
         }

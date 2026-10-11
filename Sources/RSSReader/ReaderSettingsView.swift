@@ -24,8 +24,8 @@ struct ReaderSettingsView: View {
                 .tabItem { Label("外観", systemImage: "circle.lefthalf.filled") }
             storage
                 .tabItem { Label("保存", systemImage: "externaldrive") }
-            OnDeviceAISettingsView()
-                .tabItem { Label("端末内AI", systemImage: "sparkles") }
+            SummarySettingsView()
+                .tabItem { Label("要約", systemImage: "sparkles") }
         }.frame(width: 520, height: 340)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         .onAppear { days = store.retentionDays }
@@ -85,31 +85,4 @@ struct ReaderSettingsView: View {
 enum OnDeviceAISetting {
     static let key = "onDeviceAIEnabled"
     static var isEnabled: Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
-}
-
-struct OnDeviceAISettingsView: View {
-    @AppStorage(OnDeviceAISetting.key) private var enabled = true
-    @State private var availability: AssistantAvailability?
-
-    var body: some View {
-        Form {
-            Toggle("端末内AIを使う", isOn: $enabled)
-            Text("記事の要約を作るときに、この Mac の中だけで使います。外部へ送らず、アカウントも要りません。使わなくても、すべての操作ができます。")
-                .font(.caption).foregroundStyle(.secondary)
-            LabeledContent("状態") { Text(statusText) }
-            Text("言語の資産が端末に無い場合、アプリは自動で取得しません。AIが使えないだけで、ほかの操作は変わりません。")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-        .formStyle(.grouped).padding()
-        .task(id: enabled) { availability = enabled ? await FoundationModelsGenerator().generationAvailability() : nil }
-    }
-    private var statusText: String {
-        guard enabled else { return "オフ" }
-        return switch availability {
-        case nil: "確認中…"
-        case .available: "使えます"
-        case .assetsMissing: "モデルの準備中です"
-        case .unsupported: "この環境では使えません"
-        }
-    }
 }

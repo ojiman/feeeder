@@ -18,6 +18,7 @@ struct NativeArticleList: NSViewRepresentable {
     var inNote: (UUID) -> Bool = { _ in false }
     var initialTopOffset: Double = 0
     var onTopOffset: ((UUID, Double) -> Void)? = nil
+    var onRemoveFromNote: ((UUID) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
@@ -37,6 +38,7 @@ struct NativeArticleList: NSViewRepresentable {
             guard let coordinator, coordinator.parent.shortcutsEnabled else { return false }
             coordinator.parent.onKey(key); return true
         }
+        table.rowMenu = { [weak coordinator = context.coordinator] row in coordinator?.menu(for: row) }
         scroll.documentView = table
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
@@ -57,13 +59,17 @@ struct NativeArticleList: NSViewRepresentable {
     @MainActor final class Table: NSTableView {
         var keyHandler: ((String) -> Bool)?
         var focusWhenAttached = false
+        var rowMenu: ((Int) -> NSMenu?)?
+        override func menu(for event: NSEvent) -> NSMenu? {
+            rowMenu?(row(at: convert(event.locationInWindow, from: nil)))
+        }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if focusWhenAttached { window?.makeFirstResponder(self) }
         }
         override func keyDown(with event: NSEvent) {
             if event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
-               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "t"].contains(key),
+               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n"].contains(key),
                keyHandler?(key) == true { return }
             super.keyDown(with: event)
         }
@@ -79,6 +85,18 @@ struct NativeArticleList: NSViewRepresentable {
         var priorFocus = false
         var synchronizing = false
         init(_ parent: NativeArticleList) { self.parent = parent }
+        func menu(for row: Int) -> NSMenu? {
+            guard parent.onRemoveFromNote != nil, ids.indices.contains(row) else { return nil }
+            let menu = NSMenu()
+            let item = NSMenuItem(title: "このノートから外す", action: #selector(removeFromNote(_:)), keyEquivalent: "")
+            item.target = self; item.representedObject = ids[row]
+            menu.addItem(item)
+            return menu
+        }
+        @objc func removeFromNote(_ item: NSMenuItem) {
+            guard let id = item.representedObject as? UUID else { return }
+            parent.onRemoveFromNote?(id)
+        }
         func update(_ parent: NativeArticleList) {
             guard let table else { return }
             synchronizing = true

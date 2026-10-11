@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 
 public enum SummaryLength: Int, CaseIterable, Sendable { case one = 1, three = 3, five = 5 }
 public enum SummaryFormat: String, CaseIterable, Sendable { case prose, bullets }
@@ -17,7 +18,12 @@ public struct SummarySettings: Equatable, Sendable {
             .filter { !$0.isEmpty }.joined(separator: " ").prefix(200))
     }
     public static func load(from defaults: UserDefaults = .standard) -> SummarySettings {
-        SummarySettings(length: (defaults.object(forKey: lengthKey) as? Int).flatMap(SummaryLength.init(rawValue:)) ?? .three,
+        let storedLength = defaults.object(forKey: lengthKey)
+        let length = (storedLength as? NSNumber).flatMap { number -> SummaryLength? in
+            guard CFGetTypeID(number) != CFBooleanGetTypeID(), String(cString: number.objCType) != "d", String(cString: number.objCType) != "f" else { return nil }
+            return (storedLength as? Int).flatMap(SummaryLength.init(rawValue:))
+        }
+        return SummarySettings(length: length ?? .three,
                         format: (defaults.object(forKey: formatKey) as? String).flatMap(SummaryFormat.init(rawValue:)) ?? .prose,
                         extraInstruction: defaults.object(forKey: instructionKey) as? String ?? "")
     }

@@ -4,7 +4,7 @@
 
 本書はV1の製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/feeeder/pull/6)、実装計画は[PR #7](https://github.com/ojiman/feeeder/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
 
-**方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)、V1の簡素化）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め、学習ゴール・端末内AIの提案・ノートへのAI操作をやめる。記事からは「AI要約をノートに送る」だけにし、送った記事がそのノートの記事一覧に並ぶ。Claudeへの依頼はノートの機能として残す。**本書は、この決定に合わせて書き換えた目標仕様である。** 実装は段階S1〜S5（決定0019の表）で行い、各PRが対象の節を更新する。S1（実装済み）で、ゴール・問い・AIの提案・ノートの書き直し・パネルの要約カードを削除し、テーマをノートに改めた（名前は無く、タイトルは最初の行。パネルは初めから開き、狭いウィンドウでだけサイドバーを畳み、幅を覚える）。現在のアプリにはまだ、要約をノートへ送る機能（S2。それまで記事は`t`の「ノートに入れる」で入れる）と、共有ボタン（S3）が無い。旧仕様の来歴は決定0008（Git履歴）・0013（Git履歴）・0018（Git履歴）にある。
+**方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)、V1の簡素化）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め、学習ゴール・端末内AIの提案・ノートへのAI操作をやめる。記事からは「AI要約をノートに送る」だけにし、送った記事がそのノートの記事一覧に並ぶ。Claudeへの依頼はノートの機能として残す。**本書は、この決定に合わせて書き換えた目標仕様である。** 実装は段階S1〜S5（決定0019の表）で行い、各PRが対象の節を更新する。S1（実装済み）で、ゴール・問い・AIの提案・ノートの書き直し・パネルの要約カードを削除し、テーマをノートに改めた（名前は無く、タイトルは最初の行。パネルは初めから開き、狭いウィンドウでだけサイドバーを畳み、幅を覚える）。S2 implements summary sending, automatic article links, safe undo and summary settings; the `t` picker is removed. The share button (S3) is still pending.旧仕様の来歴は決定0008（Git履歴）・0013（Git履歴）・0018（Git履歴）にある。
 
 技術設計は[Architecture](architecture.md)、決定の理由は[決定記録](decisions/README.md)、実測と未確認事項は検証記録（Git履歴）を参照する。過去の実装計画・検証結果を現行の仕様や合格証拠として流用しない。
 
@@ -68,7 +68,7 @@ RSS提供内容と抽出本文のリンク・引用構造を保持し、リン�
 - **既存のノート**: 末尾に、空行、要約、出典行を足す。同じ記事を同じノートへもう一度送ると、要約をもう一度足す（本人の操作なので）。
 - **出典行**は`出典: タイトル <URL>`。要約をAIが作ったときは、行の終わりに「（AI要約）」を付ける。AIを使わない送信では、RSS要約（なければ要約なし）を要約として入れ、印は付けない。
 - 要約の作り方・長さ・形式・追加の指示は、Settingsの「要約」で選ぶ（第5.1節）。
-- 本人が送信を押したので、AIの文章も確認なしで書き込む。ただし、メッセージの「取り消す」で、ノートがその後に変わっていなければ元に戻せる（送信で作った記事の記録も戻す）。変わっていれば取り消しを出さず、エディタの⌘Zや通常の編集に任せる。保存に失敗したときは、成功と示さず、ノートを変えない。
+- 本人が送信を押したので、AIの文章も確認なしで書き込む。ただし、メッセージの「取り消す」で、ノートがその後に変わっていなければ元に戻せる（送信で作った記事の記録も戻す）。Undo is offered for 8 seconds. If the note changed, pressing it reports that it cannot be undone and preserves the text. Ordinary editing remains available.保存に失敗したときは、成功と示さず、ノートを変えない。
 - 本文が期限切れでAIの入力がない記事も、AIを使わない送信（タイトル・URL・RSS要約）はできる。
 
 **記事とノートの紐づけ**は、送信だけで作られる（「ノートに入れる」だけの操作は無い）。送った時点の**タイトル・原文URL・保持しているRSS要約**を、そのノートの記事一覧に1件記録し、本文の期限切れ・購読解除の後も残す。抽出全文は複製しない。同じ記事を同じノートへ再度送っても、記録は重複しない。記事は複数のノートに入れられる。一覧の記事は右クリックの「このノートから外す」で外せる。外すのは記録だけで、ノートの文章は変わらず、記事・Starも変わらない。記録の保存失敗は成功扱いにせず、ノートを変えない。
@@ -97,7 +97,7 @@ RSS提供内容と抽出本文のリンク・引用構造を保持し、リン�
 
 ### 5.1 端末内AI（記事の要約）
 
-AIは端末内のモデルだけで動かし、外部通信・アカウント・APIキーを使わない。アプリが自動でシステム資産の取得などの通信を起こさない（[決定0009](decisions/0009-on-device-ai-principles.md)）。AIの機能は**記事の要約をノートに送ること**だけで、本人が「ノートに要約を送る」（第3.2節）を押したときだけ動く。何もしなければ何も作らない。モデルの利用不可・ガードレールの誤検知・入力量の超過・失敗・20秒の時間切れでは、理由を短く知らせ、ノートを変えない。利用不可のときは、AIを使わない送信（第3.2節）に切り替え、何を送ったかをメッセージで示す。
+AIは端末内のモデルだけで動かし、外部通信・アカウント・APIキーを使わない。アプリが自動でシステム資産の取得などの通信を起こさない（[決定0009](decisions/0009-on-device-ai-principles.md)）。AIの機能は**記事の要約をノートに送ること**だけで、本人が「ノートに要約を送る」（第3.2節）を押したときだけ動く。何もしなければ何も作らない。The S2 plan ([PR #69](https://github.com/ojiman/feeeder/pull/69)) approves an unmarked RSS-summary/source fallback for an unavailable model, refusal, failure, blank answer or the 20-second deadline. The message states what was sent. Cancellation and turning AI off during a request write nothing. A save or reload error is shown as failure; a reload error after a successful save does not undo the committed write.
 
 入力は、保持中の本文の先頭約3,000文字（切ったときは結果で示す）で、期限切れの本文は使わない（[決定0015](decisions/0015-article-summary-details.md)）。Settingsの「要約」で、次を選べる（[決定0019](decisions/0019-v1-simplification-notes.md)）。
 

@@ -72,7 +72,7 @@ import Observation
                     let sent = aiMade ? "要約を送りました" : (fallback.isEmpty ? "タイトルとURLだけ送りました" : "RSS要約と出典を送りました")
                     let reason = enabled && !aiMade ? "AIが使えないため、" : ""
                     self.state = .done(Outcome(send: result, noteTitle: noteTitle, aiMade: aiMade,
-                        message: "「\(noteTitle)」に\(reason)\(sent)", undoUntil: self.now().addingTimeInterval(8)))
+                        message: "「\(noteTitle)」に\(reason)\(sent)" + (aiMade && input?.wasCut == true ? "（本文の先頭3,000文字から要約）" : ""), undoUntil: self.now().addingTimeInterval(8)))
                 } catch { self.state = .failed(error.localizedDescription) }
             }
         } catch { state = .failed(error.localizedDescription) }

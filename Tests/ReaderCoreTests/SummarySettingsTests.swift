@@ -4,12 +4,20 @@ import Testing
 
 struct SummarySettingsTests {
     @Test func settingsValidateStoredValuesAndKeepWholeCharacters() {
-        let d = UserDefaults(suiteName: "summary-test-" + UUID().uuidString)!
-        defer { d.removePersistentDomain(forName: d.volatileDomainNames.first ?? "unused") }
+        let name = "summary-test-" + UUID().uuidString
+        let d = UserDefaults(suiteName: name)!
+        defer { d.removePersistentDomain(forName: name) }
         #expect(SummarySettings.load(from: d) == SummarySettings())
         d.set("wrong", forKey: SummarySettings.lengthKey)
         d.set(99, forKey: SummarySettings.formatKey)
         #expect(SummarySettings.load(from: d) == SummarySettings())
+        d.set(true, forKey: SummarySettings.lengthKey)
+        #expect(SummarySettings.load(from: d).length == .three)
+        d.set(1.5, forKey: SummarySettings.lengthKey)
+        #expect(SummarySettings.load(from: d).length == .three)
+        d.set(5, forKey: SummarySettings.lengthKey)
+        d.set("bullets", forKey: SummarySettings.formatKey)
+        #expect(SummarySettings.load(from: d).length == .five && SummarySettings.load(from: d).format == .bullets)
         let emoji = "👨‍👩‍👧"
         let value = SummarySettings(extraInstruction: "  line\r\nnext " + String(repeating: emoji, count: 220))
         #expect(value.extraInstruction.hasPrefix("line next "))

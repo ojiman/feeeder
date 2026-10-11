@@ -476,3 +476,14 @@ extension NoteTests {
         #expect(store.note(id: note.id)?.text == "mine\n\nnew\n\nagain\n")
     }
 }
+
+extension NoteTests {
+    @Test func undoNeverDeletesAnotherSourceFromANewNote() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let result = try store.sendArticle(store.articles[0].id, to: nil, block: "summary", newNoteTitle: "T", at: at)
+        try store.addArticle(store.articles[1].id, toNote: result.noteID, at: at.addingTimeInterval(1))
+        #expect(try !store.undoSend(result, at: at))
+        #expect(store.noteArticleCount(noteID: result.noteID) == 2 && store.note(id: result.noteID) != nil)
+    }
+}
