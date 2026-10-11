@@ -1,6 +1,7 @@
 # S3 note sharing and Claude review verification
 
 PASS — full Swift test suite, Release build, app signature verification, and synthetic-window check on macOS 27.0.1 / Swift 6.4.0.34.1.
+Verified code commit: `acbefb164ea5174714d1168177aa2f05bd3ba08c`.
 The review preview contains only the note, and its copy, exports, and Claude hand-off use that same package.
 Claude was not launched; CI's macOS 26.6 toolchain, IME, VoiceOver, and Reduce Motion remain unverified.
 
