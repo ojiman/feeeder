@@ -57,26 +57,26 @@ import SwiftData
         _ = try store.importFeed(parsed(), receivedAt: deadline.addingTimeInterval(day))
         #expect(try store.content(articleID: article.id, at: deadline) == nil)
     }
-    @Test func deletionProtectsThemeRecordsAcrossReopen() throws {
+    @Test func deletionProtectsNoteRecordsAcrossReopen() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
-        let themeID = try autoreleasepool {
+        let noteID = try autoreleasepool {
             let store = try ReaderStore(url: library.url, now: start)
             let feed = try store.importFeed(parsed(), receivedAt: start)
             let article = try #require(store.articles.first)
             try store.markDisplayed(articleID: article.id, at: start)
-            let theme = try store.createTheme(name: "記録", at: start)
-            try store.saveNote(themeID: theme.id, text: "残すノート", at: start)
-            try store.addArticle(article.id, toTheme: theme.id, at: start)
+            let note = try store.createNote(text: "# 記録\n", at: start)
+            try store.saveNote(noteID: note.id, text: "残すノート", at: start)
+            try store.addArticle(article.id, toNote: note.id, at: start)
             try store.deleteContent(articleIDs: [article.id], at: start)
             try store.unsubscribe(feed)
             #expect(article.firstReadAt == start && article.firstReceivedAt == start)
             _ = try store.importFeed(parsed(), receivedAt: start.addingTimeInterval(day))
             #expect(try store.content(articleID: article.id, at: start) == nil)
-            return theme.id
+            return note.id
         }
         let reopened = try ReaderStore(url: library.url, now: start.addingTimeInterval(90 * day))
-        #expect(reopened.theme(id: themeID)?.note == "残すノート")
-        #expect(reopened.themeArticles.first?.url == "https://publisher.example/posts/1")
+        #expect(reopened.note(id: noteID)?.text == "残すノート")
+        #expect(reopened.noteArticles.first?.url == "https://publisher.example/posts/1")
         #expect(reopened.articles.count == 1 && reopened.articles.first?.summary == "")
     }
     @Test func purgeExpiresContentAndNotifiesOnlyForChange() throws {

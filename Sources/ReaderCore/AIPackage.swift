@@ -3,23 +3,23 @@ import CryptoKit
 import Observation
 
 public enum AIInputSelection: Hashable, Codable, Sendable {
-    case article(UUID), themeArticle(String)
+    case article(UUID), noteArticle(String)
     /// A selection written by an older version (a daily/weekly-note scrap or adopted source). It can no longer be
     /// resolved, so the managed copy that contains it is deleted at the next reconcile instead of failing every maintenance pass.
     case unresolvable
 
-    private enum Stored: Codable { case article(UUID), themeArticle(String), unresolvable }
+    private enum Stored: Codable { case article(UUID), noteArticle(String), unresolvable }
     public init(from decoder: Decoder) throws {
         switch try? Stored(from: decoder) {
         case .article(let id)?: self = .article(id)
-        case .themeArticle(let key)?: self = .themeArticle(key)
+        case .noteArticle(let key)?: self = .noteArticle(key)
         default: self = .unresolvable
         }
     }
     public func encode(to encoder: Encoder) throws {
         switch self {
         case .article(let id): try Stored.article(id).encode(to: encoder)
-        case .themeArticle(let key): try Stored.themeArticle(key).encode(to: encoder)
+        case .noteArticle(let key): try Stored.noteArticle(key).encode(to: encoder)
         case .unresolvable: try Stored.unresolvable.encode(to: encoder)
         }
     }
@@ -38,21 +38,20 @@ public struct AISource: Sendable {
     }
 }
 
-/// Whether the person chose to include the note of a theme (their own writing).
-public struct AIThemeRequest: Sendable, Equatable, Hashable {
-    public let themeID: UUID
+/// Whether the person chose to include a note in the package (their own writing).
+public struct AINoteRequest: Sendable, Equatable, Hashable {
+    public let noteID: UUID
     public let includeNote: Bool
-    public init(themeID: UUID, includeNote: Bool) {
-        self.themeID = themeID; self.includeNote = includeNote
+    public init(noteID: UUID, includeNote: Bool) {
+        self.noteID = noteID; self.includeNote = includeNote
     }
 }
 
-/// The theme's note as it was when the package was made (nil: not included). Compared again on every reconcile,
-/// so any change to what the package contains makes the review invalid.
-public struct AIThemeContext: Sendable, Equatable {
-    public let themeID: UUID
-    public let themeName: String
-    public let note: String?
+/// The note as it was when the package was made. Compared again on every reconcile, so any change to what the package
+/// contains makes the review invalid.
+public struct AINoteContext: Sendable, Equatable {
+    public let noteID: UUID
+    public let text: String
 }
 
 public struct AIPackage: Sendable {
@@ -63,11 +62,11 @@ public struct AIPackage: Sendable {
     public let sources: [AISource]
     public let text: String
     public let sha256: String
-    public let theme: AIThemeContext?
-    /// The theme this package was made from, even when no questions are included. Managed copies follow it.
-    public let themeID: UUID?
+    public let note: AINoteContext?
+    /// The note this package was made from, even when the note's text is not included. Managed copies follow it.
+    public let noteID: UUID?
     func shorteningExpiry(to date: Date) -> AIPackage {
-        AIPackage(id: id, createdAt: createdAt, expiresAt: min(expiresAt, date), language: language, sources: sources, text: text, sha256: sha256, theme: theme, themeID: themeID)
+        AIPackage(id: id, createdAt: createdAt, expiresAt: min(expiresAt, date), language: language, sources: sources, text: text, sha256: sha256, note: note, noteID: noteID)
     }
 }
 
@@ -85,9 +84,9 @@ public enum AIPackageError: LocalizedError {
 }
 
 public enum AIPackageBuilder {
-    public static func build(sources: [AISource], theme: AIThemeContext? = nil, themeID: UUID? = nil, language: String, createdAt: Date, expiresAt: Date) throws -> AIPackage {
+    public static func build(sources: [AISource], note: AINoteContext? = nil, noteID: UUID? = nil, language: String, createdAt: Date, expiresAt: Date) throws -> AIPackage {
         // A package needs an article source, unless it carries the person's note (a review of the note alone).
-        guard !sources.isEmpty || theme?.note != nil else { throw AIPackageError.empty }
+        guard !sources.isEmpty || note != nil else { throw AIPackageError.empty }
         guard expiresAt > createdAt, !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               language.utf8.count <= 80, Set(sources.map(\.articleID)).count == sources.count,
               sources.allSatisfy({ $0.articleID == $0.content.articleID && !$0.content.text.isEmpty && $0.content.coverage != .unavailable }) else { throw AIPackageError.invalid }
@@ -98,7 +97,7 @@ public enum AIPackageBuilder {
 
 
         """
-        if theme?.note != nil {
+        if note != nil {
             text += reviewRequest(hasSources: !sources.isEmpty)
         } else {
             text += """
@@ -110,9 +109,9 @@ public enum AIPackageBuilder {
 
             """ + "\n"
         }
-        if let theme {
-            text += "本人が書いたノート（含まれている場合）を、BEGIN_THEME から END_THEME の間に示します。本人の考えは本人のものとして尊重し、書き換えず、自動で書き込まないでください。\n\n"
-            text += themeSection(theme)
+        if let note {
+            text += "本人が書いたノート（含まれている場合）を、BEGIN_NOTE から END_NOTE の間に示します。本人の考えは本人のものとして尊重し、書き換えず、自動で書き込まないでください。\n\n"
+            text += noteSection(note)
         }
         for source in sources {
             let coverage: String
@@ -129,9 +128,9 @@ public enum AIPackageBuilder {
         }
         text += "END_PACKAGE\n"
         return AIPackage(id: UUID(), createdAt: createdAt, expiresAt: min(expiresAt, createdAt.addingTimeInterval(86_400)), language: language,
-            sources: sources, text: text, sha256: hash(Data(text.utf8)), theme: theme, themeID: themeID ?? theme?.themeID)
+            sources: sources, text: text, sha256: hash(Data(text.utf8)), note: note, noteID: noteID ?? note?.noteID)
     }
-    /// The request when the person's note is included. The note is data between BEGIN_THEME and END_THEME.
+    /// The request when the person's note is included. The note is data between BEGIN_NOTE and END_NOTE.
     static func reviewRequest(hasSources: Bool) -> String {
         var text = "本人のノートをレビューしてください。ノートの内容そのものについて見てください。\n"
         text += "1. ノートで既にできていること。ノートの文を引用して示してください。\n"
@@ -142,10 +141,10 @@ public enum AIPackageBuilder {
         text += "含まれていない内容を推測しないでください。結果は本人が確認して自分のノートへ採用します。ノートの書き換えや自動書込みはしないでください。\n\n"
         return text
     }
-    static func themeSection(_ theme: AIThemeContext) -> String {
-        var text = "BEGIN_THEME \(theme.themeID.uuidString)\nTheme: \(theme.themeName)\n\n"
-        if let note = theme.note { text += "Note (written by the user):\n\(note)\n\n" }
-        return text + "END_THEME \(theme.themeID.uuidString)\n\n"
+    static func noteSection(_ note: AINoteContext) -> String {
+        var text = "BEGIN_NOTE \(note.noteID.uuidString)\n\n"
+        text += "Note (written by the user):\n\(note.text)\n\n"
+        return text + "END_NOTE \(note.noteID.uuidString)\n\n"
     }
     public static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
     public static func split(_ package: AIPackage, maximumBytes: Int = 1_048_576) -> [Data] {
@@ -171,18 +170,12 @@ public enum AIPackageBuilder {
 }
 
 extension ReaderStore {
-    /// The theme's note, as it is right now, for what the request includes. Nil when the theme is gone or the request
+    /// The note, as it is right now, for what the request includes. Nil when the note is gone or the request
     /// includes nothing that has text.
-    public func aiThemeContext(_ request: AIThemeRequest) -> AIThemeContext? {
-        guard let theme = theme(id: request.themeID) else { return nil }
-        let note = request.includeNote && !theme.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? theme.note : nil
-        guard note != nil else { return nil }
-        return AIThemeContext(themeID: theme.id, themeName: Self.oneLine(theme.name), note: note)
-    }
-    /// Feed text goes into single-line fields, so a line break in it must not start a line of its own
-    /// (for example a forged line that looks like the person's own words).
-    static func oneLine(_ text: String) -> String {
-        text.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " ")
+    public func aiNoteContext(_ request: AINoteRequest) -> AINoteContext? {
+        guard let stored = note(id: request.noteID) else { return nil }
+        guard request.includeNote, !stored.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return AINoteContext(noteID: stored.id, text: stored.text)
     }
     public func aiSources(articleIDs: [UUID], at: Date) throws -> [AISource] {
         var seen = Set<UUID>()
@@ -195,8 +188,8 @@ extension ReaderStore {
             case .article(let id):
                 guard let article = article(id: id), let content = try content(articleID: id, at: at) else { return nil }
                 return AISource(articleID: id, title: article.title, url: article.originalURL.flatMap { ArticleURL.validated($0) }, content: content)
-            case .themeArticle(let key):
-                guard let link = themeArticles.first(where: { $0.key == key }) else { return nil }
+            case .noteArticle(let key):
+                guard let link = noteArticles.first(where: { $0.key == key }) else { return nil }
                 return savedSource(selection: selection, id: link.articleID, title: link.title, url: link.url, summary: link.summary, savedAt: link.addedAt)
             case .unresolvable:
                 return nil
@@ -236,18 +229,18 @@ extension ReaderStore {
         var seen = Set<UUID>()
         try build(selections: articleIDs.filter { seen.insert($0).inserted }.map(AIInputSelection.article), language: language, at: at)
     }
-    public func build(selections: [AIInputSelection], theme: AIThemeRequest? = nil, language: String, at: Date) throws {
+    public func build(selections: [AIInputSelection], note: AINoteRequest? = nil, language: String, at: Date) throws {
         clear()
         do {
-            var context: AIThemeContext?
-            if let theme { context = store.aiThemeContext(theme) }
+            var context: AINoteContext?
+            if let note { context = store.aiNoteContext(note) }
             guard !selections.isEmpty || context != nil else { throw AIPackageError.empty }
             let sources = try store.aiSources(selections: selections, at: at)
             let expiries = try store.availableInputExpiries(selections: selections, at: at)
             guard sources.count == selections.count else { throw AIPackageError.unavailable }
             // With no article the package lives 24 hours (the builder also caps every package at that).
             guard let expiry = expiries.values.min() ?? (selections.isEmpty ? at.addingTimeInterval(86_400) : nil) else { throw AIPackageError.unavailable }
-            package = try AIPackageBuilder.build(sources: sources, theme: context, themeID: theme?.themeID, language: language, createdAt: at, expiresAt: expiry)
+            package = try AIPackageBuilder.build(sources: sources, note: context, noteID: note?.noteID, language: language, createdAt: at, expiresAt: expiry)
         } catch { reason = error.localizedDescription; throw error }
     }
     public func reconcile(at: Date) {
@@ -259,9 +252,9 @@ extension ReaderStore {
             let expiries = try store.availableInputExpiries(selections: selections, at: at)
             guard current.count == prior.sources.count, let expiry = expiries.values.min() ?? (prior.sources.isEmpty ? prior.expiresAt : nil) else { throw AIPackageError.unavailable }
             guard zip(current, prior.sources).allSatisfy({ $0.selection == $1.selection && $0.savedAt == $1.savedAt && $0.articleID == $1.articleID && $0.title == $1.title && $0.url == $1.url && $0.content == $1.content }) else { throw AIPackageError.changed }
-            if let context = prior.theme {
-                let request = AIThemeRequest(themeID: context.themeID, includeNote: context.note != nil)
-                guard store.aiThemeContext(request) == context else { throw AIPackageError.changed }
+            if let context = prior.note {
+                let request = AINoteRequest(noteID: context.noteID, includeNote: true)
+                guard store.aiNoteContext(request) == context else { throw AIPackageError.changed }
             }
             package = prior.shorteningExpiry(to: expiry)
         } catch { package = nil; reason = error.localizedDescription }

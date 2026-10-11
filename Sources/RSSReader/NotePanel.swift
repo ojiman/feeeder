@@ -1,11 +1,11 @@
 import SwiftUI
 import ReaderCore
 
-/// The note, opened beside the article as the inspector: the theme's name with previous and next article buttons, and the
-/// editor. Every button is borderless: a borderless SwiftUI button is an AppKit button, so a test can press it.
+/// The note, opened beside the article as the inspector: previous and next article buttons (and the Claude button), and the
+/// editor. The note's title is its first line, so the header has no title of its own. Every button is borderless: a borderless SwiftUI button is an AppKit button, so a test can press it.
 struct NotePanel: View {
     @Bindable var store: ReaderStore
-    let themeID: UUID
+    let noteID: UUID
     let canPrevious: Bool
     let canNext: Bool
     let onPrevious: () -> Void
@@ -16,7 +16,7 @@ struct NotePanel: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            NoteEditor(store: store, themeID: themeID)
+            NoteEditor(store: store, noteID: noteID)
         }
         .accessibilityElement(children: .contain).accessibilityLabel("ノート")
     }
@@ -24,10 +24,10 @@ struct NotePanel: View {
     private var header: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Text(store.theme(id: themeID)?.name ?? "テーマ").font(.headline).lineLimit(1)
                 Spacer(minLength: 0)
                 if let onAskReview {
                     Button("Claudeでレビューを頼む", systemImage: "paperplane", action: onAskReview)
+                        .lineLimit(1).fixedSize()
                         .help("ノートを、確認したうえで Claude へ渡して、レビューを頼みます")
                 }
                 Button(action: onPrevious) { Image(systemName: "chevron.up") }

@@ -7,7 +7,7 @@ struct AIReviewView: View {
     @Bindable var review: AIPackageReview
     @Bindable var handoff: ClaudeHandoffController
     let selections: [AIInputSelection]
-    var themeID: UUID? = nil
+    var noteID: UUID? = nil
     /// True when the review was started from the note panel's button: then the note is switched on.
     var fromNotePanel = false
     @Environment(\.dismiss) private var dismiss
@@ -27,13 +27,13 @@ struct AIReviewView: View {
     init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, articleIDs: [UUID]) {
         self.init(store: store, review: review, handoff: handoff, selections: articleIDs.map(AIInputSelection.article))
     }
-    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection], themeID: UUID? = nil, fromNotePanel: Bool = false) {
-        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections; self.themeID = themeID; self.fromNotePanel = fromNotePanel
+    init(store: ReaderStore, review: AIPackageReview, handoff: ClaudeHandoffController, selections: [AIInputSelection], noteID: UUID? = nil, fromNotePanel: Bool = false) {
+        self.store = store; self.review = review; self.handoff = handoff; self.selections = selections; self.noteID = noteID; self.fromNotePanel = fromNotePanel
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(themeID == nil ? "AIへの入力を確認" : "Claudeへ渡す内容を確認").font(.title2.bold())
+                Text(noteID == nil ? "AIへの入力を確認" : "Claudeへ渡す内容を確認").font(.title2.bold())
                 Spacer()
                 Button("閉じる") { review.clear(); dismiss() }.keyboardShortcut(.cancelAction)
             }
@@ -41,11 +41,11 @@ struct AIReviewView: View {
                 Picker("出力言語", selection: $language) { Text("日本語").tag("日本語"); Text("English").tag("English") }.frame(width: 250)
                 Text("本文を省略せず、選択した出典と一緒に渡します。").font(.caption).foregroundStyle(.secondary)
             }
-            if let themeID, let theme = store.theme(id: themeID) {
-                let switches = HandoffDefaults.switches(note: theme.note, fromNotePanel: fromNotePanel)
+            if let noteID, let note = store.note(id: noteID) {
+                let switches = HandoffDefaults.switches(note: note.text, fromNotePanel: fromNotePanel)
                 VStack(alignment: .leading, spacing: 4) {
                     Toggle("ノートを含める", isOn: $includeNote).disabled(!switches.noteEnabled)
-                    Text(!switches.noteEnabled ? "このテーマにはノートがありません。"
+                    Text(!switches.noteEnabled ? "このノートは空です。"
                          : "ノートは自分で書いた文章です。含めると、確認した内容のとおり、この Mac の外（Claude）へ渡ります。ノートを含めると、ノートそのもののレビューを頼む依頼になります。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -105,8 +105,8 @@ struct AIReviewView: View {
         }.padding(24).frame(minWidth: 820, minHeight: 640)
         .onAppear {
             handoff.resetStatus(); refreshOptions()
-            if let themeID, let theme = store.theme(id: themeID) {
-                let switches = HandoffDefaults.switches(note: theme.note, fromNotePanel: fromNotePanel)
+            if let noteID, let note = store.note(id: noteID) {
+                let switches = HandoffDefaults.switches(note: note.text, fromNotePanel: fromNotePanel)
                 includeNote = switches.noteOn
             }
             var seen = Set<UUID>()
@@ -133,9 +133,9 @@ struct AIReviewView: View {
             case .article(let id):
                 guard let article = store.article(id: id) else { return nil }
                 return Option(id: selection, articleID: id, title: article.title, coverage: "保持中の記事 · " + (source?.content.coverage.label ?? "本文期限切れ・削除済み、または本文なし"), available: source != nil)
-            case .themeArticle(let key):
-                guard let saved = store.themeArticles.first(where: { $0.key == key }) else { return nil }
-                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "テーマに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)
+            case .noteArticle(let key):
+                guard let saved = store.noteArticles.first(where: { $0.key == key }) else { return nil }
+                return Option(id: selection, articleID: saved.articleID, title: saved.title, coverage: "ノートに記録したRSS要約 · " + saved.addedAt.formatted() + (source == nil ? " · 要約なし" : ""), available: source != nil)
             case .unresolvable:
                 return nil
             }
@@ -143,10 +143,10 @@ struct AIReviewView: View {
     }
     private func generate() {
         copied = false; error = nil; handoff.resetStatus()
-        perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, theme: themeRequest, language: language, at: .now) }
+        perform { try review.build(selections: options.map(\.id).filter { selected.contains($0) }, note: noteRequest, language: language, at: .now) }
     }
-    private var themeRequest: AIThemeRequest? {
-        themeID.map { AIThemeRequest(themeID: $0, includeNote: includeNote) }
+    private var noteRequest: AINoteRequest? {
+        noteID.map { AINoteRequest(noteID: $0, includeNote: includeNote) }
     }
     private func export() {
         perform {

@@ -29,14 +29,5 @@ import Testing
         #expect(feed.folder == "A B")
         try store.renameFolder(from: "A B", to: "C\nD")
         #expect(feed.folder == "C D")
-        let theme = try store.createTheme(name: "Rates\nand homes", at: at)
-        #expect(theme.name == "Rates and homes")
-        try store.renameTheme(id: theme.id, to: "New\nname", at: at)
-        #expect(store.theme(id: theme.id)?.name == "New name")
-        let made = try store.createTheme(name: "From\ngroup", adding: [store.articles[0].id], at: at)
-        #expect(made.name == "From group")
-        let grouped = try store.createTheme(name: "Many\nthings", adding: [store.articles[0].id, store.articles[1].id], at: at)
-        #expect(grouped.name == "Many things")
-        #expect(throws: ThemeError.self) { try store.createTheme(name: " \n ", at: at) }
     }
 }

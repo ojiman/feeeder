@@ -11,7 +11,7 @@
 | 領域 | 構成 |
 |---|---|
 | UI | SwiftUIの共通`NavigationSplitView`、記事一覧はAppKitの`NSTableView`、読書本文は`NSTextView`、原文閲覧は`WKWebView` |
-| Core | `Sources/ReaderCore`。SwiftDataのモデル・ReaderStore、XMLParserによるRSS/Atom解析、保持・テーマ・端末内AI・Claudeハンドオフ |
+| Core | `Sources/ReaderCore`。SwiftDataのモデル・ReaderStore、XMLParserによるRSS/Atom解析、保持・ノート・端末内AI・Claudeハンドオフ |
 | 通信・抽出 | URLSessionで端末から取得。SwiftSoup 2.13.9をexact固定し、`article`、次に`main`の段落を抽出。best effortでRSS要約へfallbackする |
 | 保存先 | `Application Support/Feeeder/Reader.store`。通常起動でデモを挿入せず、合成デモは明示的な`--data-directory`と`--seed-demo`で起動 |
 
@@ -21,29 +21,29 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（決定0008（Git履歴））。置き換えは完了し、`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
 
-`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Theme`、`ThemeArticle`の7モデル。
+`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Note`、`NoteArticle`の7モデル。
 
-**S1aの削除（決定0019）。** 学習ゴール・問い（`ThemeQuestion`）・「いまの理解」は、モデルとコードから消した（起動時の移行`migrateLegacyThemeContent`もない）。これらを持つ以前のライブラリは、新しいスキーマで開き、その表と列は捨てられる。購読・記事・既読・Star・テーマの名前・ノート・記事の記録は残る。`PreNoteStoreUpgradeTests`が、`52429b4`で作った合成ストアで確かめる（opt-in。`scripts/prepare-v1-store-fixture.sh`と`FEEEDER_PRE0019_FIXTURE_DIR`）。
+**S1の削除と改名（決定0019）。** 学習ゴール・問い（`ThemeQuestion`）・「いまの理解」・起動時の移行は、S1aでモデルとコードから消えた。S1bで保存するエンティティ`Theme`・`ThemeArticle`は`Note`・`NoteArticle`になった。以前のライブラリは新しいスキーマで開き、購読・記事・既読・Starは残るが、以前のテーマ（名前・ノート・記事の記録）は引き継がない（エンティティ名が変わるため。決定0019の10。テストデータなので許容）。`PreNoteStoreUpgradeTests`が、`52429b4`（決定0019の前）とS1a直後（`ae8aa78`）で作った合成ストアで確かめる（opt-in。`scripts/prepare-v1-store-fixture.sh`と`FEEEDER_PRE0019_FIXTURE_DIR`）。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
-- `Theme`は名前（空にできない）・ノート`note`（既定は空。1つのプレーンテキストで、入力のたびに`saveNote`が入力したままを保存する。長さの上限なし。存在しないテーマへの保存は`missingTheme`で断り、黙って捨てない）・作成／更新日時を持つ。名前は`renameTheme(id:to:at:)`が変える。`updatedAt`は、テーマの中の変更（記事の追加・取り外し、ノート、名前）のたびに更新する。同じ時刻の並びは、時刻の次にID（記事の記録はキー）で固定する。
-- `ThemeArticle`はテーマIDと記事IDの組で一意（多対多）。追加日時と、追加時点のタイトル・原文URL・保持していたRSS要約を所有する（`NoteScrap`と同じ。再取得で元記事のタイトルやURLが変わっても、テーマの記録は変わらない）。要約は読書表示と同じテキスト化を使い、抽出全文で置換しない。再追加は既存の記録を返し、日時・内容を変えない。元記事の本文期限で`Article.summary`が消えても、購読を解除しても、記録は残る。
+- `Note`は本文`text`（既定は空。1つのMarkdownのプレーンテキストで、入力のたびに`saveNote(noteID:text:at:)`が入力したままを保存する。長さの上限なし。存在しないノートへの保存は`missingNote`で断り、黙って捨てない）・作成／更新日時を持つ。別の名前は持たず、タイトルは本文の最初の空でない行（`NoteTitle.make`。先頭の`#`と空白を除く。空なら「新規ノート」）。`createNote(text:at:)`は空のノートを作る。`updatedAt`は、ノートの中の変更（記事の追加・取り外し、本文）のたびに更新する。サイドバーの並び（`notesNewestEditFirst`）は更新が新しい順で、同じ時刻はIDで固定する。
+- `NoteArticle`はノートIDと記事IDの組で一意（多対多）。追加日時と、追加時点のタイトル・原文URL・保持していたRSS要約を所有する（`NoteScrap`と同じ。再取得で元記事のタイトルやURLが変わっても、ノートの記録は変わらない）。要約は読書表示と同じテキスト化を使い、抽出全文で置換しない。再追加は既存の記録を返し、日時・内容を変えない。元記事の本文期限で`Article.summary`が消えても、購読を解除しても、記録は残る。
 - 端末内AIの有効／無効は`AppStorage`で持ち、スキーマを増やさない。AIの中間結果は保存しない。
 
 新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。配布済みのbeta.2・beta.3と、置き換え直前のmainの合成ストアは、旧5モデルを外した新スキーマで開けて、購読・記事・既読・Starを保持し、書き込みと再openもできる（検証記録はGit履歴）。このとき旧ノートのデータは、新スキーマで開いた時点でテーブルごと削除され（元に戻せない）、CoreDataが「削除されたモデルのため永続履歴を切り詰める」というログを`error:`として出すが、動作には影響しない。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
 
 ### 2.2 変更と失敗からの復旧
 
-保存失敗時は同じModelContainerの新しいModelContextで保存済みデータを読み直す。失敗したcontextの値を表示へ持ち越さず、古いモデル参照を渡されてもIDから現在のモデルを解決する。`needsReload`が立っている間は`reloadIfNeeded()`に成功するまで変更・保存をエラーで止める。テーマの作成と記事の追加など一回の操作を部分確定せず、依頼された変更の失敗を成功扱いにしない。既読・購読・Star・テーマ・問い・答え・本文保持を含む変更経路は、保存／再読み込みの失敗注入で検証し、新しい変更経路にも同じ試験を足す。
+保存失敗時は同じModelContainerの新しいModelContextで保存済みデータを読み直す。失敗したcontextの値を表示へ持ち越さず、古いモデル参照を渡されてもIDから現在のモデルを解決する。`needsReload`が立っている間は`reloadIfNeeded()`に成功するまで変更・保存をエラーで止める。ノートの作成と記事の追加など一回の操作を部分確定せず、依頼された変更の失敗を成功扱いにしない。既読・購読・Star・ノート・問い・答え・本文保持を含む変更経路は、保存／再読み込みの失敗注入で検証し、新しい変更経路にも同じ試験を足す。
 
 記事・購読・未読・Star・フォルダの索引を`ReaderStore`で持ち、一覧はモデル全件のgetterを毎描画登録せずID配列を使う。変更成功後に索引と表示を更新する。選択後の遅延取得・描画はIDとgenerationで検査し、別記事や既読状態を変えない。同じ記事も利用者の操作後は本文を自動差替えせず、更新の適用を選べるようにする。
 
 ### 2.3 保持と本文書式
 
-本文・RSS要約は初期30日、選択肢7 / 30 / 90 / 365日。未読は初回受信、既読は初回既読を起算点とし、再受信・再表示で延長しない。読取・AIレビュー・起動前に期限を検査し、起動／復帰・稼働中30分ごとに物理削除する。短縮／延長時は旧・新の両方の期限を検査し、期限切れや明示削除済み本文・画像を再受信で復活させない。テーマ所有の要約と元記事の期限は分離する。
+本文・RSS要約は初期30日、選択肢7 / 30 / 90 / 365日。未読は初回受信、既読は初回既読を起算点とし、再受信・再表示で延長しない。読取・AIレビュー・起動前に期限を検査し、起動／復帰・稼働中30分ごとに物理削除する。短縮／延長時は旧・新の両方の期限を検査し、期限切れや明示削除済み本文・画像を再受信で復活させない。ノート所有の要約と元記事の期限は分離する。
 
-RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキスト、UTF-16リンク範囲とHTTP(S)リンク先、引用深さへ変換する。fragmentはリンク先では保持し、記事同一性用URLでは除去する。`ContentSnapshot.bodyFormatData`はJSONの任意属性で、保存textと一致する場合だけ使う。情報なし／不一致ならtextへfallbackし、リンク先を推測しない。本文削除ではsnapshotと書式も削除する。テーマ・AI入力はテキストとカバー範囲を使う。
+RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキスト、UTF-16リンク範囲とHTTP(S)リンク先、引用深さへ変換する。fragmentはリンク先では保持し、記事同一性用URLでは除去する。`ContentSnapshot.bodyFormatData`はJSONの任意属性で、保存textと一致する場合だけ使う。情報なし／不一致ならtextへfallbackし、リンク先を推測しない。本文削除ではsnapshotと書式も削除する。ノート・AI入力はテキストとカバー範囲を使う。
 
 ## 3. AI（端末内の提案とClaudeハンドオフ）
 
@@ -58,14 +58,14 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 ### 3.2 Claudeハンドオフ
 
-テーマからのレビューで、テーマに記録した要約（`themeArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、ノートを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。入口はテーマ画面のツールバーのボタン。N2以降、テーマの問い・答えはない。N6から、ノートも本人が選べば渡せる。決定0019でゴールは無くなった（下記）。
+ノートからのレビューで、ノートに記録した要約（`noteArticle`）と保持中の記事（`article`）を`AIInputSelection`で区別して選び、ノートを含めるかも選ぶ。同じ記事の両方を無言で重複入力せず、実際に選択した内容・出典URL・カバー範囲・保存日時・出力言語・依頼文を不変のパッケージとSHA-256へまとめる。入口はノート画面のツールバーのボタン。N2以降、ノートの問い・答えはない。N6から、ノートも本人が選べば渡せる。決定0019でゴールは無くなった（下記）。
 
-**Theme content (PR 8, reworked by N6).** A package can carry an `AIThemeContext` (the theme name and the note when the person includes it; nil when not included). It appears in the text between `BEGIN_THEME` and `END_THEME` under the label `Note (written by the user):`. When the note is included the package header is the review request (the note itself, quoting the note for what is achieved, naming a gap only from what the note does not say, the sources' weak support and opposing views, and what to read or write next); otherwise it is the request for the sources. `AIThemeRequest(themeID:includeNote:)` says what is included, and `ReaderStore.aiThemeContext` builds the context (empty text counts as not included, and nil is returned when nothing is included). The person's words and article text are data: marker-like lines inside them are kept as they are, and the theme name is folded to one line so it cannot start a line of its own. A package needs an article source unless it carries the note; one without sources expires after 24 hours (`AIPackageReview` and `HandoffFiles.reconcile` use the package's own expiry when there is no article expiry). `AIPackageReview.reconcile` rebuilds the context from the store and marks the review `changed` if it is not equal to the one that was reviewed (so editing the included note, or renaming the theme, invalidates it; editing something that was not included does not). A managed copy's metadata records `themeID` for every package made from a theme (`questionIDs` is only read for copies written before notes replaced questions, and is never written now). The copy is deleted when the theme or an included source article is gone or no longer in the theme; the cleanup is started through `onContentPolicyChanged` even if the reload after a deletion fails, but it reads the current sources, so while the reload keeps failing the copy stays and the maintenance error is shown. It is removed once a reload succeeds or at its 24 hours (this part predates N6). Editing the note or renaming the theme does not delete a copy: it is a snapshot, and its 24-hour limit still applies. The review screen's switches come from `HandoffDefaults` (a pure rule: the toolbar entry leaves the note off, the note panel's button switches the note on, an empty one is off and disabled). Decision 0018 (Git history), [0012](decisions/0012-claude-handoff-from-themes.md).
+**Note content (PR 8, reworked by N6).** A package can carry an `AINoteContext` (the note's id and text when the person includes it; nil when not included. There is no title line: the title is the first line of the text). It appears in the text between `BEGIN_NOTE` and `END_NOTE` under the label `Note (written by the user):`. When the note is included the package header is the review request (the note itself, quoting the note for what is achieved, naming a gap only from what the note does not say, the sources' weak support and opposing views, and what to read or write next); otherwise it is the request for the sources. `AINoteRequest(noteID:includeNote:)` says what is included, and `ReaderStore.aiNoteContext` builds the context (empty text counts as not included, and nil is returned when nothing is included). The person's words and article text are data: marker-like lines inside them are kept as they are. A package needs an article source unless it carries the note; one without sources expires after 24 hours (`AIPackageReview` and `HandoffFiles.reconcile` use the package's own expiry when there is no article expiry). `AIPackageReview.reconcile` rebuilds the context from the store and marks the review `changed` if it is not equal to the one that was reviewed (so editing the included note invalidates it; editing something that was not included does not). A managed copy's metadata records `noteID` for every package made from a note (`questionIDs` is only read for copies written before notes replaced questions, and is never written now). The copy is deleted when the note or an included source article is gone or no longer in the note; the cleanup is started through `onContentPolicyChanged` even if the reload after a deletion fails, but it reads the current sources, so while the reload keeps failing the copy stays and the maintenance error is shown. It is removed once a reload succeeds or at its 24 hours (this part predates N6). Editing the note does not delete a copy: it is a snapshot, and its 24-hour limit still applies. The review screen's switches come from `HandoffDefaults` (a pure rule: the toolbar entry leaves the note off, the note panel's button switches the note on, an empty one is off and disabled). Decision 0018 (Git history), [0012](decisions/0012-claude-handoff-from-themes.md).
 
 `ClaudeLink`は[公式案内](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link)にある`claude://cowork/new`の`q`へ短い依頼文、`file`へ生成TXTの絶対パスをURLエンコードして渡す。本文はUTF-8 TXT内に置き、起動URLへ詰め込まない（`q`は約14,000文字で切り詰められる）。通常Chatが利用者の希望だが、自動添付は未検証のため現行経路はCowork。通常Chat用の起動リンクに未文書化のファイル添付パラメータがあるとは仮定せず、推測したパラメータを実装しない。起動処理とパッケージ生成は分離する。
 
 - `HandoffFiles`は操作UUIDごとの専用フォルダ（0700）にTXT・管理metadata（0600）だけを置く。起動前に存在・通常ファイル・読取り・期限・レビュー済みbytesとの一致を検査し、不在／改変ファイルで起動しない。
-- 管理コピーは生成24時間と、含む記事本文の最早期限の小さい方で失効する。テーマに記録した要約だけなら生成24時間。保持短縮・本文削除・次のコピー期限・起動／復帰で同期し、期限を延長しない。
+- 管理コピーは生成24時間と、含む記事本文の最早期限の小さい方で失効する。ノートに記録した要約だけなら生成24時間。保持短縮・本文削除・次のコピー期限・起動／復帰で同期し、期限を延長しない。
 - 起動成功で即削除しない。起動後にClaudeが読むため、起動／カード表示だけで添付・読取り成功としない。失敗・取消後は同じレビュー済み内容で再試行できる。
 - 全文コピー・TXT書き出し・UTF-8の全bytesを保つ1MiB/part以下の分割を提供する。分割値はClaudeの公称上限ではない。本人の書き出し先とClaude側の内容は削除同期の対象外。
 - Attach・送信・必要な親フォルダ許可は本人が操作する。フォルダ許可は読取り・変更を可能にし、cloudで使われる内容は端末を離れる旨を案内する。リンク由来の警告が出る場合がある。APIキー・自動送信・返答の自動書込みは使わない。
@@ -123,21 +123,21 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 | 読書UI追加受入（Git履歴） | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
 | [端末内AIの実測](verification/on-device-ai-findings.md) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語） |
 
-実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、30日の保持でテーマの咀嚼に足りるか、本人の実際のStarでのまとまりの精度と閾値、数百件での提案の速度、Apple Intelligenceが無効な環境での挙動、レンズを具体化した問いの質、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
+実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、30日の保持でノートの咀嚼に足りるか、本人の実際のStarでのまとまりの精度と閾値、数百件での提案の速度、Apple Intelligenceが無効な環境での挙動、レンズを具体化した問いの質、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
 
 ## 6. 読書UI・画像の実装契約
 
 ### 6.1 3カラムと入力・遷移
 
-`NavigationSplitView`を共通枠とし、Feeds／テーマの選択・スクロール記憶を分けて復元し、テーマごとに最後に開いた面（記事／ノート）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高96pt、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
+`NavigationSplitView`を共通枠とし、Feeds／ノートの選択・スクロール記憶を分けて復元し、ノートごとに最後に開いた面（記事／ノート）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高96pt、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
 
-左カラムはFeeds（すべての記事・未読・Star）／テーマ（各テーマ）／購読元（フォルダ・購読）の順で、購読元の区画は畳める。左のHide Sidebarは`toolbar(removing: .sidebarToggle)`で除去。追加・更新を`NSTitlebarAccessoryViewController`のleftへ置き、sidebar右端に追随させる。sidebarの非表示・view取り外し時にaccessoryも外すが、**原文開閉ではcolumnVisibilityを変更せず、装着・列幅を維持する。** 購読のフォルダ指定は`importFeed`で記事と同じ保存に含め、通常更新は所属を保持する。フォルダ切替等で新mountした一覧はwindow接続時にフォーカスを得る。
+左カラムはFeeds（すべての記事・未読・Star）／ノート（各ノート）／購読元（フォルダ・購読）の順で、購読元の区画は畳める。左のHide Sidebarは`toolbar(removing: .sidebarToggle)`で除去。追加・更新を`NSTitlebarAccessoryViewController`のleftへ置き、sidebar右端に追随させる。sidebarの非表示・view取り外し時にaccessoryも外すが、**原文開閉ではcolumnVisibilityを変更せず、装着・列幅を維持する。** 購読のフォルダ指定は`importFeed`で記事と同じ保存に含め、通常更新は所属を保持する。フォルダ切替等で新mountした一覧はwindow接続時にフォーカスを得る。
 
-`OriginalPageState.selectionChanged`は別IDの選択で原文を閉じ、クリック／キーで同じ選択処理と一覧フォーカス復元を使う。原文は記事ID・URLで識別し、マウント時にそのwindowの入力先を原文へ移す。独立したWKContentWorldからのコマンドは実キー入力、入力要素、IME、修飾キー、現在の原文／選択記事を検査する。読み込み表示は原文ヘッダ内に置いてviewport高さを保つ。`Esc`は読書位置へ戻し、Star／テーマへの追加では原文の位置・フォーカスを保つ。テーマ／問いのview識別子も選択IDに合わせ、編集・作成先を古いテーマや問いに残さない。
+`OriginalPageState.selectionChanged`は別IDの選択で原文を閉じ、クリック／キーで同じ選択処理と一覧フォーカス復元を使う。原文は記事ID・URLで識別し、マウント時にそのwindowの入力先を原文へ移す。独立したWKContentWorldからのコマンドは実キー入力、入力要素、IME、修飾キー、現在の原文／選択記事を検査する。読み込み表示は原文ヘッダ内に置いてviewport高さを保つ。`Esc`は読書位置へ戻し、Star／ノートへの追加では原文の位置・フォーカスを保つ。ノート／問いのview識別子も選択IDに合わせ、編集・作成先を古いノートや問いに残さない。
 
-上下遷移は再利用するネイティブviewportのlayerへ64pt・0.22秒・ease-outと控えめな透明度変化を`CAAnimationGroup`で適用する。次／前の方向は一覧ID順から求める。同記事の本文更新・画像到着では再生せず、Reduce Motionでは`article-motion`を除去する。原文開閉も上下・0.22秒。読書ツールバーはStar／テーマ／外部ブラウザ、AIの入口はテーマ、外観はSettingsで`AppStorage("appearance")`を共有する。
+上下遷移は再利用するネイティブviewportのlayerへ64pt・0.22秒・ease-outと控えめな透明度変化を`CAAnimationGroup`で適用する。次／前の方向は一覧ID順から求める。同記事の本文更新・画像到着では再生せず、Reduce Motionでは`article-motion`を除去する。原文開閉も上下・0.22秒。読書ツールバーはStar／ノート／外部ブラウザ、AIの入口はノート、外観はSettingsで`AppStorage("appearance")`を共有する。
 
-テーマを選んでも、中央は購読元・フォルダと同じ`NSTableView`の一覧のままで、読書面は右にある。ノートは右の読書面の`.inspector`（`NotePanel`。幅は`inspectorColumnWidth`の最小300・希望380・最大640pt）として開き、ツールバーのボタン（常に置き、テーマの外では押せない。高さが変わらない）と`⌥⌘I`で開閉する。開閉は`ReaderWorkspaceState.isNoteOpen(of:)`（テーマごと・メモリ上・初めは閉じている）で、読書の状態（選んだ記事・スクロール記憶）はテーマごとに1つで、開閉の影響を受けない。サイドバーは`NoteLayout`（純粋な値。ノートを開くと畳み、閉じると戻し、開いている間は本人の選択を保つ）が決め、`SidebarColumns`を`NavigationSplitViewVisibility`へ写す。戻すボタンは記事一覧の上の細い帯の左（ノートが開いている間だけ。ツールバーではない）。`NotePanel`は、上から、テーマ名・「Claudeでレビューを頼む」・前後の記事のボタン（`⌥⌘↑`・`⌥⌘↓`のキー等価。変換中とテーマ選択中は動かさない。端の規則は`ThemeArticleSwitcher`）、エディタ（`NoteEditor`）を置く（決定0019のS1aで、ゴール・要約カード・書き直しの操作は無くなった）。ボタンは`.borderless`で、AppKitのボタンとして押せる。キーの規則は`ReaderKeyboardCommands`が、編集できる`NSTextView`と`NSTextField`だけを文字入力とし、IME変換中と、シート・原文表示中は効かせない。`t`とツールバーのアイコンは同じ選択ポップオーバー（既存テーマ・新しいテーマ名。S2まで残る）を開き、テキスト入力・IME変換・修飾キーを優先する既存の規則に従う。ドラッグ&ドロップは候補で必須ではない。
+ノートを選んでも、中央は購読元・フォルダと同じ`NSTableView`の一覧のままで、読書面は右にある。ノートは右の読書面の`.inspector`（`NotePanel`。幅は`inspectorColumnWidth`の最小300・最大640pt、希望は前回の幅`NotePanelWidth`（`UserDefaults`。初回は380。保存時と読み出し時に300〜640へ丸め、壊れた値は380へ戻す）。幅の変化は`onGeometryChange`で測り、0.6秒落ち着いたら1回保存する）として開き、ツールバーのボタン（常に置き、ノートの外では押せない。高さが変わらない）と`⌥⌘I`で開閉する。開閉は`ReaderWorkspaceState.isNoteOpen(of:)`で、**ノートを選ぶと初めから開き**、本人が閉じたノートだけがアプリを開いている間は閉じたままになる（メモリ上）。パネルを開いてもキーボードの入力先は取らない（エディタをクリックしたときだけ）。読書の状態（選んだ記事・スクロール記憶）はノートごとに1つで、開閉の影響を受けない。サイドバーは`NoteLayout`（純粋な値）が決める。パネルを開くとき、ウィンドウの幅が`foldBelow`（1,300pt。実機の1,240pt幅で、サイドバー約217・一覧約393・読書約361を取り、パネルが約270に縮んだ測定から決めた仮の値）より狭いときだけ畳み、閉じると戻す。開いている間は、リサイズで同じ規則に従って畳み・戻し、本人が手で切り替えたら、その選択をパネルを閉じるまで保つ。`SidebarColumns`を`NavigationSplitViewVisibility`へ写す。戻すボタンは記事一覧の上の細い帯の左（ノートが開いている間だけ。ツールバーではない）。`NotePanel`は、上から、「Claudeでレビューを頼む」・前後の記事のボタン（`⌥⌘↑`・`⌥⌘↓`のキー等価。変換中とノート選択中は動かさない。端の規則は`NoteArticleSwitcher`）、エディタ（`NoteEditor`）を置く（ノートの名前は無いので、パネルにタイトルの行は無い）。ボタンは`.borderless`で、AppKitのボタンとして押せる。キーの規則は`ReaderKeyboardCommands`が、編集できる`NSTextView`と`NSTextField`だけを文字入力とし、IME変換中と、シート・原文表示中は効かせない。`t`とツールバーのアイコンは同じ選択ポップオーバー（既存ノート・新しいノート。S2まで残る。新しいノートは、入力した名前を最初の行の見出し`# 名前`にして作る）を開き、テキスト入力・IME変換・修飾キーを優先する既存の規則に従う。サイドバーの「新しいノート」は、空のノートを作ってすぐ選ぶ。ドラッグ&ドロップは候補で必須ではない。
 
 `NSTextView`はリンク属性・引用の字下げと縦線、末尾一箇所のカバー範囲を描く。クリック時にもURLを検証する。再取得は明示操作で、失敗時も保存本文を保ち結果を示す。
 
@@ -153,4 +153,4 @@ RSS/Atomのenclosure・media・本文画像から選ぶ。`hatena:imageurl`はna
 | ディスクキャッシュ／成功TTL／失敗TTL／同時取得 | 64MiB / 7日 / 10分 / 4件 |
 | 固定表示枠 | favicon 18pt、記事一覧52pt、読書画像領域180pt |
 
-完了時はID・URL一致とキャンセルを検査する。画像の後着・失敗・オフラインで行高・選択・読書位置を変えない。本文内NSHostingViewは固定frameとし、intrinsic-sizeによる周囲の組版変更を無効にする。テーマ所有の永久画像にはしない。
+完了時はID・URL一致とキャンセルを検査する。画像の後着・失敗・オフラインで行高・選択・読書位置を変えない。本文内NSHostingViewは固定frameとし、intrinsic-sizeによる周囲の組版変更を無効にする。ノート所有の永久画像にはしない。

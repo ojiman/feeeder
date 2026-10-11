@@ -15,8 +15,8 @@ public enum HandoffError: LocalizedError {
 }
 
 public enum HandoffFiles {
-    private struct Record: Codable { let name: String; let sha256: String }
-    private struct Metadata: Codable {
+    fileprivate struct Record: Codable { let name: String; let sha256: String }
+    fileprivate struct Metadata: Codable {
         let packageID: UUID
         let articleIDs: [UUID]
         let selections: [AIInputSelection]?
@@ -24,8 +24,12 @@ public enum HandoffFiles {
         var expiresAt: Date
         let split: Bool
         let files: [Record]
-        let themeID: UUID?
+        let noteID: UUID?
         let questionIDs: [UUID]?
+        private enum CodingKeys: String, CodingKey {
+            case packageID, articleIDs, selections, createdAt, expiresAt, split, files, noteID, questionIDs
+            case legacyThemeID = "themeID"
+        }
     }
     private static var manager: FileManager { .default }
     public static func write(_ package: AIPackage, directory: URL) throws -> URL {
@@ -58,7 +62,7 @@ public enum HandoffFiles {
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
             let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
-                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, themeID: package.themeID, questionIDs: nil)
+                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, noteID: package.noteID, questionIDs: nil)
             try saveMetadata(metadata, folder: folder)
         } catch {
             // This folder was just created by this operation, and contains only its generated copies.
@@ -81,11 +85,11 @@ public enum HandoffFiles {
         }
     }
     public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date],
-                                 themeContextIsValid: (_ themeID: UUID, _ sourceArticleIDs: [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
+                                 noteContextIsValid: (_ noteID: UUID, _ sourceArticleIDs: [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
         try maintain(directory: directory) { folder, record in
             var metadata = record
             // `questionIDs` is only read for copies made before notes replaced questions; it is not used any more.
-            if let themeID = metadata.themeID, !themeContextIsValid(themeID, metadata.articleIDs) {
+            if let noteID = metadata.noteID, !noteContextIsValid(noteID, metadata.articleIDs) {
                 try manager.removeItem(at: folder); return
             }
             let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
@@ -161,7 +165,7 @@ public enum HandoffFiles {
               let size = values[.size] as? NSNumber, size.intValue <= 1_048_576 else { throw HandoffError.unsafeFile }
         let metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: file))
         guard folder.lastPathComponent == metadata.packageID.uuidString + (metadata.split ? "-parts" : ""),
-              !metadata.articleIDs.isEmpty || metadata.themeID != nil,     // a package of the note alone has no article
+              !metadata.articleIDs.isEmpty || metadata.noteID != nil,     // a package of the note alone has no article
               !metadata.files.isEmpty,
               metadata.files.enumerated().allSatisfy({ index, record in
                   record.name == (metadata.split ? "Feeeder-review-part-\(index + 1).txt" : "Feeeder-review.txt") && record.sha256.count == 64
@@ -188,5 +192,34 @@ public enum ClaudeLink {
         components.queryItems = [URLQueryItem(name: "q", value: prompt), URLQueryItem(name: "file", value: file.path)]
         guard let url = components.url else { throw HandoffError.invalidLink }
         return url
+    }
+}
+
+/// A copy written before the rename to notes names its note under `themeID`; it is read as `noteID`, so the copy still follows its
+/// note, and a copy of the note alone (no articles) is still valid. New copies write `noteID` only.
+extension HandoffFiles.Metadata {
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        packageID = try values.decode(UUID.self, forKey: .packageID)
+        articleIDs = try values.decode([UUID].self, forKey: .articleIDs)
+        selections = try values.decodeIfPresent([AIInputSelection].self, forKey: .selections)
+        createdAt = try values.decode(Date.self, forKey: .createdAt)
+        expiresAt = try values.decode(Date.self, forKey: .expiresAt)
+        split = try values.decode(Bool.self, forKey: .split)
+        files = try values.decode([HandoffFiles.Record].self, forKey: .files)
+        noteID = try values.decodeIfPresent(UUID.self, forKey: .noteID) ?? values.decodeIfPresent(UUID.self, forKey: .legacyThemeID)
+        questionIDs = try values.decodeIfPresent([UUID].self, forKey: .questionIDs)
+    }
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(packageID, forKey: .packageID)
+        try values.encode(articleIDs, forKey: .articleIDs)
+        try values.encodeIfPresent(selections, forKey: .selections)
+        try values.encode(createdAt, forKey: .createdAt)
+        try values.encode(expiresAt, forKey: .expiresAt)
+        try values.encode(split, forKey: .split)
+        try values.encode(files, forKey: .files)
+        try values.encodeIfPresent(noteID, forKey: .noteID)
+        try values.encodeIfPresent(questionIDs, forKey: .questionIDs)
     }
 }

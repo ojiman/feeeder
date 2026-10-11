@@ -15,7 +15,7 @@ struct NativeArticleList: NSViewRepresentable {
     let onKey: (String) -> Void
     var imageLoader: ReaderImageLoader? = nil
     var iconURL: (Article) -> URL? = { _ in nil }
-    var themed: (UUID) -> Bool = { _ in false }
+    var inNote: (UUID) -> Bool = { _ in false }
     var initialTopOffset: Double = 0
     var onTopOffset: ((UUID, Double) -> Void)? = nil
 
@@ -117,7 +117,7 @@ struct NativeArticleList: NSViewRepresentable {
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard parent.ids.indices.contains(row), let article = parent.article(parent.ids[row]) else { return nil }
             let cell = tableView.makeView(withIdentifier: .init("article"), owner: self) as? Cell ?? Cell()
-            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader, themed: parent.themed(article.id))
+            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader, inNote: parent.inNote(article.id))
             return cell
         }
         func tableViewSelectionDidChange(_ notification: Notification) {
@@ -196,9 +196,9 @@ struct NativeArticleList: NSViewRepresentable {
         }
         convenience init() { self.init(frame: .zero) }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, themed: Bool = false) {
+        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, inNote: Bool = false) {
             isRead = article.isRead
-            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (themed ? "▣ " : "") + feed
+            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (inNote ? "▣ " : "") + feed
             title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
             let published = article.publishedAt
