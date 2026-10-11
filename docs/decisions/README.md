@@ -47,6 +47,7 @@
 | [0026](0026-article-list-row-spacing.md) | More room in the article list rows | valid (with the spacing PR) |
 | [0027](0027-calmer-colours.md) | Calmer colours | valid (with the colours PR) |
 | [0028](0028-article-list-type-sizes.md) | Article list: the headline leads | valid (with the type-size PR) |
+| [0029](0029-sidebar-header-plus.md) | A + in the sidebar section headers | valid (with the sidebar-header PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
