@@ -112,6 +112,20 @@ struct FeedParserTests {
             }
         }
     }
+    @Test func anHTMLPageIsNamedAsAPageNotAsBrokenXML() {
+        for page in ["<!doctype html><html><head><title>Home</title></head></html>", "\u{FEFF}  \n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\"><html></html>", "<HTML><body>x</body></HTML>"] {
+            #expect(throws: FeedImportError.htmlPage) { try FeedParser.parse(Data(page.utf8), sourceURL: URL(string: "https://feed.example/")!) }
+        }
+    }
+    @Test func strayControlCharactersDoNotSinkAnOtherwiseGoodFeed() throws {
+        let xml = "<rss><channel><title>合成\u{08}ニュース</title><item><guid>a</guid><title>A\u{0B}</title><link>https://feed.example/a</link><description>x\u{1F}y</description></item></channel></rss>"
+        let result = try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://feed.example/rss")!)
+        #expect(result.title == "合成ニュース" && result.entries.first?.title == "A" && result.entries.first?.summary.contains("xy") == true)
+        // Broken markup stays broken, and UTF-16 input is never cut up by the clean-up.
+        #expect(throws: FeedImportError.invalidXML) { try FeedParser.parse(Data("<rss><channel>\u{08}".utf8), sourceURL: URL(string: "https://feed.example/rss")!) }
+        let utf16 = try #require("<?xml version=\"1.0\" encoding=\"UTF-16\"?><rss><channel><title>合成</title></channel></rss>".data(using: .utf16))
+        #expect(try FeedParser.parse(utf16, sourceURL: URL(string: "https://feed.example/rss")!).title == "合成")
+    }
     @Test func rejectsUnsafeURLAndDoesNotInventDates() throws {
         let xml = "<rss><channel><title>合成</title><item><guid>x</guid><title>X</title><link>javascript:alert(1)</link><pubDate>invalid</pubDate><description>x</description></item></channel></rss>"
         let result = try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://feed.example/rss")!)

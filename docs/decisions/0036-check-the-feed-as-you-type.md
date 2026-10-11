@@ -1,0 +1,25 @@
+# 0036 Check the feed while the address is typed
+
+- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Date: 2026-10-12
+- Decider: the owner (PdM) asked what happens when the feed is wrong or cannot be fetched, and proposed the flow: type the address, check it in the background when the typing pauses, enable 「追加」 only when the feed was read, and show the reason when it was not. The details below are the Product Owner's.
+- Refines: [0032](0032-simple-add-subscription.md) (the sheet keeps one address field and the same two buttons).
+
+## Decision
+
+1. **The address is checked while it is typed.** When the typing pauses for 0.8 seconds, the app fetches the address and reads it as a feed. A paste (more than one character at once) is checked after 0.05 seconds. Any edit drops the old result at once and cancels the running check, so a late answer for an old address is never shown or used.
+2. **「追加」 is enabled only when the feed was read.** "Read" means the answer was 200 and the text parsed as RSS 1.0, RSS 2.0 or Atom, not only that the answer was 200. The fetched feed is used for the add: nothing is fetched again. Return adds as soon as the check succeeds (pressing Return before the answer waits for it; after a failure it checks again).
+3. **One line under the field, always in place** (so the sheet does not jump): 「確認中…」, or 「✓ feed name」 (it also shows when the wrong feed was entered), or the reason in red. A note says how many entries without an identifier or an article URL cannot be added (this replaces the old two-step 「取り込む」 button).
+4. **A half-typed address is never sent.** Only `http(s)://` plus a complete host (a dot and a last part of two or more letters) is fetched. Text without `://` gets the hint 「http:// か https:// で始まるURLを入れてください。」 after the pause. Pressing Return on text that cannot be an address says 「URLを最後まで入れてください。」. The request is the same GET the add would make, with no other data.
+5. **One plain sentence per cause**: not found (404), not readable (401/403), server error, no network, no answer, host not found, secure connection failed, `http://` blocked by the system (「https:// のURLを入れてください」), too large, a Web page and not a feed (HTML), broken XML. The sentence says what happened and, where it helps, what to do.
+6. **A web page is told apart from broken XML.** A document that starts with an HTML doctype or `<html>` gets 「フィードではなくWebページです」 (before, it showed as broken XML, "entities" or "not a feed", depending on the page).
+7. **Stray control characters are tolerated.** If the XML fails only because of C0 control characters that XML 1.0 forbids, the parser reads it once more without them (ASCII-compatible encodings only; UTF-16 and UTF-32 are never cut up; the DOCTYPE and entity checks run again). Other XML errors still fail the whole feed. A looser parser that keeps part of a broken feed was considered and rejected: its behavior is hard to predict.
+8. **The Option-key tools stay**: with pasted XML nothing is fetched; the XML is read after 0.3 seconds with the same status line.
+
+## Not in this change
+
+The folder chooser inside the sheet (the idea of choosing the folder at registration) and finding the feed from a site address (`<link rel="alternate">`). Both build on this flow and come as their own changes. Plain `http://` feeds are still blocked by the system's transport security; this change only explains it.
+
+## Not verified
+
+The timing feel of the pause (0.8 s) on the owner's Mac; Japanese input in the field (the check follows the text while it is composed, so a half-composed address may be checked: not verified); VoiceOver reading of the status line; the real window with macOS 26 (CI builds only). Run on the local toolchain with synthetic data and a copy of the app with its own bundle identifier: a public https feed (success, and add), a Web page, a missing page (404), text without a scheme, a host that does not exist, and an `http://` address all gave the sentences above. Return pressed before the answer was not separately confirmed: the tool's key press reported an error while the add happened.

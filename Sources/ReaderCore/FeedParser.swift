@@ -30,11 +30,12 @@ public struct ParsedEntry: Sendable {
 }
 
 public enum FeedImportError: LocalizedError {
-    case invalidURL, invalidXML, unsupported, tooLarge, entities, missingTitle
+    case invalidURL, invalidXML, htmlPage, unsupported, tooLarge, entities, missingTitle
     public var errorDescription: String? {
         switch self {
         case .invalidURL: "ユーザー名・パスワードを含まないHTTP(S)のURLを指定してください。"
-        case .invalidXML: "XMLを解析できませんでした。完全なフィードXMLを貼り付けてください。"
+        case .invalidXML: "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。"
+        case .htmlPage: "フィードではなくWebページです。フィードのURLを入れてください。"
         case .unsupported: "RSS 1.0・RSS 2.0・Atomのフィードではありません。"
         case .tooLarge: "XMLは2MB以内、階層は64段以内、記事は5,000件以内にしてください。"
         case .entities: "DTDや独自エンティティを含むXMLは取り込めません。"
@@ -67,6 +68,16 @@ public enum FeedParser {
     public static func parse(_ data: Data, sourceURL: URL, baseURL: URL? = nil) throws -> ParsedFeed {
         guard data.count <= 2 * 1024 * 1024 else { throw FeedImportError.tooLarge }
         guard let source = ArticleURL.validated(sourceURL.absoluteString) else { throw FeedImportError.invalidURL }
+        guard !looksLikeHTML(data) else { throw FeedImportError.htmlPage }
+        do { return try parseDocument(data, source: source, baseURL: baseURL) }
+        catch FeedImportError.invalidXML {
+            // A control character that XML forbids is a common slip in real feeds; read the rest once more without it.
+            guard let cleaned = removingForbiddenControlCharacters(data) else { throw FeedImportError.invalidXML }
+            return try parseDocument(cleaned, source: source, baseURL: baseURL)
+        }
+    }
+
+    private static func parseDocument(_ data: Data, source: URL, baseURL: URL?) throws -> ParsedFeed {
         // Strip NULs only for declaration detection, including UTF-16/32 input. Never resolve a DTD.
         let declarationScan = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\0", with: "")
         guard !declarationScan.contains("<!DOCTYPE"), !declarationScan.contains("<!ENTITY") else { throw FeedImportError.entities }
@@ -81,6 +92,21 @@ public enum FeedParser {
         guard reader.format != nil, reader.sawContainer else { throw FeedImportError.unsupported }
         return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? "フィード") : reader.title,
                           sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped, siteURL: reader.siteURL, iconURL: reader.iconURL ?? reader.logoURL)
+    }
+
+    /// A web page (the address of a site, not of its feed) starts with an HTML doctype or tag.
+    private static func looksLikeHTML(_ data: Data) -> Bool {
+        let head = String(decoding: data.prefix(256), as: UTF8.self).drop { $0 == "\u{FEFF}" || $0.isWhitespace }.lowercased()
+        return head.hasPrefix("<!doctype html") || head.hasPrefix("<html")
+    }
+
+    /// The bytes without the C0 controls XML 1.0 forbids, or nil when there are none or the text is not an
+    /// ASCII-compatible encoding (UTF-16 and UTF-32 use zero bytes for ordinary characters).
+    private static func removingForbiddenControlCharacters(_ data: Data) -> Data? {
+        guard !data.prefix(4).contains(0), !data.starts(with: [0xFF, 0xFE]), !data.starts(with: [0xFE, 0xFF]) else { return nil }
+        let forbidden: (UInt8) -> Bool = { $0 < 0x20 && $0 != 0x09 && $0 != 0x0A && $0 != 0x0D }
+        guard data.contains(where: forbidden) else { return nil }
+        return Data(data.filter { !forbidden($0) })
     }
 }
 
