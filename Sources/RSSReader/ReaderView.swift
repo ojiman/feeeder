@@ -331,7 +331,7 @@ struct ReaderView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("Feeeder")
+        .navigationTitle("Unagi Reader")
         .toolbar(removing: .sidebarToggle)
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
             visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,

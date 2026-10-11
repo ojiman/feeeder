@@ -1,6 +1,6 @@
-# Feeeder
+# Unagi Reader
 
-*The product name is Unagi Reader. It replaces "Feeeder" in the app and the docs in one rename PR (roadmap, stage D); until then the repository, the code and the app bundle say Feeeder.*
+*Formerly named Feeeder.*
 
 A fast, keyboard-driven RSS reader for macOS that turns the few articles that matter into your own understanding.
 
@@ -27,10 +27,10 @@ You need a Mac on macOS 27.0 or later and the Swift toolchain from Xcode.
 git clone https://github.com/ojiman/feeeder.git
 cd feeeder
 bash scripts/build-app.sh release
-open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
 ```
 
-The last command opens a separate instance with synthetic subscriptions and its own data directory, so you can look around without touching a real library. To use the app for real, open `.build/Feeeder.app` normally.
+The last command opens a separate instance with synthetic subscriptions and its own data directory, so you can look around without touching a real library. To use the app for real, open `.build/UnagiReader.app` normally.
 
 The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quarantine attribute (for example, one saved by a browser) until you choose "Open Anyway" in System Settings > Privacy & Security. Building from source avoids this.
 
@@ -38,9 +38,9 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 
 **Does it send my data anywhere?** It fetches the feeds you subscribe to, article images and favicons, and original pages when you open them in the app. AI runs on your Mac. Text goes to Claude only when you read the exact text and press the button. There is no backend and no account.
 
-**Where is my data?** In `~/Library/Application Support/Feeeder/`.
+**Where is my data?** In `~/Library/Application Support/UnagiReader/`.
 
-**Will an update break my library?** During the beta, compatibility between versions is not guaranteed. The app shows an error instead of deleting or recreating the library. Back up the `Feeeder` folder before you update (see the [user guide](docs/user-guide.md#back-up-the-library-by-hand)). From 1.0, saved data is preserved across updates.
+**Will an update break my library?** During the beta, compatibility between versions is not guaranteed. The app shows an error instead of deleting or recreating the library. Back up the `UnagiReader` folder before you update (see the [user guide](docs/user-guide.md#back-up-the-library-by-hand)). From 1.0, saved data is preserved across updates.
 
 **Does it work without AI?** Yes. Everything works with AI turned off.
 

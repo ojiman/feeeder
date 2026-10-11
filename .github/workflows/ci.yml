@@ -1,4 +1,4 @@
-name: Feeeder CI
+name: Unagi Reader CI
 
 on:
   # No paths-ignore here: every pull request must report the `check` status (the ruleset requires it), so a
@@ -91,7 +91,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: feeeder-regression-${{ github.event.pull_request.head.sha || github.sha }}
+          name: unagi-reader-regression-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ env.CI_RESULTS }}/
           if-no-files-found: warn
           retention-days: 7
@@ -128,14 +128,14 @@ jobs:
         run: |
           { time bash scripts/build-app.sh release; } 2>&1 | tee "$CI_RESULTS/build.log"
           package_dir=$(mktemp -d "$RUNNER_TEMP/feeeder-adhoc.XXXXXX")
-          ditto -c -k --sequesterRsrc --keepParent .build/Feeeder.app "$CI_RESULTS/Feeeder-adhoc.zip"
-          ditto -x -k "$CI_RESULTS/Feeeder-adhoc.zip" "$package_dir"
-          codesign --verify --deep --strict "$package_dir/Feeeder.app"
+          ditto -c -k --sequesterRsrc --keepParent .build/UnagiReader.app "$CI_RESULTS/UnagiReader-adhoc.zip"
+          ditto -x -k "$CI_RESULTS/UnagiReader-adhoc.zip" "$package_dir"
+          codesign --verify --deep --strict "$package_dir/UnagiReader.app"
       - name: Save logs and artifacts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: feeeder-release-${{ github.event.pull_request.head.sha || github.sha }}
+          name: unagi-reader-release-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ env.CI_RESULTS }}/
           if-no-files-found: warn
           retention-days: 7

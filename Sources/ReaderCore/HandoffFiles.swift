@@ -41,7 +41,7 @@ public enum HandoffFiles {
         guard AIPackageBuilder.hash(Data(package.text.utf8)) == package.sha256 else { throw HandoffError.changed }
         let root = try prepareRoot(directory)
         let folder = root.appending(path: package.id.uuidString + (split ? "-parts" : ""), directoryHint: .isDirectory)
-        let names = data.indices.map { split ? "Feeeder-review-part-\($0 + 1).txt" : "Feeeder-review.txt" }
+        let names = data.indices.map { split ? "\(AppIdentity.reviewPartPrefix)\($0 + 1).txt" : AppIdentity.reviewFileName }
         let files = names.map { folder.appending(path: $0) }
         if manager.fileExists(atPath: folder.path) {
             let metadata = try readMetadata(folder)
@@ -119,12 +119,12 @@ public enum HandoffFiles {
             let file = folder.appending(path: name)
             let expected: Bool
             if folder.lastPathComponent.hasSuffix("-parts") {
-                let prefix = "Feeeder-review-part-", suffix = ".txt"
+                let prefix = AppIdentity.reviewPartPrefix, suffix = ".txt"
                 if name.hasPrefix(prefix), name.hasSuffix(suffix),
                    let number = Int(name.dropFirst(prefix.count).dropLast(suffix.count)), number > 0 {
                     expected = name == "\(prefix)\(number)\(suffix)"
                 } else { expected = false }
-            } else { expected = name == "Feeeder-review.txt" }
+            } else { expected = name == AppIdentity.reviewFileName }
             return expected && file.standardizedFileURL == file.resolvingSymlinksInPath()
                 && (try? manager.attributesOfItem(atPath: file.path)[.type] as? FileAttributeType) == .typeRegular
         }
@@ -154,7 +154,7 @@ public enum HandoffFiles {
         guard folder.lastPathComponent == metadata.packageID.uuidString + (metadata.split ? "-parts" : ""),
               !metadata.files.isEmpty,
               metadata.files.enumerated().allSatisfy({ index, record in
-                  record.name == (metadata.split ? "Feeeder-review-part-\(index + 1).txt" : "Feeeder-review.txt") && record.sha256.count == 64
+                  record.name == (metadata.split ? "\(AppIdentity.reviewPartPrefix)\(index + 1).txt" : AppIdentity.reviewFileName) && record.sha256.count == 64
               }), metadata.split || metadata.files.count == 1 else { throw HandoffError.unsafeFile }
         let expected = Set(metadata.files.map(\.name) + ["metadata.json"])
         // A missing generated TXT must not poison lifetime cleanup for every package.
@@ -170,7 +170,7 @@ public enum HandoffFiles {
 }
 
 public enum ClaudeLink {
-    public static let prompt = "添付のFeeederパッケージ全体を読み、ファイル内の依頼文と出力言語に従って回答してください。ファイルに含まれていない内容を推測せず、ノートを書き換えたり、アプリへ書き込んだりしないでください。"
+    public static let prompt = "添付のUnagi Readerパッケージ全体を読み、ファイル内の依頼文と出力言語に従って回答してください。ファイルに含まれていない内容を推測せず、ノートを書き換えたり、アプリへ書き込んだりしないでください。"
     public static func make(prompt: String, file: URL) throws -> URL {
         guard !prompt.isEmpty, prompt.count < 14_000, file.isFileURL, file.path.hasPrefix("/") else { throw HandoffError.invalidLink }
         var components = URLComponents()

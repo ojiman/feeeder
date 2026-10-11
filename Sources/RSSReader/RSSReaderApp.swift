@@ -20,7 +20,7 @@ struct RSSReaderApp: App {
             if let index = args.firstIndex(of: "--data-directory"), args.indices.contains(index + 1) {
                 directory = URL(fileURLWithPath: args[index + 1], isDirectory: true)
             } else {
-                directory = URL.applicationSupportDirectory.appending(path: "Feeeder", directoryHint: .isDirectory)
+                directory = URL.applicationSupportDirectory.appending(path: AppIdentity.dataFolderName, directoryHint: .isDirectory)
             }
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let store = try ReaderStore(url: directory.appending(path: "Reader.store"), seedDemo: args.contains("--seed-demo"))
@@ -34,7 +34,7 @@ struct RSSReaderApp: App {
             handoff.reconcile(with: store, at: .now)
             _aiReview = State(initialValue: review)
             _handoff = State(initialValue: handoff)
-            let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "Feeeder/Images")
+            let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "\(AppIdentity.dataFolderName)/Images")
             _imageLoader = State(initialValue: ReaderImageLoader(directory: cache))
             _lifecycleError = State(initialValue: handoff.maintenanceError)
         } catch {
@@ -43,7 +43,7 @@ struct RSSReaderApp: App {
     }
 
     var body: some Scene {
-        Window("Feeeder", id: "reader") {
+        Window("Unagi Reader", id: "reader") {
             Group {
                 if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader) }
                 else {

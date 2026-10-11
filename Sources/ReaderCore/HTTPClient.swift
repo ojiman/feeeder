@@ -50,7 +50,7 @@ public struct HTTPClient: HTTPFetching, @unchecked Sendable {
                 configuration.timeoutIntervalForResource = 20
                 if let protocolClasses { configuration.protocolClasses = protocolClasses }
                 var request = URLRequest(url: url)
-                request.setValue("Feeeder/1.0", forHTTPHeaderField: "User-Agent")
+                request.setValue("\(AppIdentity.userAgentToken)/1.0", forHTTPHeaderField: "User-Agent")
                 for (key, value) in headers { request.setValue(value, forHTTPHeaderField: key) }
                 receiver.start(configuration: configuration, request: request, continuation: continuation)
             }

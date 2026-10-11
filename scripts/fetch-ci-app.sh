@@ -32,12 +32,12 @@ dest=${FEEEDER_CI_ROOT:-/private/tmp/feeeder-ci}/$label
 [ ! -e "$dest" ] || { echo "$dest already exists; remove it or use another run." >&2; exit 1; }
 mkdir -p "$dest"
 
-if ! gh run download "$run_id" --pattern 'feeeder-release-*' --dir "$dest"; then
+if ! gh run download "$run_id" --pattern 'unagi-reader-release-*' --dir "$dest"; then
     echo "Run $run_id has no release artifact. A pull request run skips the release build unless the PR changes the build or packaging; run the workflow by hand and use --run, or build locally." >&2
     exit 1
 fi
-zip=$(find "$dest" -name Feeeder-adhoc.zip 2>/dev/null | head -n 1 || true)
-[ -n "$zip" ] || { echo "Feeeder-adhoc.zip not found in the artifact." >&2; exit 1; }
+zip=$(find "$dest" -name UnagiReader-adhoc.zip 2>/dev/null | head -n 1 || true)
+[ -n "$zip" ] || { echo "UnagiReader-adhoc.zip not found in the artifact." >&2; exit 1; }
 
 # The artifact records the PR head it was built for. Refuse a build that is not the one asked for.
 if [ -n "$expected_head" ]; then
@@ -48,7 +48,7 @@ fi
 
 app_dir=$dest/app
 ditto -x -k "$zip" "$app_dir"
-app=$app_dir/Feeeder.app
+app=$app_dir/UnagiReader.app
 codesign --verify --deep --strict "$app"
 
 # Read the attributes as a plain assignment so a failing xattr stops the script (set -e does not

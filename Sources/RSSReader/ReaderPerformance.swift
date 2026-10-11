@@ -1,9 +1,10 @@
 import AppKit
 import os
+import ReaderCore
 
 // Opt-in local diagnostics for synthetic acceptance runs. No article IDs, text or URLs are logged.
 @MainActor enum ReaderPerformance {
-    private static let signposter = OSSignposter(subsystem: "jp.ojiman.Feeeder", category: "ReaderUI")
+    private static let signposter = OSSignposter(subsystem: AppIdentity.bundleIdentifier, category: "ReaderUI")
     private static var pending: (UUID, Double, OSSignpostIntervalState)?
     private static var samples: [Double] = []
     private static var gaps: [Double] = []
@@ -40,6 +41,6 @@ import os
         do {
             try FileManager.default.createDirectory(at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONSerialization.data(withJSONObject: values, options: .sortedKeys).write(to: output, options: .atomic)
-        } catch { NSLog("Feeeder performance output failed") }
+        } catch { NSLog("Unagi Reader performance output failed") }
     }
 }

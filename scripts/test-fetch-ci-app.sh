@@ -17,13 +17,13 @@ case "$1 $2" in
   "run list") [ -n "${FAKE_NORUN:-}" ] || echo 12345 ;;
   "run download")
     while [ $# -gt 0 ]; do [ "$1" = "--dir" ] && d=$2; shift; done
-    mkdir -p "$d/feeeder-release-x"; : > "$d/feeeder-release-x/Feeeder-adhoc.zip"
-    printf 'commit\npr_head=%s\nmacOS\n' "${FAKE_BUILT:-aaaaaaa1111111111111111111111111111111aa}" > "$d/feeeder-release-x/environment.txt" ;;
+    mkdir -p "$d/unagi-reader-release-x"; : > "$d/unagi-reader-release-x/UnagiReader-adhoc.zip"
+    printf 'commit\npr_head=%s\nmacOS\n' "${FAKE_BUILT:-aaaaaaa1111111111111111111111111111111aa}" > "$d/unagi-reader-release-x/environment.txt" ;;
 esac
 EOF
 cat > "$bin/ditto" <<'EOF'
 #!/bin/bash
-for last; do :; done; mkdir -p "$last/Feeeder.app"
+for last; do :; done; mkdir -p "$last/UnagiReader.app"
 EOF
 printf '#!/bin/bash\nexit 0\n' > "$bin/codesign"
 cat > "$bin/xattr" <<'EOF'

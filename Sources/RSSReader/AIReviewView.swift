@@ -62,7 +62,7 @@ struct AIReviewView: View {
             }
             Text("Claudeに渡す前に、この確認画面で本人が「Claudeで開く」を押します。Claude側でAttachを確認し、本人が送信してください。送信後に、生成物だけの専用フォルダの読取・変更許可が出る場合があります。処理はcloudで行われ、使用するファイルは端末を離れます。Coworkを利用できない場合や添付制限時は、コピー・書き出しを選べます。")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("Feeeder内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、自分のノートへ貼り付け・編集してください。")
+            Text("Unagi Reader内のコピーは期限切れ・削除時に破棄します。本人が保存したファイルやAI側へ渡した内容は、この削除の対象外です。返答は本人が確認し、自分のノートへ貼り付け・編集してください。")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 820, minHeight: 640)
         .onAppear { handoff.resetStatus(); generate() }
@@ -87,7 +87,7 @@ struct AIReviewView: View {
     private func export() {
         perform {
             _ = try review.validated(at: .now)
-            let panel = NSSavePanel(); panel.nameFieldStringValue = "Feeeder-review.txt"; panel.allowedContentTypes = [.plainText]
+            let panel = NSSavePanel(); panel.nameFieldStringValue = AppIdentity.reviewFileName; panel.allowedContentTypes = [.plainText]
             panel.begin { response in
                 guard response == .OK, let url = panel.url else { return }
                 perform { let package = try review.validated(at: .now); try Data(package.text.utf8).write(to: url, options: .atomic) }
@@ -107,7 +107,7 @@ struct AIReviewView: View {
                     let files = try HandoffFiles.writeSplit(package, directory: handoff.directory)
                     handoff.reconcile(with: store, at: .now)
                     guard review.package != nil, handoff.maintenanceError == nil else { throw AIPackageError.unavailable }
-                    let folder = destination.appending(path: "Feeeder-review-" + package.id.uuidString, directoryHint: .isDirectory)
+                    let folder = destination.appending(path: "UnagiReader-review-" + package.id.uuidString, directoryHint: .isDirectory)
                     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
                     for file in files { try FileManager.default.copyItem(at: file, to: folder.appending(path: file.lastPathComponent)) }
                 }
