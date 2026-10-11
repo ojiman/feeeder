@@ -25,6 +25,7 @@ enum AppPalette {
     static var surfaceColor: Color { Color(nsColor: surface) }
 
     /// The selected row of the article list: a quiet neutral gray instead of the system's saturated accent colour.
+    static var selectionColor: Color { Color(nsColor: selection) }
     static let selection = NSColor(name: "UnagiSelection") { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(white: 1, alpha: 0.13) : NSColor(white: 0, alpha: 0.09)
     }

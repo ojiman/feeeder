@@ -44,3 +44,29 @@ import Testing
         #expect(first > 215 * 3 / 4)                                                            // at the right end, where the count is (it takes the count's place)
     }
 }
+
+/// Dragging a subscription onto a folder row.
+@MainActor struct FeedDragTests {
+    @Test func aDraggedSubscriptionIsJustItsIdentifierAndSurvivesEncoding() throws {
+        let id = UUID()
+        let data = try JSONEncoder().encode(FeedDrag(id: id))
+        #expect(try JSONDecoder().decode(FeedDrag.self, from: data).id == id)
+    }
+    private func background(targeted: Bool, canDrop: Bool) throws -> NSColor {
+        let host = NSHostingView(rootView: SidebarRow(title: "Tech", symbol: "folder", count: 3, onDropFeeds: canDrop ? { _ in true } : nil, forceTargeted: targeted)
+            .frame(width: 215, height: 30).background(Color(white: 0.15)))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 215, height: 30), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host; window.appearance = NSAppearance(named: .darkAqua)
+        defer { window.close() }
+        host.layoutSubtreeIfNeeded(); pumpRunLoop(0.2)
+        let rep = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        host.cacheDisplay(in: host.bounds, to: rep)
+        return try #require(rep.colorAt(x: rep.pixelsWide * 6 / 10, y: rep.pixelsHigh / 2)?.usingColorSpace(.sRGB))        // an empty part of the row
+    }
+    @Test func aFolderRowShowsItIsTheTargetOnlyWhileADragIsOverIt() throws {
+        let idle = try background(targeted: false, canDrop: true), over = try background(targeted: true, canDrop: true)
+        let notATarget = try background(targeted: true, canDrop: false)
+        #expect(over.brightnessComponent > idle.brightnessComponent + 0.04)                               // lighter while a drag is over it
+        #expect(abs(notATarget.brightnessComponent - idle.brightnessComponent) < 0.01)                    // a row that takes no drop never lights up
+    }
+}

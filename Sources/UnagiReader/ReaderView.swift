@@ -341,12 +341,12 @@ struct ReaderView: View {
                     DisclosureGroup {
                         ForEach(grouped[folder] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                     } label: {
-                        sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: "「\(folder)」に購読を追加") { addingTo = SubscriptionTarget(folder: folder) }.tag(LibraryScope.folder(folder))
+                        sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: "「\(folder)」に購読を追加", onAdd: { addingTo = SubscriptionTarget(folder: folder) }, onDropFeeds: { dropFeeds($0, into: folder) }).tag(LibraryScope.folder(folder))
                             .contextMenu { Button("フォルダ名を変更…") { folderName = folder; renamingFolder = folder } }
                     }
                 }
             } header: {
-                SidebarSectionHeader(title: "購読元", help: "購読元を追加") { addingTo = SubscriptionTarget(folder: "") }
+                SidebarSectionHeader(title: "購読元", help: "購読元を追加", action: { addingTo = SubscriptionTarget(folder: "") }, onDropFeeds: { dropFeeds($0, into: "") })
             }
         }
         .listStyle(.sidebar)
@@ -376,6 +376,7 @@ struct ReaderView: View {
                     .accessibilityLabel("更新失敗: " + error)
             }
         }.padding(.vertical, 4)
+            .draggable(FeedDrag(id: feed.id))
             .tag(LibraryScope.feed(feed.id))
             .contextMenu {
                 Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
@@ -392,8 +393,15 @@ struct ReaderView: View {
             }
     }
 
-    private func sidebarRow(_ title: String, symbol: String, count: Int, addHelp: String? = nil, onAdd: @escaping () -> Void = {}) -> some View {
-        SidebarRow(title: title, symbol: symbol, count: count, addHelp: addHelp, onAdd: onAdd)
+    private func sidebarRow(_ title: String, symbol: String, count: Int, addHelp: String? = nil, onAdd: @escaping () -> Void = {}, onDropFeeds: (([UUID]) -> Bool)? = nil) -> some View {
+        SidebarRow(title: title, symbol: symbol, count: count, addHelp: addHelp, onAdd: onAdd, onDropFeeds: onDropFeeds)
+    }
+
+    /// Subscriptions dropped on a folder row (or on the sources header, which is "unfiled"). True if any of them moved.
+    private func dropFeeds(_ ids: [UUID], into folder: String) -> Bool {
+        var moved = false
+        perform { moved = try store.moveFeeds(ids: ids, toFolder: folder) }
+        return moved
     }
 
     private var articleList: some View {

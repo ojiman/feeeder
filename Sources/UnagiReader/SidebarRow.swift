@@ -8,9 +8,14 @@ struct SidebarRow: View {
     let count: Int
     var addHelp: String? = nil
     var onAdd: () -> Void = {}
+    /// Takes dropped subscriptions (a folder row). Returns whether any of them moved.
+    var onDropFeeds: (([UUID]) -> Bool)? = nil
+    /// Shows the row as the target of a drag without a drag (snapshots and tests).
+    var forceTargeted = false
     /// Shows the + without the pointer (snapshots and tests).
     var forceHover = false
     @State private var hovering = false
+    @State private var targeted = false
 
     private var showsAdd: Bool { addHelp != nil && (hovering || forceHover) }
 
@@ -33,5 +38,7 @@ struct SidebarRow: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        .background((onDropFeeds != nil && (targeted || forceTargeted)) ? AppPalette.selectionColor : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+        .dropDestination(for: FeedDrag.self) { items, _ in onDropFeeds?(items.map(\.id)) ?? false } isTargeted: { targeted = $0 }
     }
 }

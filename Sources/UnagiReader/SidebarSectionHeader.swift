@@ -6,9 +6,12 @@ struct SidebarSectionHeader: View {
     let title: String
     let help: String
     let action: () -> Void
+    /// Takes dropped subscriptions (the sources header: unfiled). Returns whether any of them moved.
+    var onDropFeeds: (([UUID]) -> Bool)? = nil
     /// Shows the + without the pointer (snapshots and tests).
     var forceVisible = false
     @State private var hovering = false
+    @State private var targeted = false
 
     var body: some View {
         HStack {
@@ -24,6 +27,8 @@ struct SidebarSectionHeader: View {
         }
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        .background((onDropFeeds != nil && targeted) ? AppPalette.selectionColor : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+        .dropDestination(for: FeedDrag.self) { items, _ in onDropFeeds?(items.map(\.id)) ?? false } isTargeted: { targeted = $0 }
         // The sidebar exposes a section header as one heading, so the + is also offered as an action of the heading (VoiceOver actions).
         .accessibilityAction(named: Text(help), action)
     }
