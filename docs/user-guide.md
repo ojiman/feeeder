@@ -2,7 +2,7 @@
 
 This guide explains how to start Feeeder, how it handles your data, and how to use it. For a short overview, read the [README](../README.md) first.
 
-This is an English translation of the [Japanese user guide](user-guide.ja.md). The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "新しいテーマ (New theme)".
+This is an English translation of the [Japanese user guide](user-guide.ja.md). The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "新しいノート (New note)".
 
 If the two guides differ, check the Japanese guide and the [specification](specification.md), then tell us.
 
@@ -23,7 +23,7 @@ SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.
 
 ### Where the data is
 
-A normal start begins with an empty library. The library is stored in `Application Support/Feeeder/Reader.store`. If you restart the same version of the app, your subscriptions, articles, read times, stars, and themes are kept.
+A normal start begins with an empty library. The library is stored in `Application Support/Feeeder/Reader.store`. If you restart the same version of the app, your subscriptions, articles, read times, stars, and notes are kept.
 
 ### Updates during the beta
 
@@ -32,8 +32,8 @@ A normal start begins with an empty library. The library is stored in `Applicati
 - From 1.0 onward, saved data will be kept across updates.
 - Release notes for beta versions will state this limit. A check that data survived in one past version does not promise the same for later beta versions.
 - There is no migration of data from the earlier prototype.
-- **The daily notes, weekly notes, and scraps of the older version are not moved to the theme-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
-- **The learning goal, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes with them, are not carried over. They are dropped the first time this version starts, and this cannot be undone.** Your theme names, notes and recorded articles stay. Back up the `Feeeder` folder first (see the steps below).
+- **The daily notes, weekly notes, and scraps of the older version are not moved to the note-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
+- **Earlier "themes" are not carried over.** The learning goal, theme names, notes, recorded articles, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes are not moved to this version. Your subscriptions, articles, read times, and stars stay. **The first time this version starts, the old theme content is gone, and this cannot be undone.** Back up the `Feeeder` folder first (see the steps below).
 
 ### Back up the library by hand
 
@@ -41,7 +41,7 @@ Do this before you update a beta version, or if the app cannot open the library 
 
 1. Quit Feeeder with ⌘Q.
 2. In Finder, choose Go > Go to Folder (the Japanese menu is 移動 → フォルダへ移動) and open `~/Library/Application Support/`.
-3. Rename the whole `Feeeder` folder, for example to `Feeeder-backup-20261007-2100`. Keep `Reader.store` together with `Reader.store-shm` and `Reader.store-wal` if they exist. Do not copy only the database file. The folder also holds theme data and hand-off management data.
+3. Rename the whole `Feeeder` folder, for example to `Feeeder-backup-20261007-2100`. Keep `Reader.store` together with `Reader.store-shm` and `Reader.store-wal` if they exist. Do not copy only the database file. The folder also holds note data and hand-off management data.
 4. Start Feeeder. It creates a new `Feeeder` folder and an empty library. Keep the renamed folder until you have checked the new one. A backup is not a promise that the data can be converted or restored.
 
 ### Try the app with synthetic data
@@ -55,7 +55,7 @@ open -n '.build/Feeeder.app' --args --data-directory /private/tmp/feeeder-demo -
 - `--data-directory <path>` is for development checks. It sets where the app stores its data.
 - Use `open -n` so that a new instance starts. Without it, `open` can reuse a Feeeder that is already running and drop the arguments.
 - Before you do anything, check the process arguments (for example with `pgrep -fl RSSReader`) and check that the window shows the demo subscriptions.
-- The demo URLs end in `.example`. No real pages exist there. Do not add real subscriptions, articles, or themes to Git. See [AGENTS.md](../AGENTS.md) for details. We have not re-run this procedure on macOS since it was written down.
+- The demo URLs end in `.example`. No real pages exist there. Do not add real subscriptions, articles, or notes to Git. See [AGENTS.md](../AGENTS.md) for details. We have not re-run this procedure on macOS since it was written down.
 
 ## 3. Using the app
 
@@ -65,9 +65,9 @@ The window has three columns. In Settings you can choose the appearance: follow 
 
 | Column | What it shows |
 |---|---|
-| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Themes (each theme), and Sources (folders and subscriptions). |
-| Middle | The list of articles. For a theme it is the theme's articles. |
-| Right | The article. For a theme, the toolbar button (or `⌥⌘I`) opens the note beside it, as the standard inspector. |
+| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Notes (the most recently edited first), and Sources (folders and subscriptions). |
+| Middle | The list of articles. For a note it is the articles you put into that note. |
+| Right | The article. For a note, the note opens beside it as the standard inspector (it opens at once when you select a note; the toolbar button or `⌥⌘I` closes and opens it). |
 
 ### Subscriptions and folders
 
@@ -88,7 +88,7 @@ Focus the article list, then use these keys:
 | `j` / `k` | Next / previous article |
 | `m` | Mark read / unread |
 | `s` | Add or remove a Star |
-| `t` | Choose the themes for the article (the icon at the top right does the same) |
+| `t` | Choose the notes for the article (the icon at the top right does the same) |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page inside the app |
 | `Esc` | Go back to reading |
@@ -98,20 +98,20 @@ Focus the article list, then use these keys:
 - Text extraction is best effort. The app labels the text as one of 「フィード提供本文」 (body provided by the feed), 「抽出本文・全文保証なし」 (extracted body, not guaranteed to be complete), or 「RSS要約のみ」 (RSS summary only). If the body cannot be fetched, you still get the summary and a link to the original. The app does not try to get around access limits.
 - The list shows favicons and, when available, article thumbnails. The article shows images in the text. Images are best effort. While an image loads or if it fails, the frame keeps its height. The image cache is 64 MiB. Successes are kept for 7 days and failures for 10 minutes. At most 4 images load at the same time.
 
-### Stars and themes
+### Stars and notes
 
 - Press `s` (or use the button at the top right) to star an article. You can read starred articles again from the Star list.
-- Press `t` (or use the icon at the top right) to choose the themes for an article. Check existing themes to add the article or remove it. You can also create a new theme and add the article to it. An article can be in many themes.
-- A Star and a theme are separate. If you remove the Star, the article stays in its themes.
-- When you add an article to a theme, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
-- Create a theme with 「新しいテーマ」 (New theme) in the sidebar. The sheet asks for a name. Right-click a theme and choose 「名前を編集…」 (Edit Name…) to change the name, or delete it. Deleting a theme does not delete its articles or Stars.
+- Press `t` (or use the icon at the top right) to choose the notes for an article. Check existing notes to add the article or remove it. You can also create a new note and add the article to it (the name you type becomes the heading on its first line). An article can be in many notes.
+- A Star and a note are separate. If you remove the Star, the article stays in its notes.
+- When you add an article to a note, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
+- Create a note with 「新しいノート」 (New note) in the sidebar. It is empty and opens at once. Right-click a note and choose 「削除…」 (Delete…) to delete it. Deleting a note does not delete its articles or Stars.
 
-### The note in a theme
+### The note
 
-Select a theme. The middle column shows its articles and the right column shows the article you select. Press the note button in the toolbar, or `⌥⌘I`, to open the note beside the article (press it again to close it). The button is greyed out outside a theme.
+Select a note in the sidebar (the most recently edited is first). The middle column shows the articles you put into it and the right column shows the article you select. The note panel opens beside the article when you select the note. Press the note button in the toolbar, or `⌥⌘I`, to close it and open it again (a note you closed stays closed while the app runs). The button is greyed out when no note is selected.
 
-- The note is the one document of this theme. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. Opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. The app remembers for each theme whether its note is open while the app is running (a theme starts with its note closed).
-- The top of the note panel shows the theme's name and two small arrows for the previous and next article.
+- A note is one Markdown document. You write plain text in your own words. A line that starts with `#` is a heading. There is no length limit. It is saved as you type, exactly as you typed it. A note has no name: **its title is its first line** (without the leading `#` marks and spaces; an empty note is called 「新規ノート」). Only when the window is narrow (under about 1,300 pt), opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. You can drag the edge of the panel to change its width, and the app keeps the width for the next launch (this is still being checked in a real window).
+- The top of the note panel has the button 「Claudeでレビューを頼む」 (Ask Claude to review) and two small arrows for the previous and next article.
 - Keys: `j` and `k` move between articles in the list, and `s`, `t`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 - **The AI never writes into your note.**
 
@@ -119,19 +119,19 @@ Select a theme. The middle column shows its articles and the right column shows 
 
 The AI runs on your Mac only. Nothing is sent out. You can turn it off in Settings under 「端末内AI」 (On-device AI); when it is off, the app does not call the model. You can also see its state there. If the language assets are not on your Mac, the app does not download them.
 
-In this version the AI has no visible feature: the suggestions (near themes, suggested groups, theme-name ideas), the summary card in the note panel and the note actions (「わかりやすく」, 「3行の要点」) are gone (decision 0019). The summary returns in the next stage as 「ノートに要約を送る」 (Send a summary to a note); see the [roadmap](roadmap.md).
+In this version the AI has no visible feature: the suggestions (near notes, suggested groups, name ideas), the summary card in the note panel and the note actions (「わかりやすく」, 「3行の要点」) are gone (decision 0019). The summary returns in the next stage as 「ノートに要約を送る」 (Send a summary to a note); see the [roadmap](roadmap.md).
 
 ## 5. How long data is kept
 
 - Article bodies and RSS summaries are kept for 30 days by default. In Settings you can choose 7, 30, 90, or 365 days.
 - For an unread article the 30 days start when it is first received. For a read article they start at the first read.
 - Shortening the period, or deleting all bodies at once, asks you to confirm what will be removed.
-- **The record in a theme is never deleted automatically.** This means the article title, link, and the summary saved at that time, and your notes.
-- A Star or adding an article to a theme does not extend the life of its body.
+- **The record in a note is never deleted automatically.** This means the article title, link, and the summary saved at that time, and your notes.
+- A Star or adding an article to a note does not extend the life of its body.
 
 ## 6. Hand-off to Claude Desktop
 
-There are two entry points: the toolbar button 「Claudeで開く…」 (Open in Claude…), which appears when you select a theme, and the button 「Claudeでレビューを頼む」 (Ask Claude to review) at the top of the note panel. Both open the review screen. This is how the hand-off works.
+There are two entry points: the toolbar button 「Claudeで開く…」 (Open in Claude…), which appears when you select a note, and the button 「Claudeでレビューを頼む」 (Ask Claude to review) at the top of the note panel. Both open the review screen. This is how the hand-off works.
 
 1. On the review screen you choose the output language and the sources.
 2. The screen separates saved RSS summaries from articles that are still stored. You review the complete text, the coverage, and the source URLs.
@@ -142,7 +142,7 @@ On the review screen you can also choose:
 - **ノートを含める** (include my note). **Off by default** when you open the screen from the toolbar. When you open it from 「Claudeでレビューを頼む」 in the note panel, it is on, because you asked for a review. A switch for an empty note is off and cannot be turned on. Your note is your own writing: if you turn it on, exactly what the screen shows leaves your Mac (it goes to Claude). With the note on, the request becomes a review of the note itself: what is already done, what is missing (judged only from what the note does not say), weak support and opposing views in the sources, and what to read or write next. Claude is not asked to change your note.
 - You can include the note without any article. Without the note, at least one source is required.
 
-After you review, if the theme name, the included note, or the title of an included source changes, the review becomes invalid and you must make it again.
+After you review, if the included note or the title of an included source changes, the review becomes invalid and you must make it again.
 
 Facts you should know:
 
@@ -151,7 +151,7 @@ Facts you should know:
 - **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Feeeder puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
 - A successful launch does not mean the file was attached, the message was sent, or the file was read.
 - If you cancel or the launch fails, you can try again with the same review. You can also copy the full text or export it as a TXT file. If there is a size limit, you can export UTF-8 files split to 1 MiB or less. This split size is not the limit of Claude.
-- The copy that the app manages is deleted when its theme or a source it includes is deleted. The copy is also deleted when an article it contains is removed from the theme. If you only rename the theme after the copy was made, the copy is not deleted; it stays as a snapshot until its time limit. The copy is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
+- The copy that the app manages is deleted when its note or a source it includes is deleted. The copy is also deleted when an article it contains is removed from the note. If you only edit the note after the copy was made, the copy is not deleted; it stays as a snapshot until its time limit. The copy is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
 - A place that you chose for an export, and what has already gone to Claude, are not removed by this.
 - You paste a reply into your note by yourself. There is no automatic sending and no automatic writing of replies.
 

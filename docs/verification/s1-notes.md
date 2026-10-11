@@ -1,8 +1,8 @@
-# S1 notes (S1a: remove what V1 no longer has) — verification record
+# S1 notes (S1a: remove what V1 no longer has; S1b: notes replace themes) — verification record
 
-**Result: PASS on synthetic data for S1a (macOS 27 / Swift 6.4, local). Not checked in a real window, with the real Japanese input, on macOS 26 CI, or on a real library.** S1b (the rename and the layout fixes) extends this record.
+**Result: PASS on synthetic data for S1a and S1b (macOS 27 / Swift 6.4, local); a short real-window check of S1b (below) found one open problem: the note panel is about 270 pt wide at a 1,240 pt window, below its 300 pt minimum, and dragging its edge could not be tried. Not checked with the real Japanese input, on macOS 26 CI, or on a real library.**
 
-Plan: `docs/superpowers/plans/2026-10-11-s1-notes.md`. Decision: `docs/decisions/0019-v1-simplification-notes.md`.
+Plan: `docs/superpowers/plans/2026-10-11-s1-notes.md` (removed with S1b; in Git history). Decision: `docs/decisions/0019-v1-simplification-notes.md`.
 
 | Check | Result |
 |---|---|
@@ -34,3 +34,35 @@ No Critical finding; the store upgrade was re-run by the reviewer and passes. Fi
 | Important: two UI tests for behavior that stays were deleted (note absent while closed; a theme lists only its articles) | Restored (`theNoteIsAbsentWhileClosedAndBesideTheListAndTheReaderWhenOpen`, `aThemeListsOnlyItsOwnArticlesWithTheNoteClosed`); they pass |
 | Minor: `theNotePanelHasNoSummaryButtonAndNoActionBar` could not fail on the old code | Accepted: the removal is guaranteed by the deleted types no longer compiling; the test guards against the panel regrowing buttons |
 | Minor: unused `createTheme(name:adding: [UUID])`, unused `OnDeviceAISetting.isEnabled`, the Settings AI switch has no visible effect until S2, the list moves by the bar's height when the note is toggled | Deferred to S2, S1b and S4 (the unused code goes with S4; the bar is looked at in a real window after S1b) |
+
+# S1b: notes replace themes
+
+| Check | Result |
+|---|---|
+| Old stores open: one made before decision 0019 (`52429b4`) and one made after S1a (`ae8aa78`) keep feeds, articles, read state and Stars; the themes (names, notes, article records) are not kept; the new store accepts a write and reopens | PASS, `PreNoteStoreUpgradeTests` with both fixtures (opt-in) |
+| The title of a note: first non-empty line, marks removed; empty, marks-only and space-only notes are 「新規ノート」; CRLF, CR, U+2028; emoji and combining marks whole; a 10,000-character line returned whole; a mark in the middle kept | PASS, `NoteTitleTests` (5; written first, failed to compile, then passed) |
+| The stored entities are `Note` and `NoteArticle` only; the sidebar order is the last edit first with a fixed tie order; saving to a missing note is an error | PASS, `NoteTests` |
+| A panel is open at first and a closed one stays closed per note while the app runs | PASS, `ReaderWorkspaceTests` (failed first); opening the panel does not take the keyboard: `openingThePanelDoesNotTakeKeyboardFocus` |
+| The sidebar folds when a panel opens only below 1,300 pt, a hand choice holds until the panel closes, a resize while open folds and unfolds | PASS, `NoteLayoutTests` (6). The fold itself cannot be seen in a headless window |
+| The panel width: clamped to 300-640, a missing, text or NaN value falls back to 380, a saved value returns after a restart, tiny changes are not written again | PASS, `NotePanelWidthTests` (4; written first) |
+| A managed Claude copy written before the rename (old keys `themeID`, `themeArticle`) is removed by maintenance and nothing fails later | PASS, `aCopyWrittenBeforeTheRenameToNotesIsRemovedWithoutFailingMaintenance` |
+| The package: no goal, no title line, `BEGIN_NOTE`/`END_NOTE`, the note text verbatim | PASS, `AIPackageTests` |
+| Whole run | 204 tests in 34 suites (ReaderCore) pass; UI suites run alone: `NoteReaderTests` 10, `NotePanelTests` 5, `HandoffEntryTests` 2 pass |
+| Release build and `git diff --check` | build succeeds; clean |
+
+## Real-window check (a copy of the app with its own bundle identifier and synthetic data; the owner's library and running app were not touched)
+
+| Observed | Result |
+|---|---|
+| 「新しいノート」 makes an empty note, selects it, and its panel opens at once | seen |
+| Typing `# 金利の話` and a line: the sidebar row and the window subtitle become 「金利の話」 at once | seen |
+| 「Claudeでレビューを頼む」 appears once the note has text and stays on one line | seen |
+| The sidebar toggle button in the bar above the list folds and shows the sidebar | seen |
+| The panel measured about 270 pt wide in a 1,240 pt window (sidebar about 217, list about 393, article about 361), with the sidebar shown or folded | **problem**: below the 300 pt minimum; the cause is not known. A hard `frame(minWidth: 300)` pushed the panel off the right edge and was reverted. The fold threshold (1,300 pt) was set from this measurement |
+| Dragging the edge of the panel; the width after a relaunch; the fold in a narrow window | **not tried**: background input does not reach the divider, and a real mouse drag was stopped because other windows overlapped the screen |
+
+## Not verified
+
+- Dragging the panel edge, the saved width after a relaunch, and the fold in a narrow window (all need a real mouse and a real window).
+- Real Japanese input in the note, VoiceOver, macOS 26 CI, the owner's real library.
+- The decision of the plan to show the first article when a note is opened was **not built** (displaying an article marks it as read, so entering a note would mark an article the person never chose).
