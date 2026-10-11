@@ -120,7 +120,7 @@ import Testing
         #expect(a.firstReadAt == nil && b.firstReadAt == nil && !a.isRead && !b.isRead)
         try store.setStar(articleID: a.id, isStarred: false, at: at)
         #expect(Set(store.noteArticleIDs(noteID: note.id)) == [a.id, b.id])
-        #expect(store.noteIDs(containing: a.id) == [note.id])
+        #expect(store.isInAnyNote(articleID: a.id))
     }
 
     @Test func oneArticleCanBelongToSeveralNotes() throws {
@@ -131,9 +131,9 @@ import Testing
         let second = try store.createNote(text: "# B\n", at: at.addingTimeInterval(1))
         try store.addArticle(article.id, toNote: second.id, at: at)
         try store.addArticle(article.id, toNote: first.id, at: at)
-        #expect(store.noteIDs(containing: article.id) == [first.id, second.id])
+        #expect(store.noteArticles.filter { $0.articleID == article.id }.count == 2)
         try store.removeArticle(article.id, fromNote: first.id, at: at)
-        #expect(store.noteIDs(containing: article.id) == [second.id])
+        #expect(store.noteArticles.filter { $0.articleID == article.id }.map(\.noteID) == [second.id])
         try store.removeArticle(article.id, fromNote: first.id, at: at)
         #expect(store.noteArticleCount(noteID: first.id) == 0 && store.noteArticleCount(noteID: second.id) == 1)
     }
@@ -236,10 +236,7 @@ import Testing
         #expect(store.note(id: note.id)?.text == "# 成功\n")                                          // the failed save changed nothing
         try store.saveNote(noteID: note.id, text: "再試行のノート", at: at)
         #expect(store.note(id: note.id)?.text == "再試行のノート")
-        gate.failNext = true
-        let noteCount = store.notes.count, linkCount = store.noteArticles.count
-        #expect(throws: (any Error).self) { try store.createNote(text: "# 失われる束\n", adding: ids[0], at: at) }
-        #expect(store.notes.count == noteCount && store.noteArticles.count == linkCount)
+        let noteCount = store.notes.count
         gate.failNext = true
         #expect(throws: (any Error).self) { try store.createNote(text: "# 失われる\n", at: at) }
         #expect(store.notes.count == noteCount)
@@ -315,9 +312,7 @@ import Testing
         induceFailedRecovery()
         try store.createNote(text: "# 回復後の新規\n", at: at)
         #expect(store.notes.map(\.title) == ["回復後の新規"])
-        induceFailedRecovery()
-        let grouped = try store.createNote(text: "# 束\n", adding: ids[3], at: at)
-        #expect(store.noteArticleCount(noteID: grouped.id) == 1)
+
     }
 
     @Test func recordKeepsTheTitleAndURLFromTheTimeOfAdding() throws {
@@ -393,37 +388,6 @@ import Testing
         #expect(!store.isInAnyNote(articleID: id))
     }
 
-    @Test func toggleAddsThenRemovesAndNamesTheNote() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
-        let id = store.articles[0].id
-        let note = try store.createNote(text: "# 金利\n", at: at)
-        #expect(try store.toggleNote(note.id, for: id, at: at) == .added(noteTitle: "金利"))
-        #expect(store.isInAnyNote(articleID: id))
-        #expect(try store.toggleNote(note.id, for: id, at: at) == .removed(noteTitle: "金利"))
-        #expect(!store.isInAnyNote(articleID: id))
-        #expect(throws: NoteError.self) { try store.toggleNote(UUID(), for: id, at: at) }
-    }
-
-    @Test func creatingWithAnArticleIsOneAtomicSave() throws {
-        let library = try TestLibrary(); defer { library.cleanup() }
-        let gate = SaveGate()
-        let store = try gatedStore(library, gate)
-        let id = store.articles[0].id
-        let expectedSummary = store.articles[0].summary.trimmingCharacters(in: .whitespacesAndNewlines)
-        gate.failNext = true
-        #expect(throws: (any Error).self) { try store.createNote(text: "# 失敗\n", adding: id, at: at) }
-        #expect(store.notes.isEmpty && store.noteArticles.isEmpty)
-        let note = try store.createNote(text: "#   成功  \n", adding: id, at: at)
-        #expect(note.title == "成功" && store.noteIDs(containing: id) == [note.id])
-        #expect(!expectedSummary.isEmpty && store.noteArticles.first?.summary == expectedSummary)
-        #expect(throws: NoteError.self) { try store.createNote(text: "# 存在しない\n", adding: UUID(), at: at) }
-        #expect(store.notes.count == 1)
-    }
-
-}
-
-extension NoteTests {
     @Test func sendAndUndoKeepTheTextAndLinkTogether() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, seedDemo: true, now: at)

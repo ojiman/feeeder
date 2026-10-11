@@ -105,8 +105,6 @@ struct ReaderStoreTests {
             { _ = try store.createNote(text: "# 変更\n", at: at) },
             { try store.saveNote(noteID: note.id, text: "捨ててはいけない変更", at: at) },
             { _ = try store.addArticle(article.id, toNote: note.id, at: at) },
-            { _ = try store.toggleNote(note.id, for: article.id, at: at) },
-            { _ = try store.createNote(text: "# 変更\n", adding: article.id, at: at) },
             { try store.removeArticle(article.id, fromNote: note.id, at: at) },
             { try store.deleteNote(id: note.id) },
             { _ = try store.sendArticle(article.id, to: note.id, block: "blocked", newNoteTitle: "", at: at) },

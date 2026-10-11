@@ -157,27 +157,6 @@ extension ReaderStore {
         _ = noteArticles
         return articleNoteIDs[articleID] != nil
     }
-    @discardableResult public func toggleNote(_ noteID: UUID, for articleID: UUID, at: Date) throws -> NoteMembershipChange {
-        try reloadIfNeeded()
-        guard let note = note(id: noteID) else { throw NoteError.missingNote }
-        let title = note.title
-        if noteMembers[noteID]?.contains(articleID) == true {
-            try removeArticle(articleID, fromNote: noteID, at: at)
-            return .removed(noteTitle: title)
-        }
-        try addArticle(articleID, toNote: noteID, at: at)
-        return .added(noteTitle: title)
-    }
-    /// Creates the note and its first article in one save, so a failure never leaves an empty new note behind.
-    @discardableResult public func createNote(text: String = "", adding articleID: UUID, at: Date) throws -> Note {
-        try reloadIfNeeded()
-        guard let article = article(id: articleID) else { throw NoteError.missingArticle }
-        let note = Note(text: text, at: at)
-        context.insert(note)
-        context.insert(NoteArticle(noteID: note.id, article: article, summary: recordedSummary(of: article, at: at), at: at))
-        try save(); try reload()
-        return note
-    }
     private func recordedSummary(of article: Article, at: Date) -> String {
         isContentAvailable(article, at: at) ? article.summary.trimmingCharacters(in: .whitespacesAndNewlines) : ""
     }
@@ -185,15 +164,4 @@ extension ReaderStore {
         _ = noteArticles
         return noteMembers[noteID]?.count ?? 0
     }
-    public func noteIDs(containing articleID: UUID) -> [UUID] {
-        _ = noteArticles
-        guard let ids = articleNoteIDs[articleID] else { return [] }
-        return notes.map(\.id).filter { ids.contains($0) }
-    }
-
-}
-
-public enum NoteMembershipChange: Equatable, Sendable {
-    case added(noteTitle: String)
-    case removed(noteTitle: String)
 }
