@@ -1,5 +1,5 @@
 # S4 clean-up verification
-Result: core and individual UI suites PASS; the combined local UI runner did not print a completion summary. CI and independent review pending.
+Result: core and individual UI suites PASS; the combined local UI runner did not print a completion summary. Independent review PASS; CI results are attached to [PR #75](https://github.com/ojiman/feeeder/pull/75/checks).
 Environment: macOS 27.0.1 / Xcode 27.0 (27A266a) / Swift 6.4.0.34.1. Synthetic stores only.
 
 Base: `c32eb47` (PR #74). Runtime under test: `4d43483`. One combined run and one explicit `--no-parallel` run returned exit 0 with core 187/35 PASS, but their UI output stopped mid-test. They are **not** recorded as a complete UI PASS. Each UI suite then completed separately. No interactive app or user library was opened.
@@ -45,6 +45,8 @@ Production diff: 40 added / 269 removed lines (net 229 fewer); no model file cha
 
 The recovery matrix in `ReaderStoreTests` drops only removed methods; `PreNoteStoreUpgradeTests` uses create + add for its opt-in fixture, without changing the fixture baseline.
 
-Independent fixed-commit review: pending. CI macOS 26 / Swift 6.3.3: pending.
+Independent fixed-commit review: `c32eb47..359d045`, no Critical/Important/Minor findings. Separate targeted rerun: 27 tests / 4 suites PASS; diff check PASS. No fix pass needed. CI uses macOS 26 / Xcode 26.6 / Swift 6.3.3. Its result is recorded in [PR #75 checks](https://github.com/ojiman/feeeder/pull/75/checks), independently of the local evidence above.
+
+The reviewer did not rerun fresh compilation, whole/UI suites, Release/signature or archives; local evidence above stands without claiming independent execution. The reviewer also did not verify external approval/status, opt-in fixtures, future migrations, adversarial concurrent filesystem replacement or OS-level isolation. These remain outside this cleanup's claims. The subsequent decision index and result-only evidence edits do not change runtime code.
 
 Not checked: opt-in beta fixture preservation, interactive Claude launch/attachment/read, IME, VoiceOver, Reduce Motion and long-running use. Existing [S3 limits](s3-claude-from-note.md) still apply. S5 and schema changes are excluded.

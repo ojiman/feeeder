@@ -40,6 +40,7 @@
 
 | [0020](0020-summary-send-contract.md) | Summary sending and undo (S2) | valid (PR #69) |
 | [0021](0021-note-share-menu-and-review.md) | Note sharing and Claude review (S3) | valid (PR #71) |
+| [0022](0022-note-only-package-clean-up.md) | Note-only packages and managed-copy cleanup (S4) | valid (PR #74) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
