@@ -1,18 +1,28 @@
 import SwiftUI
+import AppKit
 import ReaderCore
+
+/// Where a new subscription goes: the folder of the row whose + was pressed (empty means unfiled).
+struct SubscriptionTarget: Identifiable {
+    let folder: String
+    var id: String { folder }
+}
 
 struct SubscriptionSheet: View {
     let store: ReaderStore
     var feed: Feed?
+    /// The folder a new subscription is added to. There is no folder field: the place where + was pressed decides it.
+    var folder = ""
     let onImported: (UUID) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var source = ""
     @State private var xml = ""
     @State private var manualXML = false
+    /// The XML input is for trouble-shooting: it is offered only when the sheet was opened with the Option key held.
+    @State private var xmlOffered = SubscriptionSheet.offersXMLInput(modifiers: NSEvent.modifierFlags)
     @State private var etag: String?
     @State private var lastModified: String?
     @State private var title = ""
-    @State private var folder = ""
     @State private var busy = false
     @State private var error: String?
     @State private var result: ParsedFeed?
@@ -20,17 +30,14 @@ struct SubscriptionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(feed == nil ? "購読を追加" : "購読を編集").font(.title2.bold())
+            Text(feed == nil ? SubscriptionSheet.heading(folder: folder) : "購読名を編集").font(.title3.bold())
             if let feed {
                 TextField("購読名", text: $title.singleLine())
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                Text("左カラム上部の更新ボタンで最新の記事を取得できます。")
-                    .font(.caption).foregroundStyle(.secondary)
             } else {
-                Text("RSS / AtomのURLを入力して、記事を取得します。")
-                    .font(.callout).foregroundStyle(.secondary)
-                TextField("フィードURL（https://…）", text: $source.singleLine(address: true)).disabled(busy)
-                Toggle("XMLを直接入力（合成サンプル・トラブル確認用）", isOn: $manualXML).font(.caption).disabled(busy)
+                TextField("https://example.com/feed.xml", text: $source.singleLine(address: true))
+                    .accessibilityLabel("フィードのURL").disabled(busy)
+                if xmlOffered { Toggle("XMLを直接入力", isOn: $manualXML).font(.caption).disabled(busy) }
                 if manualXML {
                     TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
                         .frame(minHeight: 240).border(.quaternary)
@@ -51,39 +58,32 @@ struct SubscriptionSheet: View {
                         .font(.callout).foregroundStyle(.orange)
                 }
             }
-            HStack {
-                TextField("フォルダ名（空欄は未分類）", text: $folder.singleLine())
-                    .accessibilityLabel("フォルダ名")
-                Menu("既存から選ぶ") {
-                    Button("未分類") { folder = "" }
-                    ForEach(Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), id: \.self) { name in
-                        Button(name) { folder = name }
-                    }
-                }
-            }.disabled(busy)
-            Text("既存のフォルダを選ぶか、新しい名前を入力できます。フォルダは1階層です。")
-                .font(.caption).foregroundStyle(.secondary)
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
                 if busy { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("キャンセル") { parseTask?.cancel(); dismiss() }.keyboardShortcut(.cancelAction)
-                Button(feed == nil ? (result == nil ? "取得して取り込む" : "残りの記事を取り込む") : "保存", action: submit)
+                Button(feed == nil ? (result == nil ? "追加" : "取り込む") : "保存", action: submit)
                     .keyboardShortcut(.defaultAction).disabled(busy)
             }
         }
-        .padding(24).frame(width: 600)
-        .onAppear { title = feed?.title ?? ""; folder = feed?.folder ?? "" }
+        .padding(20).frame(width: 440)
+        .onAppear { title = feed?.title ?? "" }
         .onChange(of: xml) { _, _ in result = nil }
         .onChange(of: source) { _, _ in result = nil }
         .onChange(of: manualXML) { _, _ in result = nil }
         .onDisappear { parseTask?.cancel() }
     }
 
+    static func heading(folder: String) -> String { folder.isEmpty ? "購読を追加" : "「\(folder)」に購読を追加" }
+
+    /// Whether the XML input is offered: only with the Option key (a trouble-shooting tool, not part of everyday adding).
+    static func offersXMLInput(modifiers: NSEvent.ModifierFlags) -> Bool { modifiers.contains(.option) }
+
     private func submit() {
         error = nil
         if let feed {
-            do { try store.updateSubscription(feed, title: title, folder: folder); dismiss() }
+            do { try store.updateSubscription(feed, title: title, folder: feed.folder); dismiss() }
             catch { self.error = error.localizedDescription }
             return
         }

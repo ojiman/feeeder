@@ -1,0 +1,46 @@
+import AppKit
+import SwiftUI
+import Testing
+@testable import UnagiReader
+
+@MainActor struct SubscriptionSheetTests {
+    @Test func theXMLInputIsOnlyOfferedWithTheOptionKey() {
+        #expect(!SubscriptionSheet.offersXMLInput(modifiers: []))
+        #expect(!SubscriptionSheet.offersXMLInput(modifiers: [.command, .shift]))
+        #expect(SubscriptionSheet.offersXMLInput(modifiers: [.option]))
+    }
+    @Test func theHeadingNamesTheFolderTheSubscriptionGoesTo() {
+        #expect(SubscriptionSheet.heading(folder: "") == "購読を追加")
+        #expect(SubscriptionSheet.heading(folder: "Tech") == "「Tech」に購読を追加")
+    }
+    @Test func aTargetIsIdentifiedByItsFolder() {
+        #expect(SubscriptionTarget(folder: "Tech").id == "Tech" && SubscriptionTarget(folder: "").id == "")
+    }
+}
+
+/// The count at the right end of a sidebar row becomes a + while the pointer is over a row that can take a new subscription.
+@MainActor struct SidebarRowTests {
+    private func accentColumns(count: Int, add: Bool, hovering: Bool) throws -> [Int] {
+        let host = NSHostingView(rootView: SidebarRow(title: "Tech", symbol: "folder", count: count, addHelp: add ? "このフォルダに購読を追加" : nil, onAdd: {}, forceHover: hovering)
+            .frame(width: 215, height: 30).background(Color(white: 0.15)))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 215, height: 30), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host; window.appearance = NSAppearance(named: .darkAqua)
+        defer { window.close() }
+        host.layoutSubtreeIfNeeded(); pumpRunLoop(0.2)
+        let rep = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        host.cacheDisplay(in: host.bounds, to: rep)
+        var columns = Set<Int>()
+        for x in 0..<rep.pixelsWide { for y in 0..<rep.pixelsHigh {
+            guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
+            if c.redComponent > 0.6 && c.redComponent - c.blueComponent > 0.25 { columns.insert(x * 215 / rep.pixelsWide) }
+        } }
+        return columns.sorted()
+    }
+    @Test func thePlusShowsOnlyWhileHoveringARowThatCanTakeASubscription() throws {
+        #expect(try accentColumns(count: 13, add: true, hovering: false).isEmpty)
+        #expect(try accentColumns(count: 13, add: false, hovering: true).isEmpty)               // rows without an add action never show it
+        let shown = try accentColumns(count: 13, add: true, hovering: true)
+        let first = try #require(shown.first)
+        #expect(first > 215 * 3 / 4)                                                            // at the right end, where the count is (it takes the count's place)
+    }
+}
