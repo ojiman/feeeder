@@ -40,7 +40,8 @@ import Observation
     public func reconcile(with store: ReaderStore, at: Date) {
         review.reconcile(at: at)
         do {
-            try HandoffFiles.reconcile(directory: directory, validInputExpiries: [:], noteContextIsValid: { noteID, _ in
+            try store.reloadIfNeeded()
+            try HandoffFiles.reconcile(directory: directory, noteIsValid: { noteID in
                 store.note(id: noteID) != nil
             }, at: at)
             nextExpiry = try HandoffFiles.nextExpiry(directory: directory)

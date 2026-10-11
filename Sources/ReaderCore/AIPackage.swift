@@ -2,29 +2,6 @@ import Foundation
 import CryptoKit
 import Observation
 
-public enum AIInputSelection: Hashable, Codable, Sendable {
-    case article(UUID), noteArticle(String)
-    /// A selection written by an older version (a daily/weekly-note scrap or adopted source). It can no longer be
-    /// resolved, so the managed copy that contains it is deleted at the next reconcile instead of failing every maintenance pass.
-    case unresolvable
-
-    private enum Stored: Codable { case article(UUID), noteArticle(String), unresolvable }
-    public init(from decoder: Decoder) throws {
-        switch try? Stored(from: decoder) {
-        case .article(let id)?: self = .article(id)
-        case .noteArticle(let key)?: self = .noteArticle(key)
-        default: self = .unresolvable
-        }
-    }
-    public func encode(to encoder: Encoder) throws {
-        switch self {
-        case .article(let id): try Stored.article(id).encode(to: encoder)
-        case .noteArticle(let key): try Stored.noteArticle(key).encode(to: encoder)
-        case .unresolvable: try Stored.unresolvable.encode(to: encoder)
-        }
-    }
-}
-
 /// The note as it was when the package was made. Compared again on every reconcile, so any change to what the package
 /// contains makes the review invalid.
 public struct AINoteContext: Sendable, Equatable {
@@ -120,7 +97,7 @@ extension ReaderStore {
     }
 }
 
-// The app owns one review for its lifetime. Policy changes erase its copies or shorten their life.
+// The app owns one review for its lifetime; edits and expiry invalidate it.
 @Observable @MainActor public final class AIPackageReview {
     public private(set) var package: AIPackage?
     public private(set) var reason: String?

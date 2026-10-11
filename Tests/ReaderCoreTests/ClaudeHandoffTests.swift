@@ -213,3 +213,81 @@ import Testing
         #expect(gate.calls == 1)                                                          // the deletion was saved, so the cleanup must run
     }
 }
+
+extension ClaudeHandoffTests {
+    @Test func legacyFieldsAreIgnoredAndCopiesFollowOnlyTheirNoteAndExpiry() throws {
+        let at = Date.now
+        for style in ["articles", "oldNoteKey", "questions", "future", "noNote", "minimal"] {
+            for removeNote in [false, true] {
+                let (library, store, note, link, controller, folder, _) = try noteCopy(at); defer { library.cleanup() }
+                let metadataFile = folder.appending(path: "metadata.json")
+                var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+                switch style {
+                case "articles":
+                    metadata["articleIDs"] = [link.articleID.uuidString]
+                    metadata["selections"] = [["scrap": ["_0": "old-unresolvable-source"]]]
+                case "oldNoteKey": metadata["themeID"] = metadata.removeValue(forKey: "noteID")
+                case "questions": metadata["questionIDs"] = "obsolete malformed value"
+                case "future": metadata["unknownFutureKey"] = ["nested": true]
+                case "noNote":
+                    metadata.removeValue(forKey: "noteID")
+                    metadata["articleIDs"] = [link.articleID.uuidString]
+                default:
+                    metadata.removeValue(forKey: "articleIDs")
+                    metadata.removeValue(forKey: "selections")
+                }
+                try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+                controller.reconcile(with: store, at: at.addingTimeInterval(86_399))
+                #expect(FileManager.default.fileExists(atPath: folder.path), "kept: \(style)")
+                #expect(controller.maintenanceError == nil, "read: \(style)")
+                if removeNote {
+                    try store.deleteNote(id: note.id)
+                    #expect(FileManager.default.fileExists(atPath: folder.path) == (style == "noNote"))
+                }
+                controller.reconcile(with: store, at: at.addingTimeInterval(86_400))
+                #expect(!FileManager.default.fileExists(atPath: folder.path), "expired: \(style)")
+                #expect(controller.maintenanceError == nil)
+            }
+        }
+    }
+
+    @Test func damagedMetadataAndSymlinkFoldersDoNotBlockOtherExpiredCopies() throws {
+        for kind in ["damaged", "symlink"] {
+            let (library, store, review, package, root) = try fixture(); defer { library.cleanup() }
+            let expired = try HandoffFiles.write(package, directory: root)
+            let unsafe = root.appending(path: UUID().uuidString)
+            let outside = library.directory.appending(path: "outside")
+            try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: false)
+            let retained = outside.appending(path: "keep.txt")
+            try Data("unrelated".utf8).write(to: retained)
+            if kind == "symlink" {
+                try FileManager.default.createSymbolicLink(at: unsafe, withDestinationURL: outside)
+            } else {
+                try FileManager.default.createDirectory(at: unsafe, withIntermediateDirectories: false)
+                try Data("{broken".utf8).write(to: unsafe.appending(path: "metadata.json"))
+            }
+            let controller = ClaudeHandoffController(directory: root, review: review, launcher: ProbeLauncher())
+            for _ in 0..<2 {
+                controller.reconcile(with: store, at: package.expiresAt)
+                #expect(!FileManager.default.fileExists(atPath: expired.path))
+                #expect(controller.maintenanceError != nil)
+                #expect(try Data(contentsOf: retained) == Data("unrelated".utf8))
+                #expect(FileManager.default.fileExists(atPath: unsafe.path))
+            }
+        }
+    }
+
+    @Test func legacyExpiryIsCappedAndNewMetadataContainsOnlyLiveFields() throws {
+        let (library, store, review, package, root) = try fixture(); defer { library.cleanup() }
+        let file = try HandoffFiles.write(package, directory: root)
+        let metadataFile = file.deletingLastPathComponent().appending(path: "metadata.json")
+        var metadata = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataFile)) as? [String: Any])
+        #expect(Set(metadata.keys) == ["packageID", "createdAt", "expiresAt", "split", "files", "noteID"])
+        metadata["expiresAt"] = package.createdAt.addingTimeInterval(10 * 86_400).timeIntervalSinceReferenceDate
+        try JSONSerialization.data(withJSONObject: metadata).write(to: metadataFile)
+        #expect(try HandoffFiles.nextExpiry(directory: root) == package.expiresAt)
+        let controller = ClaudeHandoffController(directory: root, review: review, launcher: ProbeLauncher())
+        controller.reconcile(with: store, at: package.expiresAt)
+        #expect(!FileManager.default.fileExists(atPath: file.path) && controller.maintenanceError == nil)
+    }
+}
