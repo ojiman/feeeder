@@ -206,4 +206,83 @@ import ReaderCore
         #expect(table.selectedRow == 12)
         #expect(abs(scroll.contentView.bounds.minY - table.rect(ofRow: 8).minY - 17) < 1)
     }
+
+    // MARK: New articles at the top slide in
+
+    private struct ListRig {
+        let coordinator: NativeArticleList.Coordinator
+        let table: NativeArticleList.Table
+        let scroll: NSScrollView
+        let parent: ([UUID]) -> NativeArticleList
+        let selected: () -> UUID?
+    }
+    private func listRig(count: Int, select: Int) -> (rig: ListRig, ids: [UUID]) {
+        let ids = (0..<count).map { _ in UUID() }
+        var all = Dictionary(uniqueKeysWithValues: ids.map { id -> (UUID, Article) in
+            let article = Article(feedID: UUID(), title: "合成", summary: "要約", publisher: "合成", publishedAt: .now)
+            article.id = id; return (id, article)
+        })
+        var selected: UUID? = ids[select]
+        func parent(_ list: [UUID]) -> NativeArticleList {
+            for id in list where all[id] == nil {
+                let article = Article(feedID: UUID(), title: "新着", summary: "要約", publisher: "合成", publishedAt: .now)
+                article.id = id; all[id] = article
+            }
+            return NativeArticleList(ids: list, article: { all[$0] }, feedTitle: { _ in "" },
+                selection: Binding(get: { selected }, set: { selected = $0 }), initialTop: nil,
+                focus: false, shortcutsEnabled: true, onTop: { _ in }, onKey: { _ in })
+        }
+        let coordinator = NativeArticleList.Coordinator(parent(ids))
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 280, height: 300))
+        let table = NativeArticleList.Table(frame: NSRect(x: 0, y: 0, width: 280, height: 4000))
+        table.headerView = nil; table.rowHeight = 96; table.intercellSpacing = .zero
+        table.addTableColumn(NSTableColumn(identifier: .init("article")))
+        table.dataSource = coordinator; table.delegate = coordinator; scroll.documentView = table
+        coordinator.table = table; coordinator.scroll = scroll
+        coordinator.reduceMotion = { false }
+        coordinator.update(parent(ids))
+        scroll.contentView.scroll(to: .zero)                                                   // showing the selected row scrolled the list: start at the top
+        scroll.reflectScrolledClipView(scroll.contentView)
+        return (ListRig(coordinator: coordinator, table: table, scroll: scroll, parent: parent, selected: { selected }), ids)
+    }
+
+    @Test func newArticlesAtTheTopSlideInAndTheListStaysAtTheTop() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        let added = [UUID(), UUID()]
+        rig.coordinator.update(rig.parent(added + ids))
+        #expect(rig.coordinator.lastUpdateAnimated)
+        #expect(rig.table.numberOfRows == 42)
+        #expect(rig.scroll.contentView.bounds.minY == 0)                                       // still at the top: the new rows are in view
+        #expect(rig.table.rows(in: rig.table.visibleRect).location == 0)
+        #expect(rig.selected() == ids[10] && rig.table.selectedRow == 12)                      // the selected article is the same one
+    }
+    @Test func whenTheReaderHasScrolledDownNewArticlesDoNotMoveWhatTheyAreReading() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        rig.scroll.contentView.scroll(to: NSPoint(x: 0, y: rig.table.rect(ofRow: 8).minY + 17))
+        rig.scroll.reflectScrolledClipView(rig.scroll.contentView)
+        rig.coordinator.update(rig.parent([UUID(), UUID()] + ids))
+        #expect(!rig.coordinator.lastUpdateAnimated)
+        let top = rig.table.rows(in: rig.table.visibleRect).location
+        #expect(top == 10)                                                                     // row 8 before, two rows added above
+        #expect(abs(rig.scroll.contentView.bounds.minY - rig.table.rect(ofRow: top).minY - 17) < 1)
+    }
+    @Test func reduceMotionPutsNewArticlesInWithoutAnimation() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        rig.coordinator.reduceMotion = { true }
+        rig.coordinator.update(rig.parent([UUID()] + ids))
+        #expect(!rig.coordinator.lastUpdateAnimated)
+        #expect(rig.table.numberOfRows == 41 && rig.selected() == ids[10] && rig.table.selectedRow == 11)
+    }
+    @Test func onlyNewArticlesInFrontAreAnimated() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        rig.coordinator.update(rig.parent(ids))                                                // no change
+        #expect(!rig.coordinator.lastUpdateAnimated)
+        rig.coordinator.update(rig.parent(Array(ids.dropFirst())))                             // an article left
+        #expect(!rig.coordinator.lastUpdateAnimated && rig.table.numberOfRows == 39)
+        rig.coordinator.update(rig.parent((0..<30).map { _ in UUID() }))                       // another list
+        #expect(!rig.coordinator.lastUpdateAnimated && rig.table.numberOfRows == 30)
+        let before = rig.table.numberOfRows
+        rig.coordinator.update(rig.parent((0..<25).map { _ in UUID() } + (0..<before).map { rig.coordinator.ids[$0] }))   // too many at once
+        #expect(!rig.coordinator.lastUpdateAnimated && rig.table.numberOfRows == before + 25)
+    }
 }

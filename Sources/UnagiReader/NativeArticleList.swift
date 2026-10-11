@@ -94,6 +94,9 @@ struct NativeArticleList: NSViewRepresentable {
         var priorSelection: UUID?
         var priorFocus = false
         var synchronizing = false
+        /// Whether the last update put new articles in with the slide-in animation (for tests).
+        private(set) var lastUpdateAnimated = false
+        var reduceMotion: () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
         init(_ parent: NativeArticleList) { self.parent = parent }
         func menu(for row: Int) -> NSMenu? {
             guard parent.onRemoveFromNote != nil, ids.indices.contains(row) else { return nil }
@@ -118,7 +121,18 @@ struct NativeArticleList: NSViewRepresentable {
             self.parent = parent
             let nextIDs = parent.ids
             let idsChanged = ids != nextIDs
-            if idsChanged {
+            // New articles at the top, while the list is at the top: they slide in and push the old rows down (like a feed reader
+            // should). In any other case the rows are reloaded and the article the person is looking at stays where it is.
+            let atTop = scroll.map { $0.contentView.bounds.minY <= -$0.contentView.contentInsets.top + 1 } ?? false
+            let slideIn = idsChanged && !firstLoad && !selectionChanged && atTop && !reduceMotion()
+                ? ListInsertion.leadingCount(old: ids, new: nextIDs) : nil
+            lastUpdateAnimated = slideIn != nil
+            if let slideIn {
+                ids = nextIDs
+                table.beginUpdates()
+                table.insertRows(at: IndexSet(integersIn: 0..<slideIn), withAnimation: [.slideDown, .effectFade])
+                table.endUpdates()
+            } else if idsChanged {
                 ids = nextIDs; table.reloadData()
             } else {
                 let range = table.rows(in: table.visibleRect)
@@ -130,7 +144,7 @@ struct NativeArticleList: NSViewRepresentable {
                     if selectionChanged { table.scrollRowToVisible(row) }
                 } else { table.deselectAll(nil) }
             }
-            if idsChanged && (!selectionChanged || firstLoad), let top = firstLoad ? parent.initialTop : topID ?? parent.initialTop,
+            if idsChanged && slideIn == nil && (!selectionChanged || firstLoad), let top = firstLoad ? parent.initialTop : topID ?? parent.initialTop,
                let row = ids.firstIndex(of: top), let scroll {
                 scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: row).minY + (firstLoad ? parent.initialTopOffset : topOffset)))
                 scroll.reflectScrolledClipView(scroll.contentView)

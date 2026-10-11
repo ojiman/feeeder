@@ -139,6 +139,8 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 `NSTextView`はリンク属性・引用の字下げと縦線、末尾一箇所のカバー範囲を描く。クリック時にもURLを検証する。再取得は明示操作で、失敗時も保存本文を保ち結果を示す。
 
+記事一覧（`NativeArticleList`）は、更新で新しい記事が先頭に届いたとき（`ListInsertion.leadingCount`: 新しい並びが「新しい記事＋古い並び」そのもので、20件以下）、一覧が先頭にあり、Reduce Motionでなく、選択が変わっていなければ、`insertRows(withAnimation: [.slideDown, .effectFade])`で入れる。それ以外（初回、削除、並べ替え、途中への挿入、21件以上、スクロール済み）は従来どおり`reloadData`し、見ていた記事の位置を保つ。更新ボタンは`symbolEffect(.rotate)`で矢印を回し、更新中も無効にしない（`FeedRefreshController.refresh`が二重実行を断る）。
+
 ### 6.1.1 ノートのエディタ
 
 ノートのエディタは`NoteTextEditor`（`NSViewRepresentable`、`NSScrollView`内の`NoteTextView`）である。SwiftUIの`TextEditor`は表示属性を付ける手段を持たないため、AppKitを使う。整形は`NoteLineStyle.runs(in:baseOffset:)`（ReaderCore。UTF-16のRange。見出し・リストの行と記号を返す純粋関数）と`NoteEditorStyle`（フォント・色・折り返しのインデント）で、`NSTextStorage`の表示属性だけを変える。文字列は変えず、`NSTextStorageDelegate.didProcessEditing`で編集された段落だけを基本の見た目に戻して付け直す。`hasMarkedText()`の間は何もせず（変換中の文字を乱さない）、確定・取り消し後の`textDidChange`／選択変更で整える。貼り付け・ドロップはプレーンテキストだけ（`readablePasteboardTypes`・`acceptableDragTypes`）。引用符・ダッシュ・文字置換・リンク検出は切る。入力の変更は`textDidChange`で一度だけ`saveNote`へ渡す。外からの文字（要約の送信と取り消し）は`updateNSView`が、文字列が違い、かつ変換中でないときだけ、1回の元に戻せる編集で入れ、選択を範囲内に保ち、保存し直さない。起動時に自分で入力先にならない。
