@@ -6,11 +6,12 @@
 
 ## Decision
 
-1. The sheet has a short title, **one URL field** (the placeholder is an example URL, `https://example.com/feed.xml`, so no sentence is needed), **one folder field** and the buttons 「キャンセル」 and 「追加」. The explaining sentence, the sentence under the folder field, the label "フィードURL" and the long button text 「取得して取り込む」 are gone.
-2. **The folder is a combo box** (`NSComboBox`): a text field with a list. The person chooses an existing folder from the list or types a new name; empty means unfiled. This replaces a text field plus a pull-down menu 「既存から選ぶ」. Apple's guidelines say to use a combo box when the person can pick from a list or enter their own value.
-3. **The XML input and the synthetic samples** (trouble-shooting tools) are offered only when the sheet is opened with the Option key held. They are described in the user guides.
-4. Editing a subscription uses the same folder field; its explaining sentence is gone too. The text of the button after a partial import (some entries without an identifier) is 「取り込む」.
+1. The sheet has a short title, **one URL field** (the placeholder is an example URL, `https://example.com/feed.xml`, so no sentence is needed) and the buttons 「キャンセル」 and 「追加」. The explaining sentences, the label 「フィードURL」 and the long button text 「取得して取り込む」 are gone.
+2. **There is no folder field, and no drop-down of any kind.** The folder is decided by where the + was pressed: the + at the top left and the + in the 「購読元」 header add to unfiled; a + that appears (in place of the count) while the pointer is over a folder row adds to that folder. The title of the sheet says where it goes (「「Tech」に購読を追加」). The owner chose this ("A") over a row of flat chips ("B") after seeing both as mock-ups. A combo box was tried in between and dropped: it is still a drop-down.
+3. **Moving a subscription** is done in the sidebar: the context menu 「フォルダへ移動」 (exists) and drag and drop onto a folder (a following change). Editing a subscription changes only its name.
+4. **The XML input and the synthetic samples** (trouble-shooting tools) are offered only when the sheet is opened with the Option key held. They are described in the user guides.
+5. The standard controls are used as they are (`TextField`, `Button`, `Label`): nothing is drawn by hand.
 
 ## Not verified
 
-Typing in the combo box with a Japanese input method (composition, candidates); VoiceOver for the combo box; the sheet with many folders (the list shows 8 at a time).
+The + on a folder row in a real window (the pointer cannot be moved by the test tools); VoiceOver for the + on a row; adding a feed from the sheet end to end (the demo data has no reachable feed).

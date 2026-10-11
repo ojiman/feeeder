@@ -2,9 +2,17 @@ import SwiftUI
 import AppKit
 import ReaderCore
 
+/// Where a new subscription goes: the folder of the row whose + was pressed (empty means unfiled).
+struct SubscriptionTarget: Identifiable {
+    let folder: String
+    var id: String { folder }
+}
+
 struct SubscriptionSheet: View {
     let store: ReaderStore
     var feed: Feed?
+    /// The folder a new subscription is added to. There is no folder field: the place where + was pressed decides it.
+    var folder = ""
     let onImported: (UUID) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var source = ""
@@ -15,7 +23,6 @@ struct SubscriptionSheet: View {
     @State private var etag: String?
     @State private var lastModified: String?
     @State private var title = ""
-    @State private var folder = ""
     @State private var busy = false
     @State private var error: String?
     @State private var result: ParsedFeed?
@@ -23,7 +30,7 @@ struct SubscriptionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(feed == nil ? "購読を追加" : "購読を編集").font(.title2.bold())
+            Text(feed == nil ? SubscriptionSheet.heading(folder: folder) : "購読名を編集").font(.title3.bold())
             if let feed {
                 TextField("購読名", text: $title.singleLine())
                 if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
@@ -51,8 +58,6 @@ struct SubscriptionSheet: View {
                         .font(.callout).foregroundStyle(.orange)
                 }
             }
-            FolderComboBox(text: $folder, folders: Array(Set(store.feeds.map(\.folder).filter { !$0.isEmpty })).sorted(), prompt: "フォルダ")
-                .disabled(busy)
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
                 if busy { ProgressView().controlSize(.small) }
@@ -63,12 +68,14 @@ struct SubscriptionSheet: View {
             }
         }
         .padding(20).frame(width: 440)
-        .onAppear { title = feed?.title ?? ""; folder = feed?.folder ?? "" }
+        .onAppear { title = feed?.title ?? "" }
         .onChange(of: xml) { _, _ in result = nil }
         .onChange(of: source) { _, _ in result = nil }
         .onChange(of: manualXML) { _, _ in result = nil }
         .onDisappear { parseTask?.cancel() }
     }
+
+    static func heading(folder: String) -> String { folder.isEmpty ? "購読を追加" : "「\(folder)」に購読を追加" }
 
     /// Whether the XML input is offered: only with the Option key (a trouble-shooting tool, not part of everyday adding).
     static func offersXMLInput(modifiers: NSEvent.ModifierFlags) -> Bool { modifiers.contains(.option) }
@@ -76,7 +83,7 @@ struct SubscriptionSheet: View {
     private func submit() {
         error = nil
         if let feed {
-            do { try store.updateSubscription(feed, title: title, folder: folder); dismiss() }
+            do { try store.updateSubscription(feed, title: title, folder: feed.folder); dismiss() }
             catch { self.error = error.localizedDescription }
             return
         }

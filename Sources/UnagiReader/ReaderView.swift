@@ -34,7 +34,8 @@ struct ReaderView: View {
     @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
-    @State private var addingSubscription = false
+    /// Set while the "add subscription" sheet is open: the folder the new subscription goes to.
+    @State private var addingTo: SubscriptionTarget?
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
@@ -249,8 +250,8 @@ struct ReaderView: View {
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
         .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.sendToNote); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
-        .sheet(isPresented: $addingSubscription) {
-            SubscriptionSheet(store: store) { scope = .feed($0) }
+        .sheet(item: $addingTo) { target in
+            SubscriptionSheet(store: store, folder: target.folder) { scope = .feed($0) }
         }
         .overlay(alignment: .bottomTrailing) {
             SendStatusBar(sender: sender, onOpen: { id in
@@ -328,12 +329,12 @@ struct ReaderView: View {
                     DisclosureGroup {
                         ForEach(grouped[folder] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                     } label: {
-                        sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder)).tag(LibraryScope.folder(folder))
+                        sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: "「\(folder)」に購読を追加") { addingTo = SubscriptionTarget(folder: folder) }.tag(LibraryScope.folder(folder))
                             .contextMenu { Button("フォルダ名を変更…") { folderName = folder; renamingFolder = folder } }
                     }
                 }
             } header: {
-                SidebarSectionHeader(title: "購読元", help: "購読元を追加") { addingSubscription = true }
+                SidebarSectionHeader(title: "購読元", help: "購読元を追加") { addingTo = SubscriptionTarget(folder: "") }
             }
         }
         .listStyle(.sidebar)
@@ -341,7 +342,7 @@ struct ReaderView: View {
         .toolbar(removing: .sidebarToggle)
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
             visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,
-            onAdd: { addingSubscription = true }, onRefresh: { Task { await refresh.refresh() } }))
+            onAdd: { addingTo = SubscriptionTarget(folder: "") }, onRefresh: { Task { await refresh.refresh() } }))
         .sheet(item: $reviewingNote) { sheet in reviewSheet(sheet) }
         .confirmationDialog("このノートを削除しますか？", isPresented: Binding(get: { deletingNote != nil }, set: { if !$0 { deletingNote = nil } })) {
             Button("ノートを削除", role: .destructive) {
@@ -366,7 +367,7 @@ struct ReaderView: View {
             .tag(LibraryScope.feed(feed.id))
             .contextMenu {
                 Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
-                Button("購読名・フォルダを編集") { editingFeed = feed }
+                Button("購読名を編集…") { editingFeed = feed }
                 Menu("フォルダへ移動") {
                     Button("未分類") { perform { try store.moveFeed(id: feed.id, toFolder: "") } }
                     ForEach(folders, id: \.self) { folder in
@@ -377,13 +378,8 @@ struct ReaderView: View {
             }
     }
 
-    private func sidebarRow(_ title: String, symbol: String, count: Int) -> some View {
-        HStack {
-            // Quiet icons (the system would colour them with its blue accent in the active window) and text a little softer than pure white.
-            Label { Text(title).foregroundStyle(.primary.opacity(0.85)) } icon: { Image(systemName: symbol).foregroundStyle(.secondary) }.lineLimit(1)
-            Spacer()
-            Text(count.formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-        }.padding(.vertical, 4)
+    private func sidebarRow(_ title: String, symbol: String, count: Int, addHelp: String? = nil, onAdd: @escaping () -> Void = {}) -> some View {
+        SidebarRow(title: title, symbol: symbol, count: count, addHelp: addHelp, onAdd: onAdd)
     }
 
     private var articleList: some View {
@@ -502,7 +498,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingSubscription || editingFeed != nil || renamingFolder != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || pickingNote, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -519,7 +515,7 @@ struct ReaderView: View {
     }
 
     private func perform(_ command: ReaderCommand) {
-        guard !addingSubscription, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
+        guard addingTo == nil, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
         switch command {
         case .next: move(1)
         case .previous: move(-1)
