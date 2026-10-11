@@ -174,3 +174,22 @@ extension SummarySenderTests {
         #expect(!request.instructions.contains("IGNORE RULES") && request.prompt.count < 3300)
     }
 }
+
+
+extension SummarySenderTests {
+    @Test func anArticleWithoutSourceMetadataStillMarksAIText() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, now: at)
+        let xml = "<rss><channel><title>Synthetic</title><item><guid isPermaLink=\"false\">opaque-id</guid><title/><description>body</description></item></channel></rss>"
+        let feed = try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!)
+        _ = try store.importFeed(feed, receivedAt: at)
+        let article = try #require(store.articles.first)
+        #expect(article.title.isEmpty && article.originalURL == nil)
+        let generator = FakeGenerator(); await generator.scriptGeneration(["要約"])
+        let sender = SummarySender(store: store, assistant: generator, now: { at })
+        sender.start(articleID: article.id, noteID: nil); try await settle(sender)
+        guard case .done(let outcome) = sender.state else { Issue.record("send failed"); return }
+        #expect(store.note(id: outcome.send.noteID)?.text == "# 無題の記事\n\n要約\n（AI要約）\n")
+        #expect(NoteInsertion.summaryBlock(summary: "要約", title: "", url: nil, aiMade: true) == "要約\n（AI要約）")
+    }
+}

@@ -66,7 +66,7 @@ RSS提供内容と抽出本文のリンク・引用構造を保持し、リン�
 
 - **新しいノート**: 記事のタイトルを見出し（`# タイトル`）にし、続けて要約、出典行を置く。
 - **既存のノート**: 末尾に、空行、要約、出典行を足す。同じ記事を同じノートへもう一度送ると、要約をもう一度足す（本人の操作なので）。
-- **出典行**は`出典: タイトル <URL>`。要約をAIが作ったときは、行の終わりに「（AI要約）」を付ける。AIを使わない送信では、RSS要約（なければ要約なし）を要約として入れ、印は付けない。
+- **出典行**は`出典: タイトル <URL>`。要約をAIが作ったときは、行の終わりに「（AI要約）」を付ける。AIを使わない送信では、RSS要約（なければ要約なし）を要約として入れ、印は付けない。 If both title and URL are absent, AI output keeps its mark on its own line.
 - 要約の作り方・長さ・形式・追加の指示は、Settingsの「要約」で選ぶ（第5.1節）。
 - 本人が送信を押したので、AIの文章も確認なしで書き込む。ただし、メッセージの「取り消す」で、ノートがその後に変わっていなければ元に戻せる（送信で作った記事の記録も戻す）。Undo is offered for 8 seconds. If the note changed, pressing it reports that it cannot be undone and preserves the text. Ordinary editing remains available.保存に失敗したときは、成功と示さず、ノートを変えない。
 - 本文が期限切れでAIの入力がない記事も、AIを使わない送信（タイトル・URL・RSS要約）はできる。

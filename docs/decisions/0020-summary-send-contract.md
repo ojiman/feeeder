@@ -4,7 +4,7 @@
 - Decider: the owner (PdM).
 - Refines: [0019](0019-v1-simplification-notes.md), points 3, 5, 6 and 11.
 
-The S2 plan makes the summary flow concrete: one explicit send at a time; a new note or the 8 most recently edited notes; an appended block with a source line; one article link; an AI mark only for AI output. Length is 1/3/5 sentences, format is prose/bullets, and an optional instruction is one line of at most 200 characters. The `n` key replaces `t`.
+The S2 plan makes the summary flow concrete: one explicit send at a time; a new note or the 8 most recently edited notes; an appended block with a source line; one article link; an AI mark only for AI output. Length is 1/3/5 sentences, format is prose/bullets, and an optional instruction is one line of at most 200 characters. The `n` key replaces `t`. If both title and URL are absent, AI output keeps its mark on its own line.
 
 An unavailable model, missing assets, model refusal, error, blank answer or the 20-second deadline sends an unmarked fallback: retained RSS text and the source, or the title and URL. This resolves the older specification sentence that said model failure leaves the note unchanged. Cancellation and switching AI off during generation write nothing.
 

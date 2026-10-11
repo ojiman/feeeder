@@ -222,6 +222,7 @@ struct ReaderView: View {
         .overlay(alignment: .bottomTrailing) {
             SendStatusBar(sender: sender, onOpen: { id in
                 guard store.note(id: id) != nil else { saveError = NoteError.missingNote.localizedDescription; return }
+                workspace.setNote(open: true, of: id)
                 scope = .note(id)
             })
         }
@@ -395,7 +396,7 @@ struct ReaderView: View {
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("t ノート"); Text("b/v 原文") }
+            HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("n 要約を送る"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
         }

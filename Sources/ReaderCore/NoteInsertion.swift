@@ -4,13 +4,15 @@ import Foundation
 /// from the new paragraph by blank lines.
 public enum NoteInsertion {
     /// The summary, then a source line `出典: <title> <url>` (without a link when the article has none; no line at all when
-    /// there is neither a title nor a link).
+    /// there is neither a title nor a link). AI output keeps its mark even without source metadata.
     public static func summaryBlock(summary: String, title: String, url: String?, aiMade: Bool = false) -> String {
         let body = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         let name = title.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
         let link = url?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let parts = [name, link].filter { !$0.isEmpty }
-        guard !parts.isEmpty else { return body }
+        guard !parts.isEmpty else {
+            return [body, aiMade ? "（AI要約）" : ""].filter { !$0.isEmpty }.joined(separator: "\n")
+        }
         let source = name.isEmpty ? "出典: \(link)" : (link.isEmpty ? "出典: \(name)" : "出典: \(name) <\(link)>")
         return [body, source + (aiMade ? "（AI要約）" : "")].filter { !$0.isEmpty }.joined(separator: "\n")
     }

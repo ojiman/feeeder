@@ -154,6 +154,8 @@ struct NativeArticleList: NSViewRepresentable {
     }
 
     @MainActor final class Cell: NSTableCellView {
+        // Labels are part of the row, so clicks and context menus belong to the table.
+        override func hitTest(_ point: NSPoint) -> NSView? { super.hitTest(point) == nil ? nil : self }
         private let source = NSTextField(labelWithString: "")
         private let title = NSTextField(wrappingLabelWithString: "")
         private let summary = NSTextField(wrappingLabelWithString: "")
