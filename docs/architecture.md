@@ -143,6 +143,10 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 `NSTextView`はリンク属性・引用の字下げと縦線、末尾一箇所のカバー範囲を描く。クリック時にもURLを検証する。再取得は明示操作で、失敗時も保存本文を保ち結果を示す。
 
+### 6.1.1 ノートのエディタ
+
+ノートのエディタは`NoteTextEditor`（`NSViewRepresentable`、`NSScrollView`内の`NoteTextView`）である。SwiftUIの`TextEditor`は表示属性を付ける手段を持たないため、AppKitを使う。整形は`NoteLineStyle.runs(in:baseOffset:)`（ReaderCore。UTF-16のRange。見出し・リストの行と記号を返す純粋関数）と`NoteEditorStyle`（フォント・色・折り返しのインデント）で、`NSTextStorage`の表示属性だけを変える。文字列は変えず、`NSTextStorageDelegate.didProcessEditing`で編集された段落だけを基本の見た目に戻して付け直す。`hasMarkedText()`の間は何もせず（変換中の文字を乱さない）、確定・取り消し後の`textDidChange`／選択変更で整える。貼り付け・ドロップはプレーンテキストだけ（`readablePasteboardTypes`・`acceptableDragTypes`）。引用符・ダッシュ・文字置換・リンク検出は切る。入力の変更は`textDidChange`で一度だけ`saveNote`へ渡す。外からの文字（要約の送信と取り消し）は`updateNSView`が、文字列が違い、かつ変換中でないときだけ、1回の元に戻せる編集で入れ、選択を範囲内に保ち、保存し直さない。起動時に自分で入力先にならない。
+
 ### 6.2 画像
 
 RSS/Atomのenclosure・media・本文画像から選ぶ。`hatena:imageurl`はnamespace URIと位置を検査して優先し、HTMLでは`entry-image`を優先する。`cite`内・favicon・はてブ件数／追加ボタン・明示的に小さい画像は候補から除く。完全な意味分類・原文からの画像探索は保証せず、第三者favicon APIへ購読URLを送らない。
