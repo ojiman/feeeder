@@ -18,16 +18,13 @@ public enum HandoffFiles {
     fileprivate struct Record: Codable { let name: String; let sha256: String }
     fileprivate struct Metadata: Codable {
         let packageID: UUID
-        let articleIDs: [UUID]
-        let selections: [AIInputSelection]?
         let createdAt: Date
-        var expiresAt: Date
+        let expiresAt: Date
         let split: Bool
         let files: [Record]
         let noteID: UUID?
-        let questionIDs: [UUID]?
         private enum CodingKeys: String, CodingKey {
-            case packageID, articleIDs, selections, createdAt, expiresAt, split, files, noteID, questionIDs
+            case packageID, createdAt, expiresAt, split, files, noteID
             case legacyThemeID = "themeID"
         }
     }
@@ -61,8 +58,8 @@ public enum HandoffFiles {
                 try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
             }
             let records = zip(names, data).map { Record(name: $0.0, sha256: AIPackageBuilder.hash($0.1)) }
-            let metadata = Metadata(packageID: package.id, articleIDs: package.sources.map(\.articleID), selections: package.sources.map(\.selection), createdAt: package.createdAt,
-                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, noteID: package.noteID, questionIDs: nil)
+            let metadata = Metadata(packageID: package.id, createdAt: package.createdAt,
+                expiresAt: min(package.expiresAt, package.createdAt.addingTimeInterval(86_400)), split: split, files: records, noteID: package.noteID)
             try saveMetadata(metadata, folder: folder)
         } catch {
             // This folder was just created by this operation, and contains only its generated copies.
@@ -84,30 +81,20 @@ public enum HandoffFiles {
             if min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400)) <= at { try manager.removeItem(at: folder) }
         }
     }
-    public static func reconcile(directory: URL, validInputExpiries: [AIInputSelection: Date],
-                                 noteContextIsValid: (_ noteID: UUID, _ sourceArticleIDs: [UUID]) -> Bool = { _, _ in true }, at: Date) throws {
-        try maintain(directory: directory) { folder, record in
-            var metadata = record
-            // `questionIDs` is only read for copies made before notes replaced questions; it is not used any more.
-            if let noteID = metadata.noteID, !noteContextIsValid(noteID, metadata.articleIDs) {
-                try manager.removeItem(at: folder); return
+    public static func reconcile(directory: URL, noteIsValid: (_ noteID: UUID) -> Bool, at: Date) throws {
+        try maintain(directory: directory) { folder, metadata in
+            if let noteID = metadata.noteID, !noteIsValid(noteID) {
+                try manager.removeItem(at: folder)
+            } else if min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400)) <= at {
+                try manager.removeItem(at: folder)
             }
-            let selections = metadata.selections ?? metadata.articleIDs.map(AIInputSelection.article)
-            let expiries = selections.compactMap { validInputExpiries[$0] }
-            // A package made of the person's note alone has no article, so nothing earlier than its own 24 hours applies.
-            guard expiries.count == selections.count, let earliest = expiries.min() ?? (selections.isEmpty ? metadata.expiresAt : nil) else {
-                try manager.removeItem(at: folder); return
-            }
-            metadata.expiresAt = min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400), earliest)
-            if metadata.expiresAt <= at { try manager.removeItem(at: folder) }
-            else { try saveMetadata(metadata, folder: folder) }
         }
     }
     public static func nextExpiry(directory: URL) throws -> Date? {
-        try folders(directory).compactMap { try? readMetadata($0).expiresAt }.min()
-    }
-    public static func sourceSelections(directory: URL) throws -> [AIInputSelection] {
-        Array(Set(try folders(directory).compactMap { try? readMetadata($0) }.flatMap { $0.selections ?? $0.articleIDs.map(AIInputSelection.article) }))
+        try folders(directory).compactMap { folder -> Date? in
+            guard let metadata = try? readMetadata(folder) else { return nil }
+            return min(metadata.expiresAt, metadata.createdAt.addingTimeInterval(86_400))
+        }.min()
     }
     private static func maintain(directory: URL, operation: (URL, Metadata) throws -> Void) throws {
         var failure: (any Error)?
@@ -165,7 +152,6 @@ public enum HandoffFiles {
               let size = values[.size] as? NSNumber, size.intValue <= 1_048_576 else { throw HandoffError.unsafeFile }
         let metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: file))
         guard folder.lastPathComponent == metadata.packageID.uuidString + (metadata.split ? "-parts" : ""),
-              !metadata.articleIDs.isEmpty || metadata.noteID != nil,     // a package of the note alone has no article
               !metadata.files.isEmpty,
               metadata.files.enumerated().allSatisfy({ index, record in
                   record.name == (metadata.split ? "Feeeder-review-part-\(index + 1).txt" : "Feeeder-review.txt") && record.sha256.count == 64
@@ -201,25 +187,19 @@ extension HandoffFiles.Metadata {
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         packageID = try values.decode(UUID.self, forKey: .packageID)
-        articleIDs = try values.decode([UUID].self, forKey: .articleIDs)
-        selections = try values.decodeIfPresent([AIInputSelection].self, forKey: .selections)
         createdAt = try values.decode(Date.self, forKey: .createdAt)
         expiresAt = try values.decode(Date.self, forKey: .expiresAt)
         split = try values.decode(Bool.self, forKey: .split)
         files = try values.decode([HandoffFiles.Record].self, forKey: .files)
         noteID = try values.decodeIfPresent(UUID.self, forKey: .noteID) ?? values.decodeIfPresent(UUID.self, forKey: .legacyThemeID)
-        questionIDs = try values.decodeIfPresent([UUID].self, forKey: .questionIDs)
     }
     func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
         try values.encode(packageID, forKey: .packageID)
-        try values.encode(articleIDs, forKey: .articleIDs)
-        try values.encodeIfPresent(selections, forKey: .selections)
         try values.encode(createdAt, forKey: .createdAt)
         try values.encode(expiresAt, forKey: .expiresAt)
         try values.encode(split, forKey: .split)
         try values.encode(files, forKey: .files)
         try values.encodeIfPresent(noteID, forKey: .noteID)
-        try values.encodeIfPresent(questionIDs, forKey: .questionIDs)
     }
 }

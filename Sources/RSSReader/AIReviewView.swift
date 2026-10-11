@@ -81,7 +81,7 @@ struct AIReviewView: View {
 
     private func generate() {
         copied = false; error = nil; handoff.resetStatus()
-        perform { try review.build(selections: [], note: AINoteRequest(noteID: noteID, includeNote: true), language: language, at: .now) }
+        perform { try review.build(note: noteID, language: language, at: .now) }
     }
 
     private func export() {

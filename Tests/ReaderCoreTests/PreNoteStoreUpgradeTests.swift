@@ -37,7 +37,8 @@ import Testing
                 // records are not carried over. Everything outside them is.
                 if round == 0 {
                     #expect(store.notes.isEmpty && store.noteArticles.isEmpty)
-                    let note = try store.createNote(text: "# 開いたあとのノート\n", adding: expected.articleID, at: at)
+                    let note = try store.createNote(text: "# 開いたあとのノート\n", at: at)
+                    try store.addArticle(expected.articleID, toNote: note.id, at: at)
                     #expect(store.notes.map(\.id) == [note.id])
                 } else {
                     #expect(store.notes.map(\.title) == ["開いたあとのノート"] && store.noteArticles.count == 1)

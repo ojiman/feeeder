@@ -268,7 +268,7 @@ import Testing
         try await t.settle(sheet.contentView!) { h.review.package != nil }
         let package = try #require(h.review.package)
         let text = package.text
-        #expect(package.sources.isEmpty)
+        #expect(!package.text.contains("BEGIN_SOURCE"))
         #expect(!text.contains("Goal") && text.contains("Note (written by the user):\n# 見出し\n本文のノート"))
         #expect(text.contains("書かれていることを「ない」と言わないでください"))
         #expect(!text.contains("BEGIN_SOURCE") && !text.contains("Source ID:"))

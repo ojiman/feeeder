@@ -142,11 +142,11 @@ On the review screen, 「全文をコピー」 (Copy all), TXT export, split exp
 Facts you should know:
 
 - **What was checked:** Claude Desktop 2.19675.0 with Pro and Cowork. Automatic attachment to normal Chat, other versions, and other plans have not been checked.
-- The app passes a short request text and the path of a TXT file in a launch link. The article text stays inside the TXT file.
+- The app passes a short request text and the path of a TXT file in a launch link. The note text stays inside the TXT file.
 - **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Feeeder puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
 - A successful launch does not mean the file was attached, the message was sent, or the file was read.
 - If you cancel or the launch fails, you can try again with the same review. You can also copy the full text or export it as a TXT file. If there is a size limit, you can export UTF-8 files split to 1 MiB or less. This split size is not the limit of Claude.
-- The copy that the app manages is deleted when its note or a source it includes is deleted. The copy is also deleted when an article it contains is removed from the note. If you only edit the note after the copy was made, the copy is not deleted; it stays as a snapshot until its time limit. The copy is kept for up to 24 hours after it is made. If it contains stored articles, the earliest expiry date of the original bodies is also an upper limit. If it holds saved summaries only, it does not expire with the original article. Shortening the retention period or deleting bodies also removes it.
+- The copy that the app manages is deleted when its note is deleted or 24 hours after creation. Editing the note keeps the copy as a snapshot until that deadline. Article retention and removal do not affect the copy. Older copies follow their note when its id is present and expire within 24 hours; obsolete article and question fields are ignored.
 - A place that you chose for an export, and what has already gone to Claude, are not removed by this.
 - You paste a reply into your note by yourself. There is no automatic sending and no automatic writing of replies.
 
