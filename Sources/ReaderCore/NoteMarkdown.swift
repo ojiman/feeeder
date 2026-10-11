@@ -16,7 +16,16 @@ public enum NoteMarkdown {
             }
         }
         guard hasName else { return "ノート.md" }
-        return String(stem.prefix(77)) + ".md"
+        var limited = ""
+        for character in stem {
+            guard limited.count < 77 else { break }
+            limited.append(character)
+            if limited.decomposedStringWithCanonicalMapping.utf8.count > 252 {
+                limited.removeLast()
+                break
+            }
+        }
+        return (limited.isEmpty ? "ノート" : limited) + ".md"
     }
 
     public static func data(for text: String) -> Data { Data(text.utf8) }

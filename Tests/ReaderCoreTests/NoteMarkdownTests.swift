@@ -17,11 +17,12 @@ struct NoteMarkdownTests {
         }
     }
 
-    @Test func namesAreLimitedToEightyCharactersWithoutSplittingGraphemes() {
+    @Test func namesFitTheFileSystemByteLimitWithoutSplittingGraphemes() {
         for title in [String(repeating: "🙂", count: 100), String(repeating: "e\u{301}", count: 100)] {
             let fileName = NoteMarkdown.fileName(forTitle: title)
-            #expect(fileName.count == 80 && fileName.hasSuffix(".md"))
-            #expect(fileName == String(title.prefix(77)) + ".md")
+            #expect(fileName.hasSuffix(".md"))
+            #expect(fileName.decomposedStringWithCanonicalMapping.utf8.count <= 255)
+            #expect(title.hasPrefix(String(fileName.dropLast(3))))
         }
     }
 
