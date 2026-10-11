@@ -66,12 +66,13 @@ struct SidebarTitlebarControls: NSViewRepresentable {
             HStack(spacing: 8) {
                 Button(action: onAdd) { Image(systemName: "plus").frame(width: 28, height: 28) }
                     .help("URLから購読を追加").accessibilityLabel("購読を追加")
+                // The arrow itself turns while the feeds are being updated (the system stops the motion for Reduce Motion).
+                // The button is not disabled: pressing it again while it works does nothing (FeedRefreshController.refresh).
                 Button(action: onRefresh) {
-                    Group {
-                        if refreshing { ProgressView().controlSize(.small) }
-                        else { Image(systemName: "arrow.clockwise") }
-                    }.frame(width: 28, height: 28)
-                }.disabled(refreshing).help("購読を更新").accessibilityLabel("購読を更新")
+                    Image(systemName: "arrow.clockwise")
+                        .symbolEffect(.rotate, isActive: refreshing)
+                        .frame(width: 28, height: 28)
+                }.help("購読を更新").accessibilityLabel("購読を更新").accessibilityValue(refreshing ? "更新中" : "")
             }.buttonStyle(.borderless)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing).padding(.trailing, 12)
         }
