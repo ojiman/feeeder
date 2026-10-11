@@ -173,7 +173,7 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            articleList.id(scope).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
+            articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
             originalColumn.frame(minWidth: 360)
                 .inspector(isPresented: noteOpenBinding) { notePanel }
@@ -182,6 +182,8 @@ struct ReaderView: View {
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 960, minHeight: 600)
         .tint(AppPalette.accentColor)
+        .containerBackground(AppPalette.surfaceColor, for: .window)
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)       // no bar of its own gray with a line under it: the toolbar sits on the surface
         .toolbar {
             // Always present, disabled when no article is open. If these buttons came and went with the selection,
             // the toolbar would change height each time and the whole window would shift (and the title would move).
@@ -437,7 +439,7 @@ struct ReaderView: View {
                         .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
                         .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
                     Spacer(minLength: 0)
-                }.background(.bar)
+                }.background(AppPalette.surfaceColor)
             }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
@@ -445,7 +447,7 @@ struct ReaderView: View {
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 10) { Text("j/k 移動"); Text("s Star"); Text("n 要約を送る"); Text("b/v 原文") }
                 .font(.caption2.monospaced()).foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity).padding(.vertical, 10).background(.bar)
+                .frame(maxWidth: .infinity).padding(.vertical, 10).background(AppPalette.surfaceColor)
         }
     }
 
@@ -510,7 +512,7 @@ struct ReaderView: View {
                 Text("一覧から記事を選んでください。")
                     .font(.callout).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(AppPalette.surfaceColor)
         }
     }
 

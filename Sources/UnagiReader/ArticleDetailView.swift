@@ -46,6 +46,6 @@ struct ArticleDetailView: View {
                 initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
                 imageLoader: imageLoader, heroURL: available ? article.imageURL.flatMap { ArticleURL.validated($0) } : nil,
                 bodyParagraphs: available ? content!.bodyParagraphs : nil, pageForward: pageForward)
-        }.background(Color(nsColor: .textBackgroundColor))
+        }.background(AppPalette.surfaceColor)
     }
 }

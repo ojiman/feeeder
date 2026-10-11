@@ -141,7 +141,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 記事一覧（`NativeArticleList`）は、更新で新しい記事が先頭に届いたとき（`ListInsertion.leadingCount`: 新しい並びが「新しい記事＋古い並び」そのもので、20件以下）、一覧が先頭にあり、Reduce Motionでなく、選択が変わっていなければ、`insertRows(withAnimation: [.slideDown, .effectFade])`で入れる。それ以外（初回、削除、並べ替え、途中への挿入、21件以上、スクロール済み）は従来どおり`reloadData`し、見ていた記事の位置を保つ。更新ボタンは`symbolEffect(.rotate)`で矢印を回し、更新中も無効にしない（`FeedRefreshController.refresh`が二重実行を断る）。
 
-色は`AppPalette`（`UnagiReader`）に集める。`accent`はライト／ダークで値を持つ落ち着いたオレンジ（ダーク約#E6A366、ライト約#C26624。`systemOrange`は彩度が高く、暗い面で眩しかった）で、`.tint`、未読の点、ノートのリスト記号、空の読書面のアイコンに使う。`selection`は中立の灰色（ダーク白13%、ライト黒9%）。記事一覧は`SoftRow`（`NSTableRowView`）で選択を描き、`isEmphasized`を常にfalseにしてシステムの青（と白抜き文字）に切り替えない。選択行は`interiorBackgroundStyle = .raised`をセルへ伝え、既読でも文字を弱めない。サイドバーの項目はアイコンを`.secondary`、文字を`.primary`の85%にして、システムの青い強調と純白を避ける。
+色は`AppPalette`（`UnagiReader`）に集める。読む面は`AppPalette.surface`（ダーク#1E1E1E、ライト白。固定値。`textBackgroundColor`はスプリットビューの列の中で振動表現（vibrant）として解決され、少し明るい青みの灰色になるため使わない）の1色で、記事一覧（`NativeArticleList.applySurface`）、記事本文、ノートのエディタとその上部、一覧の上下の帯、ウィンドウ（`containerBackground(for: .window)`）をそろえ、ツールバーの背景は隠す（`toolbarBackgroundVisibility(.hidden)`）。`accent`はライト／ダークで値を持つ落ち着いたオレンジ（ダーク約#E6A366、ライト約#C26624。`systemOrange`は彩度が高く、暗い面で眩しかった）で、`.tint`、未読の点、ノートのリスト記号、空の読書面のアイコンに使う。`selection`は中立の灰色（ダーク白13%、ライト黒9%）。記事一覧は`SoftRow`（`NSTableRowView`）で選択を描き、`isEmphasized`を常にfalseにしてシステムの青（と白抜き文字）に切り替えない。選択行は`interiorBackgroundStyle = .raised`をセルへ伝え、既読でも文字を弱めない。サイドバーの項目はアイコンを`.secondary`、文字を`.primary`の85%にして、システムの青い強調と純白を避ける。
 
 ### 6.1.1 ノートのエディタ
 

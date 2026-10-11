@@ -44,7 +44,7 @@ struct NotePanel: View {
             }
             .buttonStyle(.borderless).padding(.horizontal, 12).padding(.vertical, 8)
         }
-        .background(.bar)
+        .background(AppPalette.surfaceColor)
     }
 
     private var hasText: Bool {

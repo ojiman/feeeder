@@ -90,6 +90,18 @@ import ReaderCore
         #expect(source.font?.pointSize == 10)                                                  // decision 0028: supporting information is smaller
         #expect(summary.font?.pointSize == 11)
     }
+    @Test func theListSharesTheSurfaceOfTheReader() {
+        let scroll = NSScrollView(), table = NativeArticleList.Table()
+        NativeArticleList.applySurface(scroll: scroll, table: table)
+        #expect(table.backgroundColor == AppPalette.surface)                                    // one dark for the list, the article and the note
+        #expect(scroll.drawsBackground && scroll.backgroundColor == AppPalette.surface)
+        for name in [NSAppearance.Name.darkAqua, .vibrantDark] {                                // the split view's columns can be vibrant: same gray
+            NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
+                let c = AppPalette.surface.usingColorSpace(.sRGB)!
+                #expect(abs(c.redComponent * 255 - 30) < 0.5 && abs(c.greenComponent * 255 - 30) < 0.5 && abs(c.blueComponent * 255 - 30) < 0.5)
+            }
+        }
+    }
     @Test func theSelectedRowIsAQuietGrayNotTheSystemBlue() throws {
         let row = NativeArticleList.SoftRow(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         row.isSelected = true

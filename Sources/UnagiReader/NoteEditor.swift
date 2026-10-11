@@ -20,7 +20,7 @@ struct NoteEditor: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(AppPalette.surfaceColor)
             .alert("保存できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("閉じる") { error = nil }
             } message: { Text(error ?? "") }
