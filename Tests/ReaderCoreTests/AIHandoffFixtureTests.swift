@@ -6,7 +6,7 @@ import Testing
 @MainActor struct AIHandoffFixtureTests {
     @Test func storedLongJapaneseNoteProducesCompletePackage() throws {
         let temporary = try TestLibrary(); defer { temporary.cleanup() }
-        let directory = ProcessInfo.processInfo.environment["FEEEDER_AI_PROBE_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? temporary.directory
+        let directory = ProcessInfo.processInfo.environment["UNAGI_READER_AI_PROBE_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? temporary.directory
         let (store, package) = try fixture(directory: directory, lineCount: 500)
         #expect(package.text.contains("0500: ") && package.text.contains("END_A_20261005"))
         #expect(store.articles.allSatisfy { $0.firstReadAt == nil && !$0.isRead })
@@ -14,7 +14,7 @@ import Testing
 
     @Test func storedLargeNoteExportsLosslessUTF8Parts() throws {
         let temporary = try TestLibrary(); defer { temporary.cleanup() }
-        let directory = ProcessInfo.processInfo.environment["FEEEDER_AI_LARGE_PROBE_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? temporary.directory
+        let directory = ProcessInfo.processInfo.environment["UNAGI_READER_AI_LARGE_PROBE_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? temporary.directory
         let (_, package) = try fixture(directory: directory, lineCount: 10_000)
         #expect(package.text.utf8.count > 1_048_576)
         let parts = AIPackageBuilder.split(package)

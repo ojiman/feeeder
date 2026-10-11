@@ -8,7 +8,7 @@
 # A pull request run builds the app only when the PR changes how the app is built or packaged (see AGENTS.md).
 # For any other branch, start the workflow by hand and pass its run id with --run, or build locally.
 # Needs macOS (ditto, codesign, xattr) and an authenticated, recent `gh` (`run download --pattern`)
-# run inside this repository. FEEEDER_CI_ROOT overrides the output root (scripts/test-fetch-ci-app.sh uses it).
+# run inside this repository. UNAGI_READER_CI_ROOT overrides the output root (scripts/test-fetch-ci-app.sh uses it).
 set -euo pipefail
 
 usage() { echo "Usage: fetch-ci-app.sh <PR number> | --run <workflow run id>" >&2; exit 2; }
@@ -28,7 +28,7 @@ case "${1:-}" in
         label=pr-$1-${expected_head:0:7} ;;
 esac
 
-dest=${FEEEDER_CI_ROOT:-/private/tmp/feeeder-ci}/$label
+dest=${UNAGI_READER_CI_ROOT:-/private/tmp/unagi-reader-ci}/$label
 [ ! -e "$dest" ] || { echo "$dest already exists; remove it or use another run." >&2; exit 1; }
 mkdir -p "$dest"
 
@@ -61,5 +61,5 @@ fi
 
 echo "Ready: $app (ad hoc signed, not notarized, no quarantine attribute)"
 echo "Open a NEW synthetic instance, never the user's library:"
-echo "  open -n '$app' --args --data-directory /private/tmp/feeeder-ci-data-$label --seed-demo"
-echo "Then confirm the process arguments include that --data-directory (pgrep -fl RSSReader) and the window shows synthetic subscriptions."
+echo "  open -n '$app' --args --data-directory /private/tmp/unagi-reader-ci-data-$label --seed-demo"
+echo "Then confirm the process arguments include that --data-directory (pgrep -fl UnagiReader) and the window shows synthetic subscriptions."

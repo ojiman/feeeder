@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Testing
 import ReaderCore
-@testable import RSSReader
+@testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct NoteTextEditorTests {
     final class Sink {
@@ -143,7 +143,7 @@ import ReaderCore
     }
     @Test func richTextPasteBecomesPlainText() throws {
         let r = try rig(""); defer { r.window.close() }
-        let board = NSPasteboard(name: .init("feeeder-test-\(UUID())"))
+        let board = NSPasteboard(name: .init("unagi-reader-test-\(UUID())"))
         let rich = NSAttributedString(string: "太字", attributes: [.font: NSFont.boldSystemFont(ofSize: 30)])
         board.clearContents()
         board.writeObjects([rich])

@@ -3,7 +3,7 @@ import QuartzCore
 import SwiftUI
 import Testing
 import ReaderCore
-@testable import RSSReader
+@testable import UnagiReader
 
 @MainActor struct NativeArticleTextTests {
     @Test func pageMotionFollowsDirectionWithoutReplayingForContentUpdates() throws {

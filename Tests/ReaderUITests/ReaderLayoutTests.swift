@@ -3,7 +3,7 @@ import SwiftUI
 import WebKit
 import ReaderCore
 import Testing
-@testable import RSSReader
+@testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct ReaderLayoutTests {
     private struct NoLauncher: ClaudeLaunching {

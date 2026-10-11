@@ -2,7 +2,7 @@ import SwiftUI
 import ReaderCore
 
 @main
-struct RSSReaderApp: App {
+struct UnagiReaderApp: App {
     @State private var store: ReaderStore?
     @State private var refresh: FeedRefreshController?
     @State private var aiReview: AIPackageReview?

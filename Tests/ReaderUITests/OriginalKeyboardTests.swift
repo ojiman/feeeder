@@ -3,7 +3,7 @@ import WebKit
 import SwiftUI
 import ReaderCore
 import Testing
-@testable import RSSReader
+@testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct OriginalKeyboardTests {
     @Test func failedOriginalKeepsEscapeAndNavigation() throws {

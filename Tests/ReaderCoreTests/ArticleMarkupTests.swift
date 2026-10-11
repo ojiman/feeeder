@@ -64,9 +64,9 @@ struct ArticleMarkupTests {
     }
     @Test @MainActor func syntheticReadingLibraryKeepsHistoryDuringRefresh() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
-        let directory = ProcessInfo.processInfo.environment["FEEEDER_POLISH_DEMO_DIRECTORY"].map { URL(fileURLWithPath: $0) } ?? library.directory
+        let directory = ProcessInfo.processInfo.environment["UNAGI_READER_POLISH_DEMO_DIRECTORY"].map { URL(fileURLWithPath: $0) } ?? library.directory
         if directory != library.directory {
-            try #require(directory.deletingLastPathComponent().path == "/private/tmp" && directory.lastPathComponent.hasPrefix("feeeder-"))
+            try #require(directory.deletingLastPathComponent().path == "/private/tmp" && directory.lastPathComponent.hasPrefix("unagi-reader-"))
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         }
         let at = Date.now, base = "http://127.0.0.1:18889"

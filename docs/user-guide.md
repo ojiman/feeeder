@@ -17,7 +17,7 @@ bash scripts/build-app.sh release
 SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/UnagiReader.app`. Open it from Finder.
 
 - The app is ad hoc signed for local development. It is not signed with a Developer ID and it is not notarized.
-- The release build writes temporary files to `/private/tmp/feeeder-v1-release`. The debug build writes to `/private/tmp/rss-reader-build`. For the debug build you can leave out the argument.
+- The release build writes temporary files to `/private/tmp/unagi-reader-v1-release`. The debug build writes to `/private/tmp/unagi-reader-debug`. For the debug build you can leave out the argument.
 
 ## 2. Your data and updates
 
@@ -61,12 +61,12 @@ Do this before you update a beta version, or if the app cannot open the library 
 To look around without touching your real library, start a separate instance with its own data directory and demo subscriptions:
 
 ```sh
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
 - `--data-directory <path>` is for development checks. It sets where the app stores its data.
 - Use `open -n` so that a new instance starts. Without it, `open` can reuse an Unagi Reader that is already running and drop the arguments.
-- Before you do anything, check the process arguments (for example with `pgrep -fl RSSReader`) and check that the window shows the demo subscriptions.
+- Before you do anything, check the process arguments (for example with `pgrep -fl UnagiReader`) and check that the window shows the demo subscriptions.
 - The demo URLs end in `.example`. No real pages exist there. Do not add real subscriptions, articles, or notes to Git. See [AGENTS.md](../AGENTS.md) for details. We have not re-run this procedure on macOS since it was written down.
 
 ## 3. Using the app
@@ -167,7 +167,7 @@ Facts you should know:
 Run the tests:
 
 ```sh
-swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 ```
 
 - **CI** runs two jobs in parallel during the beta: regression tests and a release build. A change that touches only `docs/**` or Markdown skips CI.
@@ -177,8 +177,8 @@ swift test --scratch-path /private/tmp/feeeder-dogfooding-build
 - **Compatibility between beta versions is not checked by CI.** A normal `swift test` skips the compatibility test when no fixture is given. To run it by hand:
 
 ```sh
-bash scripts/prepare-v1-store-fixture.sh /private/tmp/feeeder-v1-fixture-new
-FEEEDER_V1_FIXTURE_DIR=/private/tmp/feeeder-v1-fixture-new swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+bash scripts/prepare-v1-store-fixture.sh /private/tmp/unagi-reader-v1-fixture-new
+UNAGI_READER_V1_FIXTURE_DIR=/private/tmp/unagi-reader-v1-fixture-new swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 ```
 
 The fixture directory must not exist yet. The script builds a synthetic database with a fixed commit of a released beta, opens it with the new schema, and checks that the data is kept. When 1.0 ships, the schema will be frozen as `VersionedSchema`, and a check that starts from the 1.0 release tag will be added to CI.

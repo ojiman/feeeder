@@ -10,10 +10,10 @@ import Testing
         let dailyNoteID: UUID?
         let scrapKey: String?
     }
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["FEEEDER_V1_FIXTURE_DIR"] != nil,
-                   "Beta upgrade checks are opt-in; set FEEEDER_V1_FIXTURE_DIR to run."))
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["UNAGI_READER_V1_FIXTURE_DIR"] != nil,
+                   "Beta upgrade checks are opt-in; set UNAGI_READER_V1_FIXTURE_DIR to run."))
     func preservesReleasedV1Store() throws {
-        let path = try #require(ProcessInfo.processInfo.environment["FEEEDER_V1_FIXTURE_DIR"], "Run scripts/prepare-v1-store-fixture.sh and set FEEEDER_V1_FIXTURE_DIR")
+        let path = try #require(ProcessInfo.processInfo.environment["UNAGI_READER_V1_FIXTURE_DIR"], "Run scripts/prepare-v1-store-fixture.sh and set UNAGI_READER_V1_FIXTURE_DIR")
         let source = URL(fileURLWithPath: path, isDirectory: true)
         let expected = try JSONDecoder().decode(Expected.self, from: Data(contentsOf: source.appending(path: "expected.json")))
         #expect(["53102cc42ea665b3379ad2a23d842c3186ad9c3e", "f9db83b49a82947a7031ddf874bc94fcb91ef89d", "1007dce64ebc5d1c9d7ac6f0b3e05869c8581ba4", "215b901ffc3863b3e1afd1e17a76b18101fc0cb6"].contains(expected.baseline))

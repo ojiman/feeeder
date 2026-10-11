@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Testing
 import ReaderCore
-@testable import RSSReader
+@testable import UnagiReader
 
 @MainActor struct NativeArticleListTests {
     @Test func selectedFolderListReceivesKeyboardFocusAfterMount() {

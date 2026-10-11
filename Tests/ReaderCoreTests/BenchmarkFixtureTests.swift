@@ -6,7 +6,7 @@ import Testing
 @MainActor struct BenchmarkFixtureTests {
     @Test func largeLibraryIndexesAndReadCountsStayConsistent() throws {
         let library = try TestLibrary()
-        let destination = ProcessInfo.processInfo.environment["FEEEDER_BENCHMARK_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+        let destination = ProcessInfo.processInfo.environment["UNAGI_READER_BENCHMARK_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) }
         defer { library.cleanup() }
         let directory = destination ?? library.directory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -17,8 +17,8 @@ import Testing
         let context = ModelContext(container); context.autosaveEnabled = false
         #expect(try context.fetchCount(FetchDescriptor<Article>()) == 0)
         let now = Date.now
-        let imageBase = ProcessInfo.processInfo.environment["FEEEDER_BENCHMARK_IMAGE_BASE"].flatMap(URL.init(string:))
-        let originalBase = ProcessInfo.processInfo.environment["FEEEDER_BENCHMARK_ORIGINAL_BASE"].flatMap(URL.init(string:))
+        let imageBase = ProcessInfo.processInfo.environment["UNAGI_READER_BENCHMARK_IMAGE_BASE"].flatMap(URL.init(string:))
+        let originalBase = ProcessInfo.processInfo.environment["UNAGI_READER_BENCHMARK_ORIGINAL_BASE"].flatMap(URL.init(string:))
         let feeds = (0..<100).map { Feed(title: String(format: "合成購読 %03d", $0), symbol: "dot.radiowaves.left.and.right") }
         for feed in feeds {
             feed.iconURL = imageBase?.appending(path: "favicon.png").absoluteString

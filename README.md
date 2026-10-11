@@ -24,10 +24,10 @@ The full statement, with the promises and the questions to ask when in doubt, is
 You need a Mac on macOS 27.0 or later and the Swift toolchain from Xcode.
 
 ```sh
-git clone https://github.com/ojiman/feeeder.git
-cd feeeder
+git clone https://github.com/ojiman/unagi-reader.git
+cd unagi-reader
 bash scripts/build-app.sh release
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/feeeder-demo --seed-demo
+open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
 The last command opens a separate instance with synthetic subscriptions and its own data directory, so you can look around without touching a real library. To use the app for real, open `.build/UnagiReader.app` normally.
@@ -64,7 +64,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 ## Development
 
 ```sh
-swift test --scratch-path /private/tmp/feeeder-dogfooding-build
+swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 git diff --check
 ```
 

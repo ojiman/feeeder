@@ -34,7 +34,7 @@ exit 0
 EOF
 chmod +x "$bin"/*
 
-export FEEEDER_CI_ROOT=$work/out
+export UNAGI_READER_CI_ROOT=$work/out
 failures=0
 # run_case NAME EXPECTED_EXIT MUST_MATCH MUST_NOT_MATCH [ENV=VALUE ...] -- ARGS...
 run_case() {
@@ -47,7 +47,7 @@ run_case() {
     printf '%s' "$out" | grep -Eq -- "$must" || ok=0
     if [ -n "$must_not" ] && printf '%s' "$out" | grep -Eq -- "$must_not"; then ok=0; fi
     if [ "$ok" -eq 1 ]; then echo "ok   $name"; else echo "FAIL $name (exit $code, wanted $want_code)"; printf '%s\n' "$out" | sed 's/^/     | /'; failures=$((failures + 1)); fi
-    rm -rf "$FEEEDER_CI_ROOT"
+    rm -rf "$UNAGI_READER_CI_ROOT"
 }
 
 run_case "PR happy path"                 0 'Ready: .*no quarantine attribute' 'WARNING|Artifact was built' -- 10

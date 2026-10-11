@@ -13,7 +13,7 @@
 4. **The text of the Claude review package changes on purpose.** Its first line is now `Unagi Reader reading review`, the split header says `Unagi Reader split package`, and the launch prompt says 「添付のUnagi Readerパッケージ」. The note's own bytes, the markers and the rest of the request are the same. The golden test was updated with new hashes; the first hash was checked with an independent SHA-256 of the expected bytes.
 5. **The repository is renamed to `unagi-reader` by the owner, after this PR is merged.** GitHub redirects the old address. A small follow-up PR then changes the clone address and the links in the docs. This PR does not change repository URLs, so no link breaks before the rename.
 
-## Not changed
+## Not changed (the first two items were changed afterwards: [0024](0024-remove-the-old-name-from-code-and-scratch.md))
 
 - The SwiftPM package, the targets and the executable keep the name `RSSReader` (they are internal; renaming them would only churn imports and the process name used in the docs).
 - Scratch paths under `/private/tmp` (`feeeder-*`), the variable names `FEEEDER_*` of the opt-in fixture scripts and the pasteboard names in tests. They are disposable and not visible to users.

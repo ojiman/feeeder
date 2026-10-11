@@ -4,7 +4,7 @@ import Testing
 
 struct NotePanelWidthTests {
     private func defaults() -> (UserDefaults, String) {
-        let name = "feeeder-test-\(UUID().uuidString)"
+        let name = "unagi-reader-test-\(UUID().uuidString)"
         return (UserDefaults(suiteName: name)!, name)
     }
 
