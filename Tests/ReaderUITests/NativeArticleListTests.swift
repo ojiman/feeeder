@@ -79,6 +79,17 @@ import ReaderCore
         #expect(cell.thumbnail.isHidden)
         #expect(abs(cell.convert(title.bounds, from: title).maxX - (width - 12)) <= 2)
     }
+    @Test func theHeadlineLeadsAndTheSourceNameAndSummaryAreQuieter() throws {
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 400, height: NativeArticleList.Metrics.rowHeight))
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "合成の要約です。", publisher: "合成", publishedAt: .now)
+        cell.configure(article, feed: "合成購読")
+        let source = try #require(labels(in: cell).first { $0.stringValue.hasSuffix("合成購読") })
+        let title = try #require(labels(in: cell).first { $0.stringValue == article.title })
+        let summary = try #require(labels(in: cell).first { $0.stringValue == article.summary })
+        #expect(title.font?.pointSize == 14)                                                   // the headline and the favicon decide interest
+        #expect(source.font?.pointSize == 10)                                                  // decision 0028: supporting information is smaller
+        #expect(summary.font?.pointSize == 11)
+    }
     @Test func theSelectedRowIsAQuietGrayNotTheSystemBlue() throws {
         let row = NativeArticleList.SoftRow(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         row.isSelected = true
