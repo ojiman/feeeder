@@ -241,6 +241,19 @@ import SwiftData
         try save(); try reload()
     }
 
+    /// Removes the bodies that an earlier version took from the original pages by itself when an article was opened. They can be wrong
+    /// (a page's menus and counters instead of the article). The article keeps its RSS summary and the next feed refresh brings back the
+    /// feed's own body. Returns how many bodies were removed.
+    @discardableResult public func discardExtractedBodies() throws -> Int {
+        try reloadIfNeeded()
+        let raw = ContentCoverage.extracted.rawValue
+        let snapshots = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.coverageRaw == raw }))
+        guard !snapshots.isEmpty else { return 0 }
+        for snapshot in snapshots { context.delete(snapshot) }
+        try save(); try reload()
+        return snapshots.count
+    }
+
     public func content(articleID: UUID, at: Date) throws -> ArticleContent? {
         try reloadIfNeeded()
         guard let article = articleIndex[articleID], isContentAvailable(article, at: at) else { return nil }

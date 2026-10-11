@@ -27,8 +27,8 @@ struct ArticleDetailView: View {
             if available && !loading {
                 HStack {
                     Spacer()
-                    Button("本文を再取得", action: onReload).buttonStyle(.link)
-                        .help("原文から本文とリンクを再取得します。取得に失敗した場合は保存済み本文を表示します。")
+                    Button(content?.coverage == .extracted ? "本文を再取得" : "全文を取得", action: onReload).buttonStyle(.link)
+                        .help("原文のページから本文を取り込みます。取得できない場合は、今の本文をそのまま表示します。")
                         .disabled(article.originalURL.flatMap { ArticleURL.validated($0) } == nil)
                 }.font(.caption).padding(.horizontal, 16).padding(.vertical, 6)
             }

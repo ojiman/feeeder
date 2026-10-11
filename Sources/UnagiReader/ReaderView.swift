@@ -57,7 +57,7 @@ struct ReaderView: View {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
         self.imageLoader = imageLoader
-        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }))
+        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()

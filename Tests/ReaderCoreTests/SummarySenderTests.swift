@@ -3,6 +3,8 @@ import SwiftData
 import Testing
 @testable import ReaderCore
 
+final class AskedFlag: @unchecked Sendable { var value = false }
+
 @MainActor struct SummarySenderTests {
     let at = Date(timeIntervalSince1970: 1_800_000_000)
     private func settle(_ sender: SummarySender) async throws {
@@ -30,6 +32,47 @@ import Testing
         #expect(store.note(id: outcome.send.noteID) == nil)
         sender.undo()
         #expect(store.note(id: outcome.send.noteID) == nil)
+    }
+    /// An article of an imported feed: a real https address and a short feed text.
+    private func shortArticle(in store: ReaderStore) throws -> Article {
+        let xml = "<rss><channel><title>合成</title><item><guid>s</guid><title>短い記事</title><link>https://synthetic.example/posts/short</link><description>短い要約です。</description></item></channel></rss>"
+        _ = try store.importFeed(FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://synthetic.example/rss")!), receivedAt: at)
+        return try #require(store.articles.first)
+    }
+    @Test func aShortFeedTextIsReplacedForTheAIByThePageTextAtSendTime() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, now: at)
+        let article = try shortArticle(in: store)
+        let page = ExtractionResult(text: "ページの本文です。" + String(repeating: "詳しい内容が続きます。", count: 60), coverage: .extracted, sourceURL: ArticleExtractorTests.url)
+        let generator = FakeGenerator(); await generator.scriptGeneration(["要約"])
+        let sender = SummarySender(store: store, assistant: generator, pageText: { _ in page }, now: { at })
+        #expect(sender.start(articleID: article.id, noteID: nil))
+        try await settle(sender)
+        let request = try #require(await generator.generateCalls.first)
+        #expect(request.prompt.contains("ページの本文です。"))                                   // the AI read the page, not only the short feed text
+        #expect((try store.content(articleID: article.id, at: at)?.text.count ?? 0) < 1000)     // and nothing was stored: the reader still shows the feed text
+    }
+    @Test func theFeedTextIsUsedWhenItIsLongOrThePageCannotBeUsed() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, now: at)
+        let article = try shortArticle(in: store)
+        for source in ["none", "failed"] {
+            let generator = FakeGenerator(); await generator.scriptGeneration(["要約"])
+            let provider: (@Sendable (URL) async -> ExtractionResult?)? = source == "none" ? nil : { @Sendable _ in nil }
+            let sender = SummarySender(store: store, assistant: generator, pageText: provider, now: { at })
+            #expect(sender.start(articleID: article.id, noteID: nil))
+            try await settle(sender)
+            let request = try #require(await generator.generateCalls.first)
+            #expect(!request.prompt.contains("ページの本文です。"))
+        }
+        let long = String(repeating: "フィードの本文です。", count: 200)
+        try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: long, coverage: .extracted, sourceURL: ArticleExtractorTests.url), at: at)
+        let generator = FakeGenerator(); await generator.scriptGeneration(["要約"])
+        let asked = AskedFlag()
+        let sender = SummarySender(store: store, assistant: generator, pageText: { _ in asked.value = true; return nil }, now: { at })
+        #expect(sender.start(articleID: article.id, noteID: nil))
+        try await settle(sender)
+        #expect(!asked.value)                                                                    // a long text needs no page request
     }
     @Test func cancelAndTurningAIOffDropLateAnswers() async throws {
         for cancel in [true, false] {
