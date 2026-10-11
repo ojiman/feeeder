@@ -90,6 +90,55 @@ import ReaderCore
         #expect(source.font?.pointSize == 10)                                                  // decision 0028: supporting information is smaller
         #expect(summary.font?.pointSize == 11)
     }
+    @Test func theSelectedRowIsAQuietGrayNotTheSystemBlue() throws {
+        let row = NativeArticleList.SoftRow(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
+        row.isSelected = true
+        row.isEmphasized = true                                                                 // the table does this when it has the keyboard focus
+        #expect(!row.isEmphasized)                                                              // still drawn in the quiet way, with the normal text colours
+        #expect(row.interiorBackgroundStyle == .raised)                                         // "selected, quietly": the cell shows its full-strength text
+        row.isSelected = false
+        #expect(row.interiorBackgroundStyle == .normal)
+        for name in [NSAppearance.Name.darkAqua, .aqua] {
+            NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
+                let c = AppPalette.selection.usingColorSpace(.sRGB)!
+                #expect(c.alphaComponent > 0.05 && c.alphaComponent < 0.25)
+                #expect(abs(c.redComponent - c.greenComponent) < 0.01 && abs(c.greenComponent - c.blueComponent) < 0.01)   // neutral, no hue
+            }
+        }
+    }
+    @Test func aSelectedReadRowIsNotDimmed() throws {
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "合成要約", publisher: "合成", publishedAt: .now)
+        article.isRead = true
+        cell.configure(article, feed: "合成購読")
+        let title = try #require(labels(in: cell).first { $0.stringValue == article.title })
+        let summary = try #require(labels(in: cell).first { $0.stringValue == article.summary })
+        #expect(title.textColor == .secondaryLabelColor && summary.textColor == .tertiaryLabelColor)   // read: dimmed
+        cell.backgroundStyle = .raised                                                          // selected in the quiet way
+        #expect(title.textColor == .labelColor && summary.textColor == .secondaryLabelColor)   // the selected row is easy to read
+        cell.backgroundStyle = .normal
+        #expect(title.textColor == .secondaryLabelColor)
+    }
+    @Test func onlyTheUnreadDotIsColouredAndTheSourceNameIsQuiet() throws {
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now)
+        cell.configure(article, feed: "合成購読")
+        let source = try #require(labels(in: cell).first { $0.stringValue.hasSuffix("合成購読") })
+        func colour(_ index: Int) -> NSColor? { source.attributedStringValue.attribute(.foregroundColor, at: index, effectiveRange: nil) as? NSColor }
+        #expect(source.stringValue == "● 合成購読")
+        #expect(colour(0) == AppPalette.accent)                                                 // the dot
+        #expect(colour(2) == .secondaryLabelColor)                                              // the name is not orange
+        article.isRead = true
+        cell.configure(article, feed: "合成購読")
+        #expect(source.stringValue == "合成購読" && colour(0) == .secondaryLabelColor)
+        cell.backgroundStyle = .raised                                                          // read and selected quietly: still no coloured first letter
+        #expect(source.stringValue == "合成購読" && colour(0) == .secondaryLabelColor)
+        cell.backgroundStyle = .normal
+        article.isRead = false
+        cell.configure(article, feed: "合成購読")
+        cell.backgroundStyle = .emphasized
+        #expect(colour(0) == .alternateSelectedControlTextColor && colour(2) == .alternateSelectedControlTextColor)
+    }
     @Test func rowsHaveRoomToBreathe() throws {
         #expect(NativeArticleList.Metrics.rowHeight == 108)                                    // decision 0026: 96 felt cramped
         let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 400, height: NativeArticleList.Metrics.rowHeight))

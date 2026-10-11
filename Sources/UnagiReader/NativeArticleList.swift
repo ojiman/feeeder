@@ -56,6 +56,19 @@ struct NativeArticleList: NSViewRepresentable {
         coordinator.table?.delegate = nil; coordinator.table?.dataSource = nil
     }
 
+    /// A row that is selected in a quiet way: a rounded neutral gray, also when the list has the keyboard focus. The text keeps its
+    /// own colours (`isEmphasized` stays false, so the cells never switch to the white-on-blue style).
+    @MainActor final class SoftRow: NSTableRowView {
+        override var isEmphasized: Bool { get { false } set { } }
+        /// `.raised` tells the cell "I am selected, in the quiet way" (the system only has `.emphasized` for the blue selection).
+        override var interiorBackgroundStyle: NSView.BackgroundStyle { isSelected ? .raised : .normal }
+        override func drawSelection(in dirtyRect: NSRect) {
+            guard isSelected else { return }
+            AppPalette.selection.setFill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8).fill()
+        }
+    }
+
     /// The vertical rhythm of a row (points), in one place so the table's row height and the cell's layout cannot drift apart.
     enum Metrics {
         static let rowHeight: CGFloat = 108
@@ -156,6 +169,7 @@ struct NativeArticleList: NSViewRepresentable {
             synchronizing = false
         }
         func numberOfRows(in tableView: NSTableView) -> Int { parent.ids.count }
+        func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? { SoftRow() }
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard parent.ids.indices.contains(row), let article = parent.article(parent.ids[row]) else { return nil }
             let cell = tableView.makeView(withIdentifier: .init("article"), owner: self) as? Cell ?? Cell()
@@ -273,7 +287,13 @@ struct NativeArticleList: NSViewRepresentable {
         }
         private func updatePalette() {
             let selected = backgroundStyle == .emphasized
-            source.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : .systemOrange
+            let isRead = isRead && backgroundStyle != .raised            // a row that is selected quietly is read at full strength
+            // Only the unread dot is coloured; the name stays quiet (a whole line of orange was too loud).
+            let nameColor: NSColor = selected ? .alternateSelectedControlTextColor : .secondaryLabelColor
+            let dotColor: NSColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : AppPalette.accent
+            let text = NSMutableAttributedString(string: source.stringValue, attributes: [.font: source.font as Any, .foregroundColor: nameColor])
+            if text.string.hasPrefix("●") { text.addAttribute(.foregroundColor, value: dotColor, range: NSRange(location: 0, length: 1)) }
+            source.attributedStringValue = text
             title.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : .labelColor
             summary.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .tertiaryLabelColor : .secondaryLabelColor
             timestamp.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .tertiaryLabelColor : .secondaryLabelColor

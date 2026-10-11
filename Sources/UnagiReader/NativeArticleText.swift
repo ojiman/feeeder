@@ -51,7 +51,7 @@ import ReaderCore
             document.append(NSAttributedString(string: text + "\n", attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: secondary ? NSColor.secondaryLabelColor : NSColor.labelColor, .paragraphStyle: style]))
         }
         append(publisher, size: 11, weight: .medium, secondary: true)
-        append(title, size: 30, weight: .bold)
+        append(title, size: 26, weight: .semibold)
         append(date, size: 12, secondary: true)
         heroRange = nil
         if hero {

@@ -181,7 +181,7 @@ struct ReaderView: View {
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 960, minHeight: 600)
-        .tint(.orange)
+        .tint(AppPalette.accentColor)
         .toolbar {
             // Always present, disabled when no article is open. If these buttons came and went with the selection,
             // the toolbar would change height each time and the whole window would shift (and the title would move).
@@ -314,7 +314,7 @@ struct ReaderView: View {
                         .tag(LibraryScope.note(note.id))
                         .contextMenu { Button("削除…", role: .destructive) { deletingNote = note.id } }
                 }
-                Button { createNote() } label: { Label("新しいノート", systemImage: "plus") }
+                Button { createNote() } label: { Label { Text("新しいノート") } icon: { Image(systemName: "plus").foregroundStyle(.secondary) } }
                     .buttonStyle(.plain).foregroundStyle(.secondary).padding(.vertical, 4)
                     .accessibilityLabel("新しいノートを作る")
             }
@@ -382,7 +382,8 @@ struct ReaderView: View {
 
     private func sidebarRow(_ title: String, symbol: String, count: Int) -> some View {
         HStack {
-            Label(title, systemImage: symbol).lineLimit(1)
+            // Quiet icons (the system would colour them with its blue accent in the active window) and text a little softer than pure white.
+            Label { Text(title).foregroundStyle(.primary.opacity(0.85)) } icon: { Image(systemName: symbol).foregroundStyle(.secondary) }.lineLimit(1)
             Spacer()
             Text(count.formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
         }.padding(.vertical, 4)
@@ -500,7 +501,7 @@ struct ReaderView: View {
                 onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward)
         } else {
             VStack(spacing: 18) {
-                Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(.orange.opacity(0.8))
+                Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
                 Text("読むことに、余白を。").font(.system(size: 24, weight: .medium, design: .serif))
                 Text("一覧から記事を選んでください。")
                     .font(.callout).foregroundStyle(.secondary)
