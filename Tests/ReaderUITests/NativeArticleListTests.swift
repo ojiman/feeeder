@@ -54,7 +54,7 @@ import ReaderCore
         #expect(cell.thumbnail.alphaValue == 1 && cell.favicon.alphaValue == 1)
     }
     @Test(arguments: [280.0, 400.0, 640.0]) func articleTextUsesSpaceUpToCompactThumbnail(width: Double) throws {
-        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: width, height: 96))
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: width, height: NativeArticleList.Metrics.rowHeight))
         let article = Article(feedID: UUID(), title: "合成記事の長いタイトルを途中で短く切らずに表示します。", summary: "合成の長い要約です。幅が狭くてもタイトルや次の記事と重ならず、広げると読める範囲が増えます。", publisher: "合成", publishedAt: .now)
         article.imageURL = "https://synthetic.example/image.png"
         cell.configure(article, feed: "合成購読")
@@ -72,7 +72,7 @@ import ReaderCore
         #expect(abs(timeRect.maxX - thumbnail.maxX) <= 2)
         #expect(abs(titleRect.maxX + 8 - thumbnail.minX) <= 2)
         #expect(cell.isFlipped ? timeRect.maxY <= thumbnail.minY : timeRect.minY >= thumbnail.maxY)
-        #expect(summaryRect.minY >= 8 && summaryRect.maxY <= 88)
+        #expect(summaryRect.minY >= 8 && summaryRect.maxY <= NativeArticleList.Metrics.rowHeight - 8)
         #expect(cell.isFlipped ? titleRect.maxY <= summaryRect.minY : titleRect.minY >= summaryRect.maxY)
         article.imageURL = nil
         cell.configure(article, feed: "合成購読"); cell.layoutSubtreeIfNeeded()
@@ -80,7 +80,7 @@ import ReaderCore
         #expect(abs(cell.convert(title.bounds, from: title).maxX - (width - 12)) <= 2)
     }
     @Test func theSelectedRowIsAQuietGrayNotTheSystemBlue() throws {
-        let row = NativeArticleList.SoftRow(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        let row = NativeArticleList.SoftRow(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         row.isSelected = true
         row.isEmphasized = true                                                                 // the table does this when it has the keyboard focus
         #expect(!row.isEmphasized)                                                              // still drawn in the quiet way, with the normal text colours
@@ -96,7 +96,7 @@ import ReaderCore
         }
     }
     @Test func aSelectedReadRowIsNotDimmed() throws {
-        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         let article = Article(feedID: UUID(), title: "合成記事", summary: "合成要約", publisher: "合成", publishedAt: .now)
         article.isRead = true
         cell.configure(article, feed: "合成購読")
@@ -109,7 +109,7 @@ import ReaderCore
         #expect(title.textColor == .secondaryLabelColor)
     }
     @Test func onlyTheUnreadDotIsColouredAndTheSourceNameIsQuiet() throws {
-        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now)
         cell.configure(article, feed: "合成購読")
         let source = try #require(labels(in: cell).first { $0.stringValue.hasSuffix("合成購読") })
@@ -128,12 +128,33 @@ import ReaderCore
         cell.backgroundStyle = .emphasized
         #expect(colour(0) == .alternateSelectedControlTextColor && colour(2) == .alternateSelectedControlTextColor)
     }
+    @Test func rowsHaveRoomToBreathe() throws {
+        #expect(NativeArticleList.Metrics.rowHeight == 108)                                    // decision 0026: 96 felt cramped
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 400, height: NativeArticleList.Metrics.rowHeight))
+        let article = Article(feedID: UUID(), title: "合成記事の長いタイトルを二行に折り返して表示します。二行目まで使います。", summary: "合成の要約です。", publisher: "合成", publishedAt: .now)
+        article.imageURL = "https://synthetic.example/image.png"
+        cell.configure(article, feed: "合成購読")
+        cell.layoutSubtreeIfNeeded()
+        func rect(_ view: NSView) -> NSRect { cell.convert(view.bounds, from: view) }
+        func gap(_ a: NSRect, _ b: NSRect) -> CGFloat { max(b.minY - a.maxY, a.minY - b.maxY) }
+        let source = try #require(labels(in: cell).first { $0.stringValue.hasSuffix("合成購読") })
+        let title = try #require(labels(in: cell).first { $0.stringValue == article.title })
+        let summary = try #require(labels(in: cell).first { $0.stringValue == article.summary })
+        let height = cell.bounds.height
+        let top = cell.isFlipped ? rect(source).minY : height - rect(source).maxY
+        let titleTop = cell.isFlipped ? rect(title).minY : height - rect(title).maxY
+        #expect(top >= 14)                                                                      // space above the first line
+        #expect(gap(rect(source), rect(title)) >= 5.5 && titleTop > top)                       // between the source line and the title
+        #expect(gap(rect(title), rect(summary)) >= 3.5)                                         // between the title and the summary
+        let bottom = cell.isFlipped ? height - rect(summary).maxY : rect(summary).minY
+        #expect(bottom >= 14)                                                                   // space below the last line
+    }
     @Test func lateImagesNeverLeakAcrossReusedRows() {
         let first = Article(feedID: UUID(), title: "A", summary: "", publisher: "合成", publishedAt: .now)
         let second = Article(feedID: UUID(), title: "B", summary: "", publisher: "合成", publishedAt: .now)
         let a = URL(string: "https://synthetic.example/a.png")!, b = URL(string: "https://synthetic.example/b.png")!
         first.imageURL = a.absoluteString; second.imageURL = b.absoluteString
-        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         cell.configure(first, feed: "合成", iconURL: a, loader: nil, inNote: false)
         cell.configure(second, feed: "合成", iconURL: b, loader: nil, inNote: true)
         let stale = NSImage(size: NSSize(width: 10, height: 10))
@@ -144,7 +165,7 @@ import ReaderCore
         cell.completeImage(current, articleID: second.id, url: b, thumbnail: true)
         cell.completeImage(current, articleID: second.id, url: b, thumbnail: false)
         #expect(cell.thumbnail.image === current && cell.favicon.image === current)
-        #expect(cell.frame.height == 96)
+        #expect(cell.frame.height == NativeArticleList.Metrics.rowHeight)
         cell.configure(second, feed: "合成", iconURL: b, loader: nil, inNote: true)
         #expect(cell.thumbnail.image === current)
     }
@@ -188,7 +209,7 @@ import ReaderCore
         let coordinator = NativeArticleList.Coordinator(parent(original))
         let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 280, height: 300))
         let table = NativeArticleList.Table(frame: NSRect(x: 0, y: 0, width: 280, height: 4000))
-        table.headerView = nil; table.rowHeight = 96; table.intercellSpacing = .zero
+        table.headerView = nil; table.rowHeight = NativeArticleList.Metrics.rowHeight; table.intercellSpacing = .zero
         table.addTableColumn(NSTableColumn(identifier: .init("article")))
         table.dataSource = coordinator; table.delegate = coordinator; scroll.documentView = table
         coordinator.table = table; coordinator.scroll = scroll
@@ -216,7 +237,7 @@ import ReaderCore
                 cell.completeImage(NSImage(size: NSSize(width: 400, height: 400)), articleID: article.id, url: url, thumbnail: true)
                 cell.completeImage(NSImage(size: NSSize(width: 18, height: 18)), articleID: article.id, url: url, thumbnail: false)
                 cell.layoutSubtreeIfNeeded()
-                #expect(abs(scroll.contentView.bounds.minY - offset) < 1 && table.rowHeight == 96)
+                #expect(abs(scroll.contentView.bounds.minY - offset) < 1 && table.rowHeight == NativeArticleList.Metrics.rowHeight)
             } else { Issue.record("Expected the visible native cell") }
         }
     }
@@ -226,7 +247,7 @@ import ReaderCore
         let parent = NativeArticleList(ids: ids, article: { _ in nil }, feedTitle: { _ in "" }, selection: Binding(get: { selection }, set: { selection = $0 }), initialTop: ids[8], focus: false, shortcutsEnabled: true, onTop: { _ in }, onKey: { _ in }, initialTopOffset: 17)
         let coordinator = NativeArticleList.Coordinator(parent)
         let table = NativeArticleList.Table(frame: NSRect(x: 0, y: 0, width: 280, height: 3000))
-        table.headerView = nil; table.rowHeight = 96; table.intercellSpacing = .zero
+        table.headerView = nil; table.rowHeight = NativeArticleList.Metrics.rowHeight; table.intercellSpacing = .zero
         table.addTableColumn(NSTableColumn(identifier: .init("article")))
         let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 280, height: 300)); scroll.documentView = table
         table.dataSource = coordinator; table.delegate = coordinator; coordinator.table = table; coordinator.scroll = scroll

@@ -117,7 +117,7 @@ extension SendToNoteTests {
 
 extension SendToNoteTests {
     @Test func rowLabelsDoNotInterceptTheRowsContextMenu() {
-        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: 96))
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         cell.layoutSubtreeIfNeeded()
         #expect(cell.hitTest(NSPoint(x: 30, y: 50)) === cell)
     }

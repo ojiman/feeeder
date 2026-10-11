@@ -27,7 +27,7 @@ struct NativeArticleList: NSViewRepresentable {
         table.headerView = nil
         table.addTableColumn(NSTableColumn(identifier: .init("article")))
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
-        table.rowHeight = 96
+        table.rowHeight = Metrics.rowHeight
         table.intercellSpacing = .init(width: 0, height: 0)
         table.style = .inset
         table.allowsMultipleSelection = false
@@ -67,6 +67,16 @@ struct NativeArticleList: NSViewRepresentable {
             AppPalette.selection.setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8).fill()
         }
+    }
+
+    /// The vertical rhythm of a row (points), in one place so the table's row height and the cell's layout cannot drift apart.
+    enum Metrics {
+        static let rowHeight: CGFloat = 108
+        static let topInset: CGFloat = 14
+        static let bottomInset: CGFloat = 14
+        static let headerGap: CGFloat = 6
+        static let textGap: CGFloat = 4
+        static let bodyHeight: CGFloat = 56
     }
 
     @MainActor final class Table: NSTableView {
@@ -219,12 +229,12 @@ struct NativeArticleList: NSViewRepresentable {
             header.orientation = .horizontal; header.alignment = .centerY; header.spacing = 8
             header.distribution = .fill
             let text = NSStackView(views: [title, summary])
-            text.orientation = .vertical; text.alignment = .leading; text.spacing = 3
+            text.orientation = .vertical; text.alignment = .leading; text.spacing = NativeArticleList.Metrics.textGap
             let body = NSStackView(views: [text, thumbnail])
             body.orientation = .horizontal; body.alignment = .top; body.spacing = 8
             body.distribution = .fill
             let stack = NSStackView(views: [header, body])
-            stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 4
+            stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = NativeArticleList.Metrics.headerGap
             stack.translatesAutoresizingMaskIntoConstraints = false
             favicon.imageScaling = .scaleProportionallyUpOrDown; thumbnail.imageScaling = .scaleProportionallyUpOrDown
             favicon.setAccessibilityLabel("購読元のアイコン"); thumbnail.setAccessibilityLabel("記事のサムネイル")
@@ -232,10 +242,10 @@ struct NativeArticleList: NSViewRepresentable {
             NSLayoutConstraint.activate([
                 stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
                 stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-                stack.topAnchor.constraint(equalTo: topAnchor, constant: 10),
-                stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -8),
+                stack.topAnchor.constraint(equalTo: topAnchor, constant: NativeArticleList.Metrics.topInset),
+                stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -NativeArticleList.Metrics.bottomInset),
                 header.widthAnchor.constraint(equalTo: stack.widthAnchor), body.widthAnchor.constraint(equalTo: stack.widthAnchor),
-                body.heightAnchor.constraint(equalToConstant: 52),
+                body.heightAnchor.constraint(equalToConstant: NativeArticleList.Metrics.bodyHeight),
                 text.bottomAnchor.constraint(lessThanOrEqualTo: body.bottomAnchor),
                 favicon.widthAnchor.constraint(equalToConstant: 18), favicon.heightAnchor.constraint(equalToConstant: 18),
                 thumbnail.widthAnchor.constraint(equalToConstant: 52), thumbnail.heightAnchor.constraint(equalToConstant: 52),
