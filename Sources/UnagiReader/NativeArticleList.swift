@@ -210,11 +210,11 @@ struct NativeArticleList: NSViewRepresentable {
         override init(frame: NSRect) {
             super.init(frame: frame)
             identifier = .init("article")
-            source.font = .systemFont(ofSize: 11); source.textColor = .secondaryLabelColor
+            source.font = .systemFont(ofSize: 10); source.textColor = .secondaryLabelColor
             source.lineBreakMode = .byTruncatingTail
             title.maximumNumberOfLines = 2; title.lineBreakMode = .byWordWrapping
             title.cell?.truncatesLastVisibleLine = true
-            summary.font = .systemFont(ofSize: 12); summary.textColor = .secondaryLabelColor
+            summary.font = .systemFont(ofSize: 11); summary.textColor = .secondaryLabelColor
             summary.maximumNumberOfLines = 2; summary.lineBreakMode = .byWordWrapping
             summary.cell?.truncatesLastVisibleLine = true
             summary.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
