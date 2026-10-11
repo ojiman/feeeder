@@ -39,6 +39,7 @@ struct ReaderView: View {
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
+    @State private var folderExpansion = FolderExpansion()
     /// The subscription that is being moved to a folder that does not exist yet (a folder is made by moving the first subscription into it).
     @State private var creatingFolderFor: Feed?
     @State private var folderName = ""
@@ -291,7 +292,7 @@ struct ReaderView: View {
             Button("移動") {
                 guard let feed = creatingFolderFor else { return }
                 let name = SingleLineText.name(folderName)
-                if !name.isEmpty { perform { try store.moveFeed(id: feed.id, toFolder: name) } }
+                if !name.isEmpty { moveFeeds([feed.id], to: name) }
                 creatingFolderFor = nil
             }
             Button("キャンセル", role: .cancel) { creatingFolderFor = nil }
@@ -303,6 +304,7 @@ struct ReaderView: View {
                 let name = folderName.trimmingCharacters(in: .whitespacesAndNewlines)
                 perform {
                     try store.renameFolder(from: old, to: name)
+                    folderExpansion.rename(from: old, to: name)
                     if scope == .folder(old) {
                         let next: LibraryScope = name.isEmpty ? .all : .folder(name)
                         workspace.rememberReader(scrollMemory.state, in: next); scope = next
@@ -338,7 +340,7 @@ struct ReaderView: View {
             Section {
                 ForEach(grouped[""] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                 ForEach(folders, id: \.self) { folder in
-                    DisclosureGroup {
+                    DisclosureGroup(isExpanded: Binding(get: { folderExpansion.isExpanded(folder) }, set: { folderExpansion.set(folder, expanded: $0) })) {
                         ForEach(grouped[folder] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                     } label: {
                         sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: "「\(folder)」に購読を追加", onAdd: { addingTo = SubscriptionTarget(folder: folder) }, onDropFeeds: { dropFeeds($0, into: folder) }).tag(LibraryScope.folder(folder))
@@ -382,9 +384,9 @@ struct ReaderView: View {
                 Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
                 Button("購読名を編集…") { editingFeed = feed }
                 Menu("フォルダへ移動") {
-                    Button("未分類") { perform { try store.moveFeed(id: feed.id, toFolder: "") } }
+                    Button("未分類") { moveFeeds([feed.id], to: "") }
                     ForEach(folders, id: \.self) { folder in
-                        Button(folder) { perform { try store.moveFeed(id: feed.id, toFolder: folder) } }
+                        Button(folder) { moveFeeds([feed.id], to: folder) }
                     }
                     Divider()
                     Button("新しいフォルダ…") { folderName = ""; creatingFolderFor = feed }
@@ -398,9 +400,16 @@ struct ReaderView: View {
     }
 
     /// Subscriptions dropped on a folder row (or on the sources header, which is "unfiled"). True if any of them moved.
-    private func dropFeeds(_ ids: [UUID], into folder: String) -> Bool {
+    private func dropFeeds(_ ids: [UUID], into folder: String) -> Bool { moveFeeds(ids, to: folder) }
+
+    /// Moves subscriptions into a folder (empty: unfiled). The rows glide to their new place and the folder opens to show them
+    /// (no motion with Reduce Motion). True if any of them moved.
+    @discardableResult private func moveFeeds(_ ids: [UUID], to folder: String) -> Bool {
         var moved = false
-        perform { moved = try store.moveFeeds(ids: ids, toFolder: folder) }
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.28)) {
+            perform { moved = try store.moveFeeds(ids: ids, toFolder: folder) }
+            if moved { folderExpansion.reveal(folder) }
+        }
         return moved
     }
 
