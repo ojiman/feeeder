@@ -4,6 +4,20 @@ import Testing
 @testable import ReaderCore
 
 @MainActor struct NoteTests {
+    @Test func renamingANoteChangesItsFirstLineOnceAndNeverSilentlyDrops() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url)
+        let then = Date(timeIntervalSince1970: 1_000), now = Date(timeIntervalSince1970: 2_000)
+        let note = try store.createNote(text: "# 金利\n自分の考え。", at: then)
+        #expect(try store.renameNote(id: note.id, to: " 新しい名前 ", at: now))
+        #expect(store.note(id: note.id)?.text == "# 新しい名前\n自分の考え。" && store.note(id: note.id)?.title == "新しい名前")
+        #expect(store.note(id: note.id)?.updatedAt == now)
+        #expect(try !store.renameNote(id: note.id, to: "新しい名前", at: now.addingTimeInterval(5)))   // same name: nothing saved
+        #expect(try !store.renameNote(id: note.id, to: "  ", at: now.addingTimeInterval(5)))          // an empty name changes nothing
+        #expect(store.note(id: note.id)?.updatedAt == now)
+        #expect(throws: NoteError.missingNote) { try store.renameNote(id: UUID(), to: "x", at: now) }
+    }
+
     let at = Date(timeIntervalSince1970: 1_791_152_000)
     let day: TimeInterval = 86_400
 
