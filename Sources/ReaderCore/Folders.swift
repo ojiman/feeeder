@@ -16,6 +16,17 @@ extension ReaderStore {
         guard feed.folder != name else { return }
         feed.folder = name; try save(); try reload()
     }
+    /// Moves subscriptions into a folder (empty means unfiled), with one save. Returns whether any of them changed folder: dropping on the
+    /// folder a subscription is already in, or an unknown subscription, changes nothing and saves nothing.
+    @discardableResult public func moveFeeds(ids: [UUID], toFolder: String) throws -> Bool {
+        try reloadIfNeeded()
+        let name = SingleLineText.name(toFolder)
+        let moving = ids.compactMap { feed(id: $0) }.filter { $0.folder != name }
+        guard !moving.isEmpty else { return false }
+        for feed in moving { feed.folder = name }
+        try save(); try reload()
+        return true
+    }
     public func renameFolder(from: String, to: String) throws {
         try reloadIfNeeded()
         let source = SingleLineText.name(from), target = SingleLineText.name(to)

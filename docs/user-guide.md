@@ -71,7 +71,7 @@ The window has three columns. In Settings you can choose the appearance: follow 
 
 ### Subscriptions and folders
 
-- Click "＋" at the top right of the left column and enter an RSS or Atom URL. Then press "追加" (Add). There is no folder field: the + you press decides the folder (the + at the top left and the + in the "購読元" header add to "unfiled"; the + that appears when you point at a folder row adds to that folder). To make a new folder, right-click a subscription and choose "フォルダへ移動" > "新しいフォルダ…". The refresh button is next to it. Hold ⌥ (Option) while you open "＋" to get the trouble-shooting tools: typing feed XML by hand and a synthetic sample.
+- Click "＋" at the top right of the left column and enter an RSS or Atom URL. Then press "追加" (Add). There is no folder field: the + you press decides the folder (the + at the top left and the + in the "購読元" header add to "unfiled"; the + that appears when you point at a folder row adds to that folder). To make a new folder, right-click a subscription and choose "フォルダへ移動" > "新しいフォルダ…". You can also move a subscription by dragging it onto a folder row in the sidebar (drag it onto the "購読元" header to unfile it). The refresh button is next to it. Hold ⌥ (Option) while you open "＋" to get the trouble-shooting tools: typing feed XML by hand and a synthetic sample.
 - Right-click a subscription to rename it, put it in a one-level folder, move it, or unsubscribe.
 - When you select a folder, the list shows the articles of all subscriptions in it. Right-click a folder to rename or merge it.
 

@@ -38,4 +38,17 @@ import Testing
         let reopened = try ReaderStore(url: library.url)
         #expect(reopened.feed(id: other.id)?.folder == "趣味")
     }
+
+    @Test func droppingSubscriptionsOnAFolderMovesThemAndReportsWhetherAnythingChanged() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: .now)
+        let first = store.feeds[0], second = store.feeds[1]
+        #expect(try store.moveFeeds(ids: [first.id, second.id], toFolder: " 技術 "))
+        #expect(first.folder == "技術" && second.folder == "技術")
+        #expect(try !store.moveFeeds(ids: [first.id, second.id], toFolder: "技術"))               // already there: nothing to save
+        #expect(try store.moveFeeds(ids: [first.id], toFolder: ""))                              // dropped on the sources header: unfiled
+        #expect(first.folder == "" && second.folder == "技術")
+        #expect(try !store.moveFeeds(ids: [UUID()], toFolder: "技術"))                           // an unknown subscription is ignored
+        #expect(try !store.moveFeeds(ids: [], toFolder: "技術"))
+    }
 }
