@@ -18,6 +18,9 @@ struct ReaderView: View {
     @State private var noteLayout = NoteLayout()
     /// The window's width, for the rule that folds the sidebar only in a narrow window (`NoteLayout.foldBelow`).
     @State private var windowWidth: Double = 0
+    /// The panel's width when the app started (the ideal width of the inspector), and the width it has now while the person drags.
+    @State private var startingPanelWidth = NotePanelWidth.load()
+    @State private var panelWidth: Double?
     @State private var saveError: String?
     @State private var noteMessage: String?
     @State private var pickingNote = false
@@ -132,7 +135,7 @@ struct ReaderView: View {
         } detail: {
             originalColumn.frame(minWidth: 360)
                 .inspector(isPresented: noteOpenBinding) { notePanel }
-                .inspectorColumnWidth(min: 300, ideal: 380, max: 640)
+                .inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 960, minHeight: 600)
@@ -400,6 +403,14 @@ struct ReaderView: View {
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
                       onAskReview: askReviewAction(id))
+            .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { panelWidth = $0 }
+            .task(id: panelWidth) {
+                // Keep the width after the person lets go: wait for the drag to settle, then save it once.
+                guard let width = panelWidth else { return }
+                try? await Task.sleep(for: .milliseconds(600))
+                guard !Task.isCancelled, NotePanelWidth.needsSaving(new: width, saved: UserDefaults.standard.object(forKey: NotePanelWidth.key) as? Double) else { return }
+                NotePanelWidth.save(width)
+            }
             .id(id)
         } else { EmptyView() }
     }

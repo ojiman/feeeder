@@ -2,17 +2,17 @@ import Testing
 @testable import ReaderCore
 
 struct NoteLayoutTests {
-    private let wide: Double = 1_500, narrow: Double = 1_000
+    private let wide: Double = 1_600, narrow: Double = 1_000
 
     @Test func theSidebarFoldsWhenAPanelOpensOnlyBelowTheThreshold() {
-        #expect(NoteLayout.foldBelow == 1_200)
+        #expect(NoteLayout.foldBelow == 1_300)
         var layout = NoteLayout()
         #expect(layout.columns == .all)
-        layout.noteOpened(windowWidth: 1_199)
+        layout.noteOpened(windowWidth: 1_299)
         #expect(layout.columns == .doubleColumn && layout.sidebarFolded)
         layout.noteClosed()
         #expect(layout.columns == .all)
-        layout.noteOpened(windowWidth: 1_200)                                   // exactly the threshold is wide enough
+        layout.noteOpened(windowWidth: 1_300)                                   // exactly the threshold is wide enough
         #expect(layout.columns == .all && !layout.sidebarFolded)
         layout.noteClosed()
         layout.noteOpened(windowWidth: wide)

@@ -3,13 +3,14 @@ import Foundation
 /// Which columns the window shows. `doubleColumn` is the middle and right column with the sidebar folded away.
 public enum SidebarColumns: Sendable, Equatable { case all, doubleColumn }
 
-/// When the sidebar folds. A note's panel needs room: the sidebar, the list, the article and the panel add up to at least
-/// 1,125 pt (185 + 280 + 360 + 300), so the sidebar folds when a panel opens in a window narrower than `foldBelow`, and comes back
+/// When the sidebar folds. A note's panel needs room. In a real 1,240 pt window the columns took about 217 pt (sidebar), 393 pt (list),
+/// 361 pt (article) and left the panel 270 pt, below its 300 pt minimum. With the ideal widths the four add up to about 1,277 pt
+/// (217 + 400 + 360 + 300), so the sidebar folds when a panel opens in a window narrower than `foldBelow`, and comes back
 /// when the panel closes. While the panel stays open, a resize folds or unfolds it the same way, unless the person has chosen by
 /// hand; that choice holds until the panel is closed (also across a switch to another note whose panel is open).
 public struct NoteLayout: Equatable, Sendable {
-    /// A proposal (decision 0019, S1b): to be checked in a real window.
-    public static let foldBelow: Double = 1_200
+    /// A proposal (decision 0019, S1b), set from one real-window measurement: to be checked again.
+    public static let foldBelow: Double = 1_300
     public private(set) var sidebarFolded = false
     private var panelOpen = false
     private var chosenByHand = false
