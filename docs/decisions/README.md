@@ -44,6 +44,7 @@
 | [0023](0023-rename-to-unagi-reader.md) | Rename to Unagi Reader | valid (with the rename PR) |
 | [0024](0024-remove-the-old-name-from-code-and-scratch.md) | Remove the old name from code and scratch paths | valid (with the cleanup PR) |
 | [0025](0025-refresh-feel.md) | The feel of a refresh | valid (with the refresh PR) |
+| [0027](0027-calmer-colours.md) | Calmer colours | valid (with the colours PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
