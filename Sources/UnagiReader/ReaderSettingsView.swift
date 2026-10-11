@@ -10,23 +10,17 @@ struct ReaderSettingsView: View {
     @State private var preview: DeletionPreview?
     @State private var error: String?
 
+    private enum Pane: String { case appearance, storage, summary }
+    @AppStorage("settingsPane") private var pane = Pane.appearance.rawValue
+
     var body: some View {
-        TabView {
-            Form {
-                Picker("外観", selection: $appearance) {
-                    Text("システムに合わせる").tag("system")
-                    Text("ライト").tag("light")
-                    Text("ダーク").tag("dark")
-                }.pickerStyle(.segmented)
-                Text("システムに合わせると、Macの外観設定に追従します。")
-                    .font(.caption).foregroundStyle(.secondary)
-            }.formStyle(.grouped).padding()
-                .tabItem { Label("外観", systemImage: "circle.lefthalf.filled") }
-            storage
-                .tabItem { Label("保存", systemImage: "externaldrive") }
-            SummarySettingsView()
-                .tabItem { Label("要約", systemImage: "sparkles") }
-        }.frame(width: 520, height: 340)
+        TabView(selection: Binding(get: { Pane(rawValue: pane) ?? .appearance }, set: { pane = $0.rawValue })) {
+            Tab("外観", systemImage: "circle.lefthalf.filled", value: Pane.appearance) { appearancePane }
+            Tab("保存", systemImage: "externaldrive", value: Pane.storage) { storage }
+            Tab("要約", systemImage: "sparkles", value: Pane.summary) { SummarySettingsView() }
+        }
+        .tint(AppPalette.accentColor)
+        .frame(width: 540)
         .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         .onAppear { days = store.retentionDays }
         .onChange(of: days) { _, value in
@@ -56,19 +50,31 @@ struct ReaderSettingsView: View {
             Button("閉じる") { error = nil }
         } message: { Text(error ?? "") }
     }
+    private var appearancePane: some View {
+        Form {
+            Section { AppearancePicker(selection: $appearance) }
+        }
+        .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
+    }
     private var storage: some View {
         Form {
-            Picker("記事本文・RSS要約の保持期間", selection: $days) {
-                ForEach(RetentionPolicy.choices, id: \.self) { Text("\($0)日").tag($0) }
+            Section {
+                Picker("保持期間", selection: $days) {
+                    ForEach(RetentionPolicy.choices, id: \.self) { Text($0 == 365 ? "1年" : "\($0)日").tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .help("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
             }
-            Text("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
-                .font(.caption).foregroundStyle(.secondary)
-            Text("ノートの記録（記事のタイトル・リンク・記録した要約、ノート）は自動削除しません。")
-            Button("記事本文・RSS要約をすべて削除…", role: .destructive) {
-                perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
+            Section {
+                LabeledContent("記事本文・RSS要約") {
+                    Button("削除…", role: .destructive) {
+                        perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
+                    }
+                }
+                .help("ノートの記録（タイトル・リンク・記録した要約・ノート）は自動削除しません。")
             }
         }
-        .formStyle(.grouped).padding()
+        .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
     }
     private func byteCount(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()

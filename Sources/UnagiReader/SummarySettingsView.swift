@@ -19,27 +19,41 @@ struct SummarySettingsView: View {
 
     var body: some View {
         Form {
-            Toggle("AIで要約する（この Mac の中だけ）", isOn: $enabled)
-            Picker("長さ", selection: $length) {
-                Text("1文").tag(1); Text("3文以内").tag(3); Text("5文以内").tag(5)
+            Section {
+                Toggle("AIで要約", isOn: $enabled)
+                    .help("要約はこの Mac の中だけで作ります。オフのときは、RSS要約と出典を送ります。")
+                LabeledContent("状態") { StatusDot(tone: statusTone, text: statusText) }
+                    .help("モデルの資産が無い場合、アプリは自動で取得しません。")
             }
-            Picker("形式", selection: $format) {
-                Text("文章").tag(SummaryFormat.prose.rawValue)
-                Text("箇条書き").tag(SummaryFormat.bullets.rawValue)
+            Section {
+                Picker("長さ", selection: $length) {
+                    Text("1文").tag(1); Text("3文以内").tag(3); Text("5文以内").tag(5)
+                }.pickerStyle(.segmented)
+                Picker("形式", selection: $format) {
+                    Text("文章").tag(SummaryFormat.prose.rawValue)
+                    Text("箇条書き").tag(SummaryFormat.bullets.rawValue)
+                }.pickerStyle(.segmented)
+                TextField("追加の指示", text: Binding(
+                    get: { instruction }, set: { instruction = String(SingleLineText.lineBreaksRemoved($0).prefix(200)) }),
+                    prompt: Text("例: 専門用語は残す"))
+                    .help("本人の言葉で、200文字まで。")
             }
-            TextField("追加の指示（本人の言葉、200文字まで）", text: Binding(
-                get: { instruction }, set: { instruction = String(SingleLineText.lineBreaksRemoved($0).prefix(200)) }))
-            Text("記事の要約はこの Mac の中だけで作ります。AIを使わないときは、RSS要約と出典を送ります。")
-                .font(.caption).foregroundStyle(.secondary)
-            LabeledContent("状態") { Text(statusText) }
-            Text("モデルの資産が無い場合、アプリは自動で取得しません。")
-                .font(.caption).foregroundStyle(.secondary)
-        }.formStyle(.grouped).padding()
+            .disabled(!enabled)
+        }
+        .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
         .onAppear {
             let values = SummarySettings.load(from: defaults)
             length = values.length.rawValue; format = values.format.rawValue; instruction = values.extraInstruction
         }
         .task(id: enabled) { availability = enabled ? await FoundationModelsGenerator().generationAvailability() : nil }
+    }
+    private var statusTone: StatusDot.Tone {
+        guard enabled else { return .off }
+        return switch availability {
+        case nil, .assetsMissing?: .waiting
+        case .available?: .good
+        case .unsupported?: .bad
+        }
     }
     private var statusText: String {
         guard enabled else { return "オフ" }
