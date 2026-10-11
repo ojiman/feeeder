@@ -23,10 +23,10 @@ import ReaderCore
     static func apply(to storage: NSTextStorage, around range: NSRange) {
         let whole = storage.length
         guard whole > 0 else { return }
-        let clamped = NSIntersectionRange(NSRange(location: 0, length: whole), range)
-        let location = min(clamped.location, whole - 1)
+        let location = min(max(range.location, 0), whole - 1)                    // by hand: NSIntersectionRange gives {0,0} for an empty range at the end
+        let length = min(max(range.length, 0), whole - location)
         let source = storage.string as NSString
-        let paragraphs = source.paragraphRange(for: NSRange(location: location, length: max(clamped.length, 0)))
+        let paragraphs = source.paragraphRange(for: NSRange(location: location, length: length))
         storage.beginEditing()
         storage.setAttributes(baseAttributes(), range: paragraphs)
         var widths: [String: CGFloat] = [:]

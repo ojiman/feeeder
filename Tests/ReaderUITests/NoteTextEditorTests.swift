@@ -1,14 +1,19 @@
 import AppKit
 import SwiftUI
 import Testing
+import ReaderCore
 @testable import RSSReader
 
 @Suite(.serialized) @MainActor struct NoteTextEditorTests {
-    final class Sink { var changes: [String] = [] }
+    final class Sink {
+        var changes: [String] = []
+        var saves = true
+        func save(_ text: String) -> Bool { changes.append(text); return saves }
+    }
     struct Rig { let host: NSHostingView<NoteTextEditor>; let window: NSWindow; let view: NSTextView; let sink: Sink }
 
     func rig(_ text: String, sink: Sink = Sink()) throws -> Rig {
-        let host = NSHostingView(rootView: NoteTextEditor(text: text, onChange: { sink.changes.append($0) }))
+        let host = NSHostingView(rootView: NoteTextEditor(text: text, onChange: sink.save))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host
         host.layoutSubtreeIfNeeded()
@@ -32,7 +37,7 @@ import Testing
         let start = Date()
         let r = try rig(text); defer { r.window.close() }
         #expect(r.view.string == text)
-        #expect(Date().timeIntervalSince(start) < 5)
+        #expect(Date().timeIntervalSince(start) < 1)
     }
     @Test func headingsAndListsGetALookAndTheTextStaysTheSame() throws {
         let text = "# 大見出し\n本文\n- 項目\n   - 子\n1. 番号\n#ハッシュ"
@@ -107,11 +112,11 @@ import Testing
         let r = try rig("あいう")
         defer { r.window.close() }
         r.view.setSelectedRange(NSRange(location: 2, length: 0))
-        r.host.rootView = NoteTextEditor(text: "あいう\n\n要約", onChange: { r.sink.changes.append($0) })
+        r.host.rootView = NoteTextEditor(text: "あいう\n\n要約", onChange: r.sink.save)
         r.host.layoutSubtreeIfNeeded()
         #expect(r.view.string == "あいう\n\n要約")
         #expect(r.view.selectedRange() == NSRange(location: 2, length: 0))
-        r.host.rootView = NoteTextEditor(text: "あ", onChange: { r.sink.changes.append($0) })
+        r.host.rootView = NoteTextEditor(text: "あ", onChange: r.sink.save)
         r.host.layoutSubtreeIfNeeded()
         #expect(r.view.string == "あ")
         #expect(r.view.selectedRange().location <= 1)
@@ -122,7 +127,7 @@ import Testing
         r.window.makeFirstResponder(r.view)
         r.view.setSelectedRange(NSRange(location: 1, length: 0))
         r.view.setMarkedText("い", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: 1, length: 0))
-        r.host.rootView = NoteTextEditor(text: "別の文章", onChange: { r.sink.changes.append($0) })
+        r.host.rootView = NoteTextEditor(text: "別の文章", onChange: r.sink.save)
         r.host.layoutSubtreeIfNeeded()
         #expect(r.view.hasMarkedText())
         #expect(r.view.string == "あい")
@@ -131,7 +136,7 @@ import Testing
     @Test func theSameTextFromOutsideDoesNotDisturbTheView() throws {
         let r = try rig("# 題\n- a"); defer { r.window.close() }
         r.view.setSelectedRange(NSRange(location: 3, length: 2))
-        r.host.rootView = NoteTextEditor(text: "# 題\n- a", onChange: { r.sink.changes.append($0) })
+        r.host.rootView = NoteTextEditor(text: "# 題\n- a", onChange: r.sink.save)
         r.host.layoutSubtreeIfNeeded()
         #expect(r.view.selectedRange() == NSRange(location: 3, length: 2))
         #expect(r.view.undoManager?.canUndo != true)
@@ -165,5 +170,110 @@ import Testing
         let r = try rig("本文"); defer { r.window.close() }
         #expect(r.view.accessibilityLabel() == "ノート")
         #expect(r.window.firstResponder !== r.view)
+    }
+
+    // MARK: Review fixes
+
+    func show(_ text: String, in r: Rig) {
+        r.host.rootView = NoteTextEditor(text: text, onChange: r.sink.save)
+        r.host.layoutSubtreeIfNeeded()
+    }
+
+    @Test func undoAndRedoAreSavedOnceEach() throws {
+        let r = try rig("あ"); defer { r.window.close() }
+        r.window.makeFirstResponder(r.view)
+        r.view.setSelectedRange(NSRange(location: 1, length: 0))
+        r.view.insertText("い", replacementRange: NSRange(location: 1, length: 0))
+        #expect(r.sink.changes == ["あい"])
+        r.view.undoManager?.undo()
+        #expect(r.view.string == "あ")
+        #expect(r.sink.changes == ["あい", "あ"])
+        r.view.undoManager?.redo()
+        #expect(r.view.string == "あい")
+        #expect(r.sink.changes == ["あい", "あ", "あい"])
+    }
+    @Test func eachEditorHasItsOwnUndoHistory() throws {
+        let a = try rig("A"); defer { a.window.close() }
+        a.view.insertText("1", replacementRange: NSRange(location: 1, length: 0))
+        let b = try rig("B"); defer { b.window.close() }
+        #expect(a.view.undoManager?.canUndo == true)
+        #expect(b.view.undoManager?.canUndo != true)
+        #expect(a.view.undoManager !== a.window.undoManager)
+    }
+    @Test func aSummaryThatArrivesWhileComposingIsKeptAndSavedAfterTheCommit() throws {
+        let r = try rig("あ"); defer { r.window.close() }
+        r.window.makeFirstResponder(r.view)
+        r.view.setSelectedRange(NSRange(location: 1, length: 0))
+        r.view.setMarkedText("い", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: 1, length: 0))
+        show("あ\n\n要約ブロック", in: r)
+        #expect(r.view.hasMarkedText())
+        r.view.insertText("伊", replacementRange: r.view.markedRange())
+        #expect(r.view.string == "あ伊\n\n要約ブロック")
+        #expect(r.sink.changes.last == "あ伊\n\n要約ブロック")
+    }
+    @Test func aSendUndoneWhileComposingRemovesItsBlockAfterTheCommit() throws {
+        let r = try rig("あ\n\n要約ブロック"); defer { r.window.close() }
+        r.window.makeFirstResponder(r.view)
+        r.view.setSelectedRange(NSRange(location: 1, length: 0))
+        r.view.setMarkedText("い", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: 1, length: 0))
+        show("あ", in: r)
+        r.view.insertText("伊", replacementRange: r.view.markedRange())
+        #expect(r.view.string == "あ伊")
+        #expect(r.sink.changes.last == "あ伊")
+    }
+    @Test func aFailedSaveKeepsTheTypedTextInTheView() throws {
+        let r = try rig("本文"); defer { r.window.close() }
+        r.sink.saves = false
+        r.view.insertText("です", replacementRange: NSRange(location: 2, length: 0))
+        show("本文", in: r)                                                                  // the store rolled back: its text is the old one
+        #expect(r.view.string == "本文です")
+        r.sink.saves = true
+        r.view.insertText("。", replacementRange: NSRange(location: 4, length: 0))
+        #expect(r.sink.changes.last == "本文です。")
+        show("本文です。", in: r)
+        show("本文です。\n\n要約", in: r)                                                     // saving works again: outside text is shown again
+        #expect(r.view.string == "本文です。\n\n要約")
+    }
+    @Test func deletingTheLastCharacterOfAListLineRestylesTheLastLine() throws {
+        let r = try rig("本文\n- "); defer { r.window.close() }
+        r.view.insertText("", replacementRange: NSRange(location: 4, length: 1))
+        #expect(r.view.string == "本文\n-")
+        #expect(color(r.view, at: 3) == NSColor.labelColor)
+    }
+    @Test func smartPasteIsOffAndCopyHandsOutPlainTextOnly() throws {
+        let r = try rig("# 見出し"); defer { r.window.close() }
+        #expect(!r.view.smartInsertDeleteEnabled)
+        #expect(r.view.writablePasteboardTypes == [.string])
+    }
+    @Test func anAppendFromOutsideKeepsTheSelectionRangeAndLeavesTheTextBeforeIt() throws {
+        let r = try rig("あいうえお"); defer { r.window.close() }
+        r.view.setSelectedRange(NSRange(location: 1, length: 2))
+        show("あいうえお\n\n要約", in: r)
+        #expect(r.view.selectedRange() == NSRange(location: 1, length: 2))
+        show("あいう", in: r)                                                                // the end is cut: the selection stays where it is
+        #expect(r.view.selectedRange() == NSRange(location: 1, length: 2))
+        #expect(r.view.string == "あいう")
+    }
+
+    @Test func theNotePanelEditorIsTheStyledViewAndTypingMovesTheTitleAndSavesTheStore() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try ReaderStore(url: directory.appendingPathComponent("Reader.store"))
+        let note = try store.createNote(text: "", at: .now)
+        let host = NSHostingView(rootView: NoteEditor(store: store, noteID: note.id))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.contentView = host
+        defer { window.close() }
+        host.layoutSubtreeIfNeeded()
+        let view = try #require(textView(in: host))
+        #expect(view is NoteTextView)
+        view.insertText("# 見出し", replacementRange: NSRange(location: 0, length: 0))
+        view.insertText("\n- 項目", replacementRange: NSRange(location: 5, length: 0))
+        pumpRunLoop(0.1)
+        #expect(store.note(id: note.id)?.text == "# 見出し\n- 項目")
+        #expect(store.note(id: note.id)?.title == "見出し")
+        #expect(view.string == "# 見出し\n- 項目")
+        #expect(try #require(font(view, at: 3)).pointSize > NoteEditorStyle.baseFont.pointSize)
     }
 }

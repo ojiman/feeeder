@@ -11,7 +11,7 @@ struct NoteEditor: View {
     var body: some View {
         if let note = store.note(id: noteID) {
             NoteTextEditor(text: note.text) { text in
-                do { try store.saveNote(noteID: noteID, text: text, at: .now) } catch { self.error = error.localizedDescription }
+                do { try store.saveNote(noteID: noteID, text: text, at: .now); return true } catch { self.error = error.localizedDescription; return false }
             }
             .overlay(alignment: .topLeading) {
                 if note.text.isEmpty {

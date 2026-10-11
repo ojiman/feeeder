@@ -1,28 +1,32 @@
 import SwiftUI
 import AppKit
 
-/// A text view that takes only plain text: pasting or dropping rich text from another app inserts its plain text.
+/// A text view that takes and gives only plain text: pasting or dropping rich text inserts its plain text, and copying puts only the
+/// characters on the pasteboard (the headings' size and the list marks' colour are not part of the note).
 final class NoteTextView: NSTextView {
     override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }
+    override var writablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }
     override var acceptableDragTypes: [NSPasteboard.PasteboardType] { [.string] }
     override func paste(_ sender: Any?) { pasteAsPlainText(sender) }
     override func pasteAsRichText(_ sender: Any?) { pasteAsPlainText(sender) }
 }
 
 /// The note editor: an AppKit text view (SwiftUI's `TextEditor` has no hook for display attributes of plain text). The saved text is
-/// exactly what is typed: no smart quotes, dashes or replacements, no list continuation; headings and list lines only get a look
+/// exactly what is typed: no smart quotes, dashes, spaces or replacements, no list continuation; headings and list lines only get a look
 /// (`NoteEditorStyle`). Styling never touches the text and waits while Japanese text is being composed.
 struct NoteTextEditor: NSViewRepresentable {
     let text: String
-    let onChange: (String) -> Void
+    /// Called once per edit by the person (typing, paste, undo, redo) with the whole text; returns whether it was saved.
+    let onChange: (String) -> Bool
 
     func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
 
     func makeNSView(context: Context) -> NSScrollView {
         let textView = NoteTextView()
-        textView.isRichText = true                       // needed for attributes; paste and drop stay plain (NoteTextView)
+        textView.isRichText = true                       // needed for attributes; paste, drop and copy stay plain (NoteTextView)
         textView.allowsUndo = true
         textView.usesFontPanel = false; textView.usesRuler = false; textView.importsGraphics = false
+        textView.smartInsertDeleteEnabled = false
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -43,7 +47,7 @@ struct NoteTextEditor: NSViewRepresentable {
             storage.delegate = context.coordinator
         }
         textView.delegate = context.coordinator
-        context.coordinator.textView = textView
+        context.coordinator.attach(textView, shownText: text)
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true; scroll.autohidesScrollers = true; scroll.drawsBackground = false
         scroll.documentView = textView
@@ -57,50 +61,133 @@ struct NoteTextEditor: NSViewRepresentable {
     }
 
     @MainActor final class Coordinator: NSObject, NSTextViewDelegate, @MainActor NSTextStorageDelegate {
-        var onChange: (String) -> Void
+        var onChange: (String) -> Bool
         weak var textView: NSTextView?
-        /// A styling pass was skipped while Japanese text was being composed; it is done when the composition ends.
-        private(set) var restylePending = false
+        /// Each editor has its own undo history: it is not shared with the window, with the article list, or with the editor of another note.
+        private let undoHistory = UndoManager()
+        private var observers: [NSObjectProtocol] = []
+        /// The text the store last agreed with: what was last shown from outside, or last saved.
+        private var agreedText: String
+        /// Text from outside that arrived while Japanese text was being composed; it is merged in when the composition ends.
+        private var waitingText: String?
+        /// The paragraphs a styling pass skipped while composing; they are restyled when the composition ends.
+        private var skippedRange: NSRange?
+        var restylePending: Bool { skippedRange != nil }
+        /// The last save failed: the view holds text the store does not, so store text is not pushed over it.
+        private var unsaved = false
         /// True while text that arrived from outside is being put in; that is not an edit by the person, so it is not saved back.
         private var applyingOutsideText = false
-        init(onChange: @escaping (String) -> Void) { self.onChange = onChange }
 
-        /// Text that arrives from outside (a summary that was sent, its undo) replaces the text in one undoable edit, keeps the selection
-        /// inside the text, and waits while a composition is in progress.
+        init(onChange: @escaping (String) -> Bool) { self.onChange = onChange; agreedText = "" }
+
+        func attach(_ textView: NSTextView, shownText: String) {
+            self.textView = textView
+            agreedText = shownText
+            // TextKit 2 does not post a change notification for undo and redo, so they are watched here.
+            for name in [Notification.Name.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange] {
+                observers.append(NotificationCenter.default.addObserver(forName: name, object: undoHistory, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.undoOrRedoDone() }
+                })
+            }
+        }
+        isolated deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+
+        func undoManager(for view: NSTextView) -> UndoManager? { undoHistory }
+
+        private func undoOrRedoDone() {
+            guard let textView, textView.string != agreedText else { return }
+            save(textView.string)
+        }
+
+        private func save(_ text: String) {
+            if onChange(text) { agreedText = text; unsaved = false } else { unsaved = true }
+        }
+
+        /// Text that arrives from outside (a summary that was sent, its undo) is put in as a change of only the part that differs, in one
+        /// undoable edit, so the selection and the scroll position stay. It waits while a composition is in progress, and it does not
+        /// overwrite typed text that could not be saved.
         func show(_ text: String, in textView: NSTextView) {
-            guard !textView.hasMarkedText(), textView.string != text else { return }
+            if textView.hasMarkedText() {
+                waitingText = text == agreedText ? nil : text
+                return
+            }
+            if unsaved { unsaved = textView.string != text; if unsaved { return } }
+            waitingText = nil
+            guard textView.string != text else { agreedText = text; return }
+            replace(textView, with: text)
+            agreedText = text
+        }
+
+        private func replace(_ textView: NSTextView, with text: String) {
+            let old = textView.string as NSString, new = text as NSString
+            var start = 0
+            let shortest = min(old.length, new.length)
+            while start < shortest, old.character(at: start) == new.character(at: start) { start += 1 }
+            var tail = 0
+            while tail < shortest - start, old.character(at: old.length - 1 - tail) == new.character(at: new.length - 1 - tail) { tail += 1 }
+            if start > 0, UTF16.isLeadSurrogate(old.character(at: start - 1)) { start -= 1 }            // never cut a surrogate pair
+            if tail > 0, UTF16.isTrailSurrogate(old.character(at: old.length - tail)) { tail -= 1 }
+            let oldRange = NSRange(location: start, length: old.length - tail - start)
+            let replacement = new.substring(with: NSRange(location: start, length: new.length - tail - start))
             let selection = textView.selectedRange()
-            let whole = NSRange(location: 0, length: (textView.string as NSString).length)
-            guard textView.shouldChangeText(in: whole, replacementString: text) else { return }
+            guard textView.shouldChangeText(in: oldRange, replacementString: replacement) else { return }
             applyingOutsideText = true
             defer { applyingOutsideText = false }
-            textView.textStorage?.replaceCharacters(in: whole, with: text)
+            textView.textStorage?.replaceCharacters(in: oldRange, with: replacement)
             textView.didChangeText()
-            let length = (text as NSString).length
-            textView.setSelectedRange(NSRange(location: min(selection.location, length), length: 0))
+            let delta = (replacement as NSString).length - oldRange.length
+            let oldEnd = oldRange.location + oldRange.length
+            if selection.location + selection.length <= oldRange.location {
+                textView.setSelectedRange(selection)
+            } else if selection.location >= oldEnd {
+                textView.setSelectedRange(NSRange(location: selection.location + delta, length: selection.length))
+            } else {
+                textView.setSelectedRange(NSRange(location: min(selection.location, new.length), length: 0))
+            }
         }
 
         func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            restyleIfPending(textView)
-            if !applyingOutsideText { onChange(textView.string) }
+            guard let textView = notification.object as? NSTextView, !applyingOutsideText else { return }
+            settleAfterComposition(textView)
+            save(textView.string)
         }
         func textViewDidChangeSelection(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            restyleIfPending(textView)
+            guard let textView = notification.object as? NSTextView, !textView.hasMarkedText(), skippedRange != nil || waitingText != nil else { return }
+            settleAfterComposition(textView)
+            if textView.string != agreedText { save(textView.string) }
         }
 
         func textStorage(_ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions, range editedRange: NSRange, changeInLength delta: Int) {
             guard editedMask.contains(.editedCharacters) else { return }
-            if textView?.hasMarkedText() == true { restylePending = true; return }
+            if textView?.hasMarkedText() == true {
+                skippedRange = skippedRange.map { NSUnionRange($0, editedRange) } ?? editedRange
+                return
+            }
             NoteEditorStyle.apply(to: textStorage, around: editedRange)
         }
 
-        private func restyleIfPending(_ textView: NSTextView) {
-            guard restylePending, !textView.hasMarkedText(), let storage = textView.textStorage else { return }
-            restylePending = false
-            let selection = textView.selectedRange()
-            NoteEditorStyle.apply(to: storage, around: NSRange(location: max(0, selection.location - 1), length: min(2, storage.length)))
+        /// After a composition ends: restyle what was skipped, then merge text that came from outside meanwhile. Only an append and the
+        /// removal of an earlier append are merged; anything else leaves what the person typed.
+        private func settleAfterComposition(_ textView: NSTextView) {
+            guard !textView.hasMarkedText() else { return }
+            if let skipped = skippedRange, let storage = textView.textStorage {
+                skippedRange = nil
+                NoteEditorStyle.apply(to: storage, around: skipped)
+            }
+            guard let incoming = waitingText else { return }
+            waitingText = nil
+            let current = textView.string
+            let merged: String?
+            if incoming.hasPrefix(agreedText) {
+                merged = current + incoming.dropFirst(agreedText.count)
+            } else if agreedText.hasPrefix(incoming) {
+                let removed = String(agreedText.dropFirst(incoming.count))
+                merged = current.hasSuffix(removed) ? String(current.dropLast(removed.count)) : nil
+            } else {
+                merged = nil
+            }
+            guard let merged, merged != current else { return }
+            replace(textView, with: merged)
         }
     }
 }
