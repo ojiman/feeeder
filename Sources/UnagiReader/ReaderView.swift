@@ -39,6 +39,8 @@ struct ReaderView: View {
     @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
+    /// The subscription that is being moved to a folder that does not exist yet (a folder is made by moving the first subscription into it).
+    @State private var creatingFolderFor: Feed?
     @State private var folderName = ""
     @State private var deletingNote: UUID?
     @State private var originalPage = OriginalPageState()
@@ -284,6 +286,16 @@ struct ReaderView: View {
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
+        .alert("新しいフォルダ", isPresented: Binding(get: { creatingFolderFor != nil }, set: { if !$0 { creatingFolderFor = nil } })) {
+            TextField("フォルダ名", text: $folderName.singleLine())
+            Button("移動") {
+                guard let feed = creatingFolderFor else { return }
+                let name = SingleLineText.name(folderName)
+                if !name.isEmpty { perform { try store.moveFeed(id: feed.id, toFolder: name) } }
+                creatingFolderFor = nil
+            }
+            Button("キャンセル", role: .cancel) { creatingFolderFor = nil }
+        } message: { Text("この購読を、新しいフォルダへ移します。") }
         .alert("フォルダ名を変更", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
             TextField("フォルダ名", text: $folderName.singleLine())
             Button("保存") {
@@ -373,6 +385,8 @@ struct ReaderView: View {
                     ForEach(folders, id: \.self) { folder in
                         Button(folder) { perform { try store.moveFeed(id: feed.id, toFolder: folder) } }
                     }
+                    Divider()
+                    Button("新しいフォルダ…") { folderName = ""; creatingFolderFor = feed }
                 }
                 Button("購読を解除…", role: .destructive) { removingFeed = feed }
             }
@@ -498,7 +512,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || creatingFolderFor != nil || pickingNote, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
