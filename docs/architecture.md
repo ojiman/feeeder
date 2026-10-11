@@ -127,7 +127,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 ### 6.1 3カラムと入力・遷移
 
-`NavigationSplitView`を共通枠とし、Feeds／ノートの選択・スクロール記憶を分けて復元し、ノートごとに最後に開いた面（記事／ノート）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高108pt（上下の余白14pt、購読元行とタイトルの間6pt、タイトルと要約の間4pt。`NativeArticleList.Metrics`）、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
+`NavigationSplitView`を共通枠とし、Feeds／ノートの選択・スクロール記憶を分けて復元し、ノートごとに最後に開いた面（記事／ノート）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高108pt（上下の余白14pt、購読元行とタイトルの間6pt、タイトルと要約の間4pt。文字は見出し14pt（semibold）、要約11pt、購読元・公開日時10pt。`NativeArticleList.Metrics`）、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
 
 左カラムはFeeds（すべての記事・未読・Star）／ノート（各ノート）／購読元（フォルダ・購読）の順で、購読元の区画は畳める。左のHide Sidebarは`toolbar(removing: .sidebarToggle)`で除去。追加・更新を`NSTitlebarAccessoryViewController`のleftへ置き、sidebar右端に追随させる。sidebarの非表示・view取り外し時にaccessoryも外すが、**原文開閉ではcolumnVisibilityを変更せず、装着・列幅を維持する。** 購読のフォルダ指定は`importFeed`で記事と同じ保存に含め、通常更新は所属を保持する。フォルダ切替等で新mountした一覧はwindow接続時にフォーカスを得る。
 
