@@ -12,7 +12,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 |---|---|---|
 | S1 | **Done** (two PRs, S1a and S1b). Notes: rename; no goal and no name (title from the first line); remove the suggestions, the note actions, the summary card in the panel and the article hand-off; the panel opens at once, is resizable and remembers its width; the sidebar folds only when the window is narrow. The picker and `t` stay as the only way to link an article until S2. | Merging the plan. |
 | S2 | **Done.** 「ノートに要約を送る」 (button, menu, `n`), automatic links and removal, summary settings, the AI mark and 「取り消す」. The picker and `t` are removed. | Plan approved in PR #69. |
-| S3 | Claude from the note: the share-style button in the note panel, the note-only package. | Merging the plan. |
+| S3 | ([plan](superpowers/plans/2026-10-11-s3-claude-from-note.md)) Claude from the note: the share-style button in the note panel, the note-only package. | Merging the plan. |
 | S4 | Clean up: dead code and tests (article packages and sources, theme assistant parts, the migration code, old settings), then the architecture and the user guides. | Merging the plan. |
 | S5 | Light styling of headings and lists in the editor. Does not block the beta. | Merging the plan. |
 
