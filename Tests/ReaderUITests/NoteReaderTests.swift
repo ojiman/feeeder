@@ -30,11 +30,16 @@ import Testing
     /// Only the two narrow chevrons and the share menu in the inspector, ordered left to right.
     fileprivate func panelButtons(in h: Harness) -> [NSButton] {
         let width = h.window.contentView?.bounds.width ?? 1_240
-        return buttons(in: h.host)
-            .map { ($0, $0.convert($0.bounds, to: nil)) }
-            .filter { $0.1.minX > width - 420 && $0.1.width > 0 && ($0.0 is NSPopUpButton || $0.1.width <= 20) }
-            .sorted { $0.1.minX < $1.1.minX }
-            .map(\.0)
+        let candidates = buttons(in: h.host)
+        var positioned: [(button: NSButton, frame: NSRect)] = []
+        for button in candidates {
+            let frame = button.convert(button.bounds, to: nil)
+            guard frame.minX > width - 420, frame.width > 0 else { continue }
+            guard button is NSPopUpButton || frame.width <= 20 else { continue }
+            positioned.append((button, frame))
+        }
+        positioned.sort { $0.frame.minX < $1.frame.minX }
+        return positioned.map(\.button)
     }
     fileprivate struct Harness {
         let store: ReaderStore
