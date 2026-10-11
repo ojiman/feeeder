@@ -1,6 +1,6 @@
 # S5 note editor styling verification
 
-PASS with limits — unit and UI tests, release build and one independent review at the commit named below, macOS 27.0.1 / Swift 6.4 (local). CI (macOS 26.6 / Swift 6.3.3) is checked on the PR.
+PASS with limits — unit and UI tests, release build and one independent review at code commit `6474448`, macOS 27.0.1 / Swift 6.4 (local). CI (macOS 26.6 / Swift 6.3.3) is checked on the PR.
 Not verified: a real Japanese input method with the candidate window, VoiceOver, a very long note in a real window, copy to the system pasteboard, macOS 26.
 Review: one independent pass found 1 Critical, 3 Important, 7 Minor; the Critical and Important ones and four Minors are fixed with tests that failed first.
 
