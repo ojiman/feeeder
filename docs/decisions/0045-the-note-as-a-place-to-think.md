@@ -20,6 +20,14 @@ The discussion paper in PR #105 proposed a flow from selected Stars to a note. T
 
 Unagi Reader's value is a smooth loop with no seams (Vision: "A smooth feel is part of the value"). A note feature is judged by which seam it removes: a wait, a small decision, a lost position, a mode switch, or a broken link between the text and its source. A feature that only adds a capability that any RSS reader or notes app has (for example, quoting a selected sentence) is not the aim.
 
+## Premise (owner, 2026-10-12)
+
+Reading in RSS and writing a note are separate things. The note view is a place for writing, with its reference articles beside it. The panel for the note is therefore not something the person should lose by accident: dragging its edge must not collapse it (the owner chose this for the first fix, see below).
+
+## Chosen by the owner in chat (2026-10-12; the record as a whole is still only proposed)
+
+- **The note panel must not be collapsible by dragging its edge** (option A of the owner's choice; the other option was a visible entry point when collapsed). It is opened and closed only with the toolbar button or `⌥⌘I`. This is a fix for a reported problem on `main`: after the panel was dragged shut there was no way back that the person could find. It ships in its own pull request, not with this record.
+
 ## Proposed decisions
 
 1. **Folding rule.** When the window is too narrow, fold the sidebar first and then give the article list less room. Never fold the article or the note. The person only opens and closes the note panel; the rest follows from the width. The note panel gets a larger ideal width and a higher maximum than 640 pt. The numbers come from PoC 1. PoC 1 found that the system's `detailOnly` does not fold the list column, and that widths which change with the fold state make the app hang on a large library (see the PoC results). So the list is not folded, and no column width may depend on the fold state.
@@ -30,7 +38,7 @@ Unagi Reader's value is a smooth loop with no seams (Vision: "A smooth feel is p
    - Activating a source link in the body selects that article in the reader.
    - A reference card shows a "cited" mark when the body contains its URL. The mark is computed from the body; nothing is stored or kept in step by hand.
    - Dragging a card into the body inserts a citation at the drop point.
-6. **Companion panel (PoC 2, decision pending).** The note panel may stay open when the scope changes to RSS or Star, so the person reads anywhere with the note beside them and does not travel to collect material. With a note panel open, `n` sends to that visible note without a menu; with none open, the menu stays as it is today.
+6. **No companion panel (withdrawn).** An earlier draft let the note panel stay open beside RSS and Star so that `n` could send to the visible note. The owner's premise is that reading RSS and writing a note are two separate things, so this is not pursued and PoC 2 is dropped. `n` keeps its menu.
 7. **Claude hand-off (open, O3).** If material leaves the body, the review package no longer shows where it came from. Consider adding the reference list (title and URL, no summaries) to the package. The review screen already shows the full text, so the person still reads exactly what leaves the Mac. This would change [0022](0022-note-only-package-clean-up.md).
 8. **On-device summary is unchanged.** No preview screen, no change of the default in this record. A 30-minute check with about five long articles decides whether the default should change (O1).
 
@@ -45,7 +53,7 @@ Unagi Reader's value is a smooth loop with no seams (Vision: "A smooth feel is p
 
 ## Not in this decision
 
-A bulk action 「ノートで考える」 from selected Stars. A destination that is remembered without being visible. An AI preview before inserting a summary. A new collection object. Quoting a selected sentence (cheap to add later, not a differentiator). AI that combines several articles. A new label for the loop, a goal, a tag, or a folder for references.
+A bulk action 「ノートで考える」 from selected Stars. A destination that is remembered without being visible. A note panel that stays open beside RSS or Star. An AI preview before inserting a summary. A new collection object. Quoting a selected sentence (cheap to add later, not a differentiator). AI that combines several articles. A new label for the loop, a goal, a tag, or a folder for references.
 
 ## Vision
 
@@ -59,7 +67,7 @@ The owner wants to try these before deciding. A PoC is throwaway code on a branc
 |---|---|---|---|
 | 0 | Check why the first block in the owner's screenshot has the AI mark but no summary. The specification says an empty answer falls back to an unmarked summary. | A failing test if it is a bug. | Nothing. |
 | 1 | Folding rule, wider note panel, reference strip. No model change. | The fold rule as a pure function; panel width limits; the caret and scroll position are kept when the article changes. | Is it a place to think? Proposed floor: at least about 30 Japanese characters per line on a normal window. |
-| 2 | Companion panel across scopes; `n` sends to the visible note. | State kept across scope changes; no send to a wrong note. | Does the round trip disappear? |
+| 2 | ~~Companion panel across scopes~~ Dropped (owner's premise: reading and writing are separate). | | |
 | 3 | Quote style in the editor, source link activates the article, "cited" mark, drag to cite. | The cited rule from the body; the link target; the saved text is unchanged by the style. | Does the material feel connected, not scribbled? |
 | 4 | Summary check on about five long articles, with settings (input length, sentence count). | Nothing. | Is it good enough to stay the default? |
 
