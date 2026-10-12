@@ -23,7 +23,7 @@ Each is its own pull request, deletions first. See [decision 0049](decisions/004
 1. **Done (#115).** The hand-off to Claude is removed; 「Markdownをコピー」 stays.
 2. **Done (#116).** The on-device summary and the send to a note are removed.
 3. **Done (#118).** One note: the note list, rename, delete, undo and the records of articles in a note are removed; the first start keeps the note edited last. The note opens from any screen with the toolbar button or `⌥⌘I`, as the panel it already was.
-4. **Done (this stage).** The new layout: `n`, the move of about 0.3 s (the sidebar and the list fold, the note comes in from the right), and the 「一覧」 button. Next: the real-device check.
+4. **Done (this stage).** The new layout: `n`, the move of about 0.3 s (the sidebar and the list fold, the note comes in from the right), and the 「一覧」 button. Then, from [decision 0050](decisions/0050-the-note-screen-closes-like-the-original-page.md) (after trying it): `j`/`k` and `Esc` close the note, a ✕ replaces the 「一覧」 button, and the note is wider. Then the real-device check.
 
 ## After S3 (the rename to Unagi Reader is done: [decision 0023](decisions/0023-rename-to-unagi-reader.md))
 
