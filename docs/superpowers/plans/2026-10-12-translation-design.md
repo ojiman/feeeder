@@ -45,9 +45,9 @@ Sources: Apple's documentation for [TranslationSession](https://developer.apple.
 
 ## 4. What the person sees
 
-- **Button.** In the toolbar group at the top right, after 「ノートに要約を送る」 and before 「元ページをブラウザで開く」. Label 「翻訳」 (help: 「翻訳する／原文に戻す (t)」). Its icon is filled while the translation is shown. It is always present and disabled when no article is open (the toolbar must not change height, as the existing comment in `ReaderView` says). The key is `t`, free since the theme picker was removed; like the other keys it does nothing inside a text field.
+- **Button.** In the toolbar group at the top right, after 「ノートに要約を送る」 and before 「元ページをブラウザで開く」. Label 「翻訳」 (help: 「翻訳する／原文に戻す (t)」). Its icon is filled while the translation is shown. It is always present and disabled when no article is open (the toolbar must not change height, as the existing comment in `ReaderView` says). **A menu bar command too**: 「表示 ▸ 翻訳 / 原文に戻す」, because on macOS every toolbar item must also be a command in the menu bar (section 12). The key is `t`, free since the theme picker was removed; like the other keys it does nothing inside a text field.
 - **Language.** The button is a menu with a primary action: a click translates (or goes back); the menu lists the target languages, with a check on the current one. The first target is the **language of the app** (Japanese: the app's labels are Japanese only today, and when a language setting arrives it follows that setting). It is **not** the first system language: the owner keeps the system in English because it suits software work, and still wants to read in Japanese. A choice made in the menu is remembered in the app's preferences, so the person who reads Japanese articles in English once picks English once. The menu has no other items.
-- **While it works.** The existing status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」, or 「言語を準備しています…」 while the system downloads a language pack. The article title and paragraphs change from the top as results arrive. Reduce Motion: no animation is used.
+- **While it works.** The existing status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」 with a small determinate progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. The article title and paragraphs change from the top as results arrive. Reduce Motion: no animation is used.
 - **When it is done.** The row says what was done in a few words, for example 「英語 → 日本語」, with a link 「原文を表示」 (the same as the button). The reading position (the paragraph at the top) is kept when the text switches.
 - **What is not translated.** The note, the article list and the sidebar stay as they are. 「ノートに要約を送る」 and the Claude hand-off use the **original** text: a summary or a package is never made from a machine translation without the person asking.
 - **Moving on.** Moving to another article shows that article in its original language and stops the running translation. Translation is not sticky: nothing is translated that the person did not ask for. (A per-subscription "always translate" is a later idea, section 10.)
@@ -125,7 +125,27 @@ The system's download request; a real translation of a long article and how fast
 1. **T1. The core.** `TranslationPlan`, `ArticleTranslation`, `LanguageDecision`, the cache, with a fake translator and the unit tests. Decision record 0044. No UI.
 2. **T2. The button.** The toolbar item, the key `t`, `TranslationHost` with `translationTask`, the status row, the display of translated paragraphs, the default language. First end-to-end use on a real Mac (the owner tries it).
 3. **T3. The language menu.** The menu with a primary action, the remembered choice.
+   T2 also adds the menu bar command and the accessibility labels (section 12).
 4. **Later, only if real use asks for it** (not planned): links kept through `AttributedString`; an "always translate" choice per subscription; showing the original and the translation together, paragraph by paragraph (useful for learning); translated titles in the article list; skipping code paragraphs; Foundation Models for "explain in simple words".
+
+## 12. Check against Apple's Human Interface Guidelines
+
+Read on 2026-10-12: [Windows](https://developer.apple.com/design/human-interface-guidelines/windows), [Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars) and [Pull-down buttons](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons) (the Japanese pages load their text by script; the text was read from Apple's published data of the same pages). The Windows page has nothing on controls; its rules on bottom bars and inspectors are the ones that matter here.
+
+| Part of the design | Guideline | Result |
+|---|---|---|
+| A symbol button in the toolbar, filled when on | Toolbars: prefer simple, recognizable system symbols without borders; add only important or frequent items | Fits. The same pattern as the Star button (`star` / `star.fill`). The symbol is the system's `translate` (check that it exists on the support floor; else `character.bubble`). |
+| The button is only in the toolbar | Toolbars (macOS): "Make every toolbar item available as a command in the menu bar", because people can hide or customize the toolbar | **Did not fit. Fixed:** a menu bar command 「表示 ▸ 翻訳 / 原文に戻す」 is added (T2). |
+| Status shown in a row above the article text, not in a bottom bar | Windows: avoid important information or actions in a bottom bar, because the bottom edge may be hidden; a bottom bar is for a small amount of information | Fits. The row is part of the content and holds nothing critical. |
+| A progress indicator while translating | Not covered by these pages | A small determinate indicator is used (the number of paragraphs is known). |
+| Failure messages in the status row, not in an alert | Alerts are for important, blocking questions | Fits: a failed translation does not need an answer. |
+| The language menu on the button | Pull-down buttons: a menu of items that relate to the button's purpose; at least three items; a succinct menu title only if it adds meaning; a pop-up button is for a choice that is not a command | Fits: there are many languages, and choosing one is a command (it translates). No menu title. |
+| A click acts and a menu opens from the same button (a split button) | The guideline pages do not describe it; macOS uses it in system apps | **Verify on a real Mac** that the button shows a visible menu indicator. If not, fall back to a pull-down button whose first item is 「翻訳 / 原文に戻す」 followed by the languages. The key `t` and the menu bar command stay the quick way. |
+| Disabled with a help text while the original page is open | The app's own toolbar rule (items stay, so the toolbar does not change). The pages above say nothing about disabled items | Consistent with the app. The help text is the only explanation, so it must be short and clear. |
+| The key `t` without Command | Menu key equivalents normally use Command; the reading keys (`j`, `k`, `s`, `n`) are the app's own, deliberate choice | Kept for consistency with the other reading keys; it is ignored in text fields. The menu bar command shows no key (it is not a Command shortcut). |
+| Accessibility | The button's label follows its state: 「翻訳」 / 「原文を表示」; the status row is read by VoiceOver | Added to T2. |
+
+**Found while checking, outside this design:** the existing toolbar items (the note panel, Star, send to a note, open the original page) have no commands in the menu bar. By the same rule they should. This is a small separate change; it is not part of the translation work.
 
 ## 11. Decisions
 
