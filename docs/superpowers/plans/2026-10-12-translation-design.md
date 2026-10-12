@@ -3,7 +3,7 @@
 - Status: proposal. Merging this PR approves the design and the order of work; it changes no behavior. The owner's decisions are listed at the end with a recommended answer for each.
 - Date: 2026-10-12
 - Owner's request: a translate button at the top right; press it and the article is translated into a language of the person's choice. The owner suggested Foundation Models.
-- Reading order: [vision](../../vision.md), [specification](../../specification.md), this design. A decision record (0044) is added by the first implementation PR.
+- Reading order: [vision](../../vision.md), [specification](../../specification.md), this design. A decision record (the next free number; 0044 was taken by the original-page motion) is added by the first implementation PR.
 
 ## 1. What it is
 
@@ -122,7 +122,7 @@ The system's download request; a real translation of a long article and how fast
 
 ## 10. Order of work (one theme per PR, each merged before the next)
 
-1. **T1. The core.** `TranslationPlan`, `ArticleTranslation`, `LanguageDecision`, the cache, with a fake translator and the unit tests. Decision record 0044. No UI.
+1. **T1. The core.** `TranslationPlan`, `ArticleTranslation`, `LanguageDecision`, the cache, with a fake translator and the unit tests. Decision record (next free number). No UI.
 2. **T2. The button.** The toolbar item, the key `t`, `TranslationHost` with `translationTask`, the status row, the display of translated paragraphs, the default language. First end-to-end use on a real Mac (the owner tries it).
 3. **T3. The language menu.** The menu with a primary action, the remembered choice.
    T2 also adds the menu bar command and the accessibility labels (section 12).
