@@ -451,7 +451,8 @@ struct ReaderView: View {
                 return ImageMetadata.favicon(iconURL: feed?.iconURL, siteURL: feed?.siteURL, sourceURL: feed?.sourceURL)
             }, inNote: { store.isInAnyNote(articleID: $0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
             onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset },
-            onRemoveFromNote: noteScopeID.map { noteID in { articleID in perform { try store.removeArticle(articleID, fromNote: noteID, at: .now) } } })
+            onRemoveFromNote: noteScopeID.map { noteID in { articleID in perform { try store.removeArticle(articleID, fromNote: noteID, at: .now) } } },
+            headerInset: ListHeader.height)
         .focused($listFocused)
         .navigationTitle("")                                           // the list draws its own title (ListHeader); the system one ran out of the column
         .overlay {
@@ -464,7 +465,7 @@ struct ReaderView: View {
                 }
             }
         }
-        .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count, leadingInset: sidebarFolded ? ListHeader.windowButtonsInset : 0).ignoresSafeArea(.container, edges: .top) }
+        .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top) }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
     }
@@ -618,7 +619,6 @@ struct ReaderView: View {
         SidebarFold.folded(pageOpen: pageOpen, noteScreen: noteScopeID != nil) ? .doubleColumn : .all
     }
     /// Whether the sidebar is folded away now (the list then reaches the window's left edge).
-    private var sidebarFolded: Bool { columnVisibility == .doubleColumn || columnVisibility == .detailOnly }
     /// The ✕ on the note screen: leaves the notes for the screen the person was on before, and the sidebar comes back (decision 0047).
     private func leaveNote() { scope = noteReturn.target }
     private func enterScope() {

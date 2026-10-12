@@ -19,6 +19,8 @@ struct NativeArticleList: NSViewRepresentable {
     var initialTopOffset: Double = 0
     var onTopOffset: ((UUID, Double) -> Void)? = nil
     var onRemoveFromNote: ((UUID) -> Void)? = nil
+    /// Room above the first row for the title block (`ListHeader`), on top of the toolbar's own inset.
+    var headerInset: CGFloat = 0
 
     /// The list is drawn on the same surface as the article and the note.
     static func applySurface(scroll: NSScrollView, table: NSTableView) {
@@ -54,6 +56,7 @@ struct NativeArticleList: NSViewRepresentable {
         Self.applySurface(scroll: scroll, table: table)
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
+        scroll.additionalSafeAreaInsets = NSEdgeInsets(top: headerInset, left: 0, bottom: 0, right: 0)
         context.coordinator.table = table
         context.coordinator.scroll = scroll
         scroll.contentView.postsBoundsChangedNotifications = true
@@ -62,7 +65,10 @@ struct NativeArticleList: NSViewRepresentable {
         }
         return scroll
     }
-    func updateNSView(_ scroll: NSScrollView, context: Context) { context.coordinator.update(self) }
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        if scroll.additionalSafeAreaInsets.top != headerInset { scroll.additionalSafeAreaInsets = NSEdgeInsets(top: headerInset, left: 0, bottom: 0, right: 0) }
+        context.coordinator.update(self)
+    }
     static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
         if let observer = coordinator.observer { NotificationCenter.default.removeObserver(observer) }
         coordinator.table?.delegate = nil; coordinator.table?.dataSource = nil

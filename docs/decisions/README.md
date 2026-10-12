@@ -66,6 +66,7 @@
 | [0045](0045-the-note-as-a-place-to-think.md) | The note as a place to think: remove the seams between reading and writing | proposed (not approved; partly done by 0046, 0047 and #109; the rest waits for dogfooding) |
 | [0046](0046-sidebar-folds-like-reeder.md) | The sidebar folds like Reeder's: when the original page opens and when a note is shown | valid (with the decision PR) |
 | [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) | The way back is a ✕ at the top left of the right column | valid (with the original-page PR) |
+| [0048](0048-the-list-title-sits-below-the-band.md) | The list title sits below the toolbar band, level with the ✕ | valid (with the header PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
