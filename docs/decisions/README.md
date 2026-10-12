@@ -61,6 +61,7 @@
 | [0040](0040-try-https-first.md) | An `http://` address is checked as `https://` | valid (with the https PR) |
 | [0041](0041-import-opml.md) | Import subscriptions from an OPML file | valid (with the OPML PR) |
 | [0042](0042-undo-a-note-deletion.md) | A deleted note can be taken back for ten seconds | valid (with the undo PR) |
+| [0043](0043-rename-in-the-sidebar-row.md) | Rename in the sidebar row | valid (with the rename PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

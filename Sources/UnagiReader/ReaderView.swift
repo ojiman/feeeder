@@ -36,12 +36,10 @@ struct ReaderView: View {
     private var displayedContent: ArticleContent? { loading.displayed }
     /// Set while the "add subscription" sheet is open: the folder the new subscription goes to.
     @State private var addingTo: SubscriptionTarget?
-    @State private var editingFeed: Feed?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
-    /// The note whose name (its first line) is being changed, and the name typed so far.
-    @State private var renamingNoteID: UUID?
-    @State private var noteName = ""
+    /// The note or subscription whose name is being edited in its sidebar row (decision 0043).
+    @State private var renaming: SidebarRenaming?
     @State private var folderExpansion = FolderExpansion()
     /// The subscription whose 「フォルダへ移動…」 chooser is open.
     @State private var movingFeedID: UUID?
@@ -158,6 +156,7 @@ struct ReaderView: View {
         windowContent
             .modifier(OPMLImportPresentation(flow: opml))
             .modifier(DeletedNoteUndoBar(offer: deletedNote, onRestore: restoreDeletedNote))
+            .modifier(RenameOnReturn(begin: beginRenamingSelection))
     }
 
     private var windowContent: some View {
@@ -289,28 +288,9 @@ struct ReaderView: View {
             guard !Task.isCancelled else { return }
             noteActionMessage = nil
         }
-        .sheet(item: $editingFeed) { feed in
-            SubscriptionSheet(store: store, feed: feed) { _ in }
-        }
-        .confirmationDialog("購読を解除しますか？", isPresented: Binding(get: { removingFeed != nil }, set: { if !$0 { removingFeed = nil } })) {
-            Button("購読を解除", role: .destructive) {
-                guard let feed = removingFeed else { return }
-                perform { try store.unsubscribe(feed); if scope == .feed(feed.id) { scope = .all } }
-                removingFeed = nil
-            }
-        } message: { Text("記事・本文はライブラリに残ります。") }
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
-        .alert("ノート名を変更", isPresented: Binding(get: { renamingNoteID != nil }, set: { if !$0 { renamingNoteID = nil } })) {
-            TextField("ノート名", text: $noteName.singleLine())
-            Button("変更") {
-                guard let id = renamingNoteID else { return }
-                perform { try store.renameNote(id: id, to: noteName, at: .now) }
-                renamingNoteID = nil
-            }
-            Button("キャンセル", role: .cancel) { renamingNoteID = nil }
-        } message: { Text("ノートの最初の行を書き換えます。") }
         .alert("フォルダ名を変更", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
             TextField("フォルダ名", text: $folderName.singleLine())
             Button("保存") {
@@ -341,10 +321,11 @@ struct ReaderView: View {
             }
             Section {
                 ForEach(store.notesNewestEditFirst) { note in
-                    sidebarRow(note.title, symbol: "note.text", count: store.noteArticleCount(noteID: note.id))
+                    sidebarRow(note.title, symbol: "note.text", count: store.noteArticleCount(noteID: note.id),
+                               inlineEdit: inlineEdit(for: .note(note.id), initial: NameEdit.initialText(forNoteTitle: note.title)))
                         .tag(LibraryScope.note(note.id))
                         .contextMenu {
-                            Button("名前を変更…") { noteName = note.title == NoteTitle.untitled ? "" : note.title; renamingNoteID = note.id }
+                            Button("名前を変更") { renaming = .note(note.id) }
                             Button("削除…", role: .destructive) { deletingNote = note.id }
                         }
                 }
@@ -361,7 +342,7 @@ struct ReaderView: View {
                         ForEach(grouped[folder] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                     } label: {
                         sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: "「\(folder)」に購読を追加", onAdd: { addingTo = SubscriptionTarget(folder: folder) }, onDropFeeds: { dropFeeds($0, into: folder) }).tag(LibraryScope.folder(folder))
-                            .contextMenu { Button("フォルダ名を変更…") { folderName = folder; renamingFolder = folder } }
+                            .contextMenu { Button("名前を変更…") { folderName = folder; renamingFolder = folder } }
                     }
                 }
             } header: {
@@ -387,7 +368,8 @@ struct ReaderView: View {
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {
         HStack {
             SubscriptionIconView(feed: feed, loader: imageLoader)
-            Text(feed.title).lineLimit(1)
+            if let edit = inlineEdit(for: .feed(feed.id), initial: feed.title) { InlineNameField(initial: edit.initial, onFinish: edit.finish) }
+            else { Text(feed.title).lineLimit(1) }
             Spacer()
             Text((store.feedUnreadCounts[feed.id] ?? 0).formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             if let error = refresh.errors[feed.id] {
@@ -402,14 +384,45 @@ struct ReaderView: View {
             }
             .contextMenu {
                 Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
-                Button("購読名を編集…") { editingFeed = feed }
+                Button("名前を変更") { renaming = .feed(feed.id) }
                 Button("フォルダへ移動…") { movingFeedID = feed.id }
                 Button("購読を解除…", role: .destructive) { removingFeed = feed }
             }
     }
 
-    private func sidebarRow(_ title: String, symbol: String, count: Int, addHelp: String? = nil, onAdd: @escaping () -> Void = {}, onDropFeeds: (([UUID]) -> Bool)? = nil) -> some View {
-        SidebarRow(title: title, symbol: symbol, count: count, addHelp: addHelp, onAdd: onAdd, onDropFeeds: onDropFeeds)
+    private func sidebarRow(_ title: String, symbol: String, count: Int, addHelp: String? = nil, onAdd: @escaping () -> Void = {}, onDropFeeds: (([UUID]) -> Bool)? = nil,
+                            inlineEdit: (initial: String, finish: (String?) -> Void)? = nil) -> some View {
+        SidebarRow(title: title, symbol: symbol, count: count, addHelp: addHelp, onAdd: onAdd, onDropFeeds: onDropFeeds, inlineEdit: inlineEdit)
+    }
+
+    /// What a row needs while its name is edited in place (nil for every other row).
+    private func inlineEdit(for target: SidebarRenaming, initial: String) -> (initial: String, finish: (String?) -> Void)? {
+        renaming == target ? (initial, { finishRename(target, typed: $0) }) : nil
+    }
+
+    /// Return on the selected note or subscription: edit its name in its row (the folder rows rename with a question, see 0043).
+    private func beginRenamingSelection() -> Bool {
+        // Only while the sidebar (an outline view) has the keyboard: Return in the article list or the note must not rename.
+        guard renaming == nil, NSApp.keyWindow?.firstResponder is NSOutlineView else { return false }
+        switch scope {
+        case .note(let id): renaming = .note(id)
+        case .feed(let id): renaming = .feed(id)
+        default: return false
+        }
+        return true
+    }
+
+    /// The name was typed (nil: Esc). An empty or unchanged name saves nothing; a failure is shown, never dropped.
+    private func finishRename(_ target: SidebarRenaming, typed: String?) {
+        renaming = nil
+        switch target {
+        case .note(let id):
+            guard let note = store.note(id: id), let name = NameEdit.result(old: NameEdit.initialText(forNoteTitle: note.title), typed: typed) else { return }
+            perform { try store.renameNote(id: id, to: name, at: .now) }
+        case .feed(let id):
+            guard let feed = store.feed(id: id), let name = NameEdit.result(old: feed.title, typed: typed) else { return }
+            perform { try store.updateSubscription(feed, title: name, folder: feed.folder) }
+        }
     }
 
     /// Subscriptions dropped on a folder row (or on the sources header, which is "unfiled"). True if any of them moved.
@@ -542,7 +555,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || editingFeed != nil || renamingFolder != nil || renamingNoteID != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -559,7 +572,7 @@ struct ReaderView: View {
     }
 
     private func perform(_ command: ReaderCommand) {
-        guard addingTo == nil, editingFeed == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
+        guard addingTo == nil, renaming == nil, NSApp.keyWindow?.attachedSheet == nil else { return }
         switch command {
         case .next: move(1)
         case .previous: move(-1)
