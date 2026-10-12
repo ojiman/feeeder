@@ -68,6 +68,8 @@ git diff --check
 
 Tests use only synthetic RSS/HTML and temporary databases. The project is developed with AI coding agents under a single supervised writer; [AGENTS.md](AGENTS.md) describes the workflow and the checks.
 
+While developing, reuse the scratch path and run the affected suites with `--filter` (for example, `--filter 'NoteTitleTests|NoteTests'`). Run the full suite before publishing a change. Routine regression uses a 1,000-article library; the [large-fixture command in AGENTS.md](AGENTS.md#commands) retains the 10,000-article check for library changes and release preparation.
+
 ## License
 
 [Apache License 2.0](LICENSE). Third-party notices are in [ThirdPartyNotices.md](ThirdPartyNotices.md). Feed content, original pages, site logos and external services remain subject to their owners' rights and terms. The repository contains no personal data, credentials or keys.

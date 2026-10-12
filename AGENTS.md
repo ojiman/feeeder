@@ -34,6 +34,14 @@ git diff --check
 
 Use `open -n` for the synthetic run. Without it, `open` can reuse an Unagi Reader that is already running and drop `--args`; the data directory is read only at launch, so you would be operating on the user's library. Before touching anything, confirm the instance is the synthetic one: a `UnagiReader` process whose arguments include the temporary `--data-directory` (for example `pgrep -fl UnagiReader`), and a window that shows the synthetic subscriptions. A separate-Bundle-ID copy is also fine if it can be told apart from the user's app by the same checks. This procedure has not been re-run on macOS since it was written down.
 
+For a short local feedback loop, keep the same scratch path and run the suites affected by the change, for example `swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build --filter 'NoteTitleTests|NoteTests'`. Run the full suite before publishing the change; CI still runs it for every code change.
+
+`BenchmarkFixtureTests` uses 1,000 articles and 100 feeds in routine regression. To check or generate the full 10,000-article fixture, choose a new, empty output directory ([decision 0044](docs/decisions/0044-smaller-regression-fixture.md)). Run this larger check for library/index changes and before release:
+
+```sh
+UNAGI_READER_BENCHMARK_DIRECTORY="$(mktemp -d /private/tmp/unagi-reader-benchmark.XXXXXX)" swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build --filter BenchmarkFixtureTests
+```
+
 Opt-in store compatibility check (skipped unless `UNAGI_READER_V1_FIXTURE_DIR` is set; not part of CI during beta; `UNAGI_READER_PRE0019_FIXTURE_DIR` is the same for a fixture made from commit `52429b4`, the build before decision 0019):
 
 ```sh

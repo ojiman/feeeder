@@ -7,6 +7,8 @@ import Testing
     @Test func largeLibraryIndexesAndReadCountsStayConsistent() throws {
         let library = try TestLibrary()
         let destination = ProcessInfo.processInfo.environment["UNAGI_READER_BENCHMARK_DIRECTORY"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+        // Routine regression uses less data; an explicit output directory keeps the full dogfooding fixture.
+        let articleCount = destination == nil ? 1_000 : 10_000
         defer { library.cleanup() }
         let directory = destination ?? library.directory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -28,7 +30,7 @@ import Testing
         let formatted = text.components(separatedBy: "\n\n").enumerated().map { index, text in
             BodyParagraph(text: text, links: [BodyLink(location: 0, length: 4, url: "http://127.0.0.1:18889/linked#section")], quoteDepth: index < 20 ? 1 : 0)
         }
-        for index in 0..<10_000 {
+        for index in 0..<articleCount {
             let feed = feeds[index % 100]
             let article = Article(feedID: feed.id, title: String(format: "合成記事 %05d", index), summary: "負荷試験のための合成要約です。", publisher: "synthetic.example", publishedAt: now.addingTimeInterval(-Double(index)), receivedAt: now)
             article.originalURL = originalBase?.appending(path: "\(index)").absoluteString ?? "http://127.0.0.1:18888/posts/extracted"
@@ -39,13 +41,14 @@ import Testing
         }
         try context.save()
         let store = try ReaderStore(container: container, now: now)
-        #expect(store.articles.count == 10_000 && store.feeds.count == 100 && store.unreadCount == 10_000)
-        #expect(store.visibleArticleIDs(feedID: feeds[0].id, unreadOnly: false, keeping: nil).count == 100)
+        let articlesPerFeed = articleCount / feeds.count
+        #expect(store.articles.count == articleCount && store.feeds.count == 100 && store.unreadCount == articleCount)
+        #expect(store.visibleArticleIDs(feedID: feeds[0].id, unreadOnly: false, keeping: nil).count == articlesPerFeed)
         let article = try #require(store.articles.first)
         try store.markDisplayed(articleID: article.id, at: now)
-        #expect(store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: article.id).count == 10_000)
-        #expect(store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: nil).count == 9_999)
-        #expect(store.unreadCount == 9_999 && store.feedUnreadCounts[article.feedID] == 99)
+        #expect(store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: article.id).count == articleCount)
+        #expect(store.visibleArticleIDs(feedID: nil, unreadOnly: true, keeping: nil).count == articleCount - 1)
+        #expect(store.unreadCount == articleCount - 1 && store.feedUnreadCounts[article.feedID] == articlesPerFeed - 1)
         #expect(try store.content(articleID: article.id, at: now)?.text == text)
         #expect(try store.content(articleID: article.id, at: now)?.bodyParagraphs == formatted)
     }
