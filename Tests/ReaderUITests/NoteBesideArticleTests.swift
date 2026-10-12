@@ -1,0 +1,147 @@
+import AppKit
+import SwiftUI
+import ReaderCore
+import Testing
+@testable import UnagiReader
+
+/// Decision 0049: the note opens beside the article. Opening it folds the sidebar and the list away to the left and the note comes in
+/// from the right (article on the left, note on the right); closing it brings everything back. The tests look at where the views are
+/// in a hosted window.
+extension SplitViewFoldTests {
+    @Suite(.serialized) @MainActor struct NoteBesideArticleTests {
+        private let noteText = "既存のノート"
+
+        private struct Harness {
+            let store: ReaderStore
+            let host: NSHostingView<ReaderView>
+            let window: NSWindow
+            let directory: URL
+        }
+        private func harness(noteOpen: Bool = false, listShown: Bool = false) throws -> Harness {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let store = try ReaderStore(url: directory.appendingPathComponent("Reader.store"))
+            let entries = (0..<3).map { index in
+                ParsedEntry(sourceID: "synthetic-\(index)", title: "合成記事 \(index)", url: URL(string: "http://127.0.0.1:1/article/\(index)"), summary: "合成要約", body: "合成本文", coverage: .feedProvided, publishedAt: .now.addingTimeInterval(Double(-index)))
+            }
+            _ = try store.importFeed(ParsedFeed(title: "合成購読", sourceURL: URL(string: "http://127.0.0.1:1/feed")!, entries: entries, skippedEntries: 0), receivedAt: .now)
+            try store.saveNote(text: noteText, at: .now)
+            let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store),
+                imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
+                initialNoteOpen: noteOpen, initialListShown: listShown,
+                notePasteboard: NSPasteboard(name: .init("unagi-reader-test-\(UUID())")))
+            let host = NSHostingView(rootView: reader)
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-note-beside")
+            window.contentView = host
+            window.orderFront(nil)
+            return Harness(store: store, host: host, window: window, directory: directory)
+        }
+        private func finish(_ h: Harness) { h.window.close(); try? FileManager.default.removeItem(at: h.directory) }
+
+        private func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
+            if let result = view as? T { return result }
+            return view.subviews.lazy.compactMap { find(type, in: $0) }.first
+        }
+        private func editor(in h: Harness) -> NSTextView? {
+            func search(_ view: NSView) -> NSTextView? {
+                if let text = view as? NSTextView, text.string == noteText { return text }
+                return view.subviews.lazy.compactMap { search($0) }.first
+            }
+            return search(h.host)
+        }
+        /// The closed note stays in the view tree, outside the window on the right.
+        private func noteVisible(_ h: Harness) -> Bool { (x(editor(in: h)) ?? 99_999) < 1_240 - 50 }
+        private func table(in h: Harness) -> NativeArticleList.Table? { find(NativeArticleList.Table.self, in: h.host) }
+        private func article(in h: Harness) -> ArticleTextView? { find(ArticleTextView.self, in: h.host) }
+        private func x(_ view: NSView?) -> CGFloat? { view.map { $0.convert($0.bounds, to: nil).minX } }
+        private func right(_ view: NSView?) -> CGFloat? { view.map { $0.convert($0.bounds, to: nil).maxX } }
+        private func sidebarButtonsMounted(_ h: Harness) -> Bool {
+            h.window.titlebarAccessoryViewControllers.contains { $0.view is NSHostingView<SidebarTitlebarControls.Buttons> }
+        }
+        private func state(_ h: Harness) -> String {
+            "[sidebar buttons \(sidebarButtonsMounted(h)), list x \(x(table(in: h)).map { "\($0)" } ?? "none"), article x \(x(article(in: h)).map { "\($0)" } ?? "none"), note x \(x(editor(in: h)).map { "\($0)" } ?? "none")]"
+        }
+        private func settle(_ h: Harness, line: Int = #line, until ready: () -> Bool) async throws {
+            for _ in 0..<250 {
+                h.host.layoutSubtreeIfNeeded()
+                if ready() { return }
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            #expect(ready(), "did not reach the expected state \(state(h))", sourceLocation: SourceLocation(fileID: #fileID, filePath: #filePath, line: line, column: 1))
+        }
+        private func press(_ key: String, in h: Harness) throws {
+            let list = try #require(table(in: h))
+            #expect(list.keyHandler?(key) == true)
+        }
+
+        @Test func nOpensTheNoteBesideTheArticleAndFoldsTheSidebarAndTheList() async throws {
+            let h = try harness()
+            defer { finish(h) }
+            try await settle(h) { table(in: h)?.numberOfRows == 3 && sidebarButtonsMounted(h) }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 1") == true }
+            let listX = try #require(x(list)), listWidth = list.bounds.width
+            #expect(!noteVisible(h))                                                            // the note is not there until it is opened
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))                 // the window has just appeared
+
+            try press("n", in: h)
+            try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) && (x(article(in: h)) ?? 999) < 40 }
+            // Article on the left, note on the right; the list is folded away, so it takes no room.
+            let articleRight = try #require(right(article(in: h)))
+            #expect(try #require(x(editor(in: h))) >= articleRight - 1)
+            #expect(article(in: h)?.string.contains("合成記事 1") == true)                       // the same article
+            try await settle(h) { (list.window == nil) || list.convert(list.bounds, to: nil).width < 1 || list.isHiddenOrHasHiddenAncestor }
+
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))                 // let the move finish, as a person would wait
+            try press("n", in: h)
+            try await settle(h) { !noteVisible(h) && sidebarButtonsMounted(h) && abs((x(list) ?? 0) - listX) < 1 && abs(list.bounds.width - listWidth) < 1 }
+            #expect(list.selectedRow == 1)                                                      // the selection did not change
+            #expect(article(in: h)?.string.contains("合成記事 1") == true)
+        }
+
+        /// Opening the note must not take the keyboard: the editor gets it only when the person clicks it, so `j`, `k`, `s` and the other
+        /// keys still work. The list that had the keyboard goes away, so the reader gets it.
+        @Test func openingTheNoteDoesNotTakeTheKeyboard() async throws {
+            let h = try harness()
+            defer { finish(h) }
+            h.window.makeKeyAndOrderFront(nil)
+            try await settle(h) { table(in: h)?.numberOfRows == 3 }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+            h.window.makeFirstResponder(list)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 0") == true }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            try press("n", in: h)
+            try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            let responder = h.window.firstResponder
+            #expect(!ReaderKeyboardCommands.isTextInput(responder), "the first responder is \(String(describing: responder))")
+            #expect(responder === article(in: h))                                           // the keys go to the reader
+            try press("n", in: h)                                                           // closing: the list is back, and has the keyboard
+            try await settle(h) { !noteVisible(h) && sidebarButtonsMounted(h) && h.window.firstResponder === list }
+        }
+
+        @Test func theListButtonShowsTheListBesideTheArticleAndTheNote() async throws {
+            let h = try harness(noteOpen: true, listShown: true)
+            defer { finish(h) }
+            try await settle(h) { table(in: h)?.numberOfRows == 3 && noteVisible(h) }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 0") == true }
+            // List, article and note, from the left; the sidebar is folded.
+            try await settle(h) { !sidebarButtonsMounted(h) && (x(list) ?? 999) < 1 }
+            try await settle(h) { (x(article(in: h)) ?? 0) >= (right(list) ?? 99_999) - 1 }
+            try await settle(h) { (x(editor(in: h)) ?? 0) >= (right(article(in: h)) ?? 99_999) - 1 }
+        }
+
+        @Test func aNoteOpenAtTheStartHasTheListFolded() async throws {
+            let h = try harness(noteOpen: true)
+            defer { finish(h) }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+            try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) && (x(article(in: h)) ?? 999) < 40 }
+        }
+    }
+}
