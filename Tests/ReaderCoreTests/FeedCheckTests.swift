@@ -17,6 +17,24 @@ import Testing
             #expect(request(partial) == nil, "\(partial)")                           // nothing is sent to a host that does not look complete
         }
     }
+    @Test func aPlainHTTPAddressIsCheckedAsHTTPSBecauseTheAppCannotFetchHTTP() async throws {
+        func request(_ source: String) -> FeedCheckRequest? { FeedCheckRequest.make(source: source, xml: "", manual: false) }
+        #expect(request("http://example.com/feed.xml") == .url(URL(string: "https://example.com/feed.xml")!))
+        #expect(request("HTTP://Example.com/feed.xml?x=1") == .url(URL(string: "https://example.com/feed.xml?x=1")!))
+        #expect(request("http://example.com:8080/feed") == .url(URL(string: "http://example.com:8080/feed")!))     // a port is for http: left as typed
+        #expect(request("https://example.com/feed") == .url(URL(string: "https://example.com/feed")!))
+        let fetched = Recorder<FeedCheckRequest>()
+        let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in })
+        checker.update(source: "http://example.com/feed.xml", delay: .zero); await settle(checker)
+        #expect(fetched.values == [.url(URL(string: "https://example.com/feed.xml")!)])                       // plain http is never sent
+    }
+    @Test func theSheetShowsTheAddressOnlyWhenItIsNotTheOneTyped() {
+        let feed = Self.checked()                                                                              // https://example.com/feed.xml
+        #expect(feed.subscribedAddress(whenTyped: "https://example.com/feed.xml") == nil)
+        #expect(feed.subscribedAddress(whenTyped: " HTTPS://Example.com/feed.xml ") == nil)                    // same address, written differently
+        #expect(feed.subscribedAddress(whenTyped: "http://example.com/feed.xml") == "https://example.com/feed.xml")
+        #expect(feed.subscribedAddress(whenTyped: "https://example.com/") == "https://example.com/feed.xml")  // a page that led to its feed
+    }
     @Test func returnAcceptsAnyValidAddressSuchAsALocalName() {
         func request(_ source: String, asked: Bool) -> FeedCheckRequest? { FeedCheckRequest.make(source: source, xml: "", manual: false, asked: asked) }
         for local in ["https://localhost/feed", "https://nas/feed", "https://[::1]/feed"] {

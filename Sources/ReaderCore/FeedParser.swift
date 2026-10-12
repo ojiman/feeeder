@@ -54,6 +54,14 @@ public enum ArticleURL {
         components.percentEncodedFragment = URLComponents(url: resolved, resolvingAgainstBaseURL: true)?.percentEncodedFragment
         return components.url
     }
+    /// `http://` becomes `https://`: the system does not let the app fetch plain `http://`, and most sites answer on https as well.
+    /// An address with its own port is left as it is (the port was meant for http).
+    public static func secured(_ url: URL) -> URL {
+        guard url.scheme == "http", url.port == nil, var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        parts.scheme = "https"
+        return parts.url ?? url
+    }
+
     public static func validated(_ value: String, relativeTo base: URL? = nil) -> URL? {
         guard let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines), relativeTo: base)?.absoluteURL,
               var parts = URLComponents(url: url, resolvingAgainstBaseURL: true),

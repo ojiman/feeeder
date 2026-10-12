@@ -14,6 +14,12 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
     public init(parsed: ParsedFeed, etag: String?, lastModified: String?, fetched: Bool, foundOnPage: URL? = nil) {
         self.parsed = parsed; self.etag = etag; self.lastModified = lastModified; self.fetched = fetched; self.foundOnPage = foundOnPage
     }
+    /// The address that will be subscribed, when it is not the one typed: the https form of an http address, or the feed that
+    /// a page announced. Nil when they are the same (so the sheet has nothing to add).
+    public func subscribedAddress(whenTyped source: String) -> String? {
+        let used = parsed.sourceURL.absoluteString
+        return ArticleURL.validated(source)?.absoluteString == used ? nil : used
+    }
     public static func == (lhs: CheckedFeed, rhs: CheckedFeed) -> Bool { lhs.id == rhs.id }
 }
 
