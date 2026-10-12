@@ -158,7 +158,8 @@ Answered by the owner on 2026-10-12:
 5. **Summary and Claude hand-off use the original text.** Yes. (The Claude hand-off is under review and is left as it is.)
 6. **Links in the translated text** are left out in the first version. Yes (the owner prefers it simple).
 
-Proposed by the Product Owner, to be confirmed by the owner:
+7. **Reader text and original page.** Version 1 translates the reader text; the button is disabled while the original page is open, and a short feed excerpt is pointed to 「全文を取得」 (section 4). Yes (the owner: it should simply be disabled). A page-level translation (reading the page's text nodes) is not planned.
 
-7. **Reader text and original page.** Version 1 translates the reader text; the button is disabled while the original page is open, and a short feed excerpt is pointed to 「全文を取得」 (section 4). A possible small step later: pressing the button while the original page is open could return to the reader text and translate there. A page-level translation (reading the page's text nodes) is not planned.
-8. **Scope of T1 to T3** above, with the extras left for later.
+To be confirmed by the owner:
+
+8. **Scope.** Three pull requests, in this order, each merged before the next: T1 the core, T2 the button, T3 the language menu (section 10). The extras listed under "Later" are not built.
