@@ -8,8 +8,6 @@ private typealias LibraryScope = ReaderWorkspaceScope
 struct ReaderView: View {
     @Bindable var store: ReaderStore
     @Bindable var refresh: FeedRefreshController
-    @Bindable var aiReview: AIPackageReview
-    @Bindable var handoff: ClaudeHandoffController
     let imageLoader: ReaderImageLoader
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
@@ -17,59 +15,48 @@ struct ReaderView: View {
     @State private var pageForward = true
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var noteLayout = NoteLayout()
-    /// The window's width, for the rule that folds the sidebar only in a narrow window (`NoteLayout.foldBelow`).
-    @State private var windowWidth: Double = 0
-    /// The panel's width when the app started (the ideal width of the inspector), and the width it has now while the person drags.
+    /// The panel's width when the app started (the ideal width of the inspector). The width while the person drags is kept in `NotePanelWidthMemory`.
     @State private var startingPanelWidth = NotePanelWidth.load()
-    @State private var panelWidth: Double?
-    /// The first width the layout gave this panel: only a change from it can be the person's drag.
-    @State private var firstPanelWidth: Double?
+    /// True for one turn after the person dragged the panel shut, so that it is shown again (see `noteOpenBinding`).
+    @State private var panelReopening = false
     @State private var saveError: String?
     @State private var noteActionMessage: String?
-    @State private var sender: SummarySender
-    @State private var sendingArticleID: UUID?
-    @State private var pickingNote = false
-    @State private var reviewingNote: NoteSheet?
-    @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     /// Set while the "add subscription" sheet is open: the folder the new subscription goes to.
     @State private var addingTo: SubscriptionTarget?
     @State private var removingFeed: Feed?
     @State private var renamingFolder: String?
-    /// The note or subscription whose name is being edited in its sidebar row (decision 0043).
+    /// The subscription whose name is being edited in its sidebar row (decision 0043).
     @State private var renaming: SidebarRenaming?
     @State private var folderExpansion = FolderExpansion()
     /// The subscription whose 「フォルダへ移動…」 chooser is open.
     @State private var movingFeedID: UUID?
     @State private var folderName = ""
-    @State private var deletingNote: UUID?
-    /// After a note was deleted: the offer 「取り消す」 (decision 0042).
-    @State private var deletedNote = DeletedNoteOffer()
+    /// How far the original page has slid out to the right while it closes (decision 0044), the width of its column, and whether it is closing.
+    @State private var originalSlide: CGFloat = 0
+    @State private var originalColumnWidth: CGFloat = 600
+    @State private var originalClosing = false
     @State private var opml: OPMLImportFlow
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
     private let notePasteboard: NSPasteboard
-    private let saveMarkdown: @MainActor (String, Data) async throws -> Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
-    init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
+    init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false,
          notePasteboard: NSPasteboard = .general,
-         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave,
          chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
-        self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
-        self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
+        self.store = store; self.refresh = refresh
+        self.notePasteboard = notePasteboard
         _opml = State(initialValue: OPMLImportFlow(store: store, refresh: refresh, chooseFile: chooseOPML))
         self.imageLoader = imageLoader
-        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
         initialWorkspace.scope = initialScope
-        if case .note(let id) = initialScope, !initialNoteOpen { initialWorkspace.setNote(open: false, of: id) }
+        initialWorkspace.noteOpen = initialNoteOpen
         _workspace = State(initialValue: initialWorkspace)
     }
 
@@ -77,33 +64,8 @@ struct ReaderView: View {
         guard let article = selectedArticle, article.contentDeletedAt == nil else { return nil }
         return RetentionPolicy(days: store.retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
     }
-    private func reviewSheet(_ sheet: NoteSheet) -> some View {
-        AIReviewView(store: store, review: aiReview, handoff: handoff, noteID: sheet.id)
-    }
-
-    private static func presentMarkdownSave(_ fileName: String, _ data: Data) async throws -> Bool {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = fileName
-        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
-        guard let window = NSApp.keyWindow else { throw CocoaError(.fileWriteUnknown) }
-        return try await withCheckedThrowingContinuation { continuation in
-            panel.beginSheetModal(for: window) { response in
-                guard response == .OK, let url = panel.url else {
-                    continuation.resume(returning: false)
-                    return
-                }
-                do {
-                    try data.write(to: url, options: .atomic)
-                    continuation.resume(returning: true)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-
-    func copyNote(_ id: UUID) -> Bool {
-        guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+    func copyNote() -> Bool {
+        guard let note = store.note, !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         let item = NSPasteboardItem()
         guard item.setString(note.text, forType: .string) else {
             saveError = "ノートをクリップボードへコピーできませんでした。"
@@ -118,20 +80,9 @@ struct ReaderView: View {
         return true
     }
 
-    func exportNote(_ id: UUID) async -> Bool {
-        guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        do {
-            if try await saveMarkdown(NoteMarkdown.fileName(forTitle: note.title), NoteMarkdown.data(for: note.text)) {
-                noteActionMessage = "Markdownを書き出しました"
-                return true
-            }
-            return false
-        } catch { saveError = error.localizedDescription; return false }
-    }
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
-        case .note(let id): store.noteArticleIDs(noteID: id, keeping: selection)
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
         case .starred: store.starredArticleIDs(keeping: selection)
@@ -142,7 +93,6 @@ struct ReaderView: View {
 
     private var scopeTitle: String {
         switch scope ?? .all {
-        case .note(let id): store.note(id: id)?.title ?? "ノート"
         case .folder(let name): name
         case .all: "すべての記事"
         case .unread: "未読"
@@ -155,28 +105,11 @@ struct ReaderView: View {
         // The library window's own chain is long (the CI compiler gives up on a longer one); the OPML import is added from outside it.
         windowContent
             .modifier(OPMLImportPresentation(flow: opml))
-            .modifier(DeletedNoteUndoBar(offer: deletedNote, onRestore: restoreDeletedNote))
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
     }
 
     private var windowContent: some View {
         reader
-        .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
-            windowWidth = width
-            guard noteOpen else { return }
-            noteLayout.windowWidthChanged(to: width); applyColumns()
-        }
-        .onAppear { if noteOpen { noteLayout.noteOpened(windowWidth: windowWidth); applyColumns() } }
-        .onChange(of: noteOpen) { _, open in
-            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed(); firstPanelWidth = nil; panelWidth = nil }
-            applyColumns()
-        }
-        .onChange(of: columnVisibility) { _, visibility in
-            // The window may change the columns by itself; keep the layout in step (only while the note is open).
-            guard noteOpen else { return }
-            // Only the two states the layout sets itself; `.automatic` and `.detailOnly` are left alone.
-            if visibility == .all { noteLayout.follow(.all) } else if visibility == .doubleColumn { noteLayout.follow(.doubleColumn) }
-        }
         .onChange(of: scope) { old, new in
             if let old {
                 scrollMemory.state.select(selection)
@@ -184,6 +117,10 @@ struct ReaderView: View {
             }
             workspace.scope = new ?? .all
             enterScope()
+            // The sidebar stays folded while the original page is open, also when the person goes to another screen (decision 0046).
+            withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
+                columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
+            }
         }
     }
 
@@ -194,8 +131,10 @@ struct ReaderView: View {
             articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
             originalColumn.frame(minWidth: 360)
-                .inspector(isPresented: noteOpenBinding) { notePanel }
-                .inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
+                // The width goes on the panel's content. Put on the inspector itself it had no effect, and the panel stayed about 270 pt wide.
+                .inspector(isPresented: noteOpenBinding) {
+                    notePanel.inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
+                }
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 960, minHeight: 600)
@@ -210,21 +149,9 @@ struct ReaderView: View {
                 Button { togglePanel() } label: { Image(systemName: "note.text") }
                     .keyboardShortcut("i", modifiers: [.option, .command])
                     .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
-                    .disabled(noteScopeID == nil)
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
-                Button { perform(.sendToNote) } label: {
-                    Image(systemName: article.map { store.isInAnyNote(articleID: $0.id) } == true ? "square.stack.fill" : "square.stack")
-                }
-                .help("ノートに要約を送る (n)").accessibilityLabel("ノートに要約を送る")
-                .disabled(article == nil || sender.isWorking)
-                .popover(isPresented: $pickingNote, arrowEdge: .bottom) {
-                    SendToNoteView(store: store, onSend: { noteID in
-                        if let id = sendingArticleID { sender.start(articleID: id, noteID: noteID) }
-                        pickingNote = false
-                    }, onClose: { pickingNote = false })
-                }
                 Button(action: openExternal) { Image(systemName: "globe") }
                     .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
                     .disabled(article?.originalURL.flatMap { ArticleURL.validated($0) } == nil)
@@ -242,15 +169,9 @@ struct ReaderView: View {
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
         }
-        .onChange(of: pickingNote) { _, open in
-            if !open, originalPage.url == nil { listFocused = pickerRestoresListFocus }
-        }
         .onChange(of: selection) { _, id in
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) {
-                if originalPage.selectionChanged(to: id) {
-                    listFocused = true
-                }
-            }
+            // The page slides out to the right (the way it came in, reversed) and shows the next article's reader text.
+            if originalPage.closesWhenSelecting(id) { dismissOriginal { listFocused = true } }
             scrollMemory.state.select(id)
         }
         .task(id: selection) {
@@ -265,17 +186,9 @@ struct ReaderView: View {
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
-        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.sendToNote); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
         .sheet(item: $addingTo) { target in
             SubscriptionSheet(store: store, folder: target.folder) { scope = .feed($0) }
-        }
-        .overlay(alignment: .bottomTrailing) {
-            SendStatusBar(sender: sender, onOpen: { id in
-                guard store.note(id: id) != nil else { saveError = NoteError.missingNote.localizedDescription; return }
-                workspace.setNote(open: true, of: id)
-                scope = .note(id)
-            })
         }
         .overlay(alignment: .bottomLeading) {
             if let noteActionMessage {
@@ -320,22 +233,6 @@ struct ReaderView: View {
                 sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
             }
             Section {
-                ForEach(store.notesNewestEditFirst) { note in
-                    sidebarRow(note.title, symbol: "note.text", count: store.noteArticleCount(noteID: note.id),
-                               inlineEdit: inlineEdit(for: .note(note.id), initial: NameEdit.initialText(forNoteTitle: note.title)))
-                        .tag(LibraryScope.note(note.id))
-                        .contextMenu {
-                            Button("名前を変更") { renaming = .note(note.id) }
-                            Button("削除…", role: .destructive) { deletingNote = note.id }
-                        }
-                }
-                Button { createNote() } label: { Label { Text("新しいノート") } icon: { Image(systemName: "plus").foregroundStyle(.secondary) } }
-                    .buttonStyle(.plain).foregroundStyle(.secondary).padding(.vertical, 4)
-                    .accessibilityLabel("新しいノートを作る")
-            } header: {
-                SidebarSectionHeader(title: "ノート", help: "新しいノートを作る") { createNote() }
-            }
-            Section {
                 ForEach(grouped[""] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                 ForEach(folders, id: \.self) { folder in
                     DisclosureGroup(isExpanded: Binding(get: { folderExpansion.isExpanded(folder) }, set: { folderExpansion.set(folder, expanded: $0) })) {
@@ -355,14 +252,6 @@ struct ReaderView: View {
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
             visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,
             onAdd: { addingTo = SubscriptionTarget(folder: "") }, onRefresh: { Task { await refresh.refresh() } }))
-        .sheet(item: $reviewingNote) { sheet in reviewSheet(sheet) }
-        .confirmationDialog("このノートを削除しますか？", isPresented: Binding(get: { deletingNote != nil }, set: { if !$0 { deletingNote = nil } })) {
-            Button("ノートを削除", role: .destructive) {
-                guard let id = deletingNote else { return }
-                perform { deletedNote.offer(try store.deleteNote(id: id)); if scope == .note(id) { scope = .all } }
-                deletingNote = nil
-            }
-        } message: { Text("記事とStarそのものは消えません。このノートに記録した記事のタイトル・リンク・要約と、ノートは消えます。") }
     }
 
     private func subscriptionRow(_ feed: Feed, folders: [String]) -> some View {
@@ -400,12 +289,11 @@ struct ReaderView: View {
         renaming == target ? (initial, { finishRename(target, typed: $0) }) : nil
     }
 
-    /// Return on the selected note or subscription: edit its name in its row (the folder rows rename with a question, see 0043).
+    /// Return on the selected subscription: edit its name in its row (the folder rows rename with a question, see 0043).
     private func beginRenamingSelection() -> Bool {
         // Only while the sidebar (an outline view) has the keyboard: Return in the article list or the note must not rename.
         guard renaming == nil, NSApp.keyWindow?.firstResponder is NSOutlineView else { return false }
         switch scope {
-        case .note(let id): renaming = .note(id)
         case .feed(let id): renaming = .feed(id)
         default: return false
         }
@@ -416,9 +304,6 @@ struct ReaderView: View {
     private func finishRename(_ target: SidebarRenaming, typed: String?) {
         renaming = nil
         switch target {
-        case .note(let id):
-            guard let note = store.note(id: id), let name = NameEdit.result(old: NameEdit.initialText(forNoteTitle: note.title), typed: typed) else { return }
-            perform { try store.renameNote(id: id, to: name, at: .now) }
         case .feed(let id):
             guard let feed = store.feed(id: id), let name = NameEdit.result(old: feed.title, typed: typed) else { return }
             perform { try store.updateSubscription(feed, title: name, folder: feed.folder) }
@@ -452,74 +337,41 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
-                case "n": perform(.sendToNote)
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
                 let feed = store.feed(id: article.feedID)
                 return ImageMetadata.favicon(iconURL: feed?.iconURL, siteURL: feed?.siteURL, sourceURL: feed?.sourceURL)
-            }, inNote: { store.isInAnyNote(articleID: $0) }, initialTopOffset: scrollMemory.state.listScrollOffset,
+            }, initialTopOffset: scrollMemory.state.listScrollOffset,
             onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset },
-            onRemoveFromNote: noteScopeID.map { noteID in { articleID in perform { try store.removeArticle(articleID, fromNote: noteID, at: .now) } } })
+            headerInset: ListHeader.height)
         .focused($listFocused)
         .navigationTitle("")                                           // the list draws its own title (ListHeader); the system one ran out of the column
         .overlay {
             if visibleArticleIDs.isEmpty {
-                switch scope ?? .all {
-                case .note: ContentUnavailableView("記事が入っていません", systemImage: "square.stack",
-                    description: Text("記事を選んで n キーで要約を送ると、ここに並びます。"))
-                default: ContentUnavailableView("記事はありません", systemImage: "tray",
+                ContentUnavailableView("記事はありません", systemImage: "tray",
                     description: Text("購読を追加するか、ほかの一覧を選んでください。"))
-                }
             }
         }
-        .safeAreaInset(edge: .top) {
-            // While the note is open the sidebar is folded; this button brings it back (and folds it again).
-            if noteOpen {
-                HStack(spacing: 0) {
-                    Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
-                        .buttonStyle(.borderless).padding(.leading, 12).padding(.vertical, 6)
-                        .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                        .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                    Spacer(minLength: 0)
-                }.background(AppPalette.surfaceColor)
-            }
-        }
-        // After the inset above, so the title is drawn over the bar that holds the sidebar button while a note is open (the other order
-        // hides it).
         .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top) }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
     }
 
-    /// The note beside the reader (the inspector). It is there only inside a note.
-    @ViewBuilder private var notePanel: some View {
-        if let id = noteScopeID {
-            NotePanel(store: store, noteID: id,
-                      canPrevious: NoteArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
-                      canNext: NoteArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
-                      onPrevious: { guard panelMayMove else { return }; perform(.previous) },
-                      onNext: { guard panelMayMove else { return }; perform(.next) },
-                      onClaude: { reviewingNote = NoteSheet(id: id) },
-                      onCopy: { _ = copyNote(id) }, onExport: { Task { _ = await exportNote(id) } })
-            .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
-                if firstPanelWidth == nil { firstPanelWidth = width }
-                panelWidth = width
-            }
-            .task(id: panelWidth) {
-                // Keep the width after the person lets go: wait for the drag to settle, then save it once.
-                guard let width = panelWidth else { return }
-                try? await Task.sleep(for: .milliseconds(600))
-                guard !Task.isCancelled, NotePanelWidth.shouldSave(new: width, saved: UserDefaults.standard.object(forKey: NotePanelWidth.key) as? Double, firstSeen: firstPanelWidth) else { return }
-                NotePanelWidth.save(width)
-            }
-            .id(id)
-        } else { EmptyView() }
+    /// The note beside the reader (the inspector).
+    private var notePanel: some View {
+        NotePanel(store: store,
+                  canPrevious: NoteArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
+                  canNext: NoteArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
+                  onPrevious: { guard panelMayMove else { return }; perform(.previous) },
+                  onNext: { guard panelMayMove else { return }; perform(.next) },
+                  onCopy: { _ = copyNote() })
+            .modifier(NotePanelWidthMemory())
     }
 
-    /// Not while Japanese text is being composed, and not while the note picker is open (it belongs to the article that is shown).
+    /// Not while Japanese text is being composed.
     private var panelMayMove: Bool {
-        !pickingNote && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
+        !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
     }
 
     private var originalColumn: some View {
@@ -531,8 +383,10 @@ struct ReaderView: View {
                     perform(command)
                 })
                     .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
+                    .offset(x: originalSlide)
             }
         }.clipped()
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }
     }
 
     @ViewBuilder private var detail: some View {
@@ -545,7 +399,7 @@ struct ReaderView: View {
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
                 onReload: { Task { guard selection == article.id else { return }; await loading.load(articleID: article.id, refresh: true) } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
-                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward)
+                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward, pageMotion: originalPage.url == nil)
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
@@ -557,7 +411,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -565,12 +419,34 @@ struct ReaderView: View {
     private func openOriginal() {
         guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
+        // The page slides in and the sidebar folds as one move (decision 0046).
+        withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
+            _ = originalPage.open(articleID: article.id, url: url)
+            columnVisibility = targetColumns(pageOpen: true)
+        }
     }
     private func closeOriginal() {
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { originalPage.close() }
-        scrollMemory.state.returnFromOriginal()
-        listFocused = restoreListFocus
+        dismissOriginal {
+            scrollMemory.state.returnFromOriginal()
+            listFocused = restoreListFocus
+        }
+    }
+    /// Slides the original page out to the right, then closes it. A page that goes away without a motion would not be the reverse of
+    /// how it came in. With Reduce Motion it just closes. A second request while it slides out is ignored (it closes anyway).
+    private func dismissOriginal(then done: @escaping () -> Void) {
+        guard originalPage.url != nil, !originalClosing else { return }
+        guard !reduceMotion else { originalPage.close(); columnVisibility = targetColumns(pageOpen: false); done(); return }
+        originalClosing = true
+        // The page slides out and the sidebar comes back as one move, however the page was closed (decision 0046).
+        withAnimation(.easeOut(duration: SidebarFold.motionDuration)) {
+            originalSlide = originalColumnWidth
+            columnVisibility = targetColumns(pageOpen: false)
+        } completion: {
+            originalPage.close()
+            originalSlide = 0
+            originalClosing = false
+            done()
+        }
     }
 
     private func perform(_ command: ReaderCommand) {
@@ -582,38 +458,23 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
-        case .sendToNote:
-            guard let article = selectedArticle, !pickingNote, !sender.isWorking else { return }
-            sendingArticleID = article.id
-            pickerRestoresListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
-            pickingNote = true
         }
     }
 
-    private var noteScopeID: UUID? {
-        if case .note(let id) = scope { return id }
-        return nil
-    }
-    private var noteOpen: Bool { noteScopeID.map { workspace.isNoteOpen(of: $0) } ?? false }
+    private var noteOpen: Bool { workspace.noteOpen }
     private var noteOpenBinding: Binding<Bool> {
-        Binding(get: { noteOpen }, set: { open in if let id = noteScopeID { workspace.setNote(open: open, of: id) } })
+        // The panel is closed only by the toolbar button or ⌥⌘I (`togglePanel`). Dragging its edge shut also reports `false` here. The note
+        // stays open, and the panel is shown again on the next turn: ignoring the report left the panel gone while the app still counted it as
+        // open, and the person could lose the panel with no way back that they would find.
+        Binding(get: { noteOpen && !panelReopening }, set: { open in
+            if open { workspace.noteOpen = true }
+            else if noteOpen { panelReopening = true; Task { @MainActor in panelReopening = false } }
+        })
     }
-    /// A new note is empty and opens at once; its title is 「新規ノート」 until the first line is written.
-    private func createNote() {
-        perform { scope = .note(try store.createNote(at: .now).id) }
-    }
-    private func togglePanel() {
-        guard let id = noteScopeID else { return }
-        workspace.setNote(open: !workspace.isNoteOpen(of: id), of: id)
-    }
-    private func toggleSidebar() {
-        noteLayout.toggleSidebar()
-        applyColumns()
-    }
-    private func applyColumns() {
-        let target: NavigationSplitViewVisibility = noteLayout.columns == .all ? .all : .doubleColumn
-        guard columnVisibility != target else { return }
-        withAnimation(reduceMotion ? nil : .default) { columnVisibility = target }
+    private func togglePanel() { workspace.noteOpen.toggle() }
+    /// The columns to show: the sidebar is folded while the original page is open (decision 0046).
+    private func targetColumns(pageOpen: Bool) -> NavigationSplitViewVisibility {
+        pageOpen ? .doubleColumn : .all
     }
     private func enterScope() {
         let restored = workspace.reader(in: workspace.scope)
@@ -630,19 +491,7 @@ struct ReaderView: View {
         pageForward = ReaderNavigation.isForward(from: selection, to: id, in: visibleArticleIDs)
         selection = id
     }
-    /// 「取り消す」 after a deletion: the note comes back as it was, and is opened.
-    private func restoreDeletedNote() {
-        perform {
-            guard let id = try deletedNote.restore(in: store) else { return }
-            workspace.setNote(open: true, of: id)
-            scope = .note(id)
-        }
-    }
-
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { saveError = error.localizedDescription }
     }
 }
-
-/// The note a review sheet was opened for, kept for the sheet's life even if the selection moves.
-private struct NoteSheet: Identifiable { let id: UUID }

@@ -11,7 +11,7 @@
 | 領域 | 構成 |
 |---|---|
 | UI | SwiftUIの共通`NavigationSplitView`、記事一覧はAppKitの`NSTableView`、読書本文は`NSTextView`、原文閲覧は`WKWebView` |
-| Core | `Sources/ReaderCore`。SwiftDataのモデル・ReaderStore、XMLParserによるRSS/Atom解析、保持・ノート・端末内AI・Claudeハンドオフ |
+| Core | `Sources/ReaderCore`。SwiftDataのモデル・ReaderStore、XMLParserによるRSS/Atom解析、保持・ノート |
 | 通信・抽出 | URLSessionで端末から取得。SwiftSoup 2.13.9をexact固定し、`article`、次に`main`の段落を抽出する（`ExtractionQuality`: 短い断片が過半の「ページの部品」は本文としない）。記事を開いたときは取得せず、フィードの本文を出す（決定0033）。抽出は「全文を取得」を押したときと、短いフィード本文の記事を要約へ送るときのAI入力だけ |
 | 保存先 | `Application Support/UnagiReader/Reader.store`。通常起動でデモを挿入せず、合成デモは明示的な`--data-directory`と`--seed-demo`で起動 |
 
@@ -23,19 +23,18 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 ### 2.1 保存モデル
 
-保存モデルは、現行ベータの10モデルから次の8モデルへ置き換える（決定0008（Git履歴））。置き換えは完了し、`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
+保存モデルは、プロトタイプの10モデルから置き換えた（決定0008（Git履歴））。`DailyNote`・`NoteScrap`・`WeeklyPeriod`・`WeeklyNote`・`NoteSource`は削除した。
 
-`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Note`、`NoteArticle`の7モデル。
+`ReaderStore.schema`は`Feed`、`Article`、`ContentSnapshot`、`FeedMembership`、`ReaderSettings`、`Note`の6モデル。
 
-**S1の削除と改名（決定0019）。** 学習ゴール・問い（`ThemeQuestion`）・「いまの理解」・起動時の移行は、S1aでモデルとコードから消えた。S1bで保存するエンティティ`Theme`・`ThemeArticle`は`Note`・`NoteArticle`になった。以前のライブラリは新しいスキーマで開き、購読・記事・既読・Starは残るが、以前のテーマ（名前・ノート・記事の記録）は引き継がない（エンティティ名が変わるため。決定0019の10。テストデータなので許容）。`PreNoteStoreUpgradeTests`が、`52429b4`（決定0019の前）とS1a直後（`ae8aa78`）で作った合成ストアで確かめる（opt-in。`scripts/prepare-v1-store-fixture.sh`と`UNAGI_READER_PRE0019_FIXTURE_DIR`）。
+**S1の削除と改名（決定0019）。** 学習ゴール・問い（`ThemeQuestion`）・「いまの理解」・起動時の移行は、S1aでモデルとコードから消えた。S1bで保存するエンティティ`Theme`・`ThemeArticle`は`Note`・`NoteArticle`になった（`NoteArticle`は決定0049で削除した）。以前のライブラリは新しいスキーマで開き、購読・記事・既読・Starは残るが、以前のテーマ（名前・ノート・記事の記録）は引き継がない（エンティティ名が変わるため。決定0019の10。テストデータなので許容）。`PreNoteStoreUpgradeTests`が、`52429b4`（決定0019の前）とS1a直後（`ae8aa78`）で作った合成ストアで確かめる（opt-in。`scripts/prepare-v1-store-fixture.sh`と`UNAGI_READER_PRE0019_FIXTURE_DIR`）。
 
 - 記事の同一性・初回受信／既読・Star・購読所属を、期限付き本文snapshot・RSS要約と分ける。`FeedMembership`で複数購読の同一記事を集約する。`Feed.folder`は1階層の文字列で、空フォルダモデルは作らない。
 - `Article.starredAt`の非nilを現在のStar状態とし、付与／再付与は現在時刻、解除はnil。受信・本文削除で上書きせず、関心の全操作履歴を記録するイベント基盤は持たない。
-- `Note`は本文`text`（既定は空。1つのMarkdownのプレーンテキストで、入力のたびに`saveNote(noteID:text:at:)`が入力したままを保存する。長さの上限なし。存在しないノートへの保存は`missingNote`で断り、黙って捨てない）・作成／更新日時を持つ。別の名前は持たず、タイトルは本文の最初の空でない行（`NoteTitle.make`。先頭の`#`と空白を除く。空なら「新規ノート」）。`createNote(text:at:)`は空のノートを作る。`updatedAt`は、ノートの中の変更（記事の追加・取り外し、本文）のたびに更新する。サイドバーの並び（`notesNewestEditFirst`）は更新が新しい順で、同じ時刻はIDで固定する。
-- `NoteArticle`はノートIDと記事IDの組で一意（多対多）。追加日時と、追加時点のタイトル・原文URL・保持していたRSS要約を所有する（`NoteScrap`と同じ。再取得で元記事のタイトルやURLが変わっても、ノートの記録は変わらない）。要約は読書表示と同じテキスト化を使い、抽出全文で置換しない。再追加は既存の記録を返し、日時・内容を変えない。元記事の本文期限で`Article.summary`が消えても、購読を解除しても、記録は残る。
-- 端末内AIの有効／無効は`AppStorage`で持ち、スキーマを増やさない。AIの中間結果は保存しない。
+- `Note`は本文`text`（既定は空。1つのMarkdownのプレーンテキストで、入力のたびに`saveNote(text:at:)`が入力したままを保存する。長さの上限なし。ノートが無いときの保存は`missingNote`で断り、黙って捨てない）・作成／更新日時を持つ。**アプリのノートは1つ**（決定0049）。`ReaderStore.note`がそれを返し、名前・タイトル・一覧・作成・改名・削除・削除の取り消しは無い。
+- **ストアを開くとき（`keepOnlyOneNote(at:)`）**、ノートが複数あれば最後に編集した1つ（`updatedAt`が新しいほう。同時刻ならIDが小さいほう）を残して、ほかを削除する。1つもなければ空のノートを作る。ちょうど1つなら何もしない。保存に失敗したら、開く処理が失敗する（黙って続けない）。記事とノートを結ぶエンティティ`NoteArticle`は、モデルから削除した（記事の記録・「ノートに入っている」印・ノートごとの記事一覧は無い）。旧ストアの`NoteArticle`のテーブルは、新スキーマで開いた時点で消える。
 
-新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。配布済みのbeta.2・beta.3と、置き換え直前のmainの合成ストアは、旧5モデルを外した新スキーマで開けて、購読・記事・既読・Starを保持し、書き込みと再openもできる（検証記録はGit履歴）。このとき旧ノートのデータは、新スキーマで開いた時点でテーブルごと削除され（元に戻せない）、CoreDataが「削除されたモデルのため永続履歴を切り詰める」というログを`error:`として出すが、動作には影響しない。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
+新規ライブラリは空で開始し、プロトタイプ移行は行わない。ベータ間の互換は保証せず、同じ版の保存・再openは保持する。配布済みのbeta.2・beta.3と、置き換え直前のmainの合成ストアは、旧5モデルを外した新スキーマで開けて、購読・記事・既読・Starを保持し、書き込みと再openもできる（検証記録はGit履歴）。このとき旧ノートのデータは、新スキーマで開いた時点でテーブルごと削除され（元に戻せない）、CoreDataが「削除されたモデルのため永続履歴を切り詰める」というログを`error:`として出すが、動作には影響しない。決定0049の前のビルド（`60da7df`。ノート3つと記事の記録3件）の合成ストアも同じで、開くと最後に編集した1つのノートだけが残り、購読・記事・既読・Starは残る（`OneNoteStoreUpgradeTests`。opt-in。`UNAGI_READER_PRE0049_FIXTURE_DIR`。検証記録は[0049-one-note-store](verification/0049-one-note-store.md)）。開けない場合は、実DBを自動削除・再作成せず、本人に相談する。1.0からの互換とCI出荷条件は[PRD §7.1](specification.md#71-10の出荷条件)、理由は[決定0003](decisions/0003-beta-data-compatibility.md)を参照する。open失敗で実DBを自動削除・再作成しない。
 
 ### 2.2 変更と失敗からの復旧
 
@@ -49,30 +48,13 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキスト、UTF-16リンク範囲とHTTP(S)リンク先、引用深さへ変換する。fragmentはリンク先では保持し、記事同一性用URLでは除去する。`ContentSnapshot.bodyFormatData`はJSONの任意属性で、保存textと一致する場合だけ使う。情報なし／不一致ならtextへfallbackし、リンク先を推測しない。本文削除ではsnapshotと書式も削除する。ノート・AI入力はテキストとカバー範囲を使う。
 
-## 3. AI（端末内の提案とClaudeハンドオフ）
+## 3. AI（アプリは自前のAIを持たない）
 
-### 3.1 端末内AI
+アプリは、AIによる要約・提案・ノートへの書き込み・外部サービスへの送信をしない（決定0049）。ノートのエディタは標準のテキスト欄なので、Apple Intelligenceが使えるMacでは、システムのWriting Toolsが、本人が文字を選んだときだけ働く。アプリは何も足さず、`writingToolsBehavior`も変えない。以前あった端末内の要約（Foundation Models）とClaudeへの受け渡しは、履歴にだけ残る。
 
-`TextGenerator`プロトコル（ReaderCore、非同期・`Sendable`。`generationAvailability()`と`generate(_: TextRequest)`）が、端末内のモデルへのプレーンテキストの依頼を表す。実物はアプリ側の`FoundationModelsGenerator`（`LanguageModelSession`のプレーンテキストと`maximumResponseTokens`。資産の取得要求を起こさない）で、テストは偽の実装（`FakeGenerator`）で行う。実物の出力の質は環境つきの検証記録で扱い、CIでは検証しない。原則は[決定0009](decisions/0009-on-device-ai-principles.md)、実測は[端末内AIの実測](verification/on-device-ai-findings.md)に従う。
+### 3.1 Markdownをコピー
 
-- **S2 summary sending:** `SummarySender` runs one explicit send at a time, bound to the article and target IDs chosen in the menu. `SummarySettings` reads the length (1/3/5 sentences), prose/bullets and a one-line instruction of at most 200 whole characters from UserDefaults. `ArticleSummaryPrompt` keeps article text out of instructions, uses the first 3,000 characters and caps output at 400 tokens; cleaning keeps at most 1,200 characters. Availability and generation share a 20-second deadline. Cancelled and stale answers, and an AI switch turned off during the request, write nothing. Unavailable, failed or blank AI falls back to retained RSS text or the source line; the status explains the fallback. Retention is checked again before writing.
-- **Atomic write and undo:** `sendArticle` writes the note text and its unique `NoteArticle` link in one save. `SendResult` holds the before/after text and which objects the send created. `undoSend` restores only unchanged text, removes only the link this send made and deletes only a new note with no other sources. `SummarySender` permits undo once, within 8 seconds. Both methods call `reloadIfNeeded` first. Save failure rolls back; a reload failure after save is reported even though the committed write remains. No automatic retry appends a second block.
-- **Text:** `NoteInsertion.summaryBlock` puts 「（AI要約）」 at the end of the source line only for AI output. `newNoteText` starts with the article heading; `appended` preserves existing text and its CRLF/LF style. Sending again appends again and keeps one source record.
-- **入力量**: コンテキスト窓は4096トークン（入出力の合計）。要約は先頭を切り詰める。
-- **利用可否**: `SystemLanguageModel.default.availability`を検査する。資産が無い場合に、アプリが自動で取得要求（通信）を起こさない。利用不可・ガードレールの誤検知・上限超過・取消は「テキストなし」として扱い、操作を止めない。
-- **設定**: 端末内AIの有効／無効を持つ（Settingsの「要約」。状態の表示つき）。既定は有効。無効のときはモデルを呼ばない。
-
-### 3.2 Claude hand-off
-
-The note panel's share menu is the only entry point. Empty or whitespace-only notes disable all three actions. Markdown copy and `.md` export use the saved note's exact UTF-8 bytes. The Claude review contains only the full note, a review request and the output language. It shows the package's size, expiry and SHA-256. Copy, TXT export, split export and Claude launch use the same bytes as the preview. See [PRD §5.2](specification.md#52-claudeへの依頼ノートの機能本人が内容を確認して送る) and [decision 0021](decisions/0021-note-share-menu-and-review.md).
-
-`AIPackageBuilder` puts the note's id and verbatim text between `BEGIN_NOTE` and `END_NOTE`. Marker-like lines remain data. The request asks for strengths supported by quotes, gaps based only on what the note omits, opposing views and next reading or writing. `AIPackageReview` compares the note with the current store before each action; an edit or deletion invalidates the review. Packages expire exactly 24 hours after creation. Article retention and membership do not affect them.
-
-`ClaudeLink` passes a short request in `q` and the generated TXT's absolute path in `file` to `claude://cowork/new`. The note stays in the TXT, outside the URL. The person confirms Attach, sends the message and decides any folder permission in Claude. There is no automatic sending or reply insertion. A successful launch does not prove attachment or reading. The checked environment is Claude Desktop 2.19675.0 / Pro / Cowork ([probe](verification/2026-10-04-claude-desktop-handoff.md)); normal Chat attachment, other versions/plans and large-file reading remain unverified.
-
-`HandoffFiles` writes only generated TXT and metadata in a package UUID folder (0700; files 0600). Before launch it checks regular-file status, readability, expiry and the reviewed hash. Splitting preserves every UTF-8 byte in parts of at most 1 MiB, including headers; this is not a Claude size limit. Failed launches can retry the same valid copy.
-
-Metadata keeps the package id, creation/expiry dates, split flag, file names/hashes and note id. Maintenance removes a copy when its note is deleted or its original expiry arrives, capped at 24 hours. Edits keep the snapshot. Legacy `themeID` is read as the note id; obsolete and unknown fields are ignored. Copies without a note id expire on time. Damaged metadata and unsafe folders are reported after other valid copies have been maintained; path, symlink and unknown-file guards prevent unrelated deletion. User exports and content already in Claude are outside this cleanup. See [decision 0022](decisions/0022-note-only-package-clean-up.md) and [S4 verification](verification/s4-clean-up.md).
+ノートを外へ出す入口は、ノートのパネルのヘッダーの「Markdownをコピー」だけである（決定0049）。空白だけのノートでは無効。`ReaderView.copyNote`が、保存済みのノート本文を、整えずに、そのまま`NSPasteboardItem`の文字列として書く（失敗は成功と示さず、エラーを出す）。ファイルを作らず、ほかのアプリを起動せず、通信しない。以前の版がライブラリのフォルダに作った`Handoffs`（ノートのコピー）は、起動時に`LegacyHandoffFolder`が削除する（リンクだった場合は、リンクだけを消す。失敗はアラートで知らせる）。
 
 ## 4. AIエージェントによる開発
 
@@ -88,7 +70,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 ### 4.3 クレデンシャル
 
-テストは合成RSS／HTML・一時DBを使い、許可された公開fixtureにもCookie・Authorization・個人識別queryを含めない。Claudeは本人の確認・送信でAPIキー不要。GitHubは依頼の範囲でホストの認証済みツールを使い、token・SSH鍵を直読み・コピー・引数／環境変数で受け渡ししない。Apple ID・証明書・秘密鍵はエージェントに渡さない。
+テストは合成RSS／HTML・一時DBを使い、許可された公開fixtureにもCookie・Authorization・個人識別queryを含めない。GitHubは依頼の範囲でホストの認証済みツールを使い、token・SSH鍵を直読み・コピー・引数／環境変数で受け渡ししない。Apple ID・証明書・秘密鍵はエージェントに渡さない。
 
 ### 4.4 オーケストレーション
 
@@ -119,11 +101,11 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 | 記録 | 用途 |
 |---|---|
-| [Claude技術probe](verification/2026-10-04-claude-desktop-handoff.md) | 合成TXT・許可操作・経路の制約 |
+| [Claude技術probe](verification/2026-10-04-claude-desktop-handoff.md) | 合成TXT・許可操作・経路の制約（決定0049で削除した機能の記録） |
 | 初回V1受入（Git履歴） | 本体ハンドオフ・保持・性能の当時の測定と未検証 |
 | Dogfooding受入（Git履歴） | Star・日次／週・画像・保存の改修結果 |
 | 読書UI追加受入（Git履歴） | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
-| [端末内AIの実測](verification/on-device-ai-findings.md) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語） |
+| [端末内AIの実測](verification/on-device-ai-findings.md) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語。決定0049で削除した機能の記録） |
 
 実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、30日の保持でノートの咀嚼に足りるか、本人の実際のStarでのまとまりの精度と閾値、数百件での提案の速度、Apple Intelligenceが無効な環境での挙動、レンズを具体化した問いの質、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
 
@@ -133,13 +115,13 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 `NavigationSplitView`を共通枠とし、Feeds／ノートの選択・スクロール記憶を分けて復元し、ノートごとに最後に開いた面（記事／ノート）も復元する。中央は280〜640pt（初期希望400pt）、読書ペインは最低360pt。一覧は行高108pt（上下の余白14pt、購読元行とタイトルの間6pt、タイトルと要約の間4pt。文字は見出し14pt（semibold）、要約11pt、購読元・公開日時10pt。`NativeArticleList.Metrics`）、上段に購読元・公開日時、下段に2行タイトル・要約・52pt画像。`publishedAt`をMacのロケール／タイムゾーンで表示し、`.distantPast`は「—」、詳細日時はtooltip。既読の文字・画像を抑え、選択時はシステムの選択文字色を使う。画像なしでは本文へ幅を戻す。
 
-左カラムはFeeds（すべての記事・未読・Star）／ノート（各ノート）／購読元（フォルダ・購読）の順で、購読元の区画は畳める。左のHide Sidebarは`toolbar(removing: .sidebarToggle)`で除去。追加・更新を`NSTitlebarAccessoryViewController`のleftへ置き、sidebar右端に追随させる。sidebarの非表示・view取り外し時にaccessoryも外すが、**原文開閉ではcolumnVisibilityを変更せず、装着・列幅を維持する。** 購読のフォルダ指定は`importFeed`で記事と同じ保存に含め、通常更新は所属を保持する。フォルダ切替等で新mountした一覧はwindow接続時にフォーカスを得る。
+左カラムはFeeds（すべての記事・未読・Star）／購読元（フォルダ・購読）の順で、購読元の区画は畳める。左のHide Sidebarは`toolbar(removing: .sidebarToggle)`で除去。追加・更新を`NSTitlebarAccessoryViewController`のleftへ置き、sidebar右端に追随させる。sidebarの非表示・view取り外し時にaccessoryも外す。**原文を開くと、`SidebarFold`（`ReaderCore`の純粋な規則）が決めて`columnVisibility`を`.doubleColumn`にし（ウィンドウ幅によらない）、閉じると（どの閉じ方でも）戻す。原文のすべりと畳みは同じ`withAnimation`（`SidebarFold.motionDuration`＝0.3秒）で動かし、Reduce Motionでは動かさない。畳んでいる間、一覧の見出しは信号機ボタンの右から始める（`ListHeader.leadingInset`）。原文の上部の「×」が閉じる（決定0046・0047）。** 購読のフォルダ指定は`importFeed`で記事と同じ保存に含め、通常更新は所属を保持する。フォルダ切替等で新mountした一覧はwindow接続時にフォーカスを得る。
 
-`OriginalPageState.selectionChanged`は別IDの選択で原文を閉じ、クリック／キーで同じ選択処理と一覧フォーカス復元を使う。原文は記事ID・URLで識別し、マウント時にそのwindowの入力先を原文へ移す。独立したWKContentWorldからのコマンドは実キー入力、入力要素、IME、修飾キー、現在の原文／選択記事を検査する。読み込み表示は原文ヘッダ内に置いてviewport高さを保つ。`Esc`は読書位置へ戻し、Star／ノートへの追加では原文の位置・フォーカスを保つ。ノート／問いのview識別子も選択IDに合わせ、編集・作成先を古いノートや問いに残さない。
+`OriginalPageState.selectionChanged`は別IDの選択で原文を閉じ、クリック／キーで同じ選択処理と一覧フォーカス復元を使う。原文は記事ID・URLで識別し、マウント時にそのwindowの入力先を原文へ移す。独立したWKContentWorldからのコマンドは実キー入力、入力要素、IME、修飾キー、現在の原文／選択記事を検査する。読み込み表示は原文ヘッダ内に置いてviewport高さを保つ。`Esc`は読書位置へ戻し、Starでは原文の位置・フォーカスを保つ。
 
-上下遷移は再利用するネイティブviewportのlayerへ64pt・0.22秒・ease-outと控えめな透明度変化を`CAAnimationGroup`で適用する。次／前の方向は一覧ID順から求める。同記事の本文更新・画像到着では再生せず、Reduce Motionでは`article-motion`を除去する。原文開閉も上下・0.22秒。読書ツールバーはStar／ノート／外部ブラウザ、AIの入口はノート、外観はSettingsで`AppStorage("appearance")`を共有する。
+上下遷移は再利用するネイティブviewportのlayerへ64pt・0.22秒・ease-outと控えめな透明度変化を`CAAnimationGroup`で適用する。次／前の方向は一覧ID順から求める。同記事の本文更新・画像到着では再生せず、Reduce Motionでは`article-motion`を除去する。原文開閉も上下・0.22秒。読書ツールバーはノート／Star／外部ブラウザ、外観はSettingsで`AppStorage("appearance")`を共有する。
 
-ノートを選んでも、中央は購読元・フォルダと同じ`NSTableView`の一覧のままで、読書面は右にある。ノートは右の読書面の`.inspector`（`NotePanel`。幅は`inspectorColumnWidth`の最小300・最大640pt、希望は前回の幅`NotePanelWidth`（`UserDefaults`。初回は380。保存時と読み出し時に300〜640へ丸め、壊れた値は380へ戻す）。幅の変化は`onGeometryChange`で測り、0.6秒落ち着いたら1回保存する）として開き、ツールバーのボタン（常に置き、ノートの外では押せない。高さが変わらない）と`⌥⌘I`で開閉する。開閉は`ReaderWorkspaceState.isNoteOpen(of:)`で、**ノートを選ぶと初めから開き**、本人が閉じたノートだけがアプリを開いている間は閉じたままになる（メモリ上）。パネルを開いてもキーボードの入力先は取らない（エディタをクリックしたときだけ）。読書の状態（選んだ記事・スクロール記憶）はノートごとに1つで、開閉の影響を受けない。サイドバーは`NoteLayout`（純粋な値）が決める。パネルを開くとき、ウィンドウの幅が`foldBelow`（1,300pt。実機の1,240pt幅で、サイドバー約217・一覧約393・読書約361を取り、パネルが約270に縮んだ測定から決めた仮の値）より狭いときだけ畳み、閉じると戻す。開いている間は、リサイズで同じ規則に従って畳み・戻し、本人が手で切り替えたら、その選択をパネルを閉じるまで保つ。`SidebarColumns`を`NavigationSplitViewVisibility`へ写す。戻すボタンは記事一覧の上の細い帯の左（ノートが開いている間だけ。ツールバーではない）。`NotePanel`は、右上に共有メニュー（Claudeで開く／Markdownコピー／Markdown書き出し）、その左に前後の記事ボタン、下に`NoteEditor`を置く（ノートの名前は無いので、パネルにタイトルの行は無い）。共有メニューは空白だけのノートでは操作を無効にする。ボタンは`.borderless`で、AppKitのボタンとして押せる。キーの規則は`ReaderKeyboardCommands`が、編集できる`NSTextView`と`NSTextField`だけを文字入力とし、IME変換中と、シート・原文表示中は効かせない。`n` and the toolbar icon open `SendToNoteView` (new note, then at most 8 notes ordered by last edit; arrows, Return and Escape). `SendStatusBar` shows progress, cancel, the result, open and undo. A row context menu in a note calls `removeArticle` without changing its text. The `t` picker is removed. These actions keep the existing priority for text input, IME composition and modified keys. サイドバーの「新しいノート」は、空のノートを作ってすぐ選ぶ。ドラッグ&ドロップは候補で必須ではない。
+ノートは1つで、記事の一覧のある画面（Feeds・Star・フォルダ・購読元）のどれでも同じノートを開ける（決定0049）。中央は購読元・フォルダと同じ`NSTableView`の一覧のままで、読書面は右にある。ノートは右の読書面の`.inspector`（`NotePanel`。幅は、パネルの内容側に付けた`inspectorColumnWidth`（インスペクタ自身に付けると効かなかった）の最小300・最大640pt、希望は前回の幅`NotePanelWidth`（`UserDefaults`。初回は380。保存時と読み出し時に300〜640へ丸め、壊れた値は380へ戻す）。幅の変化は`NotePanelWidthMemory`が`onGeometryChange`で測り、0.6秒落ち着いたら1回保存する。幅を`ReaderView`の状態にしないのは、ドラッグの1コマごとに画面全体が再描画されて固まったため）として開き、ツールバーのボタン（常に置き、どの画面でも押せる。高さが変わらない）と`⌥⌘I`で開閉する。境界のドラッグで畳まれても、次のターンに開き直す（`noteOpenBinding`）。開閉は`ReaderWorkspaceState.noteOpen`で、初めは閉じていて、画面を移っても本人が選んだままになる（メモリ上）。パネルを開いてもキーボードの入力先は取らない（エディタをクリックしたときだけ）。読書の状態（選んだ記事・スクロール記憶）は画面ごとに1つで、開閉の影響を受けない。パネルを開いても左のサイドバーは動かない（サイドバーが畳まれるのは原文を開いている間だけ。決定0046）。`n`キー・開閉の動き（約0.3秒、サイドバーと一覧が畳まれて右からノートが入る）・「一覧」ボタンは、決定0049の次の段階で入れる。`NotePanel`は、右上にコピーのボタン（Markdownをコピー）、その左に前後の記事ボタン、下に`NoteEditor`を置く（ノートの名前は無いので、パネルにタイトルの行は無い）。コピーのボタンは空白だけのノートでは無効にする。ボタンは`.borderless`で、AppKitのボタンとして押せる。キーの規則は`ReaderKeyboardCommands`が、編集できる`NSTextView`と`NSTextField`だけを文字入力とし、IME変換中と、シート・原文表示中は効かせない。
 
 `NSTextView`はリンク属性・引用の字下げと縦線、末尾一箇所のカバー範囲を描く。クリック時にもURLを検証する。再取得は明示操作で、失敗時も保存本文を保ち結果を示す。
 

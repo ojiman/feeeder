@@ -20,6 +20,8 @@ struct ArticleDetailView: View {
     let onDisplayed: () -> Void
     let imageLoader: ReaderImageLoader
     var pageForward = true
+    /// False while the original page covers the reader text: the page's slide-out is the only motion then (one motion at a time).
+    var pageMotion = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var available: Bool { content?.articleID == article.id && (expiry ?? .distantPast) > .now }
@@ -45,7 +47,7 @@ struct ArticleDetailView: View {
                 coverage: available ? content!.coverage.label : "本文は利用できません",
                 paragraphs: available ? content!.paragraphs : [],
                 unavailable: available ? nil : (article.contentDeletedAt != nil ? "本文とRSS要約は削除済みです。" : "本文を利用できません。"),
-                initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
+                initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion || !pageMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
                 imageLoader: imageLoader, heroURL: available ? article.imageURL.flatMap { ArticleURL.validated($0) } : nil,
                 bodyParagraphs: available ? content!.bodyParagraphs : nil, pageForward: pageForward)
         }.background(AppPalette.surfaceColor)

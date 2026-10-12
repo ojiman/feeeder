@@ -11,15 +11,11 @@ struct NameEditTests {
         #expect(NameEdit.result(old: "金利", typed: " \n ") == nil)
         #expect(NameEdit.result(old: "金利", typed: nil) == nil)                                 // Esc
     }
-    @Test func anUntitledNoteStartsEmptyAndTakesAnyName() {
+    @Test func anEmptyOldNameTakesAnyNewName() {
         #expect(NameEdit.result(old: "", typed: "最初の名前") == "最初の名前")
         #expect(NameEdit.result(old: "", typed: "") == nil)
     }
     @Test func lineBreaksBecomeOneSpace() {
         #expect(NameEdit.result(old: "a", typed: "二行\n目") == "二行 目")
-    }
-    @Test func theNameOfTheRowIsWhatTheFieldStartsWith() {
-        #expect(NameEdit.initialText(forNoteTitle: "金利") == "金利")
-        #expect(NameEdit.initialText(forNoteTitle: NoteTitle.untitled) == "")                  // 「新規ノート」 is a label, not a name
     }
 }

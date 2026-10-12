@@ -192,8 +192,8 @@ import ReaderCore
         let a = URL(string: "https://synthetic.example/a.png")!, b = URL(string: "https://synthetic.example/b.png")!
         first.imageURL = a.absoluteString; second.imageURL = b.absoluteString
         let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
-        cell.configure(first, feed: "合成", iconURL: a, loader: nil, inNote: false)
-        cell.configure(second, feed: "合成", iconURL: b, loader: nil, inNote: true)
+        cell.configure(first, feed: "合成", iconURL: a, loader: nil)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil)
         let stale = NSImage(size: NSSize(width: 10, height: 10))
         cell.completeImage(stale, articleID: first.id, url: a, thumbnail: true)
         cell.completeImage(stale, articleID: first.id, url: a, thumbnail: false)
@@ -203,7 +203,7 @@ import ReaderCore
         cell.completeImage(current, articleID: second.id, url: b, thumbnail: false)
         #expect(cell.thumbnail.image === current && cell.favicon.image === current)
         #expect(cell.frame.height == NativeArticleList.Metrics.rowHeight)
-        cell.configure(second, feed: "合成", iconURL: b, loader: nil, inNote: true)
+        cell.configure(second, feed: "合成", iconURL: b, loader: nil)
         #expect(cell.thumbnail.image === current)
     }
     @Test func starKeyRoutesWithoutConsumingModifiedInput() throws {
@@ -217,7 +217,9 @@ import ReaderCore
         }
         #expect(handled == ["s"])
     }
-    @Test func summaryKeyRoutesAndTheOldPickerKeyDoesNot() throws {
+    /// Decision 0049: `n` no longer sends a summary and the picker key `t` is long gone, so neither reaches the reader (a new meaning for
+    /// `n`, opening the note, comes in a later change).
+    @Test func theSummaryKeyAndTheOldPickerKeyDoNotRoute() throws {
         let table = NativeArticleList.Table()
         var handled: [String] = []
         table.keyHandler = { handled.append($0); return true }
@@ -229,7 +231,7 @@ import ReaderCore
         try press("t", keyCode: 17)
         try press("n", keyCode: 45)
         try press("n", keyCode: 45, flags: .command)
-        #expect(handled == ["n"])
+        #expect(handled.isEmpty)
     }
     @Test func backgroundInsertionAndReorderPreserveSelectedArticleAndTopOffset() {
         let original = (0..<40).map { _ in UUID() }

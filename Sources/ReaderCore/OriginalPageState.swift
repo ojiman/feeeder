@@ -10,8 +10,11 @@ public struct OriginalPageState {
         return true
     }
     public mutating func close() { articleID = nil; url = nil }
+    /// Whether selecting this article takes the person out of the page (it is open for another article). Does not close it:
+    /// the window slides the page out first and then closes it.
+    public func closesWhenSelecting(_ articleID: UUID?) -> Bool { url != nil && self.articleID != articleID }
     @discardableResult public mutating func selectionChanged(to articleID: UUID?) -> Bool {
-        guard url != nil, self.articleID != articleID else { return false }
+        guard closesWhenSelecting(articleID) else { return false }
         close(); return true
     }
 }

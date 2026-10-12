@@ -1,22 +1,19 @@
 import SwiftUI
 import ReaderCore
 
-/// The note, opened beside the article as the inspector: previous and next article buttons, sharing actions, and the editor.
+/// The note, opened beside the article as the inspector: previous and next article buttons, the copy button, and the editor.
 struct NotePanel: View {
     @Bindable var store: ReaderStore
-    let noteID: UUID
     let canPrevious: Bool
     let canNext: Bool
     let onPrevious: () -> Void
     let onNext: () -> Void
-    let onClaude: () -> Void
     let onCopy: () -> Void
-    let onExport: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            NoteEditor(store: store, noteID: noteID)
+            NoteEditor(store: store)
         }
         .accessibilityElement(children: .contain).accessibilityLabel("ノート")
     }
@@ -31,16 +28,9 @@ struct NotePanel: View {
                 Button(action: onNext) { Image(systemName: "chevron.down") }
                     .keyboardShortcut(.downArrow, modifiers: [.option, .command])
                     .disabled(!canNext).help("次の記事 (⌥⌘↓)").accessibilityLabel("次の記事")
-                Menu {
-                    Button("Claudeで開く…", systemImage: "arrow.up.right.square", action: onClaude).disabled(!hasText)
-                    Button("Markdownをコピー", systemImage: "doc.on.doc", action: onCopy).disabled(!hasText)
-                    Button("Markdownとして書き出す…", systemImage: "square.and.arrow.down", action: onExport).disabled(!hasText)
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                }
-                .accessibilityLabel("ノートを共有")
-                .accessibilityIdentifier("note-share")
-                .help("ノートを共有または書き出します")
+                // The text is copied as it is; the person pastes it into any AI they like (decision 0049).
+                Button(action: onCopy) { Image(systemName: "doc.on.doc") }
+                    .disabled(!hasText).help("Markdownをコピー").accessibilityLabel("Markdownをコピー")
             }
             .buttonStyle(.borderless).padding(.horizontal, 12).padding(.vertical, 8)
         }
@@ -48,6 +38,6 @@ struct NotePanel: View {
     }
 
     private var hasText: Bool {
-        !(store.note(id: noteID)?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        !(store.note?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
     }
 }

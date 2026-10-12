@@ -5,9 +5,6 @@ import Testing
 @testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct NoteReaderTests {
-    fileprivate struct NoLauncher: ClaudeLaunching {
-        func open(_ url: URL) async throws { throw HandoffError.launchFailed }
-    }
     fileprivate func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
         if let result = view as? T { return result }
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
@@ -27,7 +24,7 @@ import Testing
     fileprivate func buttons(in view: NSView) -> [NSButton] {
         (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap { buttons(in: $0) }
     }
-    /// Only the two narrow chevrons and the share menu in the inspector, ordered left to right.
+    /// Only the two narrow chevrons and the copy button in the inspector, ordered left to right.
     fileprivate func panelButtons(in h: Harness) -> [NSButton] {
         let width = h.window.contentView?.bounds.width ?? 1_240
         let candidates = buttons(in: h.host)
@@ -43,15 +40,12 @@ import Testing
     }
     fileprivate struct Harness {
         let store: ReaderStore
-        let review: AIPackageReview
-        let handoff: ClaudeHandoffController
         let host: NSHostingView<ReaderView>
         let window: NSWindow
         let directory: URL
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, noteOpen: Bool = false,
                          pasteboard: NSPasteboard = NSPasteboard(name: .init("unagi-reader-test-\(UUID())")),
-                         markdownSave: @escaping @MainActor @Sendable (String, Data) async throws -> Bool = { _, _ in false },
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -61,93 +55,57 @@ import Testing
         }
         _ = try store.importFeed(ParsedFeed(title: "合成購読", sourceURL: URL(string: "http://127.0.0.1:1/feed")!, entries: entries, skippedEntries: 0), receivedAt: .now)
         try prepare(store)
-        let review = AIPackageReview(store: store)
-        let handoff = ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher())
-        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
-            handoff: handoff,
+        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialNoteOpen: noteOpen, assistant: nil,
-            notePasteboard: pasteboard, saveMarkdown: markdownSave)
+            initialScope: try scope(store), initialNoteOpen: noteOpen,
+            notePasteboard: pasteboard)
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-note-reader")
         window.contentView = host
-        return Harness(store: store, review: review, handoff: handoff, host: host, window: window, directory: directory)
+        return Harness(store: store, host: host, window: window, directory: directory)
     }
     fileprivate func finish(_ harness: Harness) {
         harness.window.close(); try? FileManager.default.removeItem(at: harness.directory)
     }
 
     @Test func theNoteIsAbsentWhileClosedAndBesideTheListAndTheReaderWhenOpen() async throws {
-        let closed = try harness(scope: { store in .note(store.notes[0].id) }) { store in
-            let note = try store.createNote(text: "# A\n", at: .now)
-            try store.addArticle(store.articles[0].id, toNote: note.id, at: .now)
-            try store.saveNote(noteID: note.id, text: "既存のノート", at: .now)
-        }
+        let closed = try harness(scope: { _ in .all }) { store in try store.saveNote(text: "既存のノート", at: .now) }
         defer { finish(closed) }
-        try await settle(closed.host) { find(NativeArticleList.Table.self, in: closed.host)?.numberOfRows == 1 }
+        try await settle(closed.host) { find(NativeArticleList.Table.self, in: closed.host)?.numberOfRows == 4 }
         pumpRunLoop(0.2)
         #expect(!containsText("既存のノート", in: closed.host))                            // no note panel until it is opened
-        let open = try harness(scope: { store in .note(store.notes[0].id) }, noteOpen: true) { store in
-            let note = try store.createNote(text: "# A\n", at: .now)
-            try store.addArticle(store.articles[0].id, toNote: note.id, at: .now)
-            try store.saveNote(noteID: note.id, text: "既存のノート", at: .now)
-        }
+        let open = try harness(scope: { _ in .all }, noteOpen: true) { store in try store.saveNote(text: "既存のノート", at: .now) }
         defer { finish(open) }
         try await settle(open.host) { containsText("既存のノート", in: open.host) }
         let table = try #require(find(NativeArticleList.Table.self, in: open.host))
-        #expect(table.numberOfRows == 1)                                                  // the list stays in the middle column
+        #expect(table.numberOfRows == 4)                                                  // the list stays in the middle column
         table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
         try await settle(open.host) { find(ArticleTextView.self, in: open.host)?.string.contains("合成記事 0") == true }   // the reader shows it beside the note
         #expect(containsText("既存のノート", in: open.host))
     }
 
-    @Test func aNoteListsOnlyItsOwnArticlesWithTheNoteClosed() async throws {
-        let h = try harness(scope: { store in .note(store.notes[0].id) }) { store in
-            let note = try store.createNote(text: "# A\n", at: .now)
-            for id in store.articles.map(\.id).prefix(3) { try store.addArticle(id, toNote: note.id, at: .now) }
-        }
+    /// Decision 0049: it is the same note on every screen that has an article list, Star included.
+    @Test func theSameNoteOpensFromTheStarScreen() async throws {
+        let h = try harness(scope: { _ in .starred }, noteOpen: true) { store in try store.saveNote(text: "既存のノート", at: .now) }
         defer { finish(h) }
-        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 3 }   // 4 articles exist, 3 are in the note
+        try await settle(h.host) { containsText("既存のノート", in: h.host) }
     }
 
-    @Test func anEmptyNoteListsNoRows() async throws {
-        let h = try harness(scope: { store in .note(store.notes[0].id) }) { store in
-            _ = try store.createNote(text: "# 空\n", at: .now)
-        }
+    /// The width the person's saved or default setting asks for must be the width the panel has. The modifier that sets it was on the
+    /// inspector itself, where it had no effect: the panel stayed about 270 pt wide (checked in a real 1,240 pt window too).
+    @Test func theNotePanelOpensAtItsDefaultWidthNotAtWhateverIsLeft() async throws {
+        let h = try harness(scope: { _ in .all }, noteOpen: true) { store in try store.saveNote(text: "既存のノート", at: .now) }
         defer { finish(h) }
-        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 0 }
-    }
-
-    @Test func resultOpenReopensAClosedCurrentNote() async throws {
-        let h = try harness(scope: { .note($0.notes[0].id) }) { store in
-            let note = try store.createNote(text: "# Closed note", at: .now)
-            try store.addArticle(store.articles[0].id, toNote: note.id, at: .now)
+        try await settle(h.host) { containsText("既存のノート", in: h.host) }
+        pumpRunLoop(0.5)
+        func editors(in view: NSView) -> [NSTextView] {
+            ((view as? NSTextView).map { [$0] } ?? []).filter { $0.string == "既存のノート" } + view.subviews.flatMap { editors(in: $0) }
         }
-        defer { finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
-        let table = try #require(find(NativeArticleList.Table.self, in: h.host))
-        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-        pumpRunLoop(0.2)
-        #expect(!containsText("# Closed note", in: h.host))
-        #expect(table.keyHandler?("n") == true)
-        pumpRunLoop(0.3)
-        let choices = try #require(NSApp.windows.filter { $0 !== h.window }.compactMap { $0.contentView.map { buttons(in: $0) } }.first { $0.count == 2 })
-        try #require(choices.count == 2)
-        choices[1].performClick(nil)
-        for _ in 0..<100 {
-            if h.store.notes[0].text.contains("出典:") { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        try await settle(h.host) { h.store.notes[0].text.contains("出典:") }
-        pumpRunLoop(0.3)
-        let controls = buttons(in: h.host)
-        try #require(controls.count >= 3)
-        controls[controls.count - 3].performClick(nil) // Open, Undo, Close are the final overlay controls.
-        try await settle(h.host) { containsText(h.store.notes[0].text, in: h.host) }
+        let editor = try #require(editors(in: h.host).first)
+        let width = editor.convert(editor.bounds, to: nil).width
+        #expect(abs(width - NotePanelWidth.load()) < 40, "the editor is \(width) pt wide; the panel should ask for \(NotePanelWidth.load()) pt")
     }
-
 }
 
 /// The note panel beside the article (L1). A suite of its own: see the N4 verification record for why. Run each test alone.
@@ -155,14 +113,17 @@ import Testing
     private let t = NoteReaderTests()
 
     fileprivate func openHarness() throws -> NoteReaderTests.Harness {
-        try t.harness(scope: { store in .note(store.notes[0].id) }, noteOpen: true) { store in
-            let note = try store.createNote(text: "# A\n", at: .now)
-            for index in 0..<3 { try store.addArticle(store.articles[index].id, toNote: note.id, at: .now) }
-            try store.saveNote(noteID: note.id, text: "ノートの本文", at: .now)
-        }
+        try t.harness(scope: { _ in .all }, noteOpen: true) { store in try store.saveNote(text: "ノートの本文", at: .now) }
     }
     private func shown(_ h: NoteReaderTests.Harness, _ title: String) -> Bool {
         t.find(ArticleTextView.self, in: h.host)?.string.contains(title) == true
+    }
+    /// Moves to the next (`j`) or the previous (`k`) article as the chevrons do: both reach `ReaderView.move`. The tests do not click the
+    /// chevrons: `NSButton.performClick` runs a nested event loop, and in these hosted tests it can stop the main run loop, which ends the
+    /// test process with exit code 0 before the summary line is printed. `scripts/check-test-log.sh` fails CI when that happens.
+    private func step(_ h: NoteReaderTests.Harness, _ key: String) throws {
+        let table = try #require(t.find(NativeArticleList.Table.self, in: h.host))
+        #expect(table.keyHandler?(key) == true)
     }
 
     @Test func theChevronsMoveBetweenTheNotesArticlesAndStopAtTheEnds() async throws {
@@ -172,16 +133,18 @@ import Testing
         let buttons = t.panelButtons(in: h)
         let (previous, next) = (buttons[0], buttons[1])
         #expect(next.isEnabled)                                                           // nothing shown: next (and previous) open the first
-        next.performClick(nil)
+        try step(h, "j")
         try await t.settle(h.host) { shown(h, "合成記事 0") }
         try await t.settle(h.host) { !previous.isEnabled }                               // at the first article
-        next.performClick(nil)
+        try step(h, "j")
         try await t.settle(h.host) { shown(h, "合成記事 1") }
-        next.performClick(nil)
+        try step(h, "j")
         try await t.settle(h.host) { shown(h, "合成記事 2") }
+        try step(h, "j")
+        try await t.settle(h.host) { shown(h, "合成記事 3") }
         try await t.settle(h.host) { !next.isEnabled }                                   // at the last article
-        previous.performClick(nil)
-        try await t.settle(h.host) { shown(h, "合成記事 1") }
+        try step(h, "k")
+        try await t.settle(h.host) { shown(h, "合成記事 2") }
         #expect(t.containsText("ノートの本文", in: h.host))                               // the note stayed
     }
 
@@ -191,7 +154,7 @@ import Testing
         defer { t.finish(h) }
         try await t.settle(h.host) { t.containsText("ノートの本文", in: h.host) && t.panelButtons(in: h).count >= 2 }
         pumpRunLoop(0.3)
-        #expect(t.panelButtons(in: h).count == 3)                                         // two chevrons and one share button
+        #expect(t.panelButtons(in: h).count == 3)                                         // two chevrons and one copy button
         #expect(!t.containsText("記事から要約する", in: h.host) && !t.containsText("わかりやすく", in: h.host))
     }
 
@@ -210,120 +173,36 @@ import Testing
     @Test func theListAndTheChevronsAgreeOnTheShownArticle() async throws {
         let h = try openHarness()
         defer { t.finish(h) }
-        try await t.settle(h.host) { t.find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 3 && t.panelButtons(in: h).count >= 2 }
+        try await t.settle(h.host) { t.find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 && t.panelButtons(in: h).count >= 2 }
         let table = try #require(t.find(NativeArticleList.Table.self, in: h.host))
         table.selectRowIndexes(IndexSet(integer: 2), byExtendingSelection: false)       // chosen in the list, not in the panel
         try await t.settle(h.host) { shown(h, "合成記事 2") }
-        t.panelButtons(in: h)[0].performClick(nil)                                       // previous
+        try step(h, "k")                                                        // previous
         try await t.settle(h.host) { shown(h, "合成記事 1") }
         try await t.settle(h.host) { table.selectedRow == 1 }                            // the list follows
-    }
-
-    @Test func aShownArticleThatLeftTheNoteDoesNotBreakThePanel() async throws {
-        let h = try openHarness()
-        defer { t.finish(h) }
-        try await t.settle(h.host) { t.panelButtons(in: h).count >= 2 }
-        t.panelButtons(in: h)[1].performClick(nil)                                       // next
-        try await t.settle(h.host) { shown(h, "合成記事 0") }
-        try h.store.removeArticle(h.store.articles[0].id, fromNote: h.store.notes[0].id, at: .now)
-        pumpRunLoop(0.3)
-        #expect(shown(h, "合成記事 0") && t.containsText("ノートの本文", in: h.host))          // still shown, the note is untouched
-        t.panelButtons(in: h)[1].performClick(nil)                                       // next
-        try await t.settle(h.host) { shown(h, "合成記事 1") }
     }
 }
 
 @MainActor func pumpRunLoop(_ seconds: Double) { RunLoop.main.run(until: Date().addingTimeInterval(seconds)) }
 
-@Suite(.serialized) @MainActor struct HandoffEntryTests {
+/// Decision 0049: the one thing left of the hand-off to another AI is 「Markdownをコピー」, which copies the note's text as it is.
+@Suite(.serialized) @MainActor struct MarkdownCopyTests {
     private let t = NoteReaderTests()
 
-    private func make(note: String, articles: Int) throws -> NoteReaderTests.Harness {
-        try t.harness(scope: { store in .note(store.notes[0].id) }, noteOpen: true) { store in
-            let created = try store.createNote(text: note, at: .now)
-            for index in 0..<articles { try store.addArticle(store.articles[index].id, toNote: created.id, at: .now) }
-        }
-    }
-    private func shareButton(_ h: NoteReaderTests.Harness) -> NSButton? {
-        let width = h.window.contentView?.bounds.width ?? 1_240
-        return t.buttons(in: h.host).first {
-            let frame = $0.convert($0.bounds, to: nil)
-            return frame.minX > width - 420 && frame.width > 20
-        }
-    }
-    private func openReview(_ h: NoteReaderTests.Harness) -> NSWindow {
-        let sheet = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 880, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
-        sheet.contentView = NSHostingView(rootView: AIReviewView(store: h.store, review: h.review, handoff: h.handoff, noteID: h.store.notes[0].id))
-        h.window.beginSheet(sheet)
-        return sheet
-    }
-
-    @Test func shareButtonExistsAndTheReviewContainsOnlyTheNote() async throws {
-        let h = try make(note: "# 見出し\n本文のノート", articles: 1)
+    @Test func theCopyButtonExistsAndAnEmptyNoteCannotBeCopied() async throws {
+        let h = try t.harness(scope: { _ in .all }, noteOpen: true) { _ in }
         defer { t.finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await t.settle(h.host) { shareButton(h) != nil }
-        #expect(shareButton(h) is NSPopUpButton)
-        let sheet = openReview(h)
-        try await t.settle(sheet.contentView!) { h.review.package != nil }
-        let package = try #require(h.review.package)
-        let text = package.text
-        #expect(!package.text.contains("BEGIN_SOURCE"))
-        #expect(!text.contains("Goal") && text.contains("Note (written by the user):\n# 見出し\n本文のノート"))
-        #expect(text.contains("書かれていることを「ない」と言わないでください"))
-        #expect(!text.contains("BEGIN_SOURCE") && !text.contains("Source ID:"))
-        h.window.endSheet(sheet)
+        try await t.settle(h.host) { t.panelButtons(in: h).count == 3 }                    // two chevrons and the copy button
+        #expect(!h.host.rootView.copyNote())
     }
 
-    @Test func shareButtonRemainsPresentForAnEmptyNoteAndOldReviewButtonIsGone() async throws {
-        let h = try make(note: "", articles: 0)
-        defer { t.finish(h) }
-        try await t.settle(h.host) { shareButton(h) != nil && t.panelButtons(in: h).count == 3 }
-        #expect(!t.containsText("Claudeでレビューを頼む", in: h.host))
-        #expect(shareButton(h) is NSPopUpButton)
-        #expect(t.panelButtons(in: h).count == 3)
-        let id = try #require(h.store.notes.first?.id)
-        #expect(!h.host.rootView.copyNote(id))
-        #expect(!(await h.host.rootView.exportNote(id)))
-    }
-
-    @Test func markdownCopyAndExportUseExactNoteBytesWithPrivateDestinations() async throws {
+    @Test func theCopyUsesTheExactTextOfTheNote() async throws {
         let note = "# 保存\r\n本文 🐟"
         let pasteboard = NSPasteboard(name: .init("unagi-reader-copy-\(UUID())"))
-        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".md")
-        defer { try? FileManager.default.removeItem(at: file) }
-        let h = try t.harness(scope: { .note($0.notes[0].id) }, noteOpen: true, pasteboard: pasteboard,
-            markdownSave: { _, bytes in try bytes.write(to: file, options: .atomic); return true }) { store in
-            _ = try store.createNote(text: note, at: .now)
-        }
+        let h = try t.harness(scope: { _ in .all }, noteOpen: true, pasteboard: pasteboard) { store in try store.saveNote(text: note, at: .now) }
         defer { t.finish(h) }
-        let id = try #require(h.store.notes.first?.id)
         #expect(pasteboard.setString("previous clipboard", forType: .string))
-        #expect(h.host.rootView.copyNote(id))
+        #expect(h.host.rootView.copyNote())
         #expect(pasteboard.string(forType: .string) == note)
-        #expect(await h.host.rootView.exportNote(id))
-        #expect(try Data(contentsOf: file) == Data(note.utf8))
-    }
-
-    @Test func markdownWriteFailureIsNotReportedAsSuccess() async throws {
-        let h = try t.harness(scope: { .note($0.notes[0].id) }, noteOpen: true,
-            markdownSave: { _, _ in throw CocoaError(.fileWriteNoPermission) }) { store in
-            _ = try store.createNote(text: "本文", at: .now)
-        }
-        defer { t.finish(h) }
-        #expect(!(await h.host.rootView.exportNote(try #require(h.store.notes.first?.id))))
-    }
-
-    @Test func editingTheNoteInvalidatesTheOpenReviewAndItsCopy() async throws {
-        let h = try make(note: "送る前の本文", articles: 0)
-        defer { t.finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await t.settle(h.host) { shareButton(h) != nil }
-        let sheet = openReview(h)
-        try await t.settle(sheet.contentView!) { h.review.package != nil }
-        try h.store.saveNote(noteID: h.store.notes[0].id, text: "編集後の本文", at: .now)
-        try await t.settle(h.host) { h.review.package == nil }
-        #expect(throws: AIPackageError.self) { try h.review.validated(at: .now) }
-        h.window.endSheet(sheet)
     }
 }

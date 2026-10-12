@@ -10,14 +10,13 @@ struct ReaderSettingsView: View {
     @State private var preview: DeletionPreview?
     @State private var error: String?
 
-    private enum Pane: String { case appearance, storage, summary }
+    private enum Pane: String { case appearance, storage }
     @AppStorage("settingsPane") private var pane = Pane.appearance.rawValue
 
     var body: some View {
         TabView(selection: Binding(get: { Pane(rawValue: pane) ?? .appearance }, set: { pane = $0.rawValue })) {
             Tab("外観", systemImage: "circle.lefthalf.filled", value: Pane.appearance) { appearancePane }
             Tab("保存", systemImage: "externaldrive", value: Pane.storage) { storage }
-            Tab("要約", systemImage: "sparkles", value: Pane.summary) { SummarySettingsView() }
         }
         .tint(AppPalette.accentColor)
         .frame(width: 540)
@@ -85,10 +84,4 @@ struct ReaderSettingsView: View {
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { self.error = error.localizedDescription; days = store.retentionDays }
     }
-}
-
-/// One place for the switch's key and default, shared by Settings, the reader and the model.
-enum OnDeviceAISetting {
-    static let key = "onDeviceAIEnabled"
-    static var isEnabled: Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
 }

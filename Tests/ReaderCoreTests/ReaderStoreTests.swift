@@ -83,9 +83,7 @@ struct ReaderStoreTests {
         let parsed = try FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: URL(string: "https://feed.example/rss")!)
         let feed = try store.importFeed(parsed, receivedAt: at)
         let article = try #require(store.articles.first)
-        let note = try store.createNote(text: "# 保存済み\n", at: at)
-        let link = try store.addArticle(article.id, toNote: note.id, at: at)
-        let send = try store.sendArticle(article.id, to: note.id, block: "summary", newNoteTitle: "", at: at)
+        try store.saveNote(text: "# 保存済み\n", at: at)
         failSave = true; failReload = true
         #expect(throws: (any Error).self) { try store.setRead(article, true) }
         failSave = false
@@ -102,13 +100,7 @@ struct ReaderStoreTests {
             { try store.moveFeed(id: feed.id, toFolder: "変更") },
             { try store.renameFolder(from: "", to: "変更") },
             { _ = try store.importFeed(parsed, receivedAt: at) },
-            { _ = try store.createNote(text: "# 変更\n", at: at) },
-            { try store.saveNote(noteID: note.id, text: "捨ててはいけない変更", at: at) },
-            { _ = try store.addArticle(article.id, toNote: note.id, at: at) },
-            { try store.removeArticle(article.id, fromNote: note.id, at: at) },
-            { try store.deleteNote(id: note.id) },
-            { _ = try store.sendArticle(article.id, to: note.id, block: "blocked", newNoteTitle: "", at: at) },
-            { _ = try store.undoSend(send, at: at) },
+            { try store.saveNote(text: "捨ててはいけない変更", at: at) },
             { try store.applyRetention(days: 7, at: at) },
             { try store.deleteContent(articleIDs: [article.id], at: at) },
             { try store.markDisplayed(articleID: article.id, at: at) },
@@ -118,12 +110,11 @@ struct ReaderStoreTests {
         #expect(saveAttempts == attempts)
         failReload = false
         try store.setRead(article, true)
-        try store.saveNote(noteID: note.id, text: "再試行したノート", at: at)
+        try store.saveNote(text: "再試行したノート", at: at)
         let reopened = try ReaderStore(url: url, now: at)
         #expect(reopened.article(id: article.id)?.isRead == true)
         #expect(reopened.feed(id: feed.id)?.title == parsed.title && reopened.feed(id: feed.id)?.folder == "")
-        #expect(reopened.noteArticles.first?.key == link.key)
         #expect(reopened.retentionDays == 30 && reopened.article(id: article.id)?.starredAt == nil)
-        #expect(reopened.note(id: note.id)?.text == "再試行したノート")
+        #expect(reopened.notes.count == 1 && reopened.note?.text == "再試行したノート")
     }
 }

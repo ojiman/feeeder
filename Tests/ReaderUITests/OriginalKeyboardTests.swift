@@ -34,7 +34,7 @@ import Testing
         errorPane.keyDown(with: try event("s")); errorPane.keyDown(with: try event("n"))
         errorPane.keyDown(with: try event("j", modifiers: .command))
         errorPane.keyDown(with: try event("Escape"))
-        #expect(commands == [.next, .previous, .toggleStar, .sendToNote, .closeOriginal])
+        #expect(commands == [.next, .previous, .toggleStar, .closeOriginal])      // `n` is not a command now (decision 0049)
         #expect(original.url == nil && reader.selectedArticleID == first)
         #expect(reader.scrollAnchors[first] == "paragraph-7" && reader.scrollOffsets[first] == 23.5)
     }
