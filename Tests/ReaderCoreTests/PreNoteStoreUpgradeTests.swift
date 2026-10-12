@@ -34,14 +34,12 @@ import Testing
                 #expect(article.id == expected.articleID && article.title == "合成記事" && article.starredAt == at)
                 #expect(article.firstReadAt == Date(timeIntervalSince1970: expected.firstReadAt) && article.isRead)
                 // Decision 0019 (S1b): the theme entity became the note entity, so the old themes, their notes and their article
-                // records are not carried over. Everything outside them is.
+                // records are not carried over. Everything outside them is. Decision 0049: the store then has exactly one note.
                 if round == 0 {
-                    #expect(store.notes.isEmpty && store.noteArticles.isEmpty)
-                    let note = try store.createNote(text: "# 開いたあとのノート\n", at: at)
-                    try store.addArticle(expected.articleID, toNote: note.id, at: at)
-                    #expect(store.notes.map(\.id) == [note.id])
+                    #expect(store.notes.count == 1 && store.note?.text == "")
+                    try store.saveNote(text: "# 開いたあとのノート\n", at: at)
                 } else {
-                    #expect(store.notes.map(\.title) == ["開いたあとのノート"] && store.noteArticles.count == 1)
+                    #expect(store.notes.count == 1 && store.note?.text == "# 開いたあとのノート\n")
                 }
             }
         }

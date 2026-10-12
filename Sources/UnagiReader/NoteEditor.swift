@@ -3,19 +3,18 @@ import ReaderCore
 
 /// The note editor. Plain Markdown text; a line that starts with `#` is a heading and a line that starts with `-` or `1.` is a list item
 /// (only their look changes, see `NoteTextEditor`). Saved as it is typed, exactly as typed.
-/// Nothing but the person writes here (decision 0019: a summary the person sends is the only text that arrives from elsewhere).
+/// Nothing but the person writes here (decision 0049).
 struct NoteEditor: View {
     @Bindable var store: ReaderStore
-    let noteID: UUID
     @State private var error: String?
     var body: some View {
-        if let note = store.note(id: noteID) {
+        if let note = store.note {
             NoteTextEditor(text: note.text) { text in
-                do { try store.saveNote(noteID: noteID, text: text, at: .now); return true } catch { self.error = error.localizedDescription; return false }
+                do { try store.saveNote(text: text, at: .now); return true } catch { self.error = error.localizedDescription; return false }
             }
             .overlay(alignment: .topLeading) {
                 if note.text.isEmpty {
-                    Text("自分の言葉で書きます。最初の行がタイトルになり、「#」で始まる行は見出しです。")
+                    Text("自分の言葉で書きます。「#」で始まる行は見出しです。")
                         .font(.body).foregroundStyle(.tertiary).padding(.horizontal, 21).padding(.vertical, 12).allowsHitTesting(false)
                 }
             }

@@ -1,20 +1,16 @@
 import Foundation
 
 public enum ReaderWorkspaceScope: Hashable, Sendable {
-    case all, unread, starred, feed(UUID), folder(String), note(UUID)
+    case all, unread, starred, feed(UUID), folder(String)
 }
 
 public struct ReaderWorkspaceState {
     public var scope: ReaderWorkspaceScope = .all
     private var readers: [ReaderWorkspaceScope: ReaderSelectionState] = [:]
-    private var closedNotes: Set<UUID> = []
+    /// Whether the note is open beside the article. It starts closed. Opening or closing it does not touch the reader (the selected
+    /// article and the scroll memory), and it stays as it is when the person goes to another screen.
+    public var noteOpen = false
     public init() {}
-    /// Whether a note's panel is open beside the article. A note starts with it open (decision 0019); one the person closed stays
-    /// closed while the app runs. Opening or closing the panel does not touch the note's reader (the selected article and the scroll memory).
-    public func isNoteOpen(of noteID: UUID) -> Bool { !closedNotes.contains(noteID) }
-    public mutating func setNote(open: Bool, of noteID: UUID) {
-        if open { closedNotes.remove(noteID) } else { closedNotes.insert(noteID) }
-    }
     public mutating func rememberReader(_ state: ReaderSelectionState, in scope: ReaderWorkspaceScope) {
         readers[scope] = state
     }

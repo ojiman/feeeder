@@ -16,6 +16,15 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 | S4 | Done: unused note helpers, article package paths and managed-copy source metadata removed; note bytes and stored schema preserved. [Decision](decisions/0022-note-only-package-clean-up.md), [verification](verification/s4-clean-up.md). | Plan approved in [PR #74](https://github.com/ojiman/unagi-reader/pull/74). |
 | S5 | **Done.** Light styling of headings and lists in the editor (display only; the text never changes). | Plan approved in PR #72. |
 
+## Decision 0049 (one note, no AI of its own), in order
+
+Each is its own pull request, deletions first. See [decision 0049](decisions/0049-one-note-and-no-ai-of-its-own.md).
+
+1. **Done (#115).** The hand-off to Claude is removed; 「Markdownをコピー」 stays.
+2. **Done (#116).** The on-device summary and the send to a note are removed.
+3. **Done (this stage).** One note: the note list, rename, delete, undo and the records of articles in a note are removed; the first start keeps the note edited last. The note opens from any screen with the toolbar button or `⌥⌘I`, as the panel it already was.
+4. **Next.** The new layout: `n`, the move of about 0.3 s (the sidebar and the list fold, the note comes in from the right), and the 「一覧」 button.
+
 ## After S3 (the rename to Unagi Reader is done: [decision 0023](decisions/0023-rename-to-unagi-reader.md))
 
 - **Real-device check (the PdM).** Read, write in the note beside the articles, copy the note into another AI (decision 0049 removed the hand-off to Claude), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
@@ -25,7 +34,6 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 
 - **Reading size.** One shared size in Appearance (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) and View-menu commands. A probe showed that a separate update path keeps the top visible line in place across 36 synthetic cases, and that the update time grows with the article (about 10 to 20 ms at 7,800 characters, about 0.2 to 0.35 s at 156,000). The probe code is in Git history (PR #28). Open: a time budget (the proposal: finish within about 100 ms up to about 50,000 characters, above that apply once after the key is released), and how it feels on the device.
 - **Note editor size.** The same scale for the note editor. Needs a real Japanese input check: the update waits while text is being composed.
-- **Keep the bodies of articles that are in a note.** Changes the retention contract; needs its own decision record. Not started without the PdM's instruction.
 
 ## Not planned
 

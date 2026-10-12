@@ -29,8 +29,7 @@ import Testing
         let feed = try store.importFeed(FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: url), receivedAt: now)
         let article = try #require(store.articles.first)
         try store.markDisplayed(articleID: article.id, at: now)
-        let noteID = try store.createNote(text: "# 保存ノート\n", at: now).id
-        try store.saveNote(noteID: noteID, text: "消えない", at: now)
+        try store.saveNote(text: "消えない", at: now)
         let refresh = FeedRefreshController(store: store, client: client)
         let replies: [StubURLProtocol.Reply] = [.init(status: 304), .init(status: 401), .init(status: 403),
             .init(error: .timedOut), .init(error: .notConnectedToInternet), .init(data: Data("<rss>".utf8)),
@@ -40,7 +39,7 @@ import Testing
             await refresh.refresh(feedIDs: [feed.id], at: now)
             #expect(article.firstReceivedAt == now && article.firstReadAt == now)
             #expect(try store.content(articleID: article.id, at: now)?.text.contains("本文 & 補足") == true)
-            #expect(store.note(id: noteID)?.text == "消えない")
+            #expect(store.note?.text == "消えない")
         }
     }
 

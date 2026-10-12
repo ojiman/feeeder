@@ -3,7 +3,6 @@ import ReaderCore
 
 /// Which sidebar row has its name open for editing (decision 0043). One at a time.
 enum SidebarRenaming: Equatable {
-    case note(UUID)
     case feed(UUID)
 }
 

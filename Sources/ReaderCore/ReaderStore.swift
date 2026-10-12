@@ -10,9 +10,6 @@ import SwiftData
     public var retentionDays: Int { settings?.retentionDays ?? 30 }
     public private(set) var memberships: [FeedMembership] = []
     public private(set) var notes: [Note] = []
-    public private(set) var noteArticles: [NoteArticle] = []
-    @ObservationIgnored var noteMembers: [UUID: Set<UUID>] = [:]
-    @ObservationIgnored var articleNoteIDs: [UUID: Set<UUID>] = [:]
     public private(set) var starCount = 0
     @ObservationIgnored var starredIDs: Set<UUID> = []
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
@@ -34,7 +31,7 @@ import SwiftData
 
     public static var schema: Schema {
         Schema([Feed.self, Article.self, ContentSnapshot.self, FeedMembership.self, ReaderSettings.self,
-                Note.self, NoteArticle.self])
+                Note.self])
     }
 
     public convenience init(url: URL, seedDemo: Bool = false, now: Date = .now) throws {
@@ -52,6 +49,7 @@ import SwiftData
         if try context.fetchCount(FetchDescriptor<ReaderSettings>()) == 0 {
             context.insert(ReaderSettings()); try context.save()
         }
+        try keepOnlyOneNote(at: now)
         if seedDemo { try seedIfEmpty(now: now) }
         else { try reload() }
         try purgeExpired(at: now)
@@ -80,9 +78,6 @@ import SwiftData
         notes = try context.fetch(FetchDescriptor<Note>()).sorted {
             $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
         }
-        noteArticles = try context.fetch(FetchDescriptor<NoteArticle>()).sorted {
-            $0.addedAt == $1.addedAt ? $0.key < $1.key : $0.addedAt < $1.addedAt
-        }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
         feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })
         feedArticles = [:]
@@ -100,20 +95,11 @@ import SwiftData
         }
         refreshUnreadCounts()
         refreshStarIndex()
-        refreshNoteIndex()
         needsReload = false
     }
 
     func reloadIfNeeded() throws {
         if needsReload { try reload() }
-    }
-
-    private func refreshNoteIndex() {
-        noteMembers = [:]; articleNoteIDs = [:]
-        for link in noteArticles {
-            noteMembers[link.noteID, default: []].insert(link.articleID)
-            articleNoteIDs[link.articleID, default: []].insert(link.noteID)
-        }
     }
 
     func refreshStarIndex() {

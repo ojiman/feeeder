@@ -37,11 +37,12 @@ import Testing
                 // The old daily/weekly notes are intentionally not carried over (decision 0008); everything else is.
                 #expect(article.starredAt == (expected.scrapKey == nil ? nil : at) && article.imageURL == nil)
                 #expect(try store.content(articleID: article.id, at: at)?.bodyParagraphs.first?.links.isEmpty == true)
+                // Decision 0049: the store has exactly one note, empty at first. It is written once and found again.
                 if round == 0 {
-                    let note = try store.createNote(text: "# 移行後のノート\n", at: at)
-                    try store.addArticle(article.id, toNote: note.id, at: at)
+                    #expect(store.notes.count == 1 && store.note?.text == "")
+                    try store.saveNote(text: "# 移行後のノート\n", at: at)
                 } else {
-                    #expect(store.notes.map(\.title) == ["移行後のノート"] && store.noteArticles.count == 1)
+                    #expect(store.notes.count == 1 && store.note?.text == "# 移行後のノート\n")
                 }
             }
         }
