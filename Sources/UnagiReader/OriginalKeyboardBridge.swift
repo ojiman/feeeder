@@ -5,9 +5,8 @@ import WebKit
     static let world = WKContentWorld.world(name: "UnagiReaderKeys")
     private weak var view: WKWebView?
     private let onCommand: (ReaderCommand) -> Void
-    private let allowsSendToNote: Bool
-    init(allowsSendToNote: Bool = false, onCommand: @escaping (ReaderCommand) -> Void) {
-        self.allowsSendToNote = allowsSendToNote; self.onCommand = onCommand
+    init(onCommand: @escaping (ReaderCommand) -> Void) {
+        self.onCommand = onCommand
     }
     func install(in view: WKWebView) {
         self.view = view
@@ -15,7 +14,7 @@ import WebKit
         controller.add(self, contentWorld: Self.world, name: "unagiReaderKey")
         let source = """
         (() => {
-          const keys = new Set(\(allowsSendToNote ? "['j','k','s','n','Escape']" : "['j','k','s','Escape']"));
+          const keys = new Set(['j','k','s','Escape']);
           document.addEventListener('keydown', event => {
             if (!event.isTrusted || event.isComposing || event.keyCode === 229 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || !keys.has(event.key)) return;
             const path = event.composedPath();
@@ -39,8 +38,7 @@ import WebKit
         guard let view, message.webView === view, let window = view.window, NSApp.keyWindow === window,
               window.attachedSheet == nil, let responder = window.firstResponder as? NSView,
               responder.isDescendant(of: view), (responder as? NSTextInputClient)?.hasMarkedText() != true,
-              let key = message.body as? String, let command = ReaderCommand(rawValue: key),
-              allowsSendToNote || command != .sendToNote else { return }
+              let key = message.body as? String, let command = ReaderCommand(rawValue: key) else { return }
         onCommand(command)
     }
 }

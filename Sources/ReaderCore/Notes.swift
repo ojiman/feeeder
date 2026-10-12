@@ -45,56 +45,7 @@ public enum NoteError: LocalizedError {
     }
 }
 
-public struct SendResult: Equatable, Sendable {
-    public let noteID: UUID
-    public let articleID: UUID
-    public let before: String
-    public let after: String
-    public let createdNote: Bool
-    public let createdLink: Bool
-    public let sentAt: Date
-}
-
 extension ReaderStore {
-    /// The text and the source record commit together. Reload failure is reported even after a successful save.
-    public func sendArticle(_ articleID: UUID, to noteID: UUID?, block: String, newNoteTitle: String, at: Date) throws -> SendResult {
-        try reloadIfNeeded()
-        guard let article = article(id: articleID) else { throw NoteError.missingArticle }
-        let target: Note
-        if let noteID {
-            guard let existing = note(id: noteID) else { throw NoteError.missingNote }
-            target = existing
-        } else {
-            target = Note(at: at)
-            context.insert(target)
-        }
-        let before = target.text
-        let after = noteID == nil ? NoteInsertion.newNoteText(title: newNoteTitle, block: block) : NoteInsertion.appended(block: block, to: before)
-        let createdLink = !noteArticles.contains { $0.noteID == target.id && $0.articleID == articleID }
-        if createdLink { context.insert(NoteArticle(noteID: target.id, article: article, summary: recordedSummary(of: article, at: at), at: at)) }
-        target.text = after; target.updatedAt = at
-        let result = SendResult(noteID: target.id, articleID: articleID, before: before, after: after,
-                                createdNote: noteID == nil, createdLink: createdLink, sentAt: at)
-        try save(); try reload()
-        return result
-    }
-
-    public func undoSend(_ result: SendResult, at: Date) throws -> Bool {
-        try reloadIfNeeded()
-        guard let target = note(id: result.noteID), target.text == result.after else { return false }
-        let links = noteArticles.filter { $0.noteID == result.noteID }
-        // A new note may have acquired another source without changing its text; undo must not delete that source.
-        if result.createdNote && links.contains(where: { $0.articleID != result.articleID || $0.addedAt != result.sentAt }) { return false }
-        if result.createdLink, let link = links.first(where: { $0.articleID == result.articleID && $0.addedAt == result.sentAt }) {
-            context.delete(link)
-        }
-        if result.createdNote { context.delete(target) }
-        else { target.text = result.before; target.updatedAt = at }
-        try save()
-        try reload()
-        return true
-    }
-
     public func note(id: UUID) -> Note? { notes.first { $0.id == id } }
     /// The list in the sidebar: the note that was edited last comes first; equal times keep a fixed order by ID.
     public var notesNewestEditFirst: [Note] {
