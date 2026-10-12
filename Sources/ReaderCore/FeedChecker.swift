@@ -9,8 +9,10 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
     public let lastModified: String?
     /// False for pasted XML: there is no response to remember.
     public let fetched: Bool
-    public init(parsed: ParsedFeed, etag: String?, lastModified: String?, fetched: Bool) {
-        self.parsed = parsed; self.etag = etag; self.lastModified = lastModified; self.fetched = fetched
+    /// The Web page the address pointed to, when the feed was found on it (its own address is `parsed.sourceURL`).
+    public let foundOnPage: URL?
+    public init(parsed: ParsedFeed, etag: String?, lastModified: String?, fetched: Bool, foundOnPage: URL? = nil) {
+        self.parsed = parsed; self.etag = etag; self.lastModified = lastModified; self.fetched = fetched; self.foundOnPage = foundOnPage
     }
     public static func == (lhs: CheckedFeed, rhs: CheckedFeed) -> Bool { lhs.id == rhs.id }
 }
@@ -89,8 +91,8 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
     public nonisolated static func fetch(_ request: FeedCheckRequest, client: FeedClient = FeedClient()) async throws -> CheckedFeed {
         switch request {
         case .url(let url):
-            guard case .modified(let parsed, let etag, let modified) = try await client.fetch(url: url) else { throw HTTPError.invalidResponse }
-            return CheckedFeed(parsed: parsed, etag: etag, lastModified: modified, fetched: true)
+            let found = try await client.fetchOrDiscover(url: url)
+            return CheckedFeed(parsed: found.parsed, etag: found.etag, lastModified: found.lastModified, fetched: true, foundOnPage: found.foundOnPage)
         case .xml(let data, let url):
             let parsed = try await Task.detached(priority: .userInitiated) { try FeedParser.parse(data, sourceURL: url) }.value
             return CheckedFeed(parsed: parsed, etag: nil, lastModified: nil, fetched: false)
