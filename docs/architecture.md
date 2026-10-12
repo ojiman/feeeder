@@ -15,6 +15,8 @@
 | 通信・抽出 | URLSessionで端末から取得。SwiftSoup 2.13.9をexact固定し、`article`、次に`main`の段落を抽出する（`ExtractionQuality`: 短い断片が過半の「ページの部品」は本文としない）。記事を開いたときは取得せず、フィードの本文を出す（決定0033）。抽出は「全文を取得」を押したときと、短いフィード本文の記事を要約へ送るときのAI入力だけ |
 | 保存先 | `Application Support/UnagiReader/Reader.store`。通常起動でデモを挿入せず、合成デモは明示的な`--data-directory`と`--seed-demo`で起動 |
 
+OPMLの取り込みは、`OPMLParser`（5MB・2,000件・64階層まで、`<!ENTITY`は拒否）が読み、`ReaderStore.importSubscriptions`が一度の保存で追加し、`OPMLImportFlow`が選択・結果・記事の取得をつなぐ。決定0039。
+
 購読追加は、入力中のURLを`FeedChecker`が確認する（0.8秒の間を置き、編集のたびに前の確認を取り消し、古い答えは使わない。ホストが完成して見えないURLは入力中は送らない）。決定0036。
 
 Backend・アカウント・AI proxyは置かない。入力URLのscheme・redirect先を検証し、XML外部entityを拒否する。抽出HTMLは実行せず読書用データへ変換する。本文抽出のHTTP redirectは追わず、未検査の転送先へ取得を進めない。ログイン・robots・購読制限を回避しない。記事本文とツール出力は未信頼データとして扱う。

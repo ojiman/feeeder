@@ -47,6 +47,7 @@ struct ReaderView: View {
     @State private var movingFeedID: UUID?
     @State private var folderName = ""
     @State private var deletingNote: UUID?
+    @State private var opml: OPMLImportFlow
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
     private let notePasteboard: NSPasteboard
@@ -57,9 +58,11 @@ struct ReaderView: View {
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
          notePasteboard: NSPasteboard = .general,
-         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave) {
+         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave,
+         chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
+        _opml = State(initialValue: OPMLImportFlow(store: store, refresh: refresh, chooseFile: chooseOPML))
         self.imageLoader = imageLoader
         _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
@@ -287,6 +290,10 @@ struct ReaderView: View {
                 removingFeed = nil
             }
         } message: { Text("記事・本文はライブラリに残ります。") }
+        .focusedSceneValue(\.importOPML, { Task { await opml.start() } })
+        .alert(opml.report?.title ?? "", isPresented: Binding(get: { opml.report != nil }, set: { if !$0 { opml.dismissReport() } })) {
+            Button("OK") { opml.dismissReport() }
+        } message: { Text(opml.report?.message ?? "") }
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
