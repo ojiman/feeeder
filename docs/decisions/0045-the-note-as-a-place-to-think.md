@@ -1,6 +1,6 @@
 # 0045 The note as a place to think: remove the seams between reading and writing
 
-- Status: **proposed**. Not approved. It becomes valid only when the owner (PdM) approves it and the PR that adds it is merged. Parts marked "open" or "PoC" are not decided.
+- Status: **proposed**. Not approved. Parts of it have since been done by other decisions and fixes (see "What happened since"); the rest is still only a proposal and waits for the owner's dogfooding. Merging the pull request that adds this record keeps the reasoning and the findings; it does not approve the open points.
 - Date: 2026-10-12
 - Decider: none yet. This is the Product Owner's proposal after a long discussion with the owner on 2026-10-12, which started from the discussion paper in [PR #105](https://github.com/ojiman/unagi-reader/pull/105).
 - Would refine: [0019](0019-v1-simplification-notes.md) points 3, 5 and 9, and [0020](0020-summary-send-contract.md) (what a send writes). Would not change `docs/vision.md`; see "Vision" below.
@@ -20,18 +20,30 @@ The discussion paper in PR #105 proposed a flow from selected Stars to a note. T
 
 Unagi Reader's value is a smooth loop with no seams (Vision: "A smooth feel is part of the value"). A note feature is judged by which seam it removes: a wait, a small decision, a lost position, a mode switch, or a broken link between the text and its source. A feature that only adds a capability that any RSS reader or notes app has (for example, quoting a selected sentence) is not the aim.
 
+## What happened since (2026-10-12)
+
+| Item | Result |
+|---|---|
+| The panel's width was never applied | Fixed in [#109](https://github.com/ojiman/unagi-reader/pull/109): the panel opens at 380 pt (the setting asked for it all along). |
+| Dragging the panel's edge shut lost the panel | Fixed in #109: it opens again on the next turn (the owner's choice A). |
+| The app hung when the edge was dragged on a large library | Fixed in #109 (the width memory moved out of `ReaderView`). |
+| A bullet answer of only list markers sent an AI mark with no summary | Fixed in [#108](https://github.com/ojiman/unagi-reader/pull/108). |
+| The sidebar fold | Settled differently by [0046](0046-sidebar-folds-like-reeder.md) and [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) ([#111](https://github.com/ojiman/unagi-reader/pull/111), [#112](https://github.com/ojiman/unagi-reader/pull/112)): the sidebar always folds on the original page and on the note screen, and a ✕ goes back. The list column is not folded or narrowed. |
+| PoC 2 (companion panel) | Dropped. |
+| Everything else below (collecting apart from writing, material as quotes, links between the body and its sources, the review package, the summary default) | Still proposed. The owner decides after dogfooding the new screens. |
+
 ## Premise (owner, 2026-10-12)
 
 Reading in RSS and writing a note are separate screens. The note screen can be designed on its own: it does not affect the RSS screens, and the experience design (a note with its reference articles beside it, opened and closed with the toolbar button or `⌥⌘I`) is unchanged. The panel for the note is not something the person should lose by accident: dragging its edge must not collapse it (the owner chose this for the first fix, see below).
 
 ## Chosen by the owner in chat (2026-10-12; the record as a whole is still only proposed)
 
-- **The note panel must not be collapsible by dragging its edge** (option A of the owner's choice; the other option was a visible entry point when collapsed). It is opened and closed only with the toolbar button or `⌥⌘I`. This is a fix for a reported problem on `main`: after the panel was dragged shut there was no way back that the person could find. It ships in its own pull request, not with this record.
+- **The note panel must not be collapsible by dragging its edge** (option A of the owner's choice; the other option was a visible entry point when collapsed). It is opened and closed only with the toolbar button or `⌥⌘I`. This is a fix for a reported problem on `main`: after the panel was dragged shut there was no way back that the person could find. It shipped in its own pull request (#109), not with this record.
 
 ## Proposed decisions
 
-1. **Folding rule.** When the window is too narrow, fold the sidebar first and then give the article list less room. Never fold the article or the note. The person only opens and closes the note panel; the rest follows from the width. The note panel gets a larger ideal width and a higher maximum than 640 pt. The numbers come from PoC 1. PoC 1 found that the system's `detailOnly` does not fold the list column, and that widths which change with the fold state make the app hang on a large library (see the PoC results). So the list is not folded, and no column width may depend on the fold state.
-2. **References stay in view.** The references of the open note are shown as a thin strip of small cards over the article pane (favicon or thumbnail, short title), with the current one marked. A click or `⌥⌘↑` / `⌥⌘↓` switches the article, and the note's caret and scroll position do not change. A popover that hides the references is not used.
+1. **Folding rule: settled by [0046](0046-sidebar-folds-like-reeder.md) and [0047](0047-the-way-back-is-a-cross-in-the-right-column.md).** What PoC 1 found still holds: the system's `detailOnly` does not fold the list column, and widths that change with the fold state make the app hang on a large library, so no column width may depend on the fold state.
+2. **References stay in view.** Not needed to start: on the note screen the list column already lists the note's references. A strip of small cards over the article pane (favicon or thumbnail, short title; a click or `⌥⌘↑` / `⌥⌘↓` switches the article without moving the note's caret) is to be reconsidered after dogfooding.
 3. **Collecting and writing are separate.** Recording a reference happens at once and does not wait for AI. What a send writes into the body is open (O1).
 4. **Material in the body looks different from the person's words.** A summary is written as a Markdown quote (`>`) followed by a link line, and the editor shows quote lines muted with a bar on the left (display only; the saved characters are plain Markdown, as for headings and lists). Notes that already exist are not rewritten.
 5. **The text and its source are linked both ways, with no new stored field.**
@@ -49,7 +61,7 @@ Reading in RSS and writing a note are separate screens. The note screen can be d
 | O1 | What does `n` write into the body by default: the summary as today, or nothing? | Keep the summary as a quote until the owner finds that they delete it every time. A setting 「本文に入れない」 may be added later. |
 | O2 | What is the first line of a note made from one reference? | Keep `# article title` (no empty notes called 「新規ノート」 in the sidebar). |
 | O3 | Does the review package carry the reference list? | Yes, title and URL only, shown on the review screen. |
-| O4 | Does the folding rule always fold the list when the panel opens, or only when space is short? | Only when space is short; this is the rule in point 1. |
+| O4 | Does the folding rule fold the list too, and when? | Settled: the list is never folded; the sidebar always folds on the note screen (0046). |
 
 ## Not in this decision
 
@@ -66,7 +78,7 @@ The owner wants to try these before deciding. A PoC is throwaway code on a branc
 | PoC | What | What a test can show | What only the owner can judge |
 |---|---|---|---|
 | 0 | Check why the first block in the owner's screenshot has the AI mark but no summary. The specification says an empty answer falls back to an unmarked summary. | A failing test if it is a bug. | Nothing. |
-| 1 | Folding rule, wider note panel, reference strip. No model change. | The fold rule as a pure function; panel width limits; the caret and scroll position are kept when the article changes. | Is it a place to think? Proposed floor: at least about 30 Japanese characters per line on a normal window. |
+| 1 | Folding rule, wider note panel, reference strip. No model change. *Done in part: the width fix is #109 and the folding is 0046 and 0047; the strip is not needed to start. The owner's judgment of the feel is still to come.* | The fold rule as a pure function; panel width limits; the caret and scroll position are kept when the article changes. | Is it a place to think? Proposed floor: at least about 30 Japanese characters per line on a normal window. |
 | 2 | ~~Companion panel across scopes~~ Dropped (owner's premise: reading and writing are separate). | | |
 | 3 | Quote style in the editor, source link activates the article, "cited" mark, drag to cite. | The cited rule from the body; the link target; the saved text is unchanged by the style. | Does the material feel connected, not scribbled? |
 | 4 | Summary check on about five long articles, with settings (input length, sentence count). | Nothing. | Is it good enough to stay the default? |
@@ -84,7 +96,7 @@ Rules for the PoCs:
 | PoC | Result |
 |---|---|
 | 0 | Reproduced: in bullet format, an answer of only list markers sent an AI mark with no summary. Fixed with tests first in [PR #108](https://github.com/ojiman/unagi-reader/pull/108). It is not confirmed that this was the cause in the owner's note (the owner may have edited the block). |
-| 1 | Not finished. Findings below. The code is on the branch `poc/note-writing-space` (not for merge). The owner has not yet judged the feel. |
+| 1 | Done in part, then replaced. Findings below. The PoC code is on the branch `poc/note-writing-space` (not for merge). The fixes found on the way are in #109, and the folding was decided again in 0046 and 0047. The owner's judgment of the feel comes with dogfooding. |
 
 Findings of PoC 1:
 
@@ -92,9 +104,9 @@ Findings of PoC 1:
 2. **`detailOnly` did not fold the list.** The state changed but the window still showed the list. Folding the sidebar (`doubleColumn`) works.
 3. **A hang with the width really applied (fixed in [PR #109](https://github.com/ojiman/unagi-reader/pull/109)).** The app spun at 100% CPU on a large library (13 MB store) when the panel's edge was dragged, and, in the PoC, when a note was opened from the sidebar in a window narrower than 1,500 pt. Two things together: the panel's width was kept in `ReaderView`'s state, so each frame of a drag redrew the whole reader; and `ReaderView.visibleArticleIDs` filters every article on each read (`ReaderStore.noteArticleIDs`), many times per pass. Moving the width memory into its own modifier removed the hang. The PoC's widths that depended on the fold state made it worse, so they are not used.
 4. **The hosted UI tests are flaky on this machine, with or without the width fix.** The whole `ReaderUITests` target ends with AppKit's "update constraints" exception in `swiftpm-testing-helper` in most runs on macOS 27 (about 1 of 3 runs completed on unchanged `main`). An earlier note here blamed the width on the panel's content for three tests; that was a wrong reading of this flakiness.
-5. **Cost per update.** `visibleArticleIDs` should be computed once per update, not on every read. This is a separate, small fix.
+5. **The list rebuild per update is not the problem at this size.** `visibleArticleIDs` filters every article on each read for the note, Star and unread lists. Measured in a debug build: 0.38 ms per read at 1,800 articles and 1.25 ms at 6,000 (about the owner's library). The earlier hang was an update loop, fixed in #109, not this cost. If libraries grow to tens of thousands, the note list can be built from the note's few members and a position index.
 
-Consequence for the proposal: the strip of reference cards (point 2) is not needed to start; the list is already the references. What remains for PoC 1 is the panel width fix (finding 1), the sidebar fold, and the owner's judgment. Narrowing the list needs a width that does not depend on the fold state (for example one fixed width for a note's list), which is untested.
+Consequence for the proposal: the strip of reference cards is not needed to start (the list column is the references); the panel width fix and the folding are done (#109, 0046, 0047). What remains is the owner's judgment of the feel, and the later points of the proposal.
 
 ## Not verified
 
