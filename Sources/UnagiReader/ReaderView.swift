@@ -17,9 +17,8 @@ struct ReaderView: View {
     @State private var pageForward = true
     @State private var scrollMemory = ReaderScrollMemory()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var noteLayout = NoteLayout()
-    /// The window's width, for the rule that folds the sidebar only in a narrow window (`NoteLayout.foldBelow`).
-    @State private var windowWidth: Double = 0
+    /// Where the ✕ on the note screen goes back to (decision 0047).
+    @State private var noteReturn = NoteScreenReturn()
     /// The panel's width when the app started (the ideal width of the inspector). The width while the person drags is kept in `NotePanelWidthMemory`.
     @State private var startingPanelWidth = NotePanelWidth.load()
     /// True for one turn after the person dragged the panel shut, so that it is shown again (see `noteOpenBinding`).
@@ -164,29 +163,19 @@ struct ReaderView: View {
 
     private var windowContent: some View {
         reader
-        .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
-            windowWidth = width
-            guard noteOpen else { return }
-            noteLayout.windowWidthChanged(to: width); applyColumns()
-        }
-        .onAppear { if noteOpen { noteLayout.noteOpened(windowWidth: windowWidth); applyColumns() } }
-        .onChange(of: noteOpen) { _, open in
-            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed() }
-            applyColumns()
-        }
-        .onChange(of: columnVisibility) { _, visibility in
-            // The window may change the columns by itself; keep the layout in step (only while the note is open).
-            guard noteOpen else { return }
-            // Only the two states the layout sets itself; `.automatic` and `.detailOnly` are left alone.
-            if visibility == .all { noteLayout.follow(.all) } else if visibility == .doubleColumn { noteLayout.follow(.doubleColumn) }
-        }
+        .onAppear { columnVisibility = targetColumns(pageOpen: false) }          // a note shown at the start folds the sidebar at once
         .onChange(of: scope) { old, new in
             if let old {
                 scrollMemory.state.select(selection)
                 workspace.rememberReader(scrollMemory.state, in: old)
             }
+            noteReturn.scopeChanged(from: old, to: new)
             workspace.scope = new ?? .all
             enterScope()
+            // Showing a note folds the sidebar and leaving it brings the sidebar back, as one move (decisions 0046 and 0047).
+            withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
+                columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
+            }
         }
     }
 
@@ -475,20 +464,6 @@ struct ReaderView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .top) {
-            // While the note is open the sidebar is folded; this button brings it back (and folds it again).
-            if noteOpen {
-                HStack(spacing: 0) {
-                    Button { toggleSidebar() } label: { Image(systemName: "sidebar.left") }
-                        .buttonStyle(.borderless).padding(.leading, 12).padding(.vertical, 6)
-                        .help(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                        .accessibilityLabel(noteLayout.sidebarFolded ? "サイドバーを表示" : "サイドバーを隠す")
-                    Spacer(minLength: 0)
-                }.background(AppPalette.surfaceColor)
-            }
-        }
-        // After the inset above, so the title is drawn over the bar that holds the sidebar button while a note is open (the other order
-        // hides it).
         .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count, leadingInset: sidebarFolded ? ListHeader.windowButtonsInset : 0).ignoresSafeArea(.container, edges: .top) }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
@@ -526,7 +501,17 @@ struct ReaderView: View {
                     .offset(x: originalSlide)
             }
         }.clipped()
+            .overlay(alignment: .topLeading) { noteScreenCross }
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }
+    }
+
+    /// The ✕ at the top left of the right column on the note screen, where the original page has its own (decision 0047).
+    @ViewBuilder private var noteScreenCross: some View {
+        if noteScopeID != nil, originalPage.url == nil {
+            Button(action: leaveNote) { Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)) }
+                .buttonStyle(.borderless).padding(10)
+                .help("ノートを離れて、前の画面へ戻る").accessibilityLabel("ノートを離れる")
+        }
     }
 
     @ViewBuilder private var detail: some View {
@@ -628,21 +613,14 @@ struct ReaderView: View {
         guard let id = noteScopeID else { return }
         workspace.setNote(open: !workspace.isNoteOpen(of: id), of: id)
     }
-    private func toggleSidebar() {
-        noteLayout.toggleSidebar()
-        applyColumns()
-    }
-    /// The columns to show: the sidebar is folded while the original page is open or the note layout asks for it (decision 0046).
+    /// The columns to show: the sidebar is folded while the original page is open and on the note screen (decisions 0046 and 0047).
     private func targetColumns(pageOpen: Bool) -> NavigationSplitViewVisibility {
-        SidebarFold.folded(pageOpen: pageOpen, noteLayout: noteLayout.columns) ? .doubleColumn : .all
+        SidebarFold.folded(pageOpen: pageOpen, noteScreen: noteScopeID != nil) ? .doubleColumn : .all
     }
     /// Whether the sidebar is folded away now (the list then reaches the window's left edge).
     private var sidebarFolded: Bool { columnVisibility == .doubleColumn || columnVisibility == .detailOnly }
-    private func applyColumns() {
-        let target = targetColumns(pageOpen: originalPage.url != nil)
-        guard columnVisibility != target else { return }
-        withAnimation(reduceMotion ? nil : .default) { columnVisibility = target }
-    }
+    /// The ✕ on the note screen: leaves the notes for the screen the person was on before, and the sidebar comes back (decision 0047).
+    private func leaveNote() { scope = noteReturn.target }
     private func enterScope() {
         let restored = workspace.reader(in: workspace.scope)
         scrollMemory.state = restored; selectArticle(restored.selectedArticleID)
