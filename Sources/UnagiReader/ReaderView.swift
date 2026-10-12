@@ -47,6 +47,10 @@ struct ReaderView: View {
     @State private var deletingNote: UUID?
     /// After a note was deleted: the offer 「取り消す」 (decision 0042).
     @State private var deletedNote = DeletedNoteOffer()
+    /// How far the original page has slid out to the right while it closes (decision 0044), the width of its column, and whether it is closing.
+    @State private var originalSlide: CGFloat = 0
+    @State private var originalColumnWidth: CGFloat = 600
+    @State private var originalClosing = false
     @State private var opml: OPMLImportFlow
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
@@ -246,11 +250,8 @@ struct ReaderView: View {
             if !open, originalPage.url == nil { listFocused = pickerRestoresListFocus }
         }
         .onChange(of: selection) { _, id in
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) {
-                if originalPage.selectionChanged(to: id) {
-                    listFocused = true
-                }
-            }
+            // The page slides out to the right (the way it came in, reversed) and shows the next article's reader text.
+            if originalPage.closesWhenSelecting(id) { dismissOriginal { listFocused = true } }
             scrollMemory.state.select(id)
         }
         .task(id: selection) {
@@ -531,8 +532,10 @@ struct ReaderView: View {
                     perform(command)
                 })
                     .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
+                    .offset(x: originalSlide)
             }
         }.clipped()
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }
     }
 
     @ViewBuilder private var detail: some View {
@@ -545,7 +548,7 @@ struct ReaderView: View {
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
                 onReload: { Task { guard selection == article.id else { return }; await loading.load(articleID: article.id, refresh: true) } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
-                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward)
+                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward, pageMotion: originalPage.url == nil)
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
@@ -568,9 +571,25 @@ struct ReaderView: View {
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
     }
     private func closeOriginal() {
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { originalPage.close() }
-        scrollMemory.state.returnFromOriginal()
-        listFocused = restoreListFocus
+        dismissOriginal {
+            scrollMemory.state.returnFromOriginal()
+            listFocused = restoreListFocus
+        }
+    }
+    /// Slides the original page out to the right, then closes it. A page that goes away without a motion would not be the reverse of
+    /// how it came in. With Reduce Motion it just closes. A second request while it slides out is ignored (it closes anyway).
+    private func dismissOriginal(then done: @escaping () -> Void) {
+        guard originalPage.url != nil, !originalClosing else { return }
+        guard !reduceMotion else { originalPage.close(); done(); return }
+        originalClosing = true
+        withAnimation(.easeOut(duration: 0.22)) {
+            originalSlide = originalColumnWidth
+        } completion: {
+            originalPage.close()
+            originalSlide = 0
+            originalClosing = false
+            done()
+        }
     }
 
     private func perform(_ command: ReaderCommand) {

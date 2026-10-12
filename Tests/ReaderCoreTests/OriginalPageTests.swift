@@ -22,6 +22,15 @@ struct OriginalPageTests {
         #expect(cleared)
         #expect(state.articleID == nil && state.url == nil)
     }
+    @Test func theOriginalPageClosesOnlyWhenAnotherArticleIsSelected() {
+        let a = UUID(), b = UUID()
+        var state = OriginalPageState()
+        #expect(!state.closesWhenSelecting(b))                                   // nothing is open
+        _ = state.open(articleID: a, url: "https://synthetic.example/a")
+        #expect(!state.closesWhenSelecting(a))                                   // the same article
+        #expect(state.closesWhenSelecting(b) && state.closesWhenSelecting(nil))
+        #expect(state.url != nil)                                                // asking does not close it: the slide-out comes first
+    }
     @Test func originalPageRouteValidatesURLAndClearsOnClose() {
         let id = UUID()
         var state = OriginalPageState()

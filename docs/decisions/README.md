@@ -62,7 +62,8 @@
 | [0041](0041-import-opml.md) | Import subscriptions from an OPML file | valid (with the OPML PR) |
 | [0042](0042-undo-a-note-deletion.md) | A deleted note can be taken back for ten seconds | valid (with the undo PR) |
 | [0043](0043-rename-in-the-sidebar-row.md) | Rename in the sidebar row | valid (with the rename PR) |
-| [0044](0044-the-note-as-a-place-to-think.md) | The note as a place to think: remove the seams between reading and writing | proposed (not approved) |
+| [0044](0044-original-page-slides-out.md) | The original page slides out when it closes | valid (with the motion PR) |
+| [0045](0045-the-note-as-a-place-to-think.md) | The note as a place to think: remove the seams between reading and writing | proposed (not approved) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
