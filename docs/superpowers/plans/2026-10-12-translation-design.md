@@ -46,11 +46,12 @@ Sources: Apple's documentation for [TranslationSession](https://developer.apple.
 ## 4. What the person sees
 
 - **Button.** In the toolbar group at the top right, after 「ノートに要約を送る」 and before 「元ページをブラウザで開く」. Label 「翻訳」 (help: 「翻訳する／原文に戻す (t)」). Its icon is filled while the translation is shown. It is always present and disabled when no article is open (the toolbar must not change height, as the existing comment in `ReaderView` says). The key is `t`, free since the theme picker was removed; like the other keys it does nothing inside a text field.
-- **Language.** The button is a menu with a primary action: a click translates (or goes back); the menu lists the target languages, with a check on the current one. The first target is the first language in the person's system language list (for the owner: Japanese). The choice is remembered in the app's preferences. The menu has no other items.
+- **Language.** The button is a menu with a primary action: a click translates (or goes back); the menu lists the target languages, with a check on the current one. The first target is the **language of the app** (Japanese: the app's labels are Japanese only today, and when a language setting arrives it follows that setting). It is **not** the first system language: the owner keeps the system in English because it suits software work, and still wants to read in Japanese. A choice made in the menu is remembered in the app's preferences, so the person who reads Japanese articles in English once picks English once. The menu has no other items.
 - **While it works.** The existing status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」, or 「言語を準備しています…」 while the system downloads a language pack. The article title and paragraphs change from the top as results arrive. Reduce Motion: no animation is used.
 - **When it is done.** The row says what was done in a few words, for example 「英語 → 日本語」, with a link 「原文を表示」 (the same as the button). The reading position (the paragraph at the top) is kept when the text switches.
 - **What is not translated.** The note, the article list and the sidebar stay as they are. 「ノートに要約を送る」 and the Claude hand-off use the **original** text: a summary or a package is never made from a machine translation without the person asking.
 - **Moving on.** Moving to another article shows that article in its original language and stops the running translation. Translation is not sticky: nothing is translated that the person did not ask for. (A per-subscription "always translate" is a later idea, section 10.)
+- **The two ways an article is shown.** An article is shown either as **reader text** (the text of the feed, or the full text after 「全文を取得」) or as the **original page** in the app's browser (key `v`). Version 1 translates the reader text only. While the original page is open the button is disabled, with the help text 「元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます」. Reason: there is no public way to translate a page inside the app's web view; it would need our own code that reads the text nodes of the page, translates them and writes them back, which breaks on dynamic pages and is out of proportion for this version. The reader text is the better place to read a translation anyway: it is clean, and 「全文を取得」 gives it the whole article. When the reader text is short (a feed excerpt), the status row says so and points to 「全文を取得」, so the person knows why only a few lines were translated; the app does not fetch the page by itself.
 - **Same language.** If the article is already in the target language the button says so in the status row (「すでに日本語です」) and does nothing else.
 
 Failure messages are one short sentence each, in the style of the add sheet: the language pair is not supported, the person did not allow the download, the language pack is missing and the Mac is offline, a paragraph could not be translated (the original paragraph stays, and the row says how many).
@@ -81,7 +82,7 @@ Why the session is created in a view: Apple documents two ways to get a `Transla
 
 **Data and retention.** A translation is derived data. It is **not stored**: nothing is added to the library, the model, or the retention rules. It lives in memory only (the small cache) and disappears when the app closes. This keeps decision 0019's retention rules as they are.
 
-**Links.** The first version shows the translated paragraphs as plain text: the links of the original paragraph are not kept, because their positions change in translation. The original is one press away. A later change can translate `AttributedString` (which keeps links) and rebuild the link ranges.
+**Links.** Some words of an article are links (underlined words that open another page). The first version shows the translated paragraphs as plain text: those words are no longer links, because their positions change in translation. The original is one press away. (The owner agreed to leave this out.) A later change can translate `AttributedString` (which keeps links) and rebuild the link ranges.
 
 ## 6. Cases that must be handled
 
@@ -126,12 +127,18 @@ The system's download request; a real translation of a long article and how fast
 3. **T3. The language menu.** The menu with a primary action, the remembered choice.
 4. **Later, only if real use asks for it** (not planned): links kept through `AttributedString`; an "always translate" choice per subscription; showing the original and the translation together, paragraph by paragraph (useful for learning); translated titles in the article list; skipping code paragraphs; Foundation Models for "explain in simple words".
 
-## 11. Decisions for the owner (recommended answers first)
+## 11. Decisions
 
-1. **Engine.** The Translation framework, and Foundation Models only for later, other jobs. Agree?
-2. **Default target language.** The first language of the system language list (Japanese for the owner). Agree?
-3. **Not sticky.** Each article opens in its original language; translating is an explicit press. (The other option is "stay in translation mode while moving between articles", which makes every article wait for a translation.) Agree?
-4. **The key.** `t` for translate / original. Agree?
-5. **Summary and Claude hand-off use the original text.** Agree?
-6. **Links in the translated text** are left out in the first version. Agree?
-7. **Scope of T1 to T3** above, with the extras left for later. Agree?
+Answered by the owner on 2026-10-12:
+
+1. **Engine.** The Translation framework. Yes.
+2. **Default target language.** Not the first system language (the owner's is English). The language of the app (Japanese), then the remembered choice. Section 4. *(Product Owner's proposal, to settle the owner's point that Japanese must be one press away.)*
+3. **Not sticky.** Each article opens in its original language; translating is an explicit press. Yes.
+4. **The key.** `t`. Yes.
+5. **Summary and Claude hand-off use the original text.** Yes. (The Claude hand-off is under review and is left as it is.)
+6. **Links in the translated text** are left out in the first version. Yes (the owner prefers it simple).
+
+Proposed by the Product Owner, to be confirmed by the owner:
+
+7. **Reader text and original page.** Version 1 translates the reader text; the button is disabled while the original page is open, and a short feed excerpt is pointed to 「全文を取得」 (section 4). A possible small step later: pressing the button while the original page is open could return to the reader text and translate there. A page-level translation (reading the page's text nodes) is not planned.
+8. **Scope of T1 to T3** above, with the extras left for later.
