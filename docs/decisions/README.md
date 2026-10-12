@@ -63,6 +63,7 @@
 | [0042](0042-undo-a-note-deletion.md) | A deleted note can be taken back for ten seconds | valid (with the undo PR) |
 | [0043](0043-rename-in-the-sidebar-row.md) | Rename in the sidebar row | valid (with the rename PR) |
 | [0044](0044-original-page-slides-out.md) | The original page slides out when it closes | valid (with the motion PR) |
+| [0046](0046-sidebar-folds-like-reeder.md) | The sidebar folds like Reeder's: when the original page opens and when a note is shown | valid (with the decision PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
