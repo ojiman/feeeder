@@ -91,7 +91,7 @@ Focus the article list, then use these keys:
 | `s` | Add or remove a Star |
 | `n` | Send a summary to a new or recent note (the icon at the top right does the same) |
 | `b` | Open the original page in your browser |
-| `v` | Open the original page inside the app |
+| `v` | Open the original page inside the app (it slides in from the right and slides out to the right when it closes) |
 | `Esc` | Go back to reading |
 
 - Scrolling the list does not mark an article as read. The first read time is saved when the body or the RSS summary is actually shown.
