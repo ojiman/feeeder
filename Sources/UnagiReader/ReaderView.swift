@@ -485,7 +485,8 @@ struct ReaderView: View {
                 }.background(AppPalette.surfaceColor)
             }
         }
-        // After the inset above, so the title is drawn over the bar that holds the sidebar button while a note is open.
+        // After the inset above, so the title is drawn over the bar that holds the sidebar button while a note is open (the other order
+        // hides it).
         .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top) }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }

@@ -5,13 +5,18 @@ import SwiftUI
 /// It is drawn here instead of as the window's navigation title. The system lets that title run along the whole toolbar, so a long
 /// feed name left its column and ran over the article pane. Here the name stays inside the column and ends with an ellipsis when the
 /// column is narrow, like the names in the sidebar.
+///
+/// This is a workaround for the system title, kept in this one file. To take it out: delete this file and the `overlay` that uses it
+/// in `ReaderView`, and set `navigationTitle(scopeTitle)` and `navigationSubtitle` on the list again.
 struct ListHeader: View {
     let title: String
     let count: Int
 
     /// Same left and right margin as the text of the rows below, so the title and the rows share one edge.
-    static let sideMargin: CGFloat = 28
-    /// The height of the title bar band, which the header sits in.
+    static let sideMargin = NativeArticleList.Metrics.contentMargin
+    /// The height of the title bar band the header sits in. The system does not tell it: the safe area of this view reports 0 (the list
+    /// draws under the toolbar and handles the inset itself), so this is the toolbar's standard height. If it is wrong on another system
+    /// the title is a little off-centre in the band; nothing breaks.
     static let bandHeight: CGFloat = 52
 
     var body: some View {

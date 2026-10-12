@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import ReaderCore
 @testable import UnagiReader
 
 /// The title of the article list must stay inside its column. (The system's navigation title ran along the whole toolbar, so a long feed
@@ -42,5 +43,37 @@ import Testing
         let ink = try inkRange(title: "Star", width: 400)
         #expect(abs(ink.min - ListHeader.sideMargin) <= 2)                         // the left margin is the rows' margin
         #expect(ink.max < 120)                                                     // and a short name does not stretch
+    }
+
+    /// The title above the list takes its margin from `NativeArticleList.Metrics.contentMargin`. This measures the rows of the real table
+    /// (the app's own setup, with the system's inset style) so the number cannot drift away from what the rows really do.
+    @Test func theRowsOfTheRealTableUseTheSharedContentMargin() throws {
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now)
+        var selection: UUID?
+        let parent = NativeArticleList(ids: [article.id], article: { _ in article }, feedTitle: { _ in "合成購読" },
+            selection: Binding(get: { selection }, set: { selection = $0 }), initialTop: nil, focus: false, shortcutsEnabled: true,
+            onTop: { _ in }, onKey: { _ in })
+        let coordinator = NativeArticleList.Coordinator(parent)
+        let table = NativeArticleList.Table()
+        NativeArticleList.configure(table)
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
+        scroll.documentView = table
+        table.dataSource = coordinator; table.delegate = coordinator; coordinator.table = table; coordinator.scroll = scroll
+        let window = NSWindow(contentRect: scroll.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = scroll
+        coordinator.update(parent)
+        table.sizeLastColumnToFit()
+        table.layoutSubtreeIfNeeded()
+        let cell = try #require(table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? NativeArticleList.Cell)
+        cell.layoutSubtreeIfNeeded()
+        func labels(in view: NSView) -> [NSTextField] { (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap(labels) }
+        let title = try #require(labels(in: cell).first { $0.stringValue == "合成記事" })
+        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
+        func textRect(_ label: NSTextField) -> NSRect {                                          // the label's alignment rect: where its text really starts and ends
+            table.convert(label.alignmentRect(forFrame: label.frame), from: label.superview)
+        }
+        let titleRect = textRect(title), timeRect = textRect(time)
+        #expect(abs(titleRect.minX - NativeArticleList.Metrics.contentMargin) < 0.5)               // the left edge of the text
+        #expect(abs((table.bounds.width - timeRect.maxX) - NativeArticleList.Metrics.contentMargin) < 0.5)   // the right edge
     }
 }

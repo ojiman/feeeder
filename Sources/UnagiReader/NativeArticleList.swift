@@ -26,10 +26,8 @@ struct NativeArticleList: NSViewRepresentable {
         scroll.drawsBackground = true; scroll.backgroundColor = AppPalette.surface
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-    func makeNSView(context: Context) -> NSScrollView {
-        let scroll = NSScrollView()
-        let table = Table()
+    /// The table's own setup. Tests use it too, so they measure the same table the app builds.
+    static func configure(_ table: Table) {
         table.headerView = nil
         table.addTableColumn(NSTableColumn(identifier: .init("article")))
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
@@ -37,6 +35,13 @@ struct NativeArticleList: NSViewRepresentable {
         table.intercellSpacing = .init(width: 0, height: 0)
         table.style = .inset
         table.allowsMultipleSelection = false
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSScrollView()
+        let table = Table()
+        Self.configure(table)
         table.delegate = context.coordinator
         table.dataSource = context.coordinator
         table.setAccessibilityLabel("記事一覧")
@@ -78,6 +83,10 @@ struct NativeArticleList: NSViewRepresentable {
 
     /// The vertical rhythm of a row (points), in one place so the table's row height and the cell's layout cannot drift apart.
     enum Metrics {
+        /// From the side edge of the list to the text of a row: the system's inset table style plus the cell's own 12 pt. The title above
+        /// the list (`ListHeader`) uses the same number so that the title and the rows share one edge. A test measures it in a real table,
+        /// so a change on either side fails there instead of drifting.
+        static let contentMargin: CGFloat = 28
         static let rowHeight: CGFloat = 108
         static let topInset: CGFloat = 14
         static let bottomInset: CGFloat = 14
