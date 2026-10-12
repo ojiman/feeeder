@@ -115,7 +115,7 @@ Focus the article list, then use these keys:
 Select a note in the sidebar (the most recently edited is first). The middle column shows the articles you put into it and the right column shows the article you select. The note panel opens beside the article when you select the note. Press the note button in the toolbar, or `⌥⌘I`, to close it and open it again (a note you closed stays closed while the app runs). The button is greyed out when no note is selected. Selecting a note folds the sidebar away (in a move of about 0.3 seconds, whatever the width of the window) so there is more room to write. The ✕ at the top left of the right column leaves the note and goes back to the screen you were on before (Feeds, for example); the sidebar comes back with it. It is not the same as hiding the note's panel.
 
 - A note is one Markdown document. You write plain text in your own words. A line that starts with `#` (up to six, then a space) is a heading and is shown bold and larger. A line that starts with `-`, `*`, `+` or a number such as `1.` is a list item: its mark is coloured and a wrapped line lines up with the text. This changes only how the text looks, never the saved text, and pressing Return does not continue a list. Pasting or dropping text from another app adds plain text only. While you are composing Japanese text, the look waits until you confirm or cancel. There is no length limit. It is saved as you type, exactly as you typed it. A note has no name: **its title is its first line** (without the leading `#` marks and spaces; an empty note is called 「新規ノート」). To change the name, right-click the note in the sidebar and choose "名前を変更…": it rewrites the first line (its `#` marks stay). Only when the window is narrow (under about 1,300 pt), opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. You can drag the edge of the panel to change its width, and the app keeps the width for the next launch (this is still being checked in a real window).
-- The top of the note panel has a share button and two small arrows for the previous and next article. The share menu offers 「Claudeで開く…」 (Open in Claude…), 「Markdownをコピー」 (Copy Markdown), and 「Markdownとして書き出す…」 (Export as Markdown). All three are disabled when the note is empty or has only whitespace.
+- The top of the note panel has two small arrows for the previous and next article and a copy button, 「Markdownをコピー」 (Copy Markdown). It copies the note's exact text, and it is disabled when the note is empty or has only whitespace.
 - Keys: `j` and `k` move between articles in the list, and `s`, `n`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 - **AI writes a summary only when you choose to send it.** It never rewrites your own text.
 
@@ -133,24 +133,14 @@ AI output is marked 「（AI要約）」 on its source line. When the feed text 
 - **The record in a note is never deleted automatically.** This means the article title, link, and the summary saved at that time, and your notes.
 - A Star or adding an article to a note does not extend the life of its body.
 
-## 6. Hand-off to Claude Desktop
+## 6. Using the note with another AI
 
-The share button at the top of the note panel is the only entry point. It offers three actions:
+The app has no AI of its own and does not talk to Claude, Codex, Gemini or any other AI.
 
-- 「Claudeで開く…」 (Open in Claude…) opens a review screen. It always contains the note only: the full text, the request, output language, byte size, expiry and SHA-256. The request asks Claude to quote what is already solid, identify gaps only from what the note does not say, suggest opposing views worth checking, and suggest what to read or write next. It asks Claude to treat the note as data and not to guess, rewrite it, or write into Unagi Reader. There is no article or source selector.
-- 「Markdownをコピー」 (Copy Markdown) copies the note's exact text. 「Markdownとして書き出す…」 (Export as Markdown) saves those same UTF-8 bytes to a `.md` file using a safe version of the note title. The save panel handles an existing file. Neither action adds a newline or sends the text to Claude.
-
-On the review screen, 「全文をコピー」 (Copy all), TXT export, split export, and the file passed to Claude all use the exact review package shown in the preview. Editing the note while this screen is open invalidates the review. Rebuild it before copying, exporting or opening Claude. Nothing leaves your Mac until you press 「Claudeで開く」 on this confirmation screen.
-Facts you should know:
-
-- **What was checked:** Claude Desktop 2.19675.0 with Pro and Cowork. Automatic attachment to normal Chat, other versions, and other plans have not been checked.
-- The app passes a short request text and the path of a TXT file in a launch link. The note text stays inside the TXT file.
-- **You must confirm the attachment in Claude and send the message yourself.** After you send, Claude may ask for permission for another folder. That permission lets Claude read and change files in the folder. Files that are used in the cloud leave your Mac. Unagi Reader puts only the generated package and its management data in a folder of its own. A warning may appear for a request that comes from a link.
-- A successful launch does not mean the file was attached, the message was sent, or the file was read.
-- If you cancel or the launch fails, you can try again with the same review. You can also copy the full text or export it as a TXT file. If there is a size limit, you can export UTF-8 files split to 1 MiB or less. This split size is not the limit of Claude.
-- The copy that the app manages is deleted when its note is deleted or 24 hours after creation. Editing the note keeps the copy as a snapshot until that deadline. Article retention and removal do not affect the copy. Older copies follow their note when its id is present and expire within 24 hours; obsolete article and question fields are ignored.
-- A place that you chose for an export, and what has already gone to Claude, are not removed by this.
-- You paste a reply into your note by yourself. There is no automatic sending and no automatic writing of replies.
+- **While you write:** on a Mac that has Apple Intelligence, the system's Writing Tools (proofread, rewrite, tone, summary, key points, list, table and more) appear in the note editor when you select text and right-click. They are the system's, not the app's.
+- **To ask another AI:** press 「Markdownをコピー」 (Copy Markdown) at the top of the note panel. The note's exact text goes to the clipboard, and you paste it into the AI you like. The app starts no other app, makes no file and uses no network for this.
+- Nothing leaves your Mac unless you paste it somewhere yourself.
+- Earlier versions kept copies of the note in a `Handoffs` folder of the library. The app removes that folder when it starts.
 
 ## 7. For developers: tests, CI, and compatibility checks
 

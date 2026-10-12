@@ -18,7 +18,7 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 
 ## After S3 (the rename to Unagi Reader is done: [decision 0023](decisions/0023-rename-to-unagi-reader.md))
 
-- **Real-device check (the PdM).** Read, send a summary, write beside the articles, ask Claude through the share button (the real launch of Claude Desktop is still unverified), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
+- **Real-device check (the PdM).** Read, send a summary, write beside the articles, copy the note into another AI (decision 0049 removed the hand-off to Claude), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
 - **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A fresh acceptance run of the reading features (the older acceptance records were removed, because they described old commits). A check that the user guides match the app. Signing and distribution only on the PdM's instruction.
 
 ## Candidates (not scheduled)
