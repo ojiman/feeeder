@@ -102,6 +102,25 @@ import Testing
         #expect(containsText("既存のノート", in: open.host))
     }
 
+    /// The width the person's saved or default setting asks for must be the width the panel has. The modifier that sets it was on the
+    /// inspector itself, where it had no effect: the panel stayed about 270 pt wide (checked in a real 1,240 pt window too).
+    @Test func theNotePanelOpensAtItsDefaultWidthNotAtWhateverIsLeft() async throws {
+        let h = try harness(scope: { store in .note(store.notes[0].id) }, noteOpen: true) { store in
+            let note = try store.createNote(text: "# A\n", at: .now)
+            try store.addArticle(store.articles[0].id, toNote: note.id, at: .now)
+            try store.saveNote(noteID: note.id, text: "既存のノート", at: .now)
+        }
+        defer { finish(h) }
+        try await settle(h.host) { containsText("既存のノート", in: h.host) }
+        pumpRunLoop(0.5)
+        func editors(in view: NSView) -> [NSTextView] {
+            ((view as? NSTextView).map { [$0] } ?? []).filter { $0.string == "既存のノート" } + view.subviews.flatMap { editors(in: $0) }
+        }
+        let editor = try #require(editors(in: h.host).first)
+        let width = editor.convert(editor.bounds, to: nil).width
+        #expect(abs(width - NotePanelWidth.load()) < 40, "the editor is \(width) pt wide; the panel should ask for \(NotePanelWidth.load()) pt")
+    }
+
     @Test func aNoteListsOnlyItsOwnArticlesWithTheNoteClosed() async throws {
         let h = try harness(scope: { store in .note(store.notes[0].id) }) { store in
             let note = try store.createNote(text: "# A\n", at: .now)

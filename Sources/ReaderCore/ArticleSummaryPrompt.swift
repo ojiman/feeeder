@@ -48,6 +48,7 @@ public enum ArticleSummaryPrompt {
                     .trimmingCharacters(in: .whitespaces)
                 return item.isEmpty ? nil : "- " + item
             }.joined(separator: "\n")
+            guard !text.isEmpty else { return nil }      // only list markers: no text, so no AI summary
         }
         return String(text.prefix(1_200))
     }

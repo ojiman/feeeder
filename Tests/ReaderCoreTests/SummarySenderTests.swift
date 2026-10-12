@@ -144,6 +144,18 @@ actor PageGate {
             #expect(store.note(id: outcome.send.noteID)?.text.contains("（AI要約）") == false)
         }
     }
+    @Test func aBulletAnswerWithNoTextIsAnUnmarkedFallback() async throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let store = try ReaderStore(url: library.url, seedDemo: true, now: at)
+        let generator = FakeGenerator()
+        await generator.scriptGeneration(["•\n-"])
+        let sender = SummarySender(store: store, assistant: generator, settings: { SummarySettings(format: .bullets) }, now: { at })
+        #expect(sender.start(articleID: store.articles[0].id, noteID: nil))
+        try await settle(sender)
+        guard case .done(let outcome) = sender.state else { Issue.record("expected fallback: \(sender.state)"); return }
+        #expect(!outcome.aiMade)
+        #expect(store.note(id: outcome.send.noteID)?.text.contains("（AI要約）") == false)
+    }
     @Test func disabledOrExpiredTextNeverCallsTheModel() async throws {
         for expired in [false, true] {
             let library = try TestLibrary(); defer { library.cleanup() }

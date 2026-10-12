@@ -11,9 +11,14 @@ import SwiftUI
 struct ListHeader: View {
     let title: String
     let count: Int
+    /// Extra room on the left. With the sidebar folded the list reaches the window's left edge and the window buttons (red, yellow, green)
+    /// sit over this header: the title starts to their right.
+    var leadingInset: CGFloat = 0
 
     /// Same left and right margin as the text of the rows below, so the title and the rows share one edge.
     static let sideMargin = NativeArticleList.Metrics.contentMargin
+    /// The width the window buttons need (they end about 80 pt from the left edge).
+    static let windowButtonsInset: CGFloat = 70
     /// The height of the title bar band the header sits in. The system does not tell it: the safe area of this view reports 0 (the list
     /// draws under the toolbar and handles the inset itself), so this is the toolbar's standard height. If it is wrong on another system
     /// the title is a little off-centre in the band; nothing breaks.
@@ -25,7 +30,7 @@ struct ListHeader: View {
             Text("\(count)件の記事").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Self.sideMargin)
+        .padding(.leading, Self.sideMargin + leadingInset).padding(.trailing, Self.sideMargin)
         .frame(height: Self.bandHeight, alignment: .center)
         .allowsHitTesting(false)                                  // the band still drags the window
         .accessibilityElement(children: .combine)
