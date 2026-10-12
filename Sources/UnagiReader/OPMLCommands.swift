@@ -49,6 +49,8 @@ struct OPMLImportPresentation: ViewModifier {
             .focusedSceneValue(\.importOPML, { Task { await flow.start() } })
             .alert(flow.report?.title ?? "", isPresented: Binding(get: { flow.report != nil }, set: { if !$0 { flow.dismissReport() } })) {
                 Button("OK") { flow.dismissReport() }
-            } message: { Text(flow.report?.message ?? "") }
+            } message: {
+                if let message = flow.report?.message, !message.isEmpty { Text(message) }
+            }
     }
 }

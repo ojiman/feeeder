@@ -19,12 +19,12 @@ public struct OPMLImportReport: Equatable, Sendable {
             let result = try store.importSubscriptions(document.feeds)
             if result.listRefreshFailed {
                 // Saved, so it is not a failure; the new rows show after the list loads again.
-                return OPMLImportReport(title: "OPMLを取り込みました",
-                                        message: "\(result.addedFeedIDs.count)件の購読を追加しましたが、一覧を更新できませんでした。アプリを開き直してください。", addedFeedIDs: [])
+                return OPMLImportReport(title: "\(result.addedFeedIDs.count)件の購読を追加しました。",
+                                        message: "一覧を更新できませんでした。アプリを開き直してください。", addedFeedIDs: [])
             }
             return Self.report(added: result.addedFeedIDs, alreadySubscribed: result.alreadySubscribed, unusable: document.skipped + result.rejected, upgraded: document.upgraded)
         } catch {
-            return OPMLImportReport(title: "OPMLを取り込めませんでした", message: error.localizedDescription, addedFeedIDs: [])
+            return OPMLImportReport(title: "OPMLを取り込めませんでした。", message: error.localizedDescription, addedFeedIDs: [])
         }
     }
 
@@ -47,20 +47,18 @@ public struct OPMLImportReport: Equatable, Sendable {
         return try OPMLParser.parse(data)
     }
 
+    /// The result is the title; the message says only what was not plain success (HIG: a short title, and a message only when it helps).
     static func report(added: [UUID], alreadySubscribed: Int, unusable: Int, upgraded: Int = 0) -> OPMLImportReport {
         var left: [String] = []
         if alreadySubscribed > 0 { left.append("すでに購読している\(alreadySubscribed)件") }
         if unusable > 0 { left.append("読めないアドレス\(unusable)件") }
-        let notTaken = left.isEmpty ? nil : "取り込まなかったもの：" + left.joined(separator: "、") + "。"
-        let message: String
-        if !added.isEmpty {
-            let upgradedNote = upgraded > 0 ? "http:// の\(upgraded)件は、https:// に変えて取り込みました。" : nil
-            message = (["\(added.count)件の購読を追加しました。"] + [notTaken, upgradedNote].compactMap { $0 } + ["記事は、これから順に届きます。"]).joined(separator: "\n")
-        } else if let notTaken {
-            message = "新しい購読はありませんでした。\n" + notTaken
-        } else {
-            message = "このファイルに購読は見つかりませんでした。"
-        }
-        return OPMLImportReport(title: "OPMLを取り込みました", message: message, addedFeedIDs: added)
+        var lines: [String] = []
+        if !left.isEmpty { lines.append(left.joined(separator: "と、") + "は取り込みませんでした。") }
+        if upgraded > 0 { lines.append("http:// の\(upgraded)件は https:// に変えました。") }
+        let title: String
+        if !added.isEmpty { title = "\(added.count)件の購読を追加しました。" }
+        else if !left.isEmpty { title = "新しい購読はありませんでした。" }
+        else { title = "このファイルに購読は見つかりませんでした。" }
+        return OPMLImportReport(title: title, message: lines.joined(separator: "\n"), addedFeedIDs: added)
     }
 }
