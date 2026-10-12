@@ -144,6 +144,13 @@ import Testing
     private func shown(_ h: NoteReaderTests.Harness, _ title: String) -> Bool {
         t.find(ArticleTextView.self, in: h.host)?.string.contains(title) == true
     }
+    /// Moves to the next (`j`) or the previous (`k`) article as the chevrons do: both reach `ReaderView.move`. The tests do not click the
+    /// chevrons: `NSButton.performClick` runs a nested event loop, and in these hosted tests it can stop the main run loop, which ends the
+    /// test process with exit code 0 before the summary line is printed. `scripts/check-test-log.sh` fails CI when that happens.
+    private func step(_ h: NoteReaderTests.Harness, _ key: String) throws {
+        let table = try #require(t.find(NativeArticleList.Table.self, in: h.host))
+        #expect(table.keyHandler?(key) == true)
+    }
 
     @Test func theChevronsMoveBetweenTheNotesArticlesAndStopAtTheEnds() async throws {
         let h = try openHarness()
@@ -152,15 +159,15 @@ import Testing
         let buttons = t.panelButtons(in: h)
         let (previous, next) = (buttons[0], buttons[1])
         #expect(next.isEnabled)                                                           // nothing shown: next (and previous) open the first
-        next.performClick(nil)
+        try step(h, "j")
         try await t.settle(h.host) { shown(h, "合成記事 0") }
         try await t.settle(h.host) { !previous.isEnabled }                               // at the first article
-        next.performClick(nil)
+        try step(h, "j")
         try await t.settle(h.host) { shown(h, "合成記事 1") }
-        next.performClick(nil)
+        try step(h, "j")
         try await t.settle(h.host) { shown(h, "合成記事 2") }
         try await t.settle(h.host) { !next.isEnabled }                                   // at the last article
-        previous.performClick(nil)
+        try step(h, "k")
         try await t.settle(h.host) { shown(h, "合成記事 1") }
         #expect(t.containsText("ノートの本文", in: h.host))                               // the note stayed
     }
@@ -194,7 +201,7 @@ import Testing
         let table = try #require(t.find(NativeArticleList.Table.self, in: h.host))
         table.selectRowIndexes(IndexSet(integer: 2), byExtendingSelection: false)       // chosen in the list, not in the panel
         try await t.settle(h.host) { shown(h, "合成記事 2") }
-        t.panelButtons(in: h)[0].performClick(nil)                                       // previous
+        try step(h, "k")                                                        // previous
         try await t.settle(h.host) { shown(h, "合成記事 1") }
         try await t.settle(h.host) { table.selectedRow == 1 }                            // the list follows
     }
@@ -203,12 +210,12 @@ import Testing
         let h = try openHarness()
         defer { t.finish(h) }
         try await t.settle(h.host) { t.panelButtons(in: h).count >= 2 }
-        t.panelButtons(in: h)[1].performClick(nil)                                       // next
+        try step(h, "j")                                                        // next
         try await t.settle(h.host) { shown(h, "合成記事 0") }
         try h.store.removeArticle(h.store.articles[0].id, fromNote: h.store.notes[0].id, at: .now)
         pumpRunLoop(0.3)
         #expect(shown(h, "合成記事 0") && t.containsText("ノートの本文", in: h.host))          // still shown, the note is untouched
-        t.panelButtons(in: h)[1].performClick(nil)                                       // next
+        try step(h, "j")                                                        // next
         try await t.settle(h.host) { shown(h, "合成記事 1") }
     }
 }
