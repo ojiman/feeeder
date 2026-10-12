@@ -1,4 +1,4 @@
-# 0039 Import subscriptions from an OPML file
+# 0041 Import subscriptions from an OPML file
 
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-12

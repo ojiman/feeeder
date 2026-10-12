@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// File ▸ 「OPMLを取り込む…」 from start to end (decision 0039): choose a file, add its subscriptions at once, keep the
+/// File ▸ 「OPMLを取り込む…」 from start to end (decision 0041): choose a file, add its subscriptions at once, keep the
 /// report for the person to read, and fetch the new subscriptions' articles in the background. The file panel is injected.
 @Observable @MainActor public final class OPMLImportFlow {
     /// What to tell the person; nil once they closed it.

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import ReaderCore
 
-/// Reading subscriptions from an OPML file (decision 0039).
+/// Reading subscriptions from an OPML file (decision 0041).
 @MainActor struct OPMLImportTests {
     private func parse(_ opml: String) throws -> OPMLDocument { try OPMLParser.parse(Data(opml.utf8)) }
     private func wrap(_ body: String) -> String { #"<?xml version="1.0"?><opml version="2.0"><head><title>Subscriptions</title></head><body>\#(body)</body></opml>"# }

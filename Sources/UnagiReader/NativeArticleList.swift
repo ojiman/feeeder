@@ -263,7 +263,7 @@ struct NativeArticleList: NSViewRepresentable {
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
         func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, inNote: Bool = false) {
             isRead = article.isRead
-            source.stringValue = (article.isRead ? "" : "● ") + (article.starredAt == nil ? "" : "★ ") + (inNote ? "▣ " : "") + feed
+            source.stringValue = (article.starredAt == nil ? "" : "★ ") + (inNote ? "▣ " : "") + feed
             title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
             let published = article.publishedAt
@@ -295,12 +295,10 @@ struct NativeArticleList: NSViewRepresentable {
         private func updatePalette() {
             let selected = backgroundStyle == .emphasized
             let isRead = isRead && backgroundStyle != .raised            // a row that is selected quietly is read at full strength
-            // Only the unread dot is coloured; the name stays quiet (a whole line of orange was too loud).
-            let nameColor: NSColor = selected ? .alternateSelectedControlTextColor : .secondaryLabelColor
-            let dotColor: NSColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : AppPalette.accent
-            let text = NSMutableAttributedString(string: source.stringValue, attributes: [.font: source.font as Any, .foregroundColor: nameColor])
-            if text.string.hasPrefix("●") { text.addAttribute(.foregroundColor, value: dotColor, range: NSRange(location: 0, length: 1)) }
-            source.attributedStringValue = text
+            // The unread mark is the colour of the source name itself (soft accent), and it turns gray like the title once the article is read.
+            // A plain string with `textColor` keeps `lineBreakMode` (a long name ends with an ellipsis); an attributed string without a
+            // paragraph style lost it, and the name was clipped without one.
+            source.textColor = selected ? .alternateSelectedControlTextColor : self.isRead ? .secondaryLabelColor : AppPalette.accent   // the real read state, not the quiet-selection one
             title.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .secondaryLabelColor : .labelColor
             summary.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .tertiaryLabelColor : .secondaryLabelColor
             timestamp.textColor = selected ? .alternateSelectedControlTextColor : isRead ? .tertiaryLabelColor : .secondaryLabelColor

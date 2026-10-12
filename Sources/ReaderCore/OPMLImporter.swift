@@ -1,6 +1,6 @@
 import Foundation
 
-/// What to tell the person after an OPML file was read (decision 0039).
+/// What to tell the person after an OPML file was read (decision 0041).
 public struct OPMLImportReport: Equatable, Sendable {
     public let title: String
     public let message: String

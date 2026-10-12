@@ -12,7 +12,7 @@ public struct OPMLImportResult: Sendable {
 }
 
 extension ReaderStore {
-    /// Adds the subscriptions of an OPML file in one save (decision 0039). A subscription that already exists is not
+    /// Adds the subscriptions of an OPML file in one save (decision 0041). A subscription that already exists is not
     /// touched. The new ones have no articles yet; the next refresh brings them. If the save fails, nothing is added.
     /// Addresses are normalized here as everywhere (host in lower case, no fragment), whoever calls.
     public func importSubscriptions(_ opmlFeeds: [OPMLFeed]) throws -> OPMLImportResult {

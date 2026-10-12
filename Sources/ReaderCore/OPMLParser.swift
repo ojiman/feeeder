@@ -37,7 +37,7 @@ public enum OPMLError: LocalizedError, Equatable {
     }
 }
 
-/// Reads the subscriptions of an OPML 1.0 / 2.0 file (decision 0039): every `<outline>` with an `xmlUrl` is a feed; an outline
+/// Reads the subscriptions of an OPML 1.0 / 2.0 file (decision 0041): every `<outline>` with an `xmlUrl` is a feed; an outline
 /// without one that holds feeds is a folder. Nothing is fetched. Like the feed parser, it never resolves a DTD or an entity.
 public enum OPMLParser {
     public static let maximumBytes = 5 * 1024 * 1024
