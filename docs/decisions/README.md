@@ -67,6 +67,7 @@
 | [0046](0046-sidebar-folds-like-reeder.md) | The sidebar folds like Reeder's: when the original page opens and when a note is shown | valid (with the decision PR) |
 | [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) | The way back is a ✕ at the top left of the right column | valid (with the original-page PR) |
 | [0048](0048-the-list-title-sits-below-the-band.md) | The list title sits below the toolbar band, level with the ✕ | valid (with the header PR) |
+| [0049](0049-one-note-and-no-ai-of-its-own.md) | One note, written beside the article; no hand-off and no AI of its own | valid (with the decision PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
