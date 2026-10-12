@@ -20,11 +20,10 @@ struct ReaderView: View {
     @State private var noteLayout = NoteLayout()
     /// The window's width, for the rule that folds the sidebar only in a narrow window (`NoteLayout.foldBelow`).
     @State private var windowWidth: Double = 0
-    /// The panel's width when the app started (the ideal width of the inspector), and the width it has now while the person drags.
+    /// The panel's width when the app started (the ideal width of the inspector). The width while the person drags is kept in `NotePanelWidthMemory`.
     @State private var startingPanelWidth = NotePanelWidth.load()
-    @State private var panelWidth: Double?
-    /// The first width the layout gave this panel: only a change from it can be the person's drag.
-    @State private var firstPanelWidth: Double?
+    /// True for one turn after the person dragged the panel shut, so that it is shown again (see `noteOpenBinding`).
+    @State private var panelReopening = false
     @State private var saveError: String?
     @State private var noteActionMessage: String?
     @State private var sender: SummarySender
@@ -172,7 +171,7 @@ struct ReaderView: View {
         }
         .onAppear { if noteOpen { noteLayout.noteOpened(windowWidth: windowWidth); applyColumns() } }
         .onChange(of: noteOpen) { _, open in
-            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed(); firstPanelWidth = nil; panelWidth = nil }
+            if open { noteLayout.noteOpened(windowWidth: windowWidth) } else { noteLayout.noteClosed() }
             applyColumns()
         }
         .onChange(of: columnVisibility) { _, visibility in
@@ -198,8 +197,10 @@ struct ReaderView: View {
             articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
         } detail: {
             originalColumn.frame(minWidth: 360)
-                .inspector(isPresented: noteOpenBinding) { notePanel }
-                .inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
+                // The width goes on the panel's content. Put on the inspector itself it had no effect, and the panel stayed about 270 pt wide.
+                .inspector(isPresented: noteOpenBinding) {
+                    notePanel.inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
+                }
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 960, minHeight: 600)
@@ -503,17 +504,7 @@ struct ReaderView: View {
                       onNext: { guard panelMayMove else { return }; perform(.next) },
                       onClaude: { reviewingNote = NoteSheet(id: id) },
                       onCopy: { _ = copyNote(id) }, onExport: { Task { _ = await exportNote(id) } })
-            .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
-                if firstPanelWidth == nil { firstPanelWidth = width }
-                panelWidth = width
-            }
-            .task(id: panelWidth) {
-                // Keep the width after the person lets go: wait for the drag to settle, then save it once.
-                guard let width = panelWidth else { return }
-                try? await Task.sleep(for: .milliseconds(600))
-                guard !Task.isCancelled, NotePanelWidth.shouldSave(new: width, saved: UserDefaults.standard.object(forKey: NotePanelWidth.key) as? Double, firstSeen: firstPanelWidth) else { return }
-                NotePanelWidth.save(width)
-            }
+            .modifier(NotePanelWidthMemory())
             .id(id)
         } else { EmptyView() }
     }
@@ -615,7 +606,13 @@ struct ReaderView: View {
     }
     private var noteOpen: Bool { noteScopeID.map { workspace.isNoteOpen(of: $0) } ?? false }
     private var noteOpenBinding: Binding<Bool> {
-        Binding(get: { noteOpen }, set: { open in if let id = noteScopeID { workspace.setNote(open: open, of: id) } })
+        // The panel is closed only by the toolbar button or ⌥⌘I (`togglePanel`). Dragging its edge shut also reports `false` here. The note
+        // stays open, and the panel is shown again on the next turn: ignoring the report left the panel gone while the app still counted it as
+        // open, and the person could lose the panel with no way back that they would find.
+        Binding(get: { noteOpen && !panelReopening }, set: { open in
+            if open { if let id = noteScopeID { workspace.setNote(open: true, of: id) } }
+            else if noteOpen { panelReopening = true; Task { @MainActor in panelReopening = false } }
+        })
     }
     /// A new note is empty and opens at once; its title is 「新規ノート」 until the first line is written.
     private func createNote() {
