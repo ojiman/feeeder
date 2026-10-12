@@ -35,4 +35,10 @@ struct SummarySettingsTests {
         #expect(ArticleSummaryPrompt.clean("• 一\n\n2. 二\n- 三", format: .bullets) == "- 一\n- 二\n- 三")
         #expect(ArticleSummaryPrompt.clean(String(repeating: "あ", count: 2000), format: .bullets)?.count == 1200)
     }
+    /// An answer that is only list markers has no text. It must be nil like any other blank answer, or the send is marked as AI text with no summary.
+    @Test func anAnswerOfOnlyListMarkersIsBlank() {
+        for raw in ["-", "•\n-", "1.\n2)", "- \n* "] {
+            #expect(ArticleSummaryPrompt.clean(raw, format: .bullets) == nil, "\(raw.debugDescription)")
+        }
+    }
 }
