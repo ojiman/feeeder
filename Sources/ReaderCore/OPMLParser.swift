@@ -18,6 +18,8 @@ public struct OPMLDocument: Sendable {
     public let skipped: Int
     /// Feeds that appear more than once in the file; the first one is kept.
     public let repeated: Int
+    /// Feeds whose `http://` address was changed to `https://` (the app cannot fetch plain `http://`).
+    public let upgraded: Int
 }
 
 public enum OPMLError: LocalizedError, Equatable {
@@ -59,7 +61,7 @@ public enum OPMLParser {
         if let failure = reader.failure { throw failure }
         guard finished else { throw OPMLError.invalidXML }
         guard reader.sawOPML else { throw OPMLError.notOPML }
-        return OPMLDocument(feeds: reader.feeds, skipped: reader.skipped, repeated: reader.repeated)
+        return OPMLDocument(feeds: reader.feeds, skipped: reader.skipped, repeated: reader.repeated, upgraded: reader.upgraded)
     }
 }
 
@@ -67,6 +69,7 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
     var feeds: [OPMLFeed] = []
     var skipped = 0
     var repeated = 0
+    var upgraded = 0
     var sawOPML = false
     var failure: OPMLError?
     private var depth = 0
@@ -100,12 +103,22 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
     }
 
     private func add(_ address: String, attributes: [String: String], folder: String, parser: XMLParser) {
-        guard let url = ArticleURL.validated(address) else { skipped += 1; return }
+        guard let found = ArticleURL.validated(address) else { skipped += 1; return }
+        let url = Self.secure(found)
         guard seen.insert(url.absoluteString).inserted else { repeated += 1; return }
+        if url != found { upgraded += 1 }
         guard feeds.count < OPMLParser.maximumFeeds else { fail(.tooMany, parser); return }
         let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? "フィード"
         feeds.append(OPMLFeed(title: name, url: url,
-                              siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }, folder: folder))
+                              siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }.map(Self.secure), folder: folder))
+    }
+
+    /// `http://` becomes `https://`: the system does not let the app fetch plain `http://`, so a feed kept at that address would
+    /// never update, and most sites answer on https as well. An address with its own port is left as it is (the port is for http).
+    private static func secure(_ url: URL) -> URL {
+        guard url.scheme == "http", url.port == nil, var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        parts.scheme = "https"
+        return parts.url ?? url
     }
 
     /// The first of the attributes that holds a name, cut to the length limit.

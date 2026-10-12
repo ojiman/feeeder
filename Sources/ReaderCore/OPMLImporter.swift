@@ -22,7 +22,7 @@ public struct OPMLImportReport: Equatable, Sendable {
                 return OPMLImportReport(title: "OPMLを取り込みました",
                                         message: "\(result.addedFeedIDs.count)件の購読を追加しましたが、一覧を更新できませんでした。アプリを開き直してください。", addedFeedIDs: [])
             }
-            return Self.report(added: result.addedFeedIDs, alreadySubscribed: result.alreadySubscribed, unusable: document.skipped + result.rejected)
+            return Self.report(added: result.addedFeedIDs, alreadySubscribed: result.alreadySubscribed, unusable: document.skipped + result.rejected, upgraded: document.upgraded)
         } catch {
             return OPMLImportReport(title: "OPMLを取り込めませんでした", message: error.localizedDescription, addedFeedIDs: [])
         }
@@ -47,14 +47,15 @@ public struct OPMLImportReport: Equatable, Sendable {
         return try OPMLParser.parse(data)
     }
 
-    static func report(added: [UUID], alreadySubscribed: Int, unusable: Int) -> OPMLImportReport {
+    static func report(added: [UUID], alreadySubscribed: Int, unusable: Int, upgraded: Int = 0) -> OPMLImportReport {
         var left: [String] = []
         if alreadySubscribed > 0 { left.append("すでに購読している\(alreadySubscribed)件") }
         if unusable > 0 { left.append("読めないアドレス\(unusable)件") }
         let notTaken = left.isEmpty ? nil : "取り込まなかったもの：" + left.joined(separator: "、") + "。"
         let message: String
         if !added.isEmpty {
-            message = (["\(added.count)件の購読を追加しました。"] + [notTaken].compactMap { $0 } + ["記事は、これから順に届きます。"]).joined(separator: "\n")
+            let upgradedNote = upgraded > 0 ? "http:// の\(upgraded)件は、https:// に変えて取り込みました。" : nil
+            message = (["\(added.count)件の購読を追加しました。"] + [notTaken, upgradedNote].compactMap { $0 } + ["記事は、これから順に届きます。"]).joined(separator: "\n")
         } else if let notTaken {
             message = "新しい購読はありませんでした。\n" + notTaken
         } else {

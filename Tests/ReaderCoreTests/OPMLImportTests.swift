@@ -47,6 +47,17 @@ import Testing
         """))
         #expect(document.feeds.map(\.title) == ["One", "Three"] && document.skipped == 0 && document.repeated == 1)
     }
+    @Test func aPlainHTTPAddressIsUpgradedToHTTPSBecauseTheAppCannotFetchHTTP() throws {
+        let document = try parse(wrap("""
+        <outline text="Old" xmlUrl="http://old.example/atom.xml" htmlUrl="http://old.example/"/>
+        <outline text="Also https" xmlUrl="https://old.example/atom.xml"/>
+        <outline text="Port" xmlUrl="http://port.example:8080/feed"/>
+        <outline text="Secure" xmlUrl="https://secure.example/feed"/>
+        """))
+        #expect(document.feeds.map(\.url.absoluteString) == ["https://old.example/atom.xml", "http://port.example:8080/feed", "https://secure.example/feed"])
+        #expect(document.feeds[0].siteURL?.absoluteString == "https://old.example/")             // the site too, for the icon
+        #expect(document.upgraded == 1 && document.repeated == 1)                                  // the http and https forms are one feed; a port is left as it is
+    }
     @Test func aNameFallsBackToTheHost() throws {
         #expect(try parse(wrap(#"<outline xmlUrl="https://nameless.example/f"/>"#)).feeds.first?.title == "nameless.example")
     }
@@ -190,6 +201,8 @@ import Testing
         let report = await OPMLImporter(store: store).importFile(at: url)
         #expect(report.title == "OPMLを取り込みました" && report.addedFeedIDs.count == 2)
         #expect(report.message == "2件の購読を追加しました。\n取り込まなかったもの：読めないアドレス1件。\n記事は、これから順に届きます。")     // the repeated A is one feed, not "already subscribed"
+        #expect(OPMLImporter.report(added: [UUID()], alreadySubscribed: 0, unusable: 0, upgraded: 9).message
+                == "1件の購読を追加しました。\nhttp:// の9件は、https:// に変えて取り込みました。\n記事は、これから順に届きます。")
         #expect(store.feeds.count == 2 && Set(store.feeds.map(\.folder)) == ["Tech"])
     }
     @Test func theReportSaysWhatHappenedWhenNothingWasAdded() async throws {
