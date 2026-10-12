@@ -104,21 +104,13 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
 
     private func add(_ address: String, attributes: [String: String], folder: String, parser: XMLParser) {
         guard let found = ArticleURL.validated(address) else { skipped += 1; return }
-        let url = Self.secure(found)
+        let url = ArticleURL.secured(found)
         guard seen.insert(url.absoluteString).inserted else { repeated += 1; return }
         if url != found { upgraded += 1 }
         guard feeds.count < OPMLParser.maximumFeeds else { fail(.tooMany, parser); return }
         let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? "フィード"
         feeds.append(OPMLFeed(title: name, url: url,
-                              siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }.map(Self.secure), folder: folder))
-    }
-
-    /// `http://` becomes `https://`: the system does not let the app fetch plain `http://`, so a feed kept at that address would
-    /// never update, and most sites answer on https as well. An address with its own port is left as it is (the port is for http).
-    private static func secure(_ url: URL) -> URL {
-        guard url.scheme == "http", url.port == nil, var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
-        parts.scheme = "https"
-        return parts.url ?? url
+                              siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }.map(ArticleURL.secured), folder: folder))
     }
 
     /// The first of the attributes that holds a name, cut to the length limit.

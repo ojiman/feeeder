@@ -99,8 +99,8 @@ struct SubscriptionSheet: View {
                     } else {
                         Label { Text(checked.parsed.title).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
                     }
-                    if checked.foundOnPage != nil {
-                        Text("ページのフィード：\(checked.parsed.sourceURL.absoluteString)")
+                    if let address = checked.subscribedAddress(whenTyped: source) {
+                        Text("購読するURL：\(address)")
                             .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     }
                     if checked.parsed.skippedEntries > 0 {

@@ -17,7 +17,7 @@ public enum FeedCheckRequest: Sendable, Equatable {
         if manual {
             return xml.allSatisfy(\.isWhitespace) ? nil : .xml(Data(xml.utf8), url)
         }
-        return .url(url)
+        return .url(ArticleURL.secured(url))                  // plain http is never sent: the https form is checked and used
     }
 
     /// A host that looks finished: a name of dotted parts that ends in a part with at least two characters and a letter
