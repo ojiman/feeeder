@@ -11,7 +11,7 @@ More articles are written than anyone can read. The hard part is finding the few
 Unagi Reader is for engineers in 2026 who read many feeds every day. Its value is **one loop in one app, with no waiting: read, take notes, ask AI, understand.**
 
 - **Read fast.** Three columns and Vim-style keys. Scrolling and typing never wait on a reload, the network or AI.
-- **Note it while you read.** One button sends an article's summary to a note. The articles you sent sit beside the note, so you write in your own words while you see them.
+- **Note it while you read.** One plain Markdown note, written in your own words next to the article.
 - **Ask AI when you choose.** Copy the note as it is and paste it into any AI you like, or use the system's Writing Tools in the note editor. Nothing leaves your Mac unless you paste it.
 - **Keep it yours.** No account, no backend, no sync. Everything lives in a local database.
 
@@ -34,7 +34,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 
 ## FAQ
 
-**Does it send my data anywhere?** It fetches the feeds you subscribe to, article images and favicons, and original pages when you open them in the app. AI runs on your Mac. Text leaves your Mac only when you copy it and paste it somewhere yourself. There is no backend and no account.
+**Does it send my data anywhere?** It fetches the feeds you subscribe to, article images and favicons, and original pages when you open them in the app. The app has no AI of its own. Text leaves your Mac only when you copy it and paste it somewhere yourself. There is no backend and no account.
 
 **Where is my data?** In `~/Library/Application Support/UnagiReader/`.
 

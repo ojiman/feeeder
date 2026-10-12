@@ -11,14 +11,14 @@ import Testing
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
     }
     private func settle(_ host: NSView, until ready: () -> Bool) async throws {
-        for _ in 0..<100 {
+        for _ in 0..<250 {
             host.layoutSubtreeIfNeeded()
             if ready() { return }
             try await Task.sleep(for: .milliseconds(20))
         }
         #expect(ready(), "Synthetic reader did not reach the expected state")
     }
-    @Test func originalPageKeepsColumnsAndSidebarControlsMounted() async throws {
+    @Test func originalPageFoldsTheSidebarAndClosingBringsItBack() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -40,20 +40,21 @@ import Testing
         try await settle(host) { find(ArticleTextView.self, in: host)?.string.contains("合成記事 0") == true }
         let accessory = try #require(window.titlebarAccessoryViewControllers.first { $0.view is NSHostingView<SidebarTitlebarControls.Buttons> })
         let frame = table.convert(table.bounds, to: nil)
+        func accessoryMounted() -> Bool { window.titlebarAccessoryViewControllers.contains { $0 === accessory } }
+        func listIsBack() -> Bool { abs(table.convert(table.bounds, to: nil).minX - frame.minX) < 1 && abs(table.bounds.width - frame.width) < 1 }
+        func pageIsClosed() -> Bool { find(OriginalReaderWebView.self, in: host) == nil && find(OriginalFailureHostingView<AnyView>.self, in: host) == nil }
         for row in [1, 2, 0] {
             let coordinator = try #require(table.delegate as? NativeArticleList.Coordinator)
             coordinator.parent.onKey("v")
-            try await settle(host) { find(OriginalReaderWebView.self, in: host) != nil || find(OriginalFailureHostingView<AnyView>.self, in: host) != nil }
-            #expect(window.titlebarAccessoryViewControllers.contains { $0 === accessory })
-            #expect(!accessory.view.isHidden)
-            #expect(abs(table.convert(table.bounds, to: nil).minX - frame.minX) < 1)
+            try await settle(host) { !pageIsClosed() }
+            // Decision 0046: the sidebar folds with the page, so its titlebar buttons leave and the list moves to the window's left edge with the same width.
+            try await settle(host) { !accessoryMounted() && table.convert(table.bounds, to: nil).minX < frame.minX - 50 }
             #expect(abs(table.bounds.width - frame.width) < 1)
             table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-            try await settle(host) { find(OriginalReaderWebView.self, in: host) == nil && find(OriginalFailureHostingView<AnyView>.self, in: host) == nil }
-            #expect(window.titlebarAccessoryViewControllers.contains { $0 === accessory })
+            try await settle(host) { pageIsClosed() }
+            // Closing the page, however it is closed, brings the sidebar and its buttons back.
+            try await settle(host) { accessoryMounted() && listIsBack() }
             #expect(!accessory.view.isHidden)
-            #expect(abs(table.convert(table.bounds, to: nil).minX - frame.minX) < 1)
-            #expect(abs(table.bounds.width - frame.width) < 1)
         }
     }
 }

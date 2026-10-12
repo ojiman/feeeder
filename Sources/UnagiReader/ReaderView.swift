@@ -23,10 +23,6 @@ struct ReaderView: View {
     @State private var panelReopening = false
     @State private var saveError: String?
     @State private var noteActionMessage: String?
-    @State private var sender: SummarySender
-    @State private var sendingArticleID: UUID?
-    @State private var pickingNote = false
-    @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     /// Set while the "add subscription" sheet is open: the folder the new subscription goes to.
@@ -54,14 +50,13 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true,
          notePasteboard: NSPasteboard = .general,
          chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
         self.store = store; self.refresh = refresh
         self.notePasteboard = notePasteboard
         _opml = State(initialValue: OPMLImportFlow(store: store, refresh: refresh, chooseFile: chooseOPML))
         self.imageLoader = imageLoader
-        _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
         _scope = State(initialValue: initialScope)
         var initialWorkspace = ReaderWorkspaceState()
@@ -168,17 +163,6 @@ struct ReaderView: View {
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
-                Button { perform(.sendToNote) } label: {
-                    Image(systemName: article.map { store.isInAnyNote(articleID: $0.id) } == true ? "square.stack.fill" : "square.stack")
-                }
-                .help("ノートに要約を送る (n)").accessibilityLabel("ノートに要約を送る")
-                .disabled(article == nil || sender.isWorking)
-                .popover(isPresented: $pickingNote, arrowEdge: .bottom) {
-                    SendToNoteView(store: store, onSend: { noteID in
-                        if let id = sendingArticleID { sender.start(articleID: id, noteID: noteID) }
-                        pickingNote = false
-                    }, onClose: { pickingNote = false })
-                }
                 Button(action: openExternal) { Image(systemName: "globe") }
                     .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
                     .disabled(article?.originalURL.flatMap { ArticleURL.validated($0) } == nil)
@@ -195,9 +179,6 @@ struct ReaderView: View {
         .task { try? await imageLoader.prepare(at: .now) }
         .onChange(of: store.contentRevision) { _, _ in
             loading.refreshCachedContent()
-        }
-        .onChange(of: pickingNote) { _, open in
-            if !open, originalPage.url == nil { listFocused = pickerRestoresListFocus }
         }
         .onChange(of: selection) { _, id in
             // The page slides out to the right (the way it came in, reversed) and shows the next article's reader text.
@@ -216,17 +197,9 @@ struct ReaderView: View {
         }
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
-        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; perform(.sendToNote); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
         .sheet(item: $addingTo) { target in
             SubscriptionSheet(store: store, folder: target.folder) { scope = .feed($0) }
-        }
-        .overlay(alignment: .bottomTrailing) {
-            SendStatusBar(sender: sender, onOpen: { id in
-                guard store.note(id: id) != nil else { saveError = NoteError.missingNote.localizedDescription; return }
-                workspace.setNote(open: true, of: id)
-                scope = .note(id)
-            })
         }
         .overlay(alignment: .bottomLeading) {
             if let noteActionMessage {
@@ -402,7 +375,6 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
-                case "n": perform(.sendToNote)
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
@@ -443,9 +415,9 @@ struct ReaderView: View {
         } else { EmptyView() }
     }
 
-    /// Not while Japanese text is being composed, and not while the note picker is open (it belongs to the article that is shown).
+    /// Not while Japanese text is being composed.
     private var panelMayMove: Bool {
-        !pickingNote && !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
+        !ReaderKeyboardCommands.hasMarkedText(NSApp.keyWindow?.firstResponder)
     }
 
     private var originalColumn: some View {
@@ -495,7 +467,7 @@ struct ReaderView: View {
         }
     }
 
-    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil || pickingNote, originalPage: originalPage.url != nil) }
+    private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
         if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
@@ -542,11 +514,6 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
-        case .sendToNote:
-            guard let article = selectedArticle, !pickingNote, !sender.isWorking else { return }
-            sendingArticleID = article.id
-            pickerRestoresListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
-            pickingNote = true
         }
     }
 

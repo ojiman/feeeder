@@ -57,7 +57,7 @@ import Testing
         try prepare(store)
         let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
-            initialScope: try scope(store), initialNoteOpen: noteOpen, assistant: nil,
+            initialScope: try scope(store), initialNoteOpen: noteOpen,
             notePasteboard: pasteboard)
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
@@ -128,36 +128,6 @@ import Testing
         defer { finish(h) }
         try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 0 }
     }
-
-    @Test func resultOpenReopensAClosedCurrentNote() async throws {
-        let h = try harness(scope: { .note($0.notes[0].id) }) { store in
-            let note = try store.createNote(text: "# Closed note", at: .now)
-            try store.addArticle(store.articles[0].id, toNote: note.id, at: .now)
-        }
-        defer { finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await settle(h.host) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 1 }
-        let table = try #require(find(NativeArticleList.Table.self, in: h.host))
-        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-        pumpRunLoop(0.2)
-        #expect(!containsText("# Closed note", in: h.host))
-        #expect(table.keyHandler?("n") == true)
-        pumpRunLoop(0.3)
-        let choices = try #require(NSApp.windows.filter { $0 !== h.window }.compactMap { $0.contentView.map { buttons(in: $0) } }.first { $0.count == 2 })
-        try #require(choices.count == 2)
-        choices[1].performClick(nil)
-        for _ in 0..<100 {
-            if h.store.notes[0].text.contains("出典:") { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        try await settle(h.host) { h.store.notes[0].text.contains("出典:") }
-        pumpRunLoop(0.3)
-        let controls = buttons(in: h.host)
-        try #require(controls.count >= 3)
-        controls[controls.count - 3].performClick(nil) // Open, Undo, Close are the final overlay controls.
-        try await settle(h.host) { containsText(h.store.notes[0].text, in: h.host) }
-    }
-
 }
 
 /// The note panel beside the article (L1). A suite of its own: see the N4 verification record for why. Run each test alone.
