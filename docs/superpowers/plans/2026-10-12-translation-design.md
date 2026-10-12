@@ -18,6 +18,7 @@ A button in the article toolbar. Pressing it translates the open article (title 
 | Can it make the reader wait? | Not without a button: translation starts only when pressed. It shows the first paragraphs as soon as they are ready, and it stops when the person moves to another article. |
 | Can text leave the Mac without a button? | No. Translation runs on the Mac. The only network use is the system downloading a language pack, which the system asks the person to allow. |
 | Does it work with AI off? | Yes. The Translation framework does not need Apple Intelligence. |
+| Does it fit decision 0049 ("the app adds no AI of its own")? | Yes. Translation is a function of the system, like the Writing Tools the owner chose for the note; the app ships and runs no model of its own and sends no text anywhere. This is also why Foundation Models is not used (section 3). |
 
 ## 3. Engine: the Translation framework, not Foundation Models
 
@@ -45,11 +46,11 @@ Sources: Apple's documentation for [TranslationSession](https://developer.apple.
 
 ## 4. What the person sees
 
-- **Button.** In the toolbar group at the top right, after 「ノートに要約を送る」 and before 「元ページをブラウザで開く」. Label 「翻訳」 (help: 「翻訳する／原文に戻す (t)」). Its icon is filled while the translation is shown. It is always present and disabled when no article is open (the toolbar must not change height, as the existing comment in `ReaderView` says). **A menu bar command too**: 「表示 ▸ 翻訳 / 原文に戻す」, because on macOS every toolbar item must also be a command in the menu bar (section 12). The key is `t`, free since the theme picker was removed; like the other keys it does nothing inside a text field.
+- **Button.** In the toolbar group at the top right, before 「元ページをブラウザで開く」 (the send-to-a-note button no longer exists; see decision 0049). Label 「翻訳」 (help: 「翻訳する／原文に戻す (t)」). Its icon is filled while the translation is shown. It is always present and disabled when no article is open (the toolbar must not change height, as the existing comment in `ReaderView` says). **A menu bar command too**: 「表示 ▸ 翻訳 / 原文に戻す」, because on macOS every toolbar item must also be a command in the menu bar (section 12). The key is `t`, free since the theme picker was removed; like the other keys it does nothing inside a text field.
 - **Language.** The button is a menu with a primary action: a click translates (or goes back); the menu lists the target languages, with a check on the current one. The first target is the **language of the app** (Japanese: the app's labels are Japanese only today, and when a language setting arrives it follows that setting). It is **not** the first system language: the owner keeps the system in English because it suits software work, and still wants to read in Japanese. A choice made in the menu is remembered in the app's preferences, so the person who reads Japanese articles in English once picks English once. The menu has no other items.
 - **While it works.** The existing status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」 with a small determinate progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. The article title and paragraphs change from the top as results arrive. Reduce Motion: no animation is used.
 - **When it is done.** The row says what was done in a few words, for example 「英語 → 日本語」, with a link 「原文を表示」 (the same as the button). The reading position (the paragraph at the top) is kept when the text switches.
-- **What is not translated.** The note, the article list and the sidebar stay as they are. 「ノートに要約を送る」 and the Claude hand-off use the **original** text: a summary or a package is never made from a machine translation without the person asking.
+- **What is not translated.** The note, the article list and the sidebar stay as they are. Decision 0049 removed the summary and the hand-off to Claude, so nothing is made from the article's text any more; 「Markdownをコピー」 copies the note exactly and is not affected.
 - **Moving on.** Moving to another article shows that article in its original language and stops the running translation. Translation is not sticky: nothing is translated that the person did not ask for. (A per-subscription "always translate" is a later idea, section 10.)
 - **The two ways an article is shown.** An article is shown either as **reader text** (the text of the feed, or the full text after 「全文を取得」) or as the **original page** in the app's browser (key `v`). Version 1 translates the reader text only. While the original page is open the button is disabled, with the help text 「元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます」. Reason: there is no public way to translate a page inside the app's web view; it would need our own code that reads the text nodes of the page, translates them and writes them back, which breaks on dynamic pages and is out of proportion for this version. The reader text is the better place to read a translation anyway: it is clean, and 「全文を取得」 gives it the whole article. When the reader text is short (a feed excerpt), the status row says so and points to 「全文を取得」, so the person knows why only a few lines were translated; the app does not fetch the page by itself.
 - **Same language.** If the article is already in the target language the button says so in the status row (「すでに日本語です」) and does nothing else.
@@ -145,7 +146,7 @@ Read on 2026-10-12: [Windows](https://developer.apple.com/design/human-interface
 | The key `t` without Command | Menu key equivalents normally use Command; the reading keys (`j`, `k`, `s`, `n`) are the app's own, deliberate choice | Kept for consistency with the other reading keys; it is ignored in text fields. The menu bar command shows no key (it is not a Command shortcut). |
 | Accessibility | The button's label follows its state: 「翻訳」 / 「原文を表示」; the status row is read by VoiceOver | Added to T2. |
 
-**Found while checking, outside this design:** the existing toolbar items (the note panel, Star, send to a note, open the original page) have no commands in the menu bar. By the same rule they should. This is a small separate change; it is not part of the translation work.
+**Found while checking, outside this design:** the existing toolbar items (the note, Star, open the original page) have no commands in the menu bar. By the same rule they should. This is a small separate change; it is not part of the translation work.
 
 ## 11. Decisions
 
@@ -155,7 +156,7 @@ Answered by the owner on 2026-10-12:
 2. **Default target language.** Not the first system language (the owner's is English). The language of the app (Japanese), then the remembered choice. Section 4. *(Product Owner's proposal, to settle the owner's point that Japanese must be one press away.)*
 3. **Not sticky.** Each article opens in its original language; translating is an explicit press. Yes.
 4. **The key.** `t`. Yes.
-5. **Summary and Claude hand-off use the original text.** Yes. (The Claude hand-off is under review and is left as it is.)
+5. **Summary and Claude hand-off use the original text.** Yes. *(Moot since decision 0049 removed both.)*
 6. **Links in the translated text** are left out in the first version. Yes (the owner prefers it simple).
 
 7. **Reader text and original page.** Version 1 translates the reader text; the button is disabled while the original page is open, and a short feed excerpt is pointed to 「全文を取得」 (section 4). Yes (the owner: it should simply be disabled). A page-level translation (reading the page's text nodes) is not planned.
