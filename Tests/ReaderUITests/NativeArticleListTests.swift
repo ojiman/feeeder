@@ -26,7 +26,7 @@ import ReaderCore
         let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
         let expected = article.publishedAt.formatted(.dateTime.hour().minute())
         #expect(time.stringValue == expected)
-        #expect(labels(in: cell).contains { $0.stringValue == "● 合成購読" })
+        #expect(labels(in: cell).contains { $0.stringValue == "合成購読" })
         article.publishedAt = .now.addingTimeInterval(-86400 * 400)
         cell.configure(article, feed: "合成購読")
         #expect(time.stringValue == article.publishedAt.formatted(.dateTime.year().month().day().hour().minute()))
@@ -131,25 +131,39 @@ import ReaderCore
         cell.backgroundStyle = .normal
         #expect(title.textColor == .secondaryLabelColor)
     }
-    @Test func onlyTheUnreadDotIsColouredAndTheSourceNameIsQuiet() throws {
+    @Test func theUnreadSourceNameCarriesTheAccentAndTurnsGrayWhenRead() throws {
         let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 320, height: NativeArticleList.Metrics.rowHeight))
         let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now)
         cell.configure(article, feed: "合成購読")
         let source = try #require(labels(in: cell).first { $0.stringValue.hasSuffix("合成購読") })
-        func colour(_ index: Int) -> NSColor? { source.attributedStringValue.attribute(.foregroundColor, at: index, effectiveRange: nil) as? NSColor }
-        #expect(source.stringValue == "● 合成購読")
-        #expect(colour(0) == AppPalette.accent)                                                 // the dot
-        #expect(colour(2) == .secondaryLabelColor)                                              // the name is not orange
+        #expect(source.stringValue == "合成購読")                                               // no dot: the colour is the mark
+        #expect(source.textColor == AppPalette.accent)                                          // unread
         article.isRead = true
         cell.configure(article, feed: "合成購読")
-        #expect(source.stringValue == "合成購読" && colour(0) == .secondaryLabelColor)
-        cell.backgroundStyle = .raised                                                          // read and selected quietly: still no coloured first letter
-        #expect(source.stringValue == "合成購読" && colour(0) == .secondaryLabelColor)
+        #expect(source.textColor == .secondaryLabelColor)                                       // read: gray, like the read headline
+        cell.backgroundStyle = .raised                                                          // read and selected quietly
+        #expect(source.textColor == .secondaryLabelColor)
         cell.backgroundStyle = .normal
         article.isRead = false
         cell.configure(article, feed: "合成購読")
         cell.backgroundStyle = .emphasized
-        #expect(colour(0) == .alternateSelectedControlTextColor && colour(2) == .alternateSelectedControlTextColor)
+        #expect(source.textColor == .alternateSelectedControlTextColor)
+    }
+    @Test func aLongSourceNameEndsWithAnEllipsisInsteadOfBeingClipped() throws {
+        let cell = NativeArticleList.Cell(frame: NSRect(x: 0, y: 0, width: 252, height: NativeArticleList.Metrics.rowHeight))
+        let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now)
+        for read in [false, true] {
+            article.isRead = read
+            cell.configure(article, feed: "はてなブックマーク - 人気エントリー - テクノロジー")
+            cell.layoutSubtreeIfNeeded()
+            let source = try #require(labels(in: cell).first { $0.stringValue.hasSuffix("テクノロジー") })
+            // What is drawn comes from the attributed string. Without a truncating paragraph style it wraps at a space and clips
+            // without an ellipsis ("はてなブックマー", "Latest"), whatever lineBreakMode says.
+            let style = source.attributedStringValue.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
+            #expect(source.lineBreakMode == .byTruncatingTail)
+            #expect(style?.lineBreakMode == .byTruncatingTail)
+            #expect(cell.convert(source.bounds, from: source).height < 20)                     // one line, so the header keeps its height
+        }
     }
     @Test func rowsHaveRoomToBreathe() throws {
         #expect(NativeArticleList.Metrics.rowHeight == 108)                                    // decision 0026: 96 felt cramped
