@@ -45,7 +45,7 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
 
     init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false,
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false, initialListShown: Bool = false,
          notePasteboard: NSPasteboard = .general,
          chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
         self.store = store; self.refresh = refresh
@@ -57,6 +57,8 @@ struct ReaderView: View {
         var initialWorkspace = ReaderWorkspaceState()
         initialWorkspace.scope = initialScope
         initialWorkspace.noteOpen = initialNoteOpen
+        initialWorkspace.noteListShown = initialListShown
+        _columnVisibility = State(initialValue: SidebarFold.folded(pageOpen: false, noteOpen: initialNoteOpen) ? .doubleColumn : .all)
         _workspace = State(initialValue: initialWorkspace)
     }
 
@@ -129,6 +131,7 @@ struct ReaderView: View {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
             articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
+                .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion))
         } detail: {
             originalColumn.frame(minWidth: 360)
                 // The width goes on the panel's content. Put on the inspector itself it had no effect, and the panel stayed about 270 pt wide.
@@ -146,7 +149,7 @@ struct ReaderView: View {
             // the toolbar would change height each time and the whole window would shift (and the title would move).
             ToolbarItemGroup(placement: .primaryAction) {
                 let article = selectedArticle
-                Button { togglePanel() } label: { Image(systemName: "note.text") }
+                Button { toggleNote() } label: { Image(systemName: "note.text") }
                     .keyboardShortcut("i", modifiers: [.option, .command])
                     .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
@@ -187,6 +190,7 @@ struct ReaderView: View {
         .onKeyPress("b") { guard shortcutsEnabled else { return .ignored }; openExternal(); return .handled }
         .onKeyPress("s") { guard shortcutsEnabled else { return .ignored }; perform(.toggleStar); return .handled }
         .onKeyPress("v") { guard shortcutsEnabled else { return .ignored }; openOriginal(); return .handled }
+        .onKeyPress("n") { guard shortcutsEnabled else { return .ignored }; toggleNote(); return .handled }
         .sheet(item: $addingTo) { target in
             SubscriptionSheet(store: store, folder: target.folder) { scope = .feed($0) }
         }
@@ -337,6 +341,7 @@ struct ReaderView: View {
                 case "b": openExternal()
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
+                case "n": toggleNote()
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
@@ -386,7 +391,22 @@ struct ReaderView: View {
                     .offset(x: originalSlide)
             }
         }.clipped()
+            .overlay(alignment: .topLeading) { listButton }
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }
+    }
+
+    /// 「一覧」 at the top left of the article, while the note is open: shows the list beside the article and the note, or hides it again.
+    /// It sits where the ✕ of the original page sits (below the toolbar band), and the original page has its own ✕ in its place.
+    @ViewBuilder private var listButton: some View {
+        if noteOpen, originalPage.url == nil {
+            Button(action: toggleListBesideNote) {
+                Label("一覧", systemImage: workspace.noteListShown ? "sidebar.squares.left" : "list.bullet")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .buttonStyle(.borderless).padding(10)
+            .help(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
+            .accessibilityLabel(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
+        }
     }
 
     @ViewBuilder private var detail: some View {
@@ -458,12 +478,13 @@ struct ReaderView: View {
             guard let article = selectedArticle else { return }
             perform { try store.setStar(articleID: article.id, isStarred: article.starredAt == nil, at: .now) }
         case .closeOriginal: closeOriginal()
+        case .toggleNote: toggleNote()
         }
     }
 
     private var noteOpen: Bool { workspace.noteOpen }
     private var noteOpenBinding: Binding<Bool> {
-        // The panel is closed only by the toolbar button or ⌥⌘I (`togglePanel`). Dragging its edge shut also reports `false` here. The note
+        // The panel is closed only by the toolbar button or ⌥⌘I (`toggleNote`). Dragging its edge shut also reports `false` here. The note
         // stays open, and the panel is shown again on the next turn: ignoring the report left the panel gone while the app still counted it as
         // open, and the person could lose the panel with no way back that they would find.
         Binding(get: { noteOpen && !panelReopening }, set: { open in
@@ -471,10 +492,21 @@ struct ReaderView: View {
             else if noteOpen { panelReopening = true; Task { @MainActor in panelReopening = false } }
         })
     }
-    private func togglePanel() { workspace.noteOpen.toggle() }
-    /// The columns to show: the sidebar is folded while the original page is open (decision 0046).
+    /// Opens or closes the note beside the article: the sidebar and the list fold away to the left and the note comes in from the right, as
+    /// one move (decision 0049), the same as the original page. The list is folded by `ListColumnCollapse`, in the same time.
+    private func toggleNote() {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
+            workspace.noteOpen.toggle()
+            columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
+        }
+    }
+    /// The 「一覧」 button: shows or hides the list beside the open note.
+    private func toggleListBesideNote() {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) { workspace.noteListShown.toggle() }
+    }
+    /// The columns to show: the sidebar is folded while the original page or the note is open (decisions 0046 and 0049).
     private func targetColumns(pageOpen: Bool) -> NavigationSplitViewVisibility {
-        pageOpen ? .doubleColumn : .all
+        SidebarFold.folded(pageOpen: pageOpen, noteOpen: noteOpen) ? .doubleColumn : .all
     }
     private func enterScope() {
         let restored = workspace.reader(in: workspace.scope)

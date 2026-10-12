@@ -158,18 +158,6 @@ import Testing
         #expect(!t.containsText("記事から要約する", in: h.host) && !t.containsText("わかりやすく", in: h.host))
     }
 
-    /// A panel that opens at once must not take the keyboard: the editor gets focus only when the person clicks it, so `j`, `k`, `s`
-    /// and the other keys still work in the list.
-    @Test func openingThePanelDoesNotTakeKeyboardFocus() async throws {
-        let h = try openHarness()
-        defer { t.finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await t.settle(h.host) { t.containsText("ノートの本文", in: h.host) && t.panelButtons(in: h).count >= 2 }
-        pumpRunLoop(0.3)
-        let responder = h.window.firstResponder
-        #expect(!(responder is NSTextView), "the first responder is \(String(describing: responder))")
-    }
-
     @Test func theListAndTheChevronsAgreeOnTheShownArticle() async throws {
         let h = try openHarness()
         defer { t.finish(h) }

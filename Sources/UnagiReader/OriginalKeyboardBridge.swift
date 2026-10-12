@@ -14,7 +14,7 @@ import WebKit
         controller.add(self, contentWorld: Self.world, name: "unagiReaderKey")
         let source = """
         (() => {
-          const keys = new Set(['j','k','s','Escape']);
+          const keys = new Set(['j','k','s','n','Escape']);
           document.addEventListener('keydown', event => {
             if (!event.isTrusted || event.isComposing || event.keyCode === 229 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || !keys.has(event.key)) return;
             const path = event.composedPath();
