@@ -177,6 +177,7 @@ import Testing
         #expect(text(URLError(.appTransportSecurityRequiresSecureConnection)) == "http:// には接続できません。https:// のURLを入れてください。")
         #expect(text(HTTPError.tooLarge) == "データが大きすぎます（2MBまで）。")
         #expect(text(FeedImportError.htmlPage) == "フィードではなくWebページです。フィードのURLを入れてください。")
+        #expect(text(FeedImportError.noFeedInPage) == "このページにはフィードが見つかりませんでした。フィードのURLを入れてください。")
         #expect(text(FeedImportError.invalidXML) == "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。")
         #expect(FeedCheckMessage.text(for: FeedImportError.invalidXML, pastedXML: true) == "貼り付けたXMLに誤りがあり、読めませんでした。")
     }
@@ -188,7 +189,12 @@ import Testing
         let feed = try await FeedChecker.fetch(.url(url), client: client)
         #expect(feed.parsed.title == "合成ニュース" && feed.etag == "v9" && feed.fetched)
         StubURLProtocol.register(.init(data: Data("<!doctype html><html><body>top page</body></html>".utf8)), at: url)
-        await #expect(throws: FeedImportError.htmlPage) { try await FeedChecker.fetch(.url(url), client: client) }
+        await #expect(throws: FeedImportError.noFeedInPage) { try await FeedChecker.fetch(.url(url), client: client) }       // a page with no feed in it
+        let site = URL(string: "https://\(UUID().uuidString.lowercased()).example/")!
+        StubURLProtocol.register(.init(data: Data("<!doctype html><html><head><link rel=\"alternate\" type=\"application/atom+xml\" href=\"/a.atom\"></head></html>".utf8)), at: site)
+        StubURLProtocol.register(.init(data: Data(FeedParserTests.rss.utf8)), at: site.appending(path: "a.atom"))
+        let found = try await FeedChecker.fetch(.url(site), client: client)
+        #expect(found.parsed.sourceURL == site.appending(path: "a.atom") && found.foundOnPage == site)
         let manual = try await FeedChecker.fetch(.xml(Data(FeedParserTests.rss.utf8), url), client: client)
         #expect(!manual.fetched && manual.etag == nil)
     }

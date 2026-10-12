@@ -30,12 +30,13 @@ public struct ParsedEntry: Sendable {
 }
 
 public enum FeedImportError: LocalizedError {
-    case invalidURL, invalidXML, htmlPage, unsupported, tooLarge, entities, missingTitle
+    case invalidURL, invalidXML, htmlPage, noFeedInPage, unsupported, tooLarge, entities, missingTitle
     public var errorDescription: String? {
         switch self {
         case .invalidURL: "ユーザー名・パスワードを含まないHTTP(S)のURLを指定してください。"
         case .invalidXML: "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。"
         case .htmlPage: "フィードではなくWebページです。フィードのURLを入れてください。"
+        case .noFeedInPage: "このページにはフィードが見つかりませんでした。フィードのURLを入れてください。"
         case .unsupported: "RSS 1.0・RSS 2.0・Atomのフィードではありません。"
         case .tooLarge: "XMLは2MB以内、階層は64段以内、記事は5,000件以内にしてください。"
         case .entities: "DTDや独自エンティティを含むXMLは取り込めません。"

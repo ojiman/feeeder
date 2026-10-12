@@ -56,6 +56,7 @@
 | [0035](0035-rename-a-note.md) | Renaming a note | valid (with the rename PR) |
 | [0036](0036-check-the-feed-as-you-type.md) | Check the feed while the address is typed | valid (with the check PR) |
 | [0037](0037-choose-the-folder-when-adding.md) | Choose the folder when adding a subscription | valid (with the folder PR) |
+| [0038](0038-find-the-feed-from-a-site-address.md) | Find the feed from a site address | valid (with the discovery PR) |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 

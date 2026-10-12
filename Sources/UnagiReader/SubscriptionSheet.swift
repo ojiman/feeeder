@@ -99,6 +99,10 @@ struct SubscriptionSheet: View {
                     } else {
                         Label { Text(checked.parsed.title).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
                     }
+                    if checked.foundOnPage != nil {
+                        Text("ページのフィード：\(checked.parsed.sourceURL.absoluteString)")
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    }
                     if checked.parsed.skippedEntries > 0 {
                         Text("識別子も記事URLもない\(checked.parsed.skippedEntries)件は取り込めません。")
                             .font(.caption).foregroundStyle(.orange)
