@@ -21,12 +21,14 @@ public struct OPMLDocument: Sendable {
 }
 
 public enum OPMLError: LocalizedError, Equatable {
-    case notOPML, invalidXML, tooLarge, entities, tooMany
+    case notOPML, invalidXML, tooLarge, tooDeep, entities, tooMany, unreadable
     public var errorDescription: String? {
         switch self {
         case .notOPML: "OPMLファイルではありません。"
         case .invalidXML: "OPMLファイルのXMLに誤りがあり、読めませんでした。"
         case .tooLarge: "ファイルが大きすぎます（5MBまで）。"
+        case .tooDeep: "階層が深すぎます（\(OPMLParser.maximumDepth)段まで）。"
+        case .unreadable: "ファイルを開けませんでした。"
         case .entities: "独自エンティティを含むファイルは取り込めません。"
         case .tooMany: "購読が多すぎます（\(OPMLParser.maximumFeeds)件まで）。ファイルを分けてください。"
         }
@@ -38,14 +40,15 @@ public enum OPMLError: LocalizedError, Equatable {
 public enum OPMLParser {
     public static let maximumBytes = 5 * 1024 * 1024
     public static let maximumFeeds = 2_000
-    static let maximumDepth = 64
+    public static let maximumDepth = 64
+    /// A feed or folder name is cut to this many characters, so one odd file cannot store a huge name.
+    public static let maximumNameLength = 200
 
     public static func parse(_ data: Data) throws -> OPMLDocument {
         guard data.count <= maximumBytes else { throw OPMLError.tooLarge }
         guard !data.isEmpty else { throw OPMLError.notOPML }
-        // A DOCTYPE alone is harmless (the parser never loads it); an entity could expand without limit.
-        let scan = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\0", with: "")
-        guard !scan.contains("<!ENTITY") else { throw OPMLError.entities }
+        // A DOCTYPE alone is harmless (the parser never loads it). An entity declaration is refused when the parser meets it
+        // (see `OPMLReader`), so an encoding that hides the text (such as UTF-7) does not get past it.
         let reader = OPMLReader()
         let parser = XMLParser(data: data)
         parser.shouldProcessNamespaces = false
@@ -74,7 +77,7 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
 
     func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String] = [:]) {
         depth += 1
-        guard depth <= OPMLParser.maximumDepth else { fail(.tooLarge, parser); return }
+        guard depth <= OPMLParser.maximumDepth else { fail(.tooDeep, parser); return }
         let name = name.lowercased()
         if depth == 1 {
             guard name == "opml" else { fail(.notOPML, parser); return }
@@ -100,17 +103,29 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
         guard let url = ArticleURL.validated(address) else { skipped += 1; return }
         guard seen.insert(url.absoluteString).inserted else { repeated += 1; return }
         guard feeds.count < OPMLParser.maximumFeeds else { fail(.tooMany, parser); return }
-        let name = SingleLineText.name(attributes["title"] ?? "")
-        let text = SingleLineText.name(attributes["text"] ?? "")
-        feeds.append(OPMLFeed(title: !name.isEmpty ? name : !text.isEmpty ? text : url.host ?? "フィード", url: url,
+        let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? "フィード"
+        feeds.append(OPMLFeed(title: name, url: url,
                               siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }, folder: folder))
+    }
+
+    /// The first of the attributes that holds a name, cut to the length limit.
+    private static func firstName(_ attributes: [String: String], keys: [String]) -> String? {
+        for key in keys {
+            let name = SingleLineText.name(attributes[key] ?? "")
+            if !name.isEmpty { return String(name.prefix(OPMLParser.maximumNameLength)) }
+        }
+        return nil
     }
 
     /// The name of a folder outline: empty (unfiled) when it has none or is called 「未分類」, which is no folder.
     private static func folderName(_ attributes: [String: String]) -> String {
-        let name = SingleLineText.name(attributes["text"] ?? attributes["title"] ?? "")
+        let name = firstName(attributes, keys: ["text", "title"]) ?? ""
         return name == "未分類" ? "" : name
     }
+
+    func parser(_ parser: XMLParser, foundInternalEntityDeclarationWithName name: String, value: String?) { fail(.entities, parser) }
+    func parser(_ parser: XMLParser, foundExternalEntityDeclarationWithName name: String, publicID: String?, systemID: String?) { fail(.entities, parser) }
+    func parser(_ parser: XMLParser, foundUnparsedEntityDeclarationWithName name: String, publicID: String?, systemID: String?, notationName: String?) { fail(.entities, parser) }
 
     private func fail(_ error: OPMLError, _ parser: XMLParser) {
         if failure == nil { failure = error }

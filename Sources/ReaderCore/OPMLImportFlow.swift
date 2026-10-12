@@ -6,7 +6,7 @@ import Observation
 @Observable @MainActor public final class OPMLImportFlow {
     /// What to tell the person; nil once they closed it.
     public private(set) var report: OPMLImportReport?
-    /// True while the file panel is open: a second request waits for it instead of opening another.
+    /// True while the file panel is open: a second request is ignored instead of opening another panel.
     public private(set) var choosing = false
     private let importer: OPMLImporter
     private let refresh: FeedRefreshController

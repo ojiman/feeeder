@@ -17,8 +17,12 @@ public struct OPMLImportReport: Equatable, Sendable {
         do {
             let document = try await Task.detached(priority: .userInitiated) { try Self.read(url) }.value
             let result = try store.importSubscriptions(document.feeds)
-            return Self.report(added: result.addedFeedIDs, alreadySubscribed: result.alreadySubscribed + document.repeated,
-                               unusable: document.skipped, fileHadFeeds: !document.feeds.isEmpty || document.skipped > 0)
+            if result.listRefreshFailed {
+                // Saved, so it is not a failure; the new rows show after the list loads again.
+                return OPMLImportReport(title: "OPMLを取り込みました",
+                                        message: "\(result.addedFeedIDs.count)件の購読を追加しましたが、一覧を更新できませんでした。アプリを開き直してください。", addedFeedIDs: [])
+            }
+            return Self.report(added: result.addedFeedIDs, alreadySubscribed: result.alreadySubscribed, unusable: document.skipped + result.rejected)
         } catch {
             return OPMLImportReport(title: "OPMLを取り込めませんでした", message: error.localizedDescription, addedFeedIDs: [])
         }
@@ -30,13 +34,20 @@ public struct OPMLImportReport: Equatable, Sendable {
         await refresh.refresh(feedIDs: ids)
     }
 
+    /// Reads at most the limit (and one byte more, to see that the file is too big) from a regular file. The file is opened without
+    /// waiting, and a pipe, a device or a folder is refused, so a strange file cannot hold the app or fill its memory.
     nonisolated static func read(_ url: URL) throws -> OPMLDocument {
-        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        guard size <= OPMLParser.maximumBytes else { throw OPMLError.tooLarge }
-        return try OPMLParser.parse(Data(contentsOf: url))
+        let descriptor = open(url.path, O_RDONLY | O_NONBLOCK)
+        guard descriptor >= 0 else { throw OPMLError.unreadable }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        defer { try? handle.close() }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG else { throw OPMLError.unreadable }
+        let data = try handle.read(upToCount: OPMLParser.maximumBytes + 1) ?? Data()
+        return try OPMLParser.parse(data)
     }
 
-    static func report(added: [UUID], alreadySubscribed: Int, unusable: Int, fileHadFeeds: Bool) -> OPMLImportReport {
+    static func report(added: [UUID], alreadySubscribed: Int, unusable: Int) -> OPMLImportReport {
         var left: [String] = []
         if alreadySubscribed > 0 { left.append("すでに購読している\(alreadySubscribed)件") }
         if unusable > 0 { left.append("読めないアドレス\(unusable)件") }
