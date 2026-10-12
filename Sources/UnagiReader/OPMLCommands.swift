@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import ReaderCore
 
 /// The File menu's 「OPMLを取り込む…」. The window that shows the library publishes the action; with no such window the item is off.
 /// It has no key shortcut: it is a rare action.
@@ -35,5 +36,19 @@ enum OPMLFilePanel {
         return await withCheckedContinuation { continuation in
             panel.beginSheetModal(for: window) { response in continuation.resume(returning: response == .OK ? panel.url : nil) }
         }
+    }
+}
+
+/// What the library window adds for the OPML import: the action the File menu runs, and the alert with the report.
+/// It is a modifier of its own because the window's body is already long, and the CI compiler gives up on a longer chain.
+struct OPMLImportPresentation: ViewModifier {
+    let flow: OPMLImportFlow
+
+    func body(content: Content) -> some View {
+        content
+            .focusedSceneValue(\.importOPML, { Task { await flow.start() } })
+            .alert(flow.report?.title ?? "", isPresented: Binding(get: { flow.report != nil }, set: { if !$0 { flow.dismissReport() } })) {
+                Button("OK") { flow.dismissReport() }
+            } message: { Text(flow.report?.message ?? "") }
     }
 }

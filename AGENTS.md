@@ -110,4 +110,5 @@ Decided by the user on 2026-10-05 and 2026-10-07 (see docs/decisions/).
 
 - macOS 26: after a failed save, registered models can keep unsaved values. `ReaderStore.rollback()` swaps in a fresh `ModelContext`, and `needsReload` blocks mutations until a reload succeeds. Resolve models by ID after a failure, and call `reloadIfNeeded()` first in any new mutating method.
 - The CI compiler (Swift 6.3.3) crashed on an actor-isolated method reference passed as a `Binding` setter; use an explicit closure (PR #14).
+- The CI compiler (Swift 6.3.3) gave up ("unable to type-check this expression in reasonable time") when `ReaderView`'s modifier chain grew by a few modifiers (PR #96), while the local Swift 6.4 compiled it. Add new window-level modifiers from outside the chain (`ViewModifier` applied in the wrapper `body`, as `OPMLImportPresentation`), not as more links in it.
 - Three problems appeared only in CI, not on the local toolchain: SwiftData rollback on macOS 26 (PR #10), the app signature of the packaged app (PR #12), and the compiler crash above (PR #14). Treat local success as necessary, not sufficient.

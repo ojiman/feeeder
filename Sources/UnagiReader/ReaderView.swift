@@ -152,6 +152,11 @@ struct ReaderView: View {
     }
 
     var body: some View {
+        // The library window's own chain is long (the CI compiler gives up on a longer one); the OPML import is added from outside it.
+        windowContent.modifier(OPMLImportPresentation(flow: opml))
+    }
+
+    private var windowContent: some View {
         reader
         .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
             windowWidth = width
@@ -290,10 +295,6 @@ struct ReaderView: View {
                 removingFeed = nil
             }
         } message: { Text("記事・本文はライブラリに残ります。") }
-        .focusedSceneValue(\.importOPML, { Task { await opml.start() } })
-        .alert(opml.report?.title ?? "", isPresented: Binding(get: { opml.report != nil }, set: { if !$0 { opml.dismissReport() } })) {
-            Button("OK") { opml.dismissReport() }
-        } message: { Text(opml.report?.message ?? "") }
         .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
             Button("閉じる") { saveError = nil }
         } message: { Text(saveError ?? "") }
