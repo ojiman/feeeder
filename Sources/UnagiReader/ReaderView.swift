@@ -47,6 +47,7 @@ struct ReaderView: View {
     @State private var movingFeedID: UUID?
     @State private var folderName = ""
     @State private var deletingNote: UUID?
+    @State private var opml: OPMLImportFlow
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
     private let notePasteboard: NSPasteboard
@@ -57,9 +58,11 @@ struct ReaderView: View {
     init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
          notePasteboard: NSPasteboard = .general,
-         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave) {
+         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave,
+         chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
         self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
         self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
+        _opml = State(initialValue: OPMLImportFlow(store: store, refresh: refresh, chooseFile: chooseOPML))
         self.imageLoader = imageLoader
         _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
         _loading = State(initialValue: ArticleLoadingController(store: store))
@@ -149,6 +152,11 @@ struct ReaderView: View {
     }
 
     var body: some View {
+        // The library window's own chain is long (the CI compiler gives up on a longer one); the OPML import is added from outside it.
+        windowContent.modifier(OPMLImportPresentation(flow: opml))
+    }
+
+    private var windowContent: some View {
         reader
         .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { width in
             windowWidth = width
