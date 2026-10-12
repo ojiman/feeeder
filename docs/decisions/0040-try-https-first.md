@@ -7,13 +7,13 @@
 
 ## Decision
 
-1. **A plain `http://` address is never sent.** The system's transport security does not let the app fetch plain `http://`, so the add sheet checks the `https://` form of the address instead. If it reads as a feed, the subscription is the `https://` address. The same rule as in the OPML import ([0041](0041-import-opml.md)): an address with its own port is left as typed (the port was meant for http), and the system's refusal is then explained as before (「http:// には接続できません。https:// のURLを入れてください。」).
+1. **A plain `http://` address is never sent.** The system's transport security does not let the app fetch plain `http://`, so the add sheet checks the `https://` form of the address instead. If it reads as a feed, the subscription is the `https://` address. The same rule as in the OPML import ([0041](0041-import-opml.md)), which now uses the same helper (`ArticleURL.secured`): an address with its own port is left as typed (the port was meant for http), and the system's refusal is then explained as before (「http:// には接続できません。https:// のURLを入れてください。」).
 2. **If the https form fails, the person sees the real reason** (for example 404 or "server not found"); nothing is added with the `http://` address.
 3. **The caption under the feed name is one line for both cases:** 「購読するURL：<address>」, shown only when the address that will be subscribed is not the one typed (the https form of an http address, or the feed a page announced, as in 0038). It replaces the wording 「ページのフィード：…」 of 0038. The address field is not rewritten while the person types.
 
 ## Not in this change
 
-Making the OPML import use the same helper (`ArticleURL.secured`): it has its own copy until the OPML change is merged, then the two are joined. Trying `http://` when `https://` fails (the system would block it anyway).
+Trying `http://` when `https://` fails (the system would block it anyway).
 
 ## Not verified
 
