@@ -91,7 +91,6 @@ extension ReaderStore {
         if result.createdNote { context.delete(target) }
         else { target.text = result.before; target.updatedAt = at }
         try save()
-        defer { onContentPolicyChanged?() }
         try reload()
         return true
     }
@@ -137,7 +136,6 @@ extension ReaderStore {
         for link in links { context.delete(link) }
         context.delete(note)
         try save()
-        defer { onContentPolicyChanged?() }
         try reload()
         return copy
     }
@@ -155,7 +153,6 @@ extension ReaderStore {
             context.insert(NoteArticle(noteID: deleted.id, articleID: link.articleID, title: link.title, url: link.url, summary: link.summary, addedAt: link.addedAt))
         }
         try save()
-        defer { onContentPolicyChanged?() }
         try reload()
         return true
     }
@@ -181,7 +178,6 @@ extension ReaderStore {
         context.delete(link)
         note(id: noteID)?.updatedAt = at
         try save()
-        defer { onContentPolicyChanged?() }
         try reload()
     }
 

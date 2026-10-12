@@ -8,8 +8,6 @@ private typealias LibraryScope = ReaderWorkspaceScope
 struct ReaderView: View {
     @Bindable var store: ReaderStore
     @Bindable var refresh: FeedRefreshController
-    @Bindable var aiReview: AIPackageReview
-    @Bindable var handoff: ClaudeHandoffController
     let imageLoader: ReaderImageLoader
     @State private var scope: LibraryScope? = .all
     @State private var workspace = ReaderWorkspaceState()
@@ -28,7 +26,6 @@ struct ReaderView: View {
     @State private var sender: SummarySender
     @State private var sendingArticleID: UUID?
     @State private var pickingNote = false
-    @State private var reviewingNote: NoteSheet?
     @State private var pickerRestoresListFocus = true
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
@@ -53,17 +50,15 @@ struct ReaderView: View {
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
     private let notePasteboard: NSPasteboard
-    private let saveMarkdown: @MainActor (String, Data) async throws -> Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
 
-    init(store: ReaderStore, refresh: FeedRefreshController, aiReview: AIPackageReview, handoff: ClaudeHandoffController, imageLoader: ReaderImageLoader,
+    init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = true, assistant: (any TextGenerator)? = FoundationModelsGenerator(),
          notePasteboard: NSPasteboard = .general,
-         saveMarkdown: @escaping @MainActor (String, Data) async throws -> Bool = ReaderView.presentMarkdownSave,
          chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
-        self.store = store; self.refresh = refresh; self.aiReview = aiReview; self.handoff = handoff
-        self.notePasteboard = notePasteboard; self.saveMarkdown = saveMarkdown
+        self.store = store; self.refresh = refresh
+        self.notePasteboard = notePasteboard
         _opml = State(initialValue: OPMLImportFlow(store: store, refresh: refresh, chooseFile: chooseOPML))
         self.imageLoader = imageLoader
         _sender = State(initialValue: SummarySender(store: store, assistant: assistant, isEnabled: { OnDeviceAISetting.isEnabled }, pageText: { await ArticleFetcher().fetch(url: $0) }))
@@ -79,31 +74,6 @@ struct ReaderView: View {
         guard let article = selectedArticle, article.contentDeletedAt == nil else { return nil }
         return RetentionPolicy(days: store.retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt)
     }
-    private func reviewSheet(_ sheet: NoteSheet) -> some View {
-        AIReviewView(store: store, review: aiReview, handoff: handoff, noteID: sheet.id)
-    }
-
-    private static func presentMarkdownSave(_ fileName: String, _ data: Data) async throws -> Bool {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = fileName
-        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
-        guard let window = NSApp.keyWindow else { throw CocoaError(.fileWriteUnknown) }
-        return try await withCheckedThrowingContinuation { continuation in
-            panel.beginSheetModal(for: window) { response in
-                guard response == .OK, let url = panel.url else {
-                    continuation.resume(returning: false)
-                    return
-                }
-                do {
-                    try data.write(to: url, options: .atomic)
-                    continuation.resume(returning: true)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-
     func copyNote(_ id: UUID) -> Bool {
         guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         let item = NSPasteboardItem()
@@ -120,16 +90,6 @@ struct ReaderView: View {
         return true
     }
 
-    func exportNote(_ id: UUID) async -> Bool {
-        guard let note = store.note(id: id), !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        do {
-            if try await saveMarkdown(NoteMarkdown.fileName(forTitle: note.title), NoteMarkdown.data(for: note.text)) {
-                noteActionMessage = "Markdownを書き出しました"
-                return true
-            }
-            return false
-        } catch { saveError = error.localizedDescription; return false }
-    }
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
     private var visibleArticleIDs: [UUID] {
         switch scope ?? .all {
@@ -346,7 +306,6 @@ struct ReaderView: View {
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,
             visible: columnVisibility != .doubleColumn && columnVisibility != .detailOnly,
             onAdd: { addingTo = SubscriptionTarget(folder: "") }, onRefresh: { Task { await refresh.refresh() } }))
-        .sheet(item: $reviewingNote) { sheet in reviewSheet(sheet) }
         .confirmationDialog("このノートを削除しますか？", isPresented: Binding(get: { deletingNote != nil }, set: { if !$0 { deletingNote = nil } })) {
             Button("ノートを削除", role: .destructive) {
                 guard let id = deletingNote else { return }
@@ -478,8 +437,7 @@ struct ReaderView: View {
                       canNext: NoteArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
                       onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                       onNext: { guard panelMayMove else { return }; perform(.next) },
-                      onClaude: { reviewingNote = NoteSheet(id: id) },
-                      onCopy: { _ = copyNote(id) }, onExport: { Task { _ = await exportNote(id) } })
+                      onCopy: { _ = copyNote(id) })
             .modifier(NotePanelWidthMemory())
             .id(id)
         } else { EmptyView() }
@@ -651,4 +609,3 @@ struct ReaderView: View {
 }
 
 /// The note a review sheet was opened for, kept for the sheet's life even if the selection moves.
-private struct NoteSheet: Identifiable { let id: UUID }
