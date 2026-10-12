@@ -489,7 +489,7 @@ struct ReaderView: View {
         }
         // After the inset above, so the title is drawn over the bar that holds the sidebar button while a note is open (the other order
         // hides it).
-        .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top) }
+        .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count, leadingInset: sidebarFolded ? ListHeader.windowButtonsInset : 0).ignoresSafeArea(.container, edges: .top) }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
     }
@@ -559,7 +559,11 @@ struct ReaderView: View {
     private func openOriginal() {
         guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { _ = originalPage.open(articleID: article.id, url: url) }
+        // The page slides in and the sidebar folds as one move (decision 0046).
+        withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
+            _ = originalPage.open(articleID: article.id, url: url)
+            columnVisibility = targetColumns(pageOpen: true)
+        }
     }
     private func closeOriginal() {
         dismissOriginal {
@@ -571,10 +575,12 @@ struct ReaderView: View {
     /// how it came in. With Reduce Motion it just closes. A second request while it slides out is ignored (it closes anyway).
     private func dismissOriginal(then done: @escaping () -> Void) {
         guard originalPage.url != nil, !originalClosing else { return }
-        guard !reduceMotion else { originalPage.close(); done(); return }
+        guard !reduceMotion else { originalPage.close(); columnVisibility = targetColumns(pageOpen: false); done(); return }
         originalClosing = true
-        withAnimation(.easeOut(duration: 0.22)) {
+        // The page slides out and the sidebar comes back as one move, however the page was closed (decision 0046).
+        withAnimation(.easeOut(duration: SidebarFold.motionDuration)) {
             originalSlide = originalColumnWidth
+            columnVisibility = targetColumns(pageOpen: false)
         } completion: {
             originalPage.close()
             originalSlide = 0
@@ -626,8 +632,14 @@ struct ReaderView: View {
         noteLayout.toggleSidebar()
         applyColumns()
     }
+    /// The columns to show: the sidebar is folded while the original page is open or the note layout asks for it (decision 0046).
+    private func targetColumns(pageOpen: Bool) -> NavigationSplitViewVisibility {
+        SidebarFold.folded(pageOpen: pageOpen, noteLayout: noteLayout.columns) ? .doubleColumn : .all
+    }
+    /// Whether the sidebar is folded away now (the list then reaches the window's left edge).
+    private var sidebarFolded: Bool { columnVisibility == .doubleColumn || columnVisibility == .detailOnly }
     private func applyColumns() {
-        let target: NavigationSplitViewVisibility = noteLayout.columns == .all ? .all : .doubleColumn
+        let target = targetColumns(pageOpen: originalPage.url != nil)
         guard columnVisibility != target else { return }
         withAnimation(reduceMotion ? nil : .default) { columnVisibility = target }
     }

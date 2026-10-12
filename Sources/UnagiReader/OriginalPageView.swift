@@ -11,8 +11,10 @@ struct OriginalPageView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(action: onClose) { Label("記事に戻る", systemImage: "chevron.left") }
-                    .help("記事に戻る (Esc)")
+                // The ✕ at the top left of the right column closes the page and brings the sidebar back (decision 0046).
+                Button(action: onClose) { Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)) }
+                    .buttonStyle(.borderless)
+                    .help("記事に戻る (Esc)").accessibilityLabel("記事に戻る")
                 Text(url.host ?? url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer()
                 if loading {
