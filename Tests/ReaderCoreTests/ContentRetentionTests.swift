@@ -28,19 +28,17 @@ import SwiftData
         let store = try ReaderStore(url: library.url, now: start)
         _ = try store.importFeed(parsed(), receivedAt: start)
         let id = try #require(store.articles.first).id
-        var calls = 0
-        store.onContentPolicyChanged = { calls += 1 }
         let later = start.addingTimeInterval(10 * day)
         let preview = try store.previewDeletion(days: 7, allContent: false, at: later)
         #expect(preview.articleIDs == [id] && preview.bodyCount == 1 && preview.summaryCount == 1 && preview.estimatedBytes > 0)
-        #expect(store.retentionDays == 30 && calls == 0)
+        #expect(store.retentionDays == 30)
         #expect(try store.content(articleID: id, at: later) != nil)
         try store.applyRetention(days: 7, at: later)
-        #expect(store.retentionDays == 7 && calls == 1)
+        #expect(store.retentionDays == 7)
         #expect(try store.availableContentExpiries(at: later)[id] == nil)
         #expect(try store.content(articleID: id, at: later) == nil)
         #expect(throws: (any Error).self) { try store.applyRetention(days: 0, at: later) }
-        #expect(calls == 1 && store.retentionDays == 7)
+        #expect(store.retentionDays == 7)
     }
     @Test func expiredContentCannotBeReadOrReimported() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
@@ -83,11 +81,10 @@ import SwiftData
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url, now: start)
         _ = try store.importFeed(parsed(), receivedAt: start)
-        var calls = 0; store.onContentPolicyChanged = { calls += 1 }
         let later = start.addingTimeInterval(30 * day)
         try store.purgeExpired(at: later)
         try store.purgeExpired(at: later)
-        #expect(calls == 1 && store.articles.first?.summary == "")
+        #expect(store.articles.first?.summary == "")
         #expect(try store.availableContentExpiries(at: later).isEmpty)
     }
     @Test func failedSaveRollsBackAndDoesNotNotify() throws {
@@ -101,10 +98,9 @@ import SwiftData
         let configuration = ModelConfiguration("Reader", schema: schema, url: library.url, allowsSave: false, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let store = try ReaderStore(container: container, now: start)
-        var calls = 0; store.onContentPolicyChanged = { calls += 1 }
         let at = start.addingTimeInterval(10 * day)
         #expect(throws: (any Error).self) { try store.applyRetention(days: 7, at: at) }
-        #expect(calls == 0 && store.retentionDays == 30)
+        #expect(store.retentionDays == 30)
         #expect(try store.content(articleID: id, at: at)?.text.contains("本文 & 補足") == true)
         #expect(try store.availableContentExpiries(at: at)[id] == start.addingTimeInterval(30 * day))
     }

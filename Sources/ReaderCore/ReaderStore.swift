@@ -8,8 +8,6 @@ import SwiftData
     public private(set) var contentRevision = 0
     public private(set) var settings: ReaderSettings?
     public var retentionDays: Int { settings?.retentionDays ?? 30 }
-    /// Called when something a review or a managed Claude copy may contain is deleted or removed (content policy, a note, or an article of a note).
-    @ObservationIgnored public var onContentPolicyChanged: (@MainActor () -> Void)?
     public private(set) var memberships: [FeedMembership] = []
     public private(set) var notes: [Note] = []
     public private(set) var noteArticles: [NoteArticle] = []
@@ -165,7 +163,6 @@ import SwiftData
         if !feed.customTitle { feed.title = parsed.title }
         do {
             if let folder { feed.folder = SingleLineText.name(folder) }
-            var contentRemoved = false
             var allArticles = articles
             var allMemberships = memberships
             for entry in parsed.entries {
@@ -182,7 +179,7 @@ import SwiftData
                 article.title = entry.title
                 let available = isContentAvailable(article, at: receivedAt)
                 if available { article.summary = entry.summary; article.imageURL = entry.imageURL?.absoluteString ?? article.imageURL }
-                else { contentRemoved = try removeContent(articleIDs: [article.id], at: receivedAt) || contentRemoved }
+                else { _ = try removeContent(articleIDs: [article.id], at: receivedAt) }
                 if let date = entry.publishedAt { article.publishedAt = date }
                 // A second feed must not overwrite a saved article with a shorter excerpt.
                 let id = article.id
@@ -201,7 +198,6 @@ import SwiftData
             }
             try save()
             try reload()
-            if contentRemoved { onContentPolicyChanged?() }
             return feed
         } catch { rollback(); throw error }
     }

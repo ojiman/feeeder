@@ -12,7 +12,7 @@ Unagi Reader is for engineers in 2026 who read many feeds every day. Its value i
 
 - **Read fast.** Three columns and Vim-style keys. Scrolling and typing never wait on a reload, the network or AI.
 - **Note it while you read.** One button sends an article's summary to a note. The articles you sent sit beside the note, so you write in your own words while you see them.
-- **Ask AI when you choose.** Review the note-only package, copy or export the exact Markdown, or open Claude after checking the full text. Nothing leaves your Mac before you decide.
+- **Ask AI when you choose.** Copy the note as it is and paste it into any AI you like, or use the system's Writing Tools in the note editor. Nothing leaves your Mac unless you paste it.
 - **Keep it yours.** No account, no backend, no sync. Everything lives in a local database.
 
 The full statement, with the promises and the questions to ask when in doubt, is in the [vision](docs/vision.md). The current build is moving to this shape in stages ([decision 0019](docs/decisions/0019-v1-simplification-notes.md)); the target is in the [specification](docs/specification.md).
@@ -34,7 +34,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 
 ## FAQ
 
-**Does it send my data anywhere?** It fetches the feeds you subscribe to, article images and favicons, and original pages when you open them in the app. AI runs on your Mac. Text goes to Claude only when you read the exact text and press the button. There is no backend and no account.
+**Does it send my data anywhere?** It fetches the feeds you subscribe to, article images and favicons, and original pages when you open them in the app. AI runs on your Mac. Text leaves your Mac only when you copy it and paste it somewhere yourself. There is no backend and no account.
 
 **Where is my data?** In `~/Library/Application Support/UnagiReader/`.
 
@@ -53,7 +53,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 | | |
 |---|---|
 | [Vision](docs/vision.md) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
-| [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, backup, Claude Desktop hand-off |
+| [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, backup, using the note with another AI |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are |

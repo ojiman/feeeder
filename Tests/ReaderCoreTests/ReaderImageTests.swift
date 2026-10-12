@@ -67,10 +67,10 @@ struct ReaderImageTests {
         _ = try await loader.image(url: failed, at: at)
         _ = try await loader.image(url: failed, at: at.addingTimeInterval(599)); #expect(await client.count == 3)
         _ = try await loader.image(url: failed, at: at.addingTimeInterval(600)); #expect(await client.count == 4)
-        let metadataURL = root.appending(path: AIPackageBuilder.hash(Data(url.absoluteString.utf8)) + ".json")
+        let metadataURL = root.appending(path: ImageCacheKey.hash(Data(url.absoluteString.utf8)) + ".json")
         let template = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: metadataURL)) as? [String: Any])
         for index in 0..<20 {
-            let fake = "https://synthetic.example/cache-\(index).png", key = AIPackageBuilder.hash(Data(fake.utf8))
+            let fake = "https://synthetic.example/cache-\(index).png", key = ImageCacheKey.hash(Data(fake.utf8))
             var record = template; record["url"] = fake
             try JSONSerialization.data(withJSONObject: record).write(to: root.appending(path: key + ".json"))
             try Data(repeating: 1, count: 4 * 1024 * 1024).write(to: root.appending(path: key + ".png"))

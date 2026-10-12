@@ -60,14 +60,12 @@ extension ReaderStore {
         settings.retentionDays = days
         guard changed || removed else { return }
         try save()
-        defer { onContentPolicyChanged?() }
         try reload()
     }
     public func deleteContent(articleIDs: [UUID], at: Date) throws {
         try reloadIfNeeded()
         guard try removeContent(articleIDs: articleIDs, at: at) else { return }
         try save()
-        defer { onContentPolicyChanged?() }
         try reload()
     }
     public func purgeExpired(at: Date) throws {

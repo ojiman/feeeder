@@ -5,8 +5,6 @@ import ReaderCore
 struct UnagiReaderApp: App {
     @State private var store: ReaderStore?
     @State private var refresh: FeedRefreshController?
-    @State private var aiReview: AIPackageReview?
-    @State private var handoff: ClaudeHandoffController?
     @State private var imageLoader: ReaderImageLoader?
     @State private var startupError: String?
     @State private var lifecycleError: String?
@@ -29,17 +27,10 @@ struct UnagiReaderApp: App {
             _ = try? store.discardExtractedBodiesOnce(marker: directory.appending(path: ".extracted-bodies-discarded-v1"))
             _store = State(initialValue: store)
             _refresh = State(initialValue: FeedRefreshController(store: store))
-            let review = AIPackageReview(store: store)
-            let handoff = ClaudeHandoffController(directory: directory.appending(path: "Handoffs", directoryHint: .isDirectory), review: review, launcher: ClaudeWorkspaceLauncher())
-            store.onContentPolicyChanged = { [weak store, weak handoff] in
-                if let store { handoff?.reconcile(with: store, at: .now) }
-            }
-            handoff.reconcile(with: store, at: .now)
-            _aiReview = State(initialValue: review)
-            _handoff = State(initialValue: handoff)
+            // The copies of the note that the hand-off to Claude made are not deleted by anything now (decision 0049).
+            do { try LegacyHandoffFolder.remove(in: directory) } catch { _lifecycleError = State(initialValue: error.localizedDescription) }
             let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "\(AppIdentity.dataFolderName)/Images")
             _imageLoader = State(initialValue: ReaderImageLoader(directory: cache))
-            _lifecycleError = State(initialValue: handoff.maintenanceError)
         } catch {
             _startupError = State(initialValue: error.localizedDescription)
         }
@@ -48,7 +39,7 @@ struct UnagiReaderApp: App {
     var body: some Scene {
         Window("Unagi Reader", id: "reader") {
             Group {
-                if let store, let refresh, let aiReview, let handoff, let imageLoader { ReaderView(store: store, refresh: refresh, aiReview: aiReview, handoff: handoff, imageLoader: imageLoader) }
+                if let store, let refresh, let imageLoader { ReaderView(store: store, refresh: refresh, imageLoader: imageLoader) }
                 else {
                     ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
                         description: Text(startupError ?? "不明なエラーです。"))
@@ -75,15 +66,6 @@ struct UnagiReaderApp: App {
                 }
                 ReaderPerformance.write()
             }
-            .task(id: handoff?.nextExpiry) {
-                guard let expiry = handoff?.nextExpiry else { return }
-                do {
-                    try await Task.sleep(for: .seconds(max(0, expiry.timeIntervalSinceNow)))
-                    try Task.checkCancellation()
-                    if let store { handoff?.reconcile(with: store, at: .now) }
-                } catch { /* A new deadline or closing the app cancels the previous timer. */ }
-            }
-            .onChange(of: handoff?.maintenanceError) { _, error in if let error { lifecycleError = error } }
             .alert("保存データを整理できませんでした", isPresented: Binding(get: { lifecycleError != nil }, set: { if !$0 { lifecycleError = nil } })) {
                 Button("再試行") { lifecycleError = nil; purgeContent() }
                 Button("閉じる") { lifecycleError = nil }
@@ -98,6 +80,5 @@ struct UnagiReaderApp: App {
     }
     private func purgeContent() {
         do { try store?.purgeExpired(at: .now) } catch { lifecycleError = error.localizedDescription }
-        if let store { handoff?.reconcile(with: store, at: .now); if let error = handoff?.maintenanceError { lifecycleError = error } }
     }
 }

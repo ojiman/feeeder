@@ -5,9 +5,6 @@ import Testing
 @testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct NoteReaderTests {
-    fileprivate struct NoLauncher: ClaudeLaunching {
-        func open(_ url: URL) async throws { throw HandoffError.launchFailed }
-    }
     fileprivate func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
         if let result = view as? T { return result }
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
@@ -27,7 +24,7 @@ import Testing
     fileprivate func buttons(in view: NSView) -> [NSButton] {
         (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap { buttons(in: $0) }
     }
-    /// Only the two narrow chevrons and the share menu in the inspector, ordered left to right.
+    /// Only the two narrow chevrons and the copy button in the inspector, ordered left to right.
     fileprivate func panelButtons(in h: Harness) -> [NSButton] {
         let width = h.window.contentView?.bounds.width ?? 1_240
         let candidates = buttons(in: h.host)
@@ -43,15 +40,12 @@ import Testing
     }
     fileprivate struct Harness {
         let store: ReaderStore
-        let review: AIPackageReview
-        let handoff: ClaudeHandoffController
         let host: NSHostingView<ReaderView>
         let window: NSWindow
         let directory: URL
     }
     fileprivate func harness(scope: (ReaderStore) throws -> ReaderWorkspaceScope, noteOpen: Bool = false,
                          pasteboard: NSPasteboard = NSPasteboard(name: .init("unagi-reader-test-\(UUID())")),
-                         markdownSave: @escaping @MainActor @Sendable (String, Data) async throws -> Bool = { _, _ in false },
                          prepare: (ReaderStore) throws -> Void) throws -> Harness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -61,18 +55,15 @@ import Testing
         }
         _ = try store.importFeed(ParsedFeed(title: "合成購読", sourceURL: URL(string: "http://127.0.0.1:1/feed")!, entries: entries, skippedEntries: 0), receivedAt: .now)
         try prepare(store)
-        let review = AIPackageReview(store: store)
-        let handoff = ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher())
-        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
-            handoff: handoff,
+        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")),
             initialScope: try scope(store), initialNoteOpen: noteOpen, assistant: nil,
-            notePasteboard: pasteboard, saveMarkdown: markdownSave)
+            notePasteboard: pasteboard)
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-note-reader")
         window.contentView = host
-        return Harness(store: store, review: review, handoff: handoff, host: host, window: window, directory: directory)
+        return Harness(store: store, host: host, window: window, directory: directory)
     }
     fileprivate func finish(_ harness: Harness) {
         harness.window.close(); try? FileManager.default.removeItem(at: harness.directory)
@@ -210,7 +201,7 @@ import Testing
         defer { t.finish(h) }
         try await t.settle(h.host) { t.containsText("ノートの本文", in: h.host) && t.panelButtons(in: h).count >= 2 }
         pumpRunLoop(0.3)
-        #expect(t.panelButtons(in: h).count == 3)                                         // two chevrons and one share button
+        #expect(t.panelButtons(in: h).count == 3)                                         // two chevrons and one copy button
         #expect(!t.containsText("記事から要約する", in: h.host) && !t.containsText("わかりやすく", in: h.host))
     }
 
@@ -254,65 +245,24 @@ import Testing
 
 @MainActor func pumpRunLoop(_ seconds: Double) { RunLoop.main.run(until: Date().addingTimeInterval(seconds)) }
 
-@Suite(.serialized) @MainActor struct HandoffEntryTests {
+/// Decision 0049: the one thing left of the hand-off to another AI is 「Markdownをコピー」, which copies the note's text as it is.
+@Suite(.serialized) @MainActor struct MarkdownCopyTests {
     private let t = NoteReaderTests()
 
-    private func make(note: String, articles: Int) throws -> NoteReaderTests.Harness {
-        try t.harness(scope: { store in .note(store.notes[0].id) }, noteOpen: true) { store in
-            let created = try store.createNote(text: note, at: .now)
-            for index in 0..<articles { try store.addArticle(store.articles[index].id, toNote: created.id, at: .now) }
+    @Test func theCopyButtonExistsAndAnEmptyNoteCannotBeCopied() async throws {
+        let h = try t.harness(scope: { store in .note(store.notes[0].id) }, noteOpen: true) { store in
+            _ = try store.createNote(text: "", at: .now)
         }
-    }
-    private func shareButton(_ h: NoteReaderTests.Harness) -> NSButton? {
-        let width = h.window.contentView?.bounds.width ?? 1_240
-        return t.buttons(in: h.host).first {
-            let frame = $0.convert($0.bounds, to: nil)
-            return frame.minX > width - 420 && frame.width > 20
-        }
-    }
-    private func openReview(_ h: NoteReaderTests.Harness) -> NSWindow {
-        let sheet = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 880, height: 700), styleMask: [.titled], backing: .buffered, defer: false)
-        sheet.contentView = NSHostingView(rootView: AIReviewView(store: h.store, review: h.review, handoff: h.handoff, noteID: h.store.notes[0].id))
-        h.window.beginSheet(sheet)
-        return sheet
-    }
-
-    @Test func shareButtonExistsAndTheReviewContainsOnlyTheNote() async throws {
-        let h = try make(note: "# 見出し\n本文のノート", articles: 1)
         defer { t.finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await t.settle(h.host) { shareButton(h) != nil }
-        #expect(shareButton(h) is NSPopUpButton)
-        let sheet = openReview(h)
-        try await t.settle(sheet.contentView!) { h.review.package != nil }
-        let package = try #require(h.review.package)
-        let text = package.text
-        #expect(!package.text.contains("BEGIN_SOURCE"))
-        #expect(!text.contains("Goal") && text.contains("Note (written by the user):\n# 見出し\n本文のノート"))
-        #expect(text.contains("書かれていることを「ない」と言わないでください"))
-        #expect(!text.contains("BEGIN_SOURCE") && !text.contains("Source ID:"))
-        h.window.endSheet(sheet)
-    }
-
-    @Test func shareButtonRemainsPresentForAnEmptyNoteAndOldReviewButtonIsGone() async throws {
-        let h = try make(note: "", articles: 0)
-        defer { t.finish(h) }
-        try await t.settle(h.host) { shareButton(h) != nil && t.panelButtons(in: h).count == 3 }
-        #expect(!t.containsText("Claudeでレビューを頼む", in: h.host))
-        #expect(shareButton(h) is NSPopUpButton)
-        #expect(t.panelButtons(in: h).count == 3)
+        try await t.settle(h.host) { t.panelButtons(in: h).count == 3 }                    // two chevrons and the copy button
         let id = try #require(h.store.notes.first?.id)
         #expect(!h.host.rootView.copyNote(id))
-        #expect(!(await h.host.rootView.exportNote(id)))
     }
 
-    @Test func markdownCopyAndExportUseExactNoteBytesWithPrivateDestinations() async throws {
+    @Test func theCopyUsesTheExactTextOfTheNote() async throws {
         let note = "# 保存\r\n本文 🐟"
         let pasteboard = NSPasteboard(name: .init("unagi-reader-copy-\(UUID())"))
-        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".md")
-        defer { try? FileManager.default.removeItem(at: file) }
-        let h = try t.harness(scope: { .note($0.notes[0].id) }, noteOpen: true, pasteboard: pasteboard,
-            markdownSave: { _, bytes in try bytes.write(to: file, options: .atomic); return true }) { store in
+        let h = try t.harness(scope: { .note($0.notes[0].id) }, noteOpen: true, pasteboard: pasteboard) { store in
             _ = try store.createNote(text: note, at: .now)
         }
         defer { t.finish(h) }
@@ -320,29 +270,5 @@ import Testing
         #expect(pasteboard.setString("previous clipboard", forType: .string))
         #expect(h.host.rootView.copyNote(id))
         #expect(pasteboard.string(forType: .string) == note)
-        #expect(await h.host.rootView.exportNote(id))
-        #expect(try Data(contentsOf: file) == Data(note.utf8))
-    }
-
-    @Test func markdownWriteFailureIsNotReportedAsSuccess() async throws {
-        let h = try t.harness(scope: { .note($0.notes[0].id) }, noteOpen: true,
-            markdownSave: { _, _ in throw CocoaError(.fileWriteNoPermission) }) { store in
-            _ = try store.createNote(text: "本文", at: .now)
-        }
-        defer { t.finish(h) }
-        #expect(!(await h.host.rootView.exportNote(try #require(h.store.notes.first?.id))))
-    }
-
-    @Test func editingTheNoteInvalidatesTheOpenReviewAndItsCopy() async throws {
-        let h = try make(note: "送る前の本文", articles: 0)
-        defer { t.finish(h) }
-        h.window.makeKeyAndOrderFront(nil)
-        try await t.settle(h.host) { shareButton(h) != nil }
-        let sheet = openReview(h)
-        try await t.settle(sheet.contentView!) { h.review.package != nil }
-        try h.store.saveNote(noteID: h.store.notes[0].id, text: "編集後の本文", at: .now)
-        try await t.settle(h.host) { h.review.package == nil }
-        #expect(throws: AIPackageError.self) { try h.review.validated(at: .now) }
-        h.window.endSheet(sheet)
     }
 }

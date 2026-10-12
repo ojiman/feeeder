@@ -6,9 +6,6 @@ import Testing
 @testable import UnagiReader
 
 @Suite(.serialized) @MainActor struct ReaderLayoutTests {
-    private struct NoLauncher: ClaudeLaunching {
-        func open(_ url: URL) async throws { throw HandoffError.launchFailed }
-    }
     private func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
         if let result = view as? T { return result }
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
@@ -30,9 +27,7 @@ import Testing
             ParsedEntry(sourceID: "synthetic-\(index)", title: "合成記事 \(index)", url: URL(string: "http://127.0.0.1:1/article/\(index)"), summary: "合成要約", body: "合成本文", coverage: .feedProvided, publishedAt: .now.addingTimeInterval(Double(-index)))
         }
         _ = try store.importFeed(ParsedFeed(title: "合成購読", sourceURL: URL(string: "http://127.0.0.1:1/feed")!, entries: entries, skippedEntries: 0), receivedAt: .now)
-        let review = AIPackageReview(store: store)
-        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store), aiReview: review,
-            handoff: ClaudeHandoffController(directory: directory.appendingPathComponent("Handoff"), review: review, launcher: NoLauncher()),
+        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store),
             imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")))
         let host = NSHostingView(rootView: reader)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)

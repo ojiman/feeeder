@@ -11,7 +11,7 @@
 | 領域 | 構成 |
 |---|---|
 | UI | SwiftUIの共通`NavigationSplitView`、記事一覧はAppKitの`NSTableView`、読書本文は`NSTextView`、原文閲覧は`WKWebView` |
-| Core | `Sources/ReaderCore`。SwiftDataのモデル・ReaderStore、XMLParserによるRSS/Atom解析、保持・ノート・端末内AI・Claudeハンドオフ |
+| Core | `Sources/ReaderCore`。SwiftDataのモデル・ReaderStore、XMLParserによるRSS/Atom解析、保持・ノート・端末内AI |
 | 通信・抽出 | URLSessionで端末から取得。SwiftSoup 2.13.9をexact固定し、`article`、次に`main`の段落を抽出する（`ExtractionQuality`: 短い断片が過半の「ページの部品」は本文としない）。記事を開いたときは取得せず、フィードの本文を出す（決定0033）。抽出は「全文を取得」を押したときと、短いフィード本文の記事を要約へ送るときのAI入力だけ |
 | 保存先 | `Application Support/UnagiReader/Reader.store`。通常起動でデモを挿入せず、合成デモは明示的な`--data-directory`と`--seed-demo`で起動 |
 
@@ -49,7 +49,7 @@ Backend・アカウント・AI proxyは置かない。入力URLのscheme・redir
 
 RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキスト、UTF-16リンク範囲とHTTP(S)リンク先、引用深さへ変換する。fragmentはリンク先では保持し、記事同一性用URLでは除去する。`ContentSnapshot.bodyFormatData`はJSONの任意属性で、保存textと一致する場合だけ使う。情報なし／不一致ならtextへfallbackし、リンク先を推測しない。本文削除ではsnapshotと書式も削除する。ノート・AI入力はテキストとカバー範囲を使う。
 
-## 3. AI（端末内の提案とClaudeハンドオフ）
+## 3. AI（端末内の要約。Claudeへの受け渡しは決定0049で削除）
 
 ### 3.1 端末内AI
 
@@ -62,17 +62,9 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 - **利用可否**: `SystemLanguageModel.default.availability`を検査する。資産が無い場合に、アプリが自動で取得要求（通信）を起こさない。利用不可・ガードレールの誤検知・上限超過・取消は「テキストなし」として扱い、操作を止めない。
 - **設定**: 端末内AIの有効／無効を持つ（Settingsの「要約」。状態の表示つき）。既定は有効。無効のときはモデルを呼ばない。
 
-### 3.2 Claude hand-off
+### 3.2 Markdownをコピー
 
-The note panel's share menu is the only entry point. Empty or whitespace-only notes disable all three actions. Markdown copy and `.md` export use the saved note's exact UTF-8 bytes. The Claude review contains only the full note, a review request and the output language. It shows the package's size, expiry and SHA-256. Copy, TXT export, split export and Claude launch use the same bytes as the preview. See [PRD §5.2](specification.md#52-claudeへの依頼ノートの機能本人が内容を確認して送る) and [decision 0021](decisions/0021-note-share-menu-and-review.md).
-
-`AIPackageBuilder` puts the note's id and verbatim text between `BEGIN_NOTE` and `END_NOTE`. Marker-like lines remain data. The request asks for strengths supported by quotes, gaps based only on what the note omits, opposing views and next reading or writing. `AIPackageReview` compares the note with the current store before each action; an edit or deletion invalidates the review. Packages expire exactly 24 hours after creation. Article retention and membership do not affect them.
-
-`ClaudeLink` passes a short request in `q` and the generated TXT's absolute path in `file` to `claude://cowork/new`. The note stays in the TXT, outside the URL. The person confirms Attach, sends the message and decides any folder permission in Claude. There is no automatic sending or reply insertion. A successful launch does not prove attachment or reading. The checked environment is Claude Desktop 2.19675.0 / Pro / Cowork ([probe](verification/2026-10-04-claude-desktop-handoff.md)); normal Chat attachment, other versions/plans and large-file reading remain unverified.
-
-`HandoffFiles` writes only generated TXT and metadata in a package UUID folder (0700; files 0600). Before launch it checks regular-file status, readability, expiry and the reviewed hash. Splitting preserves every UTF-8 byte in parts of at most 1 MiB, including headers; this is not a Claude size limit. Failed launches can retry the same valid copy.
-
-Metadata keeps the package id, creation/expiry dates, split flag, file names/hashes and note id. Maintenance removes a copy when its note is deleted or its original expiry arrives, capped at 24 hours. Edits keep the snapshot. Legacy `themeID` is read as the note id; obsolete and unknown fields are ignored. Copies without a note id expire on time. Damaged metadata and unsafe folders are reported after other valid copies have been maintained; path, symlink and unknown-file guards prevent unrelated deletion. User exports and content already in Claude are outside this cleanup. See [decision 0022](decisions/0022-note-only-package-clean-up.md) and [S4 verification](verification/s4-clean-up.md).
+ノートを外へ出す入口は、ノートのパネルのヘッダーの「Markdownをコピー」だけである（決定0049）。空白だけのノートでは無効。`ReaderView.copyNote`が、保存済みのノート本文を、整えずに、そのまま`NSPasteboardItem`の文字列として書く（失敗は成功と示さず、エラーを出す）。ファイルを作らず、ほかのアプリを起動せず、通信しない。以前の版がライブラリのフォルダに作った`Handoffs`（ノートのコピー）は、起動時に`LegacyHandoffFolder`が削除する（リンクだった場合は、リンクだけを消す。失敗はアラートで知らせる）。
 
 ## 4. AIエージェントによる開発
 
@@ -88,7 +80,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 ### 4.3 クレデンシャル
 
-テストは合成RSS／HTML・一時DBを使い、許可された公開fixtureにもCookie・Authorization・個人識別queryを含めない。Claudeは本人の確認・送信でAPIキー不要。GitHubは依頼の範囲でホストの認証済みツールを使い、token・SSH鍵を直読み・コピー・引数／環境変数で受け渡ししない。Apple ID・証明書・秘密鍵はエージェントに渡さない。
+テストは合成RSS／HTML・一時DBを使い、許可された公開fixtureにもCookie・Authorization・個人識別queryを含めない。GitHubは依頼の範囲でホストの認証済みツールを使い、token・SSH鍵を直読み・コピー・引数／環境変数で受け渡ししない。Apple ID・証明書・秘密鍵はエージェントに渡さない。
 
 ### 4.4 オーケストレーション
 
@@ -119,7 +111,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 | 記録 | 用途 |
 |---|---|
-| [Claude技術probe](verification/2026-10-04-claude-desktop-handoff.md) | 合成TXT・許可操作・経路の制約 |
+| [Claude技術probe](verification/2026-10-04-claude-desktop-handoff.md) | 合成TXT・許可操作・経路の制約（決定0049で削除した機能の記録） |
 | 初回V1受入（Git履歴） | 本体ハンドオフ・保持・性能の当時の測定と未検証 |
 | Dogfooding受入（Git履歴） | Star・日次／週・画像・保存の改修結果 |
 | 読書UI追加受入（Git履歴） | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
@@ -139,7 +131,7 @@ Metadata keeps the package id, creation/expiry dates, split flag, file names/has
 
 上下遷移は再利用するネイティブviewportのlayerへ64pt・0.22秒・ease-outと控えめな透明度変化を`CAAnimationGroup`で適用する。次／前の方向は一覧ID順から求める。同記事の本文更新・画像到着では再生せず、Reduce Motionでは`article-motion`を除去する。原文開閉も上下・0.22秒。読書ツールバーはStar／ノート／外部ブラウザ、AIの入口はノート、外観はSettingsで`AppStorage("appearance")`を共有する。
 
-ノートを選んでも、中央は購読元・フォルダと同じ`NSTableView`の一覧のままで、読書面は右にある。ノートは右の読書面の`.inspector`（`NotePanel`。幅は、パネルの内容側に付けた`inspectorColumnWidth`（インスペクタ自身に付けると効かなかった）の最小300・最大640pt、希望は前回の幅`NotePanelWidth`（`UserDefaults`。初回は380。保存時と読み出し時に300〜640へ丸め、壊れた値は380へ戻す）。幅の変化は`NotePanelWidthMemory`が`onGeometryChange`で測り、0.6秒落ち着いたら1回保存する。幅を`ReaderView`の状態にしないのは、ドラッグの1コマごとに画面全体が再描画されて固まったため）として開き、ツールバーのボタン（常に置き、ノートの外では押せない。高さが変わらない）と`⌥⌘I`で開閉する。境界のドラッグで畳まれても、次のターンに開き直す（`noteOpenBinding`）。開閉は`ReaderWorkspaceState.isNoteOpen(of:)`で、**ノートを選ぶと初めから開き**、本人が閉じたノートだけがアプリを開いている間は閉じたままになる（メモリ上）。パネルを開いてもキーボードの入力先は取らない（エディタをクリックしたときだけ）。読書の状態（選んだ記事・スクロール記憶）はノートごとに1つで、開閉の影響を受けない。サイドバーは、ノートの画面（スコープがノート）にいる間、`SidebarFold`（純粋な規則）が決めて畳む（ウィンドウ幅によらない。決定0046）。畳みはスコープの変更と同じ`withAnimation`（0.3秒）で行い、起動時にノートを開いていれば、動かさずに畳む。戻すのは右カラム左上の「×」（`noteScreenCross`）で、`NoteScreenReturn`が覚えた直前のスコープへ戻る（なければすべての記事。ノートからノートへ移っても、その前の場所を覚えている。決定0047）。パネルの開閉ではサイドバーは動かない。`NotePanel`は、右上に共有メニュー（Claudeで開く／Markdownコピー／Markdown書き出し）、その左に前後の記事ボタン、下に`NoteEditor`を置く（ノートの名前は無いので、パネルにタイトルの行は無い）。共有メニューは空白だけのノートでは操作を無効にする。ボタンは`.borderless`で、AppKitのボタンとして押せる。キーの規則は`ReaderKeyboardCommands`が、編集できる`NSTextView`と`NSTextField`だけを文字入力とし、IME変換中と、シート・原文表示中は効かせない。`n` and the toolbar icon open `SendToNoteView` (new note, then at most 8 notes ordered by last edit; arrows, Return and Escape). `SendStatusBar` shows progress, cancel, the result, open and undo. A row context menu in a note calls `removeArticle` without changing its text. The `t` picker is removed. These actions keep the existing priority for text input, IME composition and modified keys. サイドバーの「新しいノート」は、空のノートを作ってすぐ選ぶ。ドラッグ&ドロップは候補で必須ではない。
+ノートを選んでも、中央は購読元・フォルダと同じ`NSTableView`の一覧のままで、読書面は右にある。ノートは右の読書面の`.inspector`（`NotePanel`。幅は、パネルの内容側に付けた`inspectorColumnWidth`（インスペクタ自身に付けると効かなかった）の最小300・最大640pt、希望は前回の幅`NotePanelWidth`（`UserDefaults`。初回は380。保存時と読み出し時に300〜640へ丸め、壊れた値は380へ戻す）。幅の変化は`NotePanelWidthMemory`が`onGeometryChange`で測り、0.6秒落ち着いたら1回保存する。幅を`ReaderView`の状態にしないのは、ドラッグの1コマごとに画面全体が再描画されて固まったため）として開き、ツールバーのボタン（常に置き、ノートの外では押せない。高さが変わらない）と`⌥⌘I`で開閉する。境界のドラッグで畳まれても、次のターンに開き直す（`noteOpenBinding`）。開閉は`ReaderWorkspaceState.isNoteOpen(of:)`で、**ノートを選ぶと初めから開き**、本人が閉じたノートだけがアプリを開いている間は閉じたままになる（メモリ上）。パネルを開いてもキーボードの入力先は取らない（エディタをクリックしたときだけ）。読書の状態（選んだ記事・スクロール記憶）はノートごとに1つで、開閉の影響を受けない。サイドバーは、ノートの画面（スコープがノート）にいる間、`SidebarFold`（純粋な規則）が決めて畳む（ウィンドウ幅によらない。決定0046）。畳みはスコープの変更と同じ`withAnimation`（0.3秒）で行い、起動時にノートを開いていれば、動かさずに畳む。戻すのは右カラム左上の「×」（`noteScreenCross`）で、`NoteScreenReturn`が覚えた直前のスコープへ戻る（なければすべての記事。ノートからノートへ移っても、その前の場所を覚えている。決定0047）。パネルの開閉ではサイドバーは動かない。`NotePanel`は、右上にコピーのボタン（Markdownをコピー）、その左に前後の記事ボタン、下に`NoteEditor`を置く（ノートの名前は無いので、パネルにタイトルの行は無い）。コピーのボタンは空白だけのノートでは無効にする。ボタンは`.borderless`で、AppKitのボタンとして押せる。キーの規則は`ReaderKeyboardCommands`が、編集できる`NSTextView`と`NSTextField`だけを文字入力とし、IME変換中と、シート・原文表示中は効かせない。`n` and the toolbar icon open `SendToNoteView` (new note, then at most 8 notes ordered by last edit; arrows, Return and Escape). `SendStatusBar` shows progress, cancel, the result, open and undo. A row context menu in a note calls `removeArticle` without changing its text. The `t` picker is removed. These actions keep the existing priority for text input, IME composition and modified keys. サイドバーの「新しいノート」は、空のノートを作ってすぐ選ぶ。ドラッグ&ドロップは候補で必須ではない。
 
 `NSTextView`はリンク属性・引用の字下げと縦線、末尾一箇所のカバー範囲を描く。クリック時にもURLを検証する。再取得は明示操作で、失敗時も保存本文を保ち結果を示す。
 

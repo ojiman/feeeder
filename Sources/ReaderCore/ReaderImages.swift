@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
@@ -27,7 +28,7 @@ public actor ReaderImageLoader {
         try Task.checkCancellation()
         guard let url = ArticleURL.validated(url.absoluteString) else { throw HTTPError.invalidURL }
         if !prepared { try prepare(at: at) }
-        let key = AIPackageBuilder.hash(Data(url.absoluteString.utf8)), token = UUID()
+        let key = ImageCacheKey.hash(Data(url.absoluteString.utf8)), token = UUID()
         if let record = readRecord(key), record.url == url.absoluteString, at < record.createdAt.addingTimeInterval(record.lifetime) {
             if record.failed { return nil }
             let file = path(key, "png")
@@ -104,7 +105,7 @@ public actor ReaderImageLoader {
         let file = path(key, "json")
         guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize, size < 8192,
               let data = try? Data(contentsOf: file), let record = try? JSONDecoder().decode(Record.self, from: data),
-              AIPackageBuilder.hash(Data(record.url.utf8)) == key else { return nil }
+              ImageCacheKey.hash(Data(record.url.utf8)) == key else { return nil }
         return record
     }
     private func writeRecord(_ record: Record, key: String) throws { try JSONEncoder().encode(record).write(to: path(key, "json"), options: .atomic) }
@@ -135,4 +136,9 @@ public actor ReaderImageLoader {
     private func remove(_ key: String) throws {
         for ext in ["json", "png"] { let file = path(key, ext); if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) } }
     }
+}
+
+/// The file name of a cached image: the SHA-256 of its address, in hexadecimal.
+enum ImageCacheKey {
+    static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 }
