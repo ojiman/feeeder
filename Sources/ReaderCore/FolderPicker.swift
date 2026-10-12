@@ -35,4 +35,32 @@ public enum FolderPicker {
         if !folders.contains(typed) { result.append(.create(typed)) }
         return result
     }
+
+    // MARK: Choosing at registration
+
+    public enum Step: Sendable { case up, down }
+
+    /// Nothing is highlighted until a name is typed, so Return on an untouched chooser adds the subscription as unfiled.
+    /// Once a name is typed, the best match is highlighted, so typing a name and pressing Return goes there.
+    public static func highlight(afterTyping query: String, entries: [Entry]) -> Int? {
+        SingleLineText.name(query).isEmpty || entries.isEmpty ? nil : 0
+    }
+
+    /// ↑ and ↓. The highlight stops at the last candidate; ↑ from the first returns to "no folder" while nothing is typed.
+    public static func highlight(from current: Int?, step: Step, count: Int, query: String) -> Int? {
+        guard count > 0 else { return nil }
+        switch step {
+        case .down: return min(count - 1, (current ?? -1) + 1)
+        case .up:
+            guard let current else { return nil }
+            if current > 0 { return min(current - 1, count - 1) }
+            return SingleLineText.name(query).isEmpty ? nil : 0
+        }
+    }
+
+    /// The folder a highlighted candidate stands for; no highlight (or a stale one) means unfiled.
+    public static func destination(highlighted: Int?, in entries: [Entry]) -> String {
+        guard let highlighted, entries.indices.contains(highlighted) else { return "" }
+        return entries[highlighted].folder
+    }
 }
