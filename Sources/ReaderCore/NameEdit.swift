@@ -8,7 +8,4 @@ public enum NameEdit {
         let name = SingleLineText.name(typed)
         return name.isEmpty || name == SingleLineText.name(old) ? nil : name
     }
-
-    /// An untitled note shows 「新規ノート」 as a label; the field starts empty rather than with that label.
-    public static func initialText(forNoteTitle title: String) -> String { title == NoteTitle.untitled ? "" : title }
 }

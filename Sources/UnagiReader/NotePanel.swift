@@ -4,7 +4,6 @@ import ReaderCore
 /// The note, opened beside the article as the inspector: previous and next article buttons, the copy button, and the editor.
 struct NotePanel: View {
     @Bindable var store: ReaderStore
-    let noteID: UUID
     let canPrevious: Bool
     let canNext: Bool
     let onPrevious: () -> Void
@@ -14,7 +13,7 @@ struct NotePanel: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            NoteEditor(store: store, noteID: noteID)
+            NoteEditor(store: store)
         }
         .accessibilityElement(children: .contain).accessibilityLabel("ノート")
     }
@@ -39,6 +38,6 @@ struct NotePanel: View {
     }
 
     private var hasText: Bool {
-        !(store.note(id: noteID)?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        !(store.note?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
     }
 }

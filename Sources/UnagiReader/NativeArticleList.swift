@@ -15,10 +15,8 @@ struct NativeArticleList: NSViewRepresentable {
     let onKey: (String) -> Void
     var imageLoader: ReaderImageLoader? = nil
     var iconURL: (Article) -> URL? = { _ in nil }
-    var inNote: (UUID) -> Bool = { _ in false }
     var initialTopOffset: Double = 0
     var onTopOffset: ((UUID, Double) -> Void)? = nil
-    var onRemoveFromNote: ((UUID) -> Void)? = nil
     /// Room above the first row for the title block (`ListHeader`), on top of the toolbar's own inset.
     var headerInset: CGFloat = 0
 
@@ -51,7 +49,6 @@ struct NativeArticleList: NSViewRepresentable {
             guard let coordinator, coordinator.parent.shortcutsEnabled else { return false }
             coordinator.parent.onKey(key); return true
         }
-        table.rowMenu = { [weak coordinator = context.coordinator] row in coordinator?.menu(for: row) }
         scroll.documentView = table
         Self.applySurface(scroll: scroll, table: table)
         scroll.hasVerticalScroller = true
@@ -104,10 +101,6 @@ struct NativeArticleList: NSViewRepresentable {
     @MainActor final class Table: NSTableView {
         var keyHandler: ((String) -> Bool)?
         var focusWhenAttached = false
-        var rowMenu: ((Int) -> NSMenu?)?
-        override func menu(for event: NSEvent) -> NSMenu? {
-            rowMenu?(row(at: convert(event.locationInWindow, from: nil)))
-        }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if focusWhenAttached { window?.makeFirstResponder(self) }
@@ -133,18 +126,6 @@ struct NativeArticleList: NSViewRepresentable {
         private(set) var lastUpdateAnimated = false
         var reduceMotion: () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
         init(_ parent: NativeArticleList) { self.parent = parent }
-        func menu(for row: Int) -> NSMenu? {
-            guard parent.onRemoveFromNote != nil, ids.indices.contains(row) else { return nil }
-            let menu = NSMenu()
-            let item = NSMenuItem(title: "このノートから外す", action: #selector(removeFromNote(_:)), keyEquivalent: "")
-            item.target = self; item.representedObject = ids[row]
-            menu.addItem(item)
-            return menu
-        }
-        @objc func removeFromNote(_ item: NSMenuItem) {
-            guard let id = item.representedObject as? UUID else { return }
-            parent.onRemoveFromNote?(id)
-        }
         func update(_ parent: NativeArticleList) {
             guard let table else { return }
             synchronizing = true
@@ -195,7 +176,7 @@ struct NativeArticleList: NSViewRepresentable {
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard parent.ids.indices.contains(row), let article = parent.article(parent.ids[row]) else { return nil }
             let cell = tableView.makeView(withIdentifier: .init("article"), owner: self) as? Cell ?? Cell()
-            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader, inNote: parent.inNote(article.id))
+            cell.configure(article, feed: parent.feedTitle(article), iconURL: parent.iconURL(article), loader: parent.imageLoader)
             return cell
         }
         func tableViewSelectionDidChange(_ notification: Notification) {
@@ -276,9 +257,9 @@ struct NativeArticleList: NSViewRepresentable {
         }
         convenience init() { self.init(frame: .zero) }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil, inNote: Bool = false) {
+        func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil) {
             isRead = article.isRead
-            source.stringValue = (article.starredAt == nil ? "" : "★ ") + (inNote ? "▣ " : "") + feed
+            source.stringValue = (article.starredAt == nil ? "" : "★ ") + feed
             title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
             let published = article.publishedAt

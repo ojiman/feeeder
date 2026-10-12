@@ -255,13 +255,12 @@ import ReaderCore
         #expect(r.view.string == "あいう")
     }
 
-    @Test func theNotePanelEditorIsTheStyledViewAndTypingMovesTheTitleAndSavesTheStore() throws {
+    @Test func theNotePanelEditorIsTheStyledViewAndTypingSavesTheStore() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let store = try ReaderStore(url: directory.appendingPathComponent("Reader.store"))
-        let note = try store.createNote(text: "", at: .now)
-        let host = NSHostingView(rootView: NoteEditor(store: store, noteID: note.id))
+        let host = NSHostingView(rootView: NoteEditor(store: store))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host
         defer { window.close() }
@@ -271,8 +270,7 @@ import ReaderCore
         view.insertText("# 見出し", replacementRange: NSRange(location: 0, length: 0))
         view.insertText("\n- 項目", replacementRange: NSRange(location: 5, length: 0))
         pumpRunLoop(0.1)
-        #expect(store.note(id: note.id)?.text == "# 見出し\n- 項目")
-        #expect(store.note(id: note.id)?.title == "見出し")
+        #expect(store.note?.text == "# 見出し\n- 項目")
         #expect(view.string == "# 見出し\n- 項目")
         #expect(try #require(font(view, at: 3)).pointSize > NoteEditorStyle.baseFont.pointSize)
     }

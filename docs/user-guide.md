@@ -65,9 +65,9 @@ The window has three columns. In Settings you can choose the appearance: follow 
 
 | Column | What it shows |
 |---|---|
-| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), Notes (the most recently edited first), and Sources (folders and subscriptions). |
-| Middle | The list of articles. For a note it is the articles you put into that note. |
-| Right | The article. For a note, the note opens beside it as the standard inspector (it opens at once when you select a note; the toolbar button or `⌥⌘I` closes and opens it). |
+| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), and Sources (folders and subscriptions). |
+| Middle | The list of articles. |
+| Right | The article. The note opens beside it as the standard inspector, from any screen that has a list of articles (the toolbar button or `⌥⌘I` opens and closes it). |
 
 ### Subscriptions and folders
 
@@ -102,15 +102,12 @@ Focus the article list, then use these keys:
 ### Stars and notes
 
 - Press `s` (or use the button at the top right) to star an article. You can read starred articles again from the Star list.
-- In a note's article list, right-click 「このノートから外す」 (Remove from this note) to remove the link. It does not change the note text or Star. There is no separate linking picker or `t` key.
-- A Star and a note are separate. If you remove the Star, the article stays in its notes.
-- Create a note with 「新しいノート」 (New note) in the sidebar. It is empty and opens at once. To rename a note, right-click it and choose 「名前を変更」 (Rename), or press Return on the selected row, and type in the row; the name is the first line of the note. Right-click a note and choose 「削除…」 (Delete…) to delete it. For ten seconds after that, 「取り消す」 (Undo) at the bottom left brings it back as it was. Deleting a note does not delete its articles or Stars.
 
 ### The note
 
-Select a note in the sidebar (the most recently edited is first). The middle column shows the articles you put into it and the right column shows the article you select. The note panel opens beside the article when you select the note. Press the note button in the toolbar, or `⌥⌘I`, to close it and open it again (a note you closed stays closed while the app runs). The button is greyed out when no note is selected. Selecting a note folds the sidebar away (in a move of about 0.3 seconds, whatever the width of the window) so there is more room to write. The ✕ at the top left of the right column leaves the note and goes back to the screen you were on before (Feeds, for example); the sidebar comes back with it. It is not the same as hiding the note's panel.
+There is one note, and nothing to manage: no list of notes, no new note, no name, no rename and no delete. Press the note button in the toolbar, or `⌥⌘I`, and the note panel opens beside the article, on any screen that has a list of articles (Feeds, Star, a folder, a subscription). It is the same note on every screen. It starts closed. Press the button again to close it. It stays as you left it while you go from one screen to another. If an older version had several notes, the first start of this version keeps the one you edited last and deletes the others, with the records of the articles that were in them. This cannot be undone.
 
-- A note is one Markdown document. You write plain text in your own words. A line that starts with `#` (up to six, then a space) is a heading and is shown bold and larger. A line that starts with `-`, `*`, `+` or a number such as `1.` is a list item: its mark is coloured and a wrapped line lines up with the text. This changes only how the text looks, never the saved text, and pressing Return does not continue a list. Pasting or dropping text from another app adds plain text only. While you are composing Japanese text, the look waits until you confirm or cancel. There is no length limit. It is saved as you type, exactly as you typed it. A note has no name: **its title is its first line** (without the leading `#` marks and spaces; an empty note is called 「新規ノート」). To change the name, right-click the note in the sidebar and choose "名前を変更…": it rewrites the first line (its `#` marks stay). Only when the window is narrow (under about 1,300 pt), opening the note folds the sidebar away to give room; the small button at the left, above the article list, shows it again or folds it again. Closing the note brings the sidebar back. You can drag the edge of the panel to change its width, and the app keeps the width for the next launch (this is still being checked in a real window).
+- A note is one Markdown document. You write plain text in your own words. A line that starts with `#` (up to six, then a space) is a heading and is shown bold and larger. A line that starts with `-`, `*`, `+` or a number such as `1.` is a list item: its mark is coloured and a wrapped line lines up with the text. This changes only how the text looks, never the saved text, and pressing Return does not continue a list. Pasting or dropping text from another app adds plain text only. While you are composing Japanese text, the look waits until you confirm or cancel. There is no length limit. It is saved as you type, exactly as you typed it. The app never writes into the note. You can drag the edge of the panel to change its width, and the app keeps the width for the next launch (this is still being checked in a real window).
 - The top of the note panel has two small arrows for the previous and next article and a copy button, 「Markdownをコピー」 (Copy Markdown). It copies the note's exact text, and it is disabled when the note is empty or has only whitespace.
 - Keys: `j` and `k` move between articles in the list, and `s`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
 
@@ -123,8 +120,8 @@ The app has no AI of its own. It does not summarize, suggest or write for you, a
 - Article bodies and RSS summaries are kept for 30 days by default. In Settings you can choose 7, 30, 90, or 365 days.
 - For an unread article the 30 days start when it is first received. For a read article they start at the first read.
 - Shortening the period, or deleting all bodies at once, asks you to confirm what will be removed.
-- **The record in a note is never deleted automatically.** This means the article title, link, and the summary saved at that time, and your notes.
-- A Star or adding an article to a note does not extend the life of its body.
+- **The note is never deleted automatically.**
+- A Star does not extend the life of an article body.
 
 ## 6. Using the note with another AI
 
