@@ -1,4 +1,4 @@
-# 0044 The note as a place to think: remove the seams between reading and writing
+# 0045 The note as a place to think: remove the seams between reading and writing
 
 - Status: **proposed**. Not approved. It becomes valid only when the owner (PdM) approves it and the PR that adds it is merged. Parts marked "open" or "PoC" are not decided.
 - Date: 2026-10-12
@@ -22,7 +22,7 @@ Unagi Reader's value is a smooth loop with no seams (Vision: "A smooth feel is p
 
 ## Proposed decisions
 
-1. **Folding rule.** When the window is too narrow, fold the sidebar first and then the article list. Never fold the article or the note. The person only opens and closes the note panel; the rest follows from the width. The note panel gets a larger ideal width and a higher maximum than 640 pt. The numbers come from PoC 1.
+1. **Folding rule.** When the window is too narrow, fold the sidebar first and then give the article list less room. Never fold the article or the note. The person only opens and closes the note panel; the rest follows from the width. The note panel gets a larger ideal width and a higher maximum than 640 pt. The numbers come from PoC 1. PoC 1 found that the system's `detailOnly` does not fold the list column, and that widths which change with the fold state make the app hang on a large library (see the PoC results). So the list is not folded, and no column width may depend on the fold state.
 2. **References stay in view.** The references of the open note are shown as a thin strip of small cards over the article pane (favicon or thumbnail, short title), with the current one marked. A click or `⌥⌘↑` / `⌥⌘↓` switches the article, and the note's caret and scroll position do not change. A popover that hides the references is not used.
 3. **Collecting and writing are separate.** Recording a reference happens at once and does not wait for AI. What a send writes into the body is open (O1).
 4. **Material in the body looks different from the person's words.** A summary is written as a Markdown quote (`>`) followed by a link line, and the editor shows quote lines muted with a bar on the left (display only; the saved characters are plain Markdown, as for headings and lists). Notes that already exist are not rewritten.
@@ -69,10 +69,28 @@ Rules for the PoCs:
 - PoC 1 comes first. If the owner does not feel it is better after PoC 1, stop and rethink; do not continue to PoC 2 and 3.
 - The compiler in CI (Swift 6.3.3) is stricter than the local one. Add new window-level behaviour from outside the `ReaderView` modifier chain, and run CI before calling a PoC's design feasible.
 - The result of each PoC is written back here as a short status, with the owner's own words for what only the owner can judge.
+- Try every layout change with a large library (thousands of articles) as well as a small one. A hang showed only with the large one.
+
+### PoC results (2026-10-12)
+
+| PoC | Result |
+|---|---|
+| 0 | Reproduced: in bullet format, an answer of only list markers sent an AI mark with no summary. Fixed with tests first in [PR #108](https://github.com/ojiman/unagi-reader/pull/108). It is not confirmed that this was the cause in the owner's note (the owner may have edited the block). |
+| 1 | Not finished. Findings below. The code is on the branch `poc/note-writing-space` (not for merge). The owner has not yet judged the feel. |
+
+Findings of PoC 1:
+
+1. **The note panel's width was never applied.** `inspectorColumnWidth` was put on the inspector itself and had no effect: the panel stayed about 270 pt wide, and the default of 380 pt and the saved width were not used. Put on the panel's content, it works (520 pt measured in a 1,339 pt window, about 35 Japanese characters per line against about 14 before). This is probably the main reason the owner found the note too narrow, and it is a bug in the current code that can be fixed on its own.
+2. **`detailOnly` did not fold the list.** The state changed but the window still showed the list. Folding the sidebar (`doubleColumn`) works.
+3. **Widths that depend on state hang the app.** With the list column's minimum and maximum and the panel's minimum changing with the fold state, opening a note from the sidebar while the all-articles list was shown, in a window narrower than 1,500 pt, kept the main thread at 100% CPU on a large library (13 MB store). With constant widths the same steps raise the CPU for a moment and then it is idle. The hot path is `ReaderView.visibleArticleIDs`, which filters every article each time it is read and is read many times per update (`ReaderStore.noteArticleIDs` under `visibleArticleIDs`). That cost is in the current code and any extra update makes it show.
+4. **Hosted UI tests crash with the width on the content.** Three tests (`anEmptyNoteListsNoRows`, `theNotePanelHasNoSummaryButtonAndNoActionBar`, `shareButtonRemainsPresentForAnEmptyNoteAndOldReviewButtonIsGone`) end in AppKit's constraint update pass (`EXC_BREAKPOINT`) in the test harness, even with constant values and even with only an ideal width. The app itself ran. A real fix has to deal with this.
+5. **Cost per update.** `visibleArticleIDs` should be computed once per update, not on every read. This is a separate, small fix.
+
+Consequence for the proposal: the strip of reference cards (point 2) is not needed to start; the list is already the references. What remains for PoC 1 is the panel width fix (finding 1), the sidebar fold, and the owner's judgment. Narrowing the list needs a width that does not depend on the fold state (for example one fixed width for a note's list), which is untested.
 
 ## Not verified
 
-Nothing is built. The screenshot is the only evidence of the narrow panel and the summary pile. Motion, the feel, Japanese input while composing in a quote line, VoiceOver, Reduce Motion, the macOS 27.0 support floor and long use are all unverified. The claim that a long article's summary is good enough is unverified (PoC 4).
+Only PoC code is built (not merged). The screenshot is the only evidence of the narrow panel and the summary pile. Motion, the feel, Japanese input while composing in a quote line, VoiceOver, Reduce Motion, the macOS 27.0 support floor and long use are all unverified. The claim that a long article's summary is good enough is unverified (PoC 4).
 
 ## Sources
 
