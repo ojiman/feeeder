@@ -18,7 +18,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | Sources/ReaderCore | Models, store, parsing, retention, handoff. No UI. |
 | Sources/UnagiReader | SwiftUI/AppKit app. |
 | Tests/ReaderCoreTests, Tests/ReaderUITests | Tests. Synthetic data only. |
-| scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`, `fetch-ci-app.sh` (tested by `test-fetch-ci-app.sh`), `ci-gate.sh` (the `check` job; tested by `test-ci-gate.sh`). |
+| scripts/ | `build-app.sh`, `prepare-v1-store-fixture.sh`, `fetch-ci-app.sh` (tested by `test-fetch-ci-app.sh`), `ci-gate.sh` (the `check` job; tested by `test-ci-gate.sh`), `check-test-log.sh` (fails CI when the test run did not finish; tested by `test-check-test-log.sh`). |
 
 ## Commands
 
@@ -111,4 +111,5 @@ Decided by the user on 2026-10-05 and 2026-10-07 (see docs/decisions/).
 - macOS 26: after a failed save, registered models can keep unsaved values. `ReaderStore.rollback()` swaps in a fresh `ModelContext`, and `needsReload` blocks mutations until a reload succeeds. Resolve models by ID after a failure, and call `reloadIfNeeded()` first in any new mutating method.
 - The CI compiler (Swift 6.3.3) crashed on an actor-isolated method reference passed as a `Binding` setter; use an explicit closure (PR #14).
 - The CI compiler (Swift 6.3.3) gave up ("unable to type-check this expression in reasonable time") when `ReaderView`'s modifier chain grew by a few modifiers (PR #96), while the local Swift 6.4 compiled it. Add new window-level modifiers from outside the chain (`ViewModifier` applied in the wrapper `body`, as `OPMLImportPresentation`), not as more links in it.
+- A hosted UI test must not call `NSButton.performClick`. It runs a nested event loop that can stop the main run loop, and then the test process ends with exit code 0 and no summary line; `swift test` looks like a pass. Move through the app with the key handlers instead (`NativeArticleList.Table.keyHandler`). `scripts/check-test-log.sh` fails the `regression` job when the summary line is missing or a started test did not end. Run a changed UI suite several times, not once: the early end showed in about half of the runs.
 - Three problems appeared only in CI, not on the local toolchain: SwiftData rollback on macOS 26 (PR #10), the app signature of the packaged app (PR #12), and the compiler crash above (PR #14). Treat local success as necessary, not sufficient.

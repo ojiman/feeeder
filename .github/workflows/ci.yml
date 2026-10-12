@@ -87,6 +87,9 @@ jobs:
       - name: Run tests
         run: |
           { time swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --force-resolved-versions --disable-keychain --disable-netrc; } 2>&1 | tee "$CI_RESULTS/tests.log"
+      # A test process can end early with exit code 0 and no summary line; `swift test` then looks like a pass.
+      - name: Check that the test run finished
+        run: bash scripts/check-test-log.sh "$CI_RESULTS/tests.log"
       - name: Save logs and artifacts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -154,6 +157,8 @@ jobs:
           persist-credentials: false
       - name: Test the gate script
         run: bash scripts/test-ci-gate.sh
+      - name: Test the test-log check script
+        run: bash scripts/test-check-test-log.sh
       - name: Decide
         env:
           CHANGES: ${{ needs.changes.result }}
