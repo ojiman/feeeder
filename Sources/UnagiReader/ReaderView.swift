@@ -462,8 +462,7 @@ struct ReaderView: View {
             onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset },
             onRemoveFromNote: noteScopeID.map { noteID in { articleID in perform { try store.removeArticle(articleID, fromNote: noteID, at: .now) } } })
         .focused($listFocused)
-        .navigationTitle(scopeTitle)
-        .navigationSubtitle("\(visibleArticleIDs.count)件の記事")
+        .navigationTitle("")                                           // the list draws its own title (ListHeader); the system one ran out of the column
         .overlay {
             if visibleArticleIDs.isEmpty {
                 switch scope ?? .all {
@@ -486,6 +485,8 @@ struct ReaderView: View {
                 }.background(AppPalette.surfaceColor)
             }
         }
+        // After the inset above, so the title is drawn over the bar that holds the sidebar button while a note is open.
+        .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top) }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
     }
