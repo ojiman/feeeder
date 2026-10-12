@@ -10,7 +10,6 @@ struct SubscriptionTarget: Identifiable {
 
 struct SubscriptionSheet: View {
     let store: ReaderStore
-    var feed: Feed?
     /// The folder a new subscription is added to when it was decided by the + of a folder row (empty: not decided; the
     /// chooser under the address then offers the folders once the feed was read).
     var folder = ""
@@ -21,7 +20,6 @@ struct SubscriptionSheet: View {
     @State private var manualXML = false
     /// The XML input is for trouble-shooting: it is offered only when the sheet was opened with the Option key held.
     @State private var xmlOffered = SubscriptionSheet.offersXMLInput(modifiers: NSEvent.modifierFlags)
-    @State private var title = ""
     @State private var error: String?
     /// The address is checked while the person types; Add needs a feed that was read (decision 0036).
     @State private var checker = FeedChecker()
@@ -35,41 +33,35 @@ struct SubscriptionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(feed == nil ? SubscriptionSheet.heading(folder: folder) : "購読名を編集").font(.title3.bold())
-            if let feed {
-                TextField("購読名", text: $title.singleLine())
-                if let url = feed.sourceURL { Text(url).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-            } else {
-                TextField("https://example.com/feed.xml", text: $source.singleLine(address: true))
-                    .accessibilityLabel("フィードのURL").onSubmit(submit)
-                if xmlOffered { Toggle("XMLを直接入力", isOn: $manualXML).font(.caption) }
-                if manualXML {
-                    TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
-                        .frame(minHeight: 240).border(.quaternary)
-                        .accessibilityLabel("フィードXML")
-                    HStack {
-                        Menu("合成サンプルを入力") {
-                            ForEach(FeedExample.allCases, id: \.self) { example in
-                                Button(example.rawValue) { source = example.url; xml = example.xml }
-                            }
+            Text(SubscriptionSheet.heading(folder: folder)).font(.title3.bold())
+            TextField("https://example.com/feed.xml", text: $source.singleLine(address: true))
+                .accessibilityLabel("フィードのURL").onSubmit(submit)
+            if xmlOffered { Toggle("XMLを直接入力", isOn: $manualXML).font(.caption) }
+            if manualXML {
+                TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
+                    .frame(minHeight: 240).border(.quaternary)
+                    .accessibilityLabel("フィードXML")
+                HStack {
+                    Menu("合成サンプルを入力") {
+                        ForEach(FeedExample.allCases, id: \.self) { example in
+                            Button(example.rawValue) { source = example.url; xml = example.xml }
                         }
-                        Spacer()
-                        Text("RSS 1.0 / RSS 2.0 / Atom · 2MBまで").font(.caption).foregroundStyle(.secondary)
                     }
+                    Spacer()
+                    Text("RSS 1.0 / RSS 2.0 / Atom · 2MBまで").font(.caption).foregroundStyle(.secondary)
                 }
-                status
-                if offersFolder { folderChooser }
             }
+            status
+            if offersFolder { folderChooser }
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
                 Spacer()
                 Button("キャンセル") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button(feed == nil ? "追加" : "保存", action: submit)
-                    .keyboardShortcut(.defaultAction).disabled(feed == nil && addableFeed == nil)
+                Button("追加", action: submit)
+                    .keyboardShortcut(.defaultAction).disabled(addableFeed == nil)
             }
         }
         .padding(20).frame(width: 440)
-        .onAppear { title = feed?.title ?? "" }
         .onChange(of: source) { old, new in recheck(delay: FeedCheckRequest.delay(from: old, to: new)) }
         .onChange(of: xml) { _, _ in recheck(delay: .milliseconds(300)) }
         .onChange(of: manualXML) { _, _ in recheck(delay: .zero) }
@@ -118,7 +110,7 @@ struct SubscriptionSheet: View {
     private var folders: [String] { Set(store.feeds.map(\.folder)).filter { !$0.isEmpty }.sorted() }
     private var folderEntries: [FolderPicker.Entry] { FolderPicker.entries(query: folderQuery, folders: folders, current: "") }
     /// The chooser is for a feed that is about to be added from a place that did not decide the folder, when there are folders.
-    private var offersFolder: Bool { feed == nil && folder.isEmpty && !folders.isEmpty && addableFeed != nil }
+    private var offersFolder: Bool { folder.isEmpty && !folders.isEmpty && addableFeed != nil }
     /// Where Add puts the subscription: the folder the + decided, or the highlighted candidate, or unfiled.
     private var destination: String { folder.isEmpty ? FolderPicker.destination(highlighted: folderHighlight, in: folderEntries) : folder }
 
@@ -160,11 +152,6 @@ struct SubscriptionSheet: View {
 
     private func submit() {
         error = nil
-        if let feed {
-            do { try store.updateSubscription(feed, title: title, folder: feed.folder); dismiss() }
-            catch { self.error = error.localizedDescription }
-            return
-        }
         switch checker.state.onReturn {
         case .add(let checked): commit(checked)
         case .waitForAnswer: addWhenReady = true                  // Return before the answer: add when it comes

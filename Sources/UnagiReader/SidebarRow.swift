@@ -14,6 +14,8 @@ struct SidebarRow: View {
     var forceTargeted = false
     /// Shows the + without the pointer (snapshots and tests).
     var forceHover = false
+    /// Set while the name is being edited in place: what the field starts with, and what to do with the result (nil: cancelled).
+    var inlineEdit: (initial: String, finish: (String?) -> Void)? = nil
     @State private var hovering = false
     @State private var targeted = false
 
@@ -22,7 +24,10 @@ struct SidebarRow: View {
     var body: some View {
         HStack {
             // Quiet icons (the system would colour them with its blue accent in the active window) and text a little softer than pure white.
-            Label { Text(title).foregroundStyle(.primary.opacity(0.85)) } icon: { Image(systemName: symbol).foregroundStyle(.secondary) }.lineLimit(1)
+            Label {
+                if let inlineEdit { InlineNameField(initial: inlineEdit.initial, onFinish: inlineEdit.finish) }
+                else { Text(title).foregroundStyle(.primary.opacity(0.85)) }
+            } icon: { Image(systemName: symbol).foregroundStyle(.secondary) }.lineLimit(1)
             Spacer()
             ZStack(alignment: .trailing) {
                 Text(count.formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary).opacity(showsAdd ? 0 : 1)
