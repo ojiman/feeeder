@@ -11,7 +11,8 @@ struct SubscriptionTarget: Identifiable {
 struct SubscriptionSheet: View {
     let store: ReaderStore
     var feed: Feed?
-    /// The folder a new subscription is added to. There is no folder field: the place where + was pressed decides it.
+    /// The folder a new subscription is added to when it was decided by the + of a folder row (empty: not decided; the
+    /// chooser under the address then offers the folders once the feed was read).
     var folder = ""
     let onImported: (UUID) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -28,6 +29,9 @@ struct SubscriptionSheet: View {
     @State private var addWhenReady = false
     /// Set once the feed is saved, so a second Return (field and default button) cannot add it twice.
     @State private var added = false
+    /// The chooser that appears under a feed that was read: what is typed, and which candidate is highlighted (none: unfiled).
+    @State private var folderQuery = ""
+    @State private var folderHighlight: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -54,6 +58,7 @@ struct SubscriptionSheet: View {
                     }
                 }
                 status
+                if offersFolder { folderChooser }
             }
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
@@ -68,6 +73,7 @@ struct SubscriptionSheet: View {
         .onChange(of: source) { old, new in recheck(delay: FeedCheckRequest.delay(from: old, to: new)) }
         .onChange(of: xml) { _, _ in recheck(delay: .milliseconds(300)) }
         .onChange(of: manualXML) { _, _ in recheck(delay: .zero) }
+        .onChange(of: folderQuery) { _, query in folderHighlight = FolderPicker.highlight(afterTyping: query, entries: folderEntries) }
         .onChange(of: checker.state) { _, state in
             guard addWhenReady else { return }
             switch state.whileWaitingForReturn {
@@ -103,6 +109,32 @@ struct SubscriptionSheet: View {
         }
         .font(.callout).frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+
+    private var folders: [String] { Set(store.feeds.map(\.folder)).filter { !$0.isEmpty }.sorted() }
+    private var folderEntries: [FolderPicker.Entry] { FolderPicker.entries(query: folderQuery, folders: folders, current: "") }
+    /// The chooser is for a feed that is about to be added from a place that did not decide the folder, when there are folders.
+    private var offersFolder: Bool { feed == nil && folder.isEmpty && !folders.isEmpty && addableFeed != nil }
+    /// Where Add puts the subscription: the folder the + decided, or the highlighted candidate, or unfiled.
+    private var destination: String { folder.isEmpty ? FolderPicker.destination(highlighted: folderHighlight, in: folderEntries) : folder }
+
+    private var folderChooser: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TextField("フォルダ（任意）", text: $folderQuery.singleLine())
+                .accessibilityLabel("追加先のフォルダ").onSubmit(submit)
+                .onKeyPress(.upArrow) { moveFolderHighlight(.up); return .handled }
+                .onKeyPress(.downArrow) { moveFolderHighlight(.down); return .handled }
+            FolderCandidateList(entries: folderEntries, highlighted: folderHighlight, createSuffix: "を作って追加", onChoose: chooseFolder)
+        }
+    }
+    private func moveFolderHighlight(_ step: FolderPicker.Step) {
+        folderHighlight = FolderPicker.highlight(from: folderHighlight, step: step, count: folderEntries.count, query: folderQuery)
+    }
+    /// A click picks the candidate (it does not add yet): its name goes into the field and it stays highlighted.
+    private func chooseFolder(_ index: Int) {
+        guard folderEntries.indices.contains(index) else { return }
+        let name = folderEntries[index].folder
+        if SingleLineText.name(folderQuery) == name { folderHighlight = index } else { folderQuery = name }
     }
 
     /// The feed that Add would save: one that was read and is not subscribed yet (adding it again would only move it).
@@ -142,7 +174,7 @@ struct SubscriptionSheet: View {
         // Already subscribed: the status line says so, and there is nothing to add.
         guard !added, !isSubscribed(checked) else { return }
         do {
-            let feed = try store.importFeed(checked.parsed, folder: folder)
+            let feed = try store.importFeed(checked.parsed, folder: destination)
             if checked.fetched { try store.recordFetch(feed, etag: checked.etag, lastModified: checked.lastModified, at: .now) }
             added = true
             onImported(feed.id); dismiss()

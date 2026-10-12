@@ -29,4 +29,30 @@ struct FolderPickerTests {
     @Test func aCandidateKnowsTheFolderItMovesTo() {
         #expect(FolderPicker.Entry.unfiled.folder == "" && FolderPicker.Entry.existing("Tech").folder == "Tech" && FolderPicker.Entry.create("新規").folder == "新規")
     }
+
+    // MARK: Choosing at registration (the add sheet): nothing is highlighted until the person types or presses a key, so Return adds as unfiled
+
+    @Test func nothingIsHighlightedUntilSomethingIsTyped() {
+        let entries = FolderPicker.entries(query: "tec", folders: folders, current: "")
+        #expect(FolderPicker.highlight(afterTyping: "", entries: FolderPicker.entries(query: "", folders: folders, current: "")) == nil)
+        #expect(FolderPicker.highlight(afterTyping: "  ", entries: entries) == nil)
+        #expect(FolderPicker.highlight(afterTyping: "tec", entries: entries) == 0)                  // the best match, so typing a name and pressing Return goes there
+        #expect(FolderPicker.highlight(afterTyping: "tec", entries: []) == nil)
+    }
+    @Test func theArrowKeysMoveTheHighlightAndTheTopReturnsToUnfiledWhenNothingIsTyped() {
+        func move(_ from: Int?, _ step: FolderPicker.Step, count: Int = 3, query: String = "") -> Int? {
+            FolderPicker.highlight(from: from, step: step, count: count, query: query)
+        }
+        #expect(move(nil, .down) == 0 && move(0, .down) == 1 && move(2, .down) == 2)                 // stops at the last
+        #expect(move(1, .up) == 0 && move(0, .up) == nil && move(nil, .up) == nil)                   // up from the first: back to "no folder"
+        #expect(move(0, .up, query: "tec") == 0)                                                     // with a name typed there is always a target
+        #expect(move(nil, .down, count: 0) == nil && move(1, .down, count: 0) == nil)
+    }
+    @Test func theDestinationIsTheHighlightedFolderOrUnfiled() {
+        let entries = FolderPicker.entries(query: "tec", folders: folders, current: "")
+        #expect(FolderPicker.destination(highlighted: nil, in: entries) == "")
+        #expect(FolderPicker.destination(highlighted: 0, in: entries) == "Tech")
+        #expect(FolderPicker.destination(highlighted: 1, in: entries) == "tec")                      // "make it"
+        #expect(FolderPicker.destination(highlighted: 9, in: entries) == "")                         // a stale index never picks a wrong folder
+    }
 }
