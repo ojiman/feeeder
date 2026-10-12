@@ -38,6 +38,11 @@ public enum NoteError: LocalizedError {
         self.noteID = noteID; articleID = article.id; title = article.title; url = article.originalURL
         self.summary = summary; addedAt = at
     }
+    /// A record as it was stored, to bring back a deleted note.
+    init(noteID: UUID, articleID: UUID, title: String, url: String?, summary: String, addedAt: Date) {
+        key = noteID.uuidString + ":" + articleID.uuidString
+        self.noteID = noteID; self.articleID = articleID; self.title = title; self.url = url; self.summary = summary; self.addedAt = addedAt
+    }
 }
 
 public struct SendResult: Equatable, Sendable {
@@ -121,14 +126,38 @@ extension ReaderStore {
         try saveNote(noteID: id, text: text, at: at)
         return true
     }
-    public func deleteNote(id: UUID) throws {
+    /// Deletes a note and its records. The result is a copy of everything that was removed (nil when there was no such note),
+    /// to hand to `restoreNote` if the person takes it back (decision 0042).
+    @discardableResult public func deleteNote(id: UUID) throws -> DeletedNote? {
         try reloadIfNeeded()
-        guard let note = note(id: id) else { return }
-        for link in noteArticles where link.noteID == id { context.delete(link) }
+        guard let note = note(id: id) else { return nil }
+        let links = noteArticles.filter { $0.noteID == id }
+        let copy = DeletedNote(id: id, text: note.text, createdAt: note.createdAt, updatedAt: note.updatedAt,
+                               links: links.map { DeletedNote.Link(articleID: $0.articleID, title: $0.title, url: $0.url, summary: $0.summary, addedAt: $0.addedAt) })
+        for link in links { context.delete(link) }
         context.delete(note)
         try save()
         defer { onContentPolicyChanged?() }
         try reload()
+        return copy
+    }
+
+    /// Brings a deleted note back with the same identity, text, dates and recorded articles. False when a note with that
+    /// identity exists already (nothing is added twice). A failed save changes nothing.
+    @discardableResult public func restoreNote(_ deleted: DeletedNote) throws -> Bool {
+        try reloadIfNeeded()
+        guard note(id: deleted.id) == nil else { return false }
+        let note = Note(text: deleted.text, at: deleted.createdAt)
+        note.id = deleted.id
+        note.updatedAt = deleted.updatedAt
+        context.insert(note)
+        for link in deleted.links {
+            context.insert(NoteArticle(noteID: deleted.id, articleID: link.articleID, title: link.title, url: link.url, summary: link.summary, addedAt: link.addedAt))
+        }
+        try save()
+        defer { onContentPolicyChanged?() }
+        try reload()
+        return true
     }
 
     @discardableResult public func addArticle(_ articleID: UUID, toNote noteID: UUID, at: Date) throws -> NoteArticle {

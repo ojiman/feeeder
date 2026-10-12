@@ -108,7 +108,7 @@ Focus the article list, then use these keys:
 - In a note's article list, right-click 「このノートから外す」 (Remove from this note) to remove the link. It does not change the note text or Star. There is no separate linking picker or `t` key.
 - A Star and a note are separate. If you remove the Star, the article stays in its notes.
 - When you add an article to a note, the app records its title, URL, and the RSS summary it has at that time. It does not copy the full body.
-- Create a note with 「新しいノート」 (New note) in the sidebar. It is empty and opens at once. Right-click a note and choose 「削除…」 (Delete…) to delete it. Deleting a note does not delete its articles or Stars.
+- Create a note with 「新しいノート」 (New note) in the sidebar. It is empty and opens at once. Right-click a note and choose 「削除…」 (Delete…) to delete it. For ten seconds after that, 「取り消す」 (Undo) at the bottom left brings it back as it was. Deleting a note does not delete its articles or Stars.
 
 ### The note
 

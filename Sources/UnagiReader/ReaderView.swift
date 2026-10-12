@@ -47,6 +47,8 @@ struct ReaderView: View {
     @State private var movingFeedID: UUID?
     @State private var folderName = ""
     @State private var deletingNote: UUID?
+    /// After a note was deleted: the offer 「取り消す」 (decision 0042).
+    @State private var deletedNote = DeletedNoteOffer()
     @State private var opml: OPMLImportFlow
     @State private var originalPage = OriginalPageState()
     @State private var restoreListFocus = true
@@ -153,7 +155,9 @@ struct ReaderView: View {
 
     var body: some View {
         // The library window's own chain is long (the CI compiler gives up on a longer one); the OPML import is added from outside it.
-        windowContent.modifier(OPMLImportPresentation(flow: opml))
+        windowContent
+            .modifier(OPMLImportPresentation(flow: opml))
+            .modifier(DeletedNoteUndoBar(offer: deletedNote, onRestore: restoreDeletedNote))
     }
 
     private var windowContent: some View {
@@ -374,7 +378,7 @@ struct ReaderView: View {
         .confirmationDialog("このノートを削除しますか？", isPresented: Binding(get: { deletingNote != nil }, set: { if !$0 { deletingNote = nil } })) {
             Button("ノートを削除", role: .destructive) {
                 guard let id = deletingNote else { return }
-                perform { try store.deleteNote(id: id); if scope == .note(id) { scope = .all } }
+                perform { deletedNote.offer(try store.deleteNote(id: id)); if scope == .note(id) { scope = .all } }
                 deletingNote = nil
             }
         } message: { Text("記事とStarそのものは消えません。このノートに記録した記事のタイトル・リンク・要約と、ノートは消えます。") }
@@ -611,6 +615,15 @@ struct ReaderView: View {
         pageForward = ReaderNavigation.isForward(from: selection, to: id, in: visibleArticleIDs)
         selection = id
     }
+    /// 「取り消す」 after a deletion: the note comes back as it was, and is opened.
+    private func restoreDeletedNote() {
+        perform {
+            guard let id = try deletedNote.restore(in: store) else { return }
+            workspace.setNote(open: true, of: id)
+            scope = .note(id)
+        }
+    }
+
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { saveError = error.localizedDescription }
     }
