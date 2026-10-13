@@ -19,7 +19,7 @@ struct ListHeader: View {
     /// The system does not tell it: the safe area of the columns reports 0 (they draw under the toolbar), so this is the toolbar's
     /// standard height. If it is wrong on another system the title block is a little off; nothing breaks.
     static let bandHeight: CGFloat = 52
-    /// How far below the band the centre of the ✕ of the right column is (the ✕ of the original page and the 「一覧」 button: a 12 pt symbol
+    /// How far below the band the centre of the ✕ of the right column is (the ✕ of the original page: a 12 pt symbol
     /// with 10 pt around it). Measured in the running app. The first line of the title is centred on it, so the two share one height.
     static let crossCentre: CGFloat = 16
     /// The line height of the 17 pt title.
