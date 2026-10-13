@@ -497,6 +497,10 @@ struct ReaderView: View {
     private func closeNote() {
         guard noteOpen else { return }
         toggleNote()
+        // The list takes the keyboard, as after the original page. If the editor had it, the focus state may still say the list has it;
+        // a change from false to true is what moves it (seen in CI on macOS 26.6).
+        listFocused = false
+        Task { @MainActor in listFocused = true }
     }
     /// The layout button: shows or hides the list beside the open note.
     private func switchNoteLayout() {
