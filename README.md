@@ -59,6 +59,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 | [Roadmap](docs/roadmap.md) | The order of the work |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are |
 | [AGENTS.md](AGENTS.md) | Development workflow, commands and boundaries |
+| [Security policy](SECURITY.md) | How to report a vulnerability |
 
 ## Development
 
