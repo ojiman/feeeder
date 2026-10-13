@@ -1,6 +1,6 @@
 # 0046 The sidebar folds like Reeder's: when the original page opens and when a note is shown
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: valid for the original page. Point 4 (the way back) is replaced by [0047](0047-the-way-back-is-a-cross-in-the-right-column.md); the note-screen parts by [0049](0049-one-note-and-no-ai-of-its-own.md) and [0050](0050-the-note-screen-closes-like-the-original-page.md).
 - Date: 2026-10-12
 - Decider: the owner (PdM) asked to follow Reeder's way of folding the left panel, and accepted that this conflicts with the specification ("the specification and this differ; follow Reeder"). The owner answered the open points in chat; the details below are the Product Owner's.
 - Refines: [0044](0044-original-page-slides-out.md) (the page's motion: 0.22 s becomes 0.3 s), and the note screen's fold rule in specification 3.3 (the 1,300 pt rule).

@@ -1,6 +1,6 @@
 # 0047 The way back is a ✕ at the top left of the right column
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: valid for the original page. The note-screen parts are replaced by [0049](0049-one-note-and-no-ai-of-its-own.md) and [0050](0050-the-note-screen-closes-like-the-original-page.md).
 - Date: 2026-10-12
 - Decider: the owner (PdM). Decision 0046 proposed a "<" next to the window buttons, as Reeder has it; the owner found its place awkward and not beautiful, and proposed the ✕ that already appears at the top left of the right column.
 - Replaces: point 4 of [0046](0046-sidebar-folds-like-reeder.md) (the way back is not a "<" next to the window buttons).

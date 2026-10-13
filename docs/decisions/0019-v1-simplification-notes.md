@@ -1,10 +1,10 @@
 # 0019 V1 simplification: notes replace themes
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: valid in part. Points 2, 3, 5, 6 and 8 are replaced by [0049](0049-one-note-and-no-ai-of-its-own.md). The rest (themes, goals and questions removed; notes replace themes) stands.
 - Date: 2026-10-11
 - Decider: the owner (PdM, the investor) asked for the simpler product after dogfooding the N6 build, answered the open questions in chat, and delegated the remaining product decisions to the Product Owner (the agent): "decide them in line with the Unagi Reader concept". The points marked "PO" are the Product Owner's decisions. Merging this PR records the owner's approval.
 - Replaces: the theme model of 0008 (Git history) and 0013 (Git history) in part (the goal, the name, the theme picker, the theme suggestions), 0016 (Git history) (note actions).
-- Refines: [0012](0012-claude-handoff-from-themes.md) and 0018 (Git history) (the hand-off becomes a function of a note), [0015](0015-article-summary-details.md) (the summary goes straight to a note), [0017](0017-note-beside-the-article.md) (the layout stays; it gets fixes).
+- Refines: 0012 (Git history) and 0018 (Git history) (the hand-off becomes a function of a note), 0015 (Git history) (the summary goes straight to a note), 0017 (Git history) (the layout stays; it gets fixes).
 
 ## Background
 
@@ -13,7 +13,7 @@ Dogfooding showed that the theme, the goal, the AI suggestions, the note actions
 ## Decision
 
 1. **A note replaces a theme.** The word 「ノート」 (Note) is used in the app, the spec and the docs; 「テーマ」 is gone. A note is one Markdown text document; there are many. There is no goal and no separate name: the title is the first non-empty line with leading `#` marks and spaces removed (an empty note is shown as 「新規ノート」). *(PO.)*
-2. **Notes sit in the sidebar like subscriptions.** The sidebar lists the notes (most recently edited first, flat) with a 「新しいノート」 button. Folders for notes are after V1 (owner's choice). Selecting a note shows, as before: the list of **the articles sent to that note** in the middle, the article in the reader, and the note as the panel beside the article. The articles can be read while writing. *(Owner's idea; the layout of [0017](0017-note-beside-the-article.md) stays.)*
+2. **Notes sit in the sidebar like subscriptions.** The sidebar lists the notes (most recently edited first, flat) with a 「新しいノート」 button. Folders for notes are after V1 (owner's choice). Selecting a note shows, as before: the list of **the articles sent to that note** in the middle, the article in the reader, and the note as the panel beside the article. The articles can be read while writing. *(Owner's idea; the layout of 0017 (Git history) stays.)*
 3. **How an article is linked to a note.** Only by sending: sending a summary to a note (point 5) records the article in that note, once (title, URL, the RSS summary at that time; kept after the body expires, as the theme records were). There is no separate action "put into a note". The link can be removed per article from the list (the context menu 「このノートから外す」); this removes the record only and never changes the note's text. An article can be in many notes. Sending the same article to the same note again appends the summary again (the person asked) and does not add a second record. Deleting a note (with confirmation) deletes its text and its records, never the articles or the Star. *(PO.)*
 4. **The editor is a plain Markdown text editor** with autosave on every keystroke, undo, the system text services, and Japanese input that is never disturbed. It does not rewrite what the person types. Light styling of `#` headings and `-` lists is wanted but does not block V1. The editor has no AI assist; assist may come later if needed.
 5. **Sending a summary to a note.** The article toolbar has one button, 「ノートに要約を送る」 (key `n`), in the place of 「テーマに入れる」. It works for any article. It opens a short menu: 「新しいノート」 and the most recently edited notes. Choosing an entry sends at once; the person can keep reading. A message shows the progress, then the result (「『…』に送りました」 with 「開く」), or the reason of a failure. A request is tied to the article and the note chosen when it was made. *(PO.)*

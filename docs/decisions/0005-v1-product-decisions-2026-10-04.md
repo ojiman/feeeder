@@ -1,6 +1,6 @@
 # 0005 V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開）
 
-- 状態: 有効（承認済み内容の転記。承認根拠は出典のPR）
+- Status: valid in part. Point 3 (Claude Desktop hand-off) is replaced by [0049](0049-one-note-and-no-ai-of-its-own.md); the week ranges of point 1 went with the daily and weekly notes. Points 2 and 4 stand.
 - 日付: 2026-10-04（PR #2のマージ、日本時間）
 - 決定者: 本人（PdM）
 
@@ -23,5 +23,5 @@ PRDの未決事項4件を本人と確定し、PR #2で承認した。ここに�
 
 ## 出典
 
-- [PR #2](https://github.com/ojiman/feeeder/pull/2)。当時のPRD §3・§5・§6・§9（commit `53574c0`。`git show 53574c0:docs/specification.md`）
-- [Claude Desktop連携の技術検証](../verification/2026-10-04-claude-desktop-handoff.md)
+- [PR #2](https://github.com/ojiman/unagi-reader/pull/2)。当時のPRD §3・§5・§6・§9（commit `53574c0`。`git show 53574c0:docs/specification.md`）
+- Claude Desktop連携の技術検証 (Git history)
