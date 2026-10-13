@@ -153,6 +153,9 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -161,6 +164,13 @@ jobs:
         run: bash scripts/test-ci-gate.sh
       - name: Test the test-log check script
         run: bash scripts/test-check-test-log.sh
+      - name: Test the documents check
+        run: bash scripts/test-check-docs.sh
+      - name: Check the documents (links, decision numbers, status marks and issues in the roadmap)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/check_docs.py --online
       - name: Decide
         env:
           CHANGES: ${{ needs.changes.result }}
