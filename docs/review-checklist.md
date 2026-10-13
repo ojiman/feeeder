@@ -1,39 +1,43 @@
-# 独立レビューのチェックリスト
+# Independent review checklist
 
-固定したcommitを読んで、変更の「主張」と「証拠」の差を探すためのものです。実装者の自己申告と同じ系統のレビューでは盲点が共通になりがちなので、観点を先に決めて、見たものと見ていないものを書き残します。Codex・Claude Codeのどちらでも同じ観点で使えます。
+For reading a fixed commit and finding the gap between what a change **claims** and the **evidence** for it. A review by the same kind of agent that wrote the change shares its blind spots, so decide what to look at first, and write down what you saw and what you did not. It works the same for Codex and Claude Code. When it applies is in [AGENTS.md](../AGENTS.md#definition-of-done).
 
-## 1. 主張と証拠が対応しているか
+## 1. Claim and evidence
 
-- 「確認済み」「PASS」と書かれた各項目に、コマンド・環境（OS、Xcode/Swift）・commitが対応しているか。
-- 文書やREADMEが説明する挙動（例: 「旧DBは起動エラーを表示する」）が、実測か、推測か。試験が検証しているのは、その挙動そのものか、近い別の入力か。
-- 未検証がPASSに書き換わっていないか。
+- Each "verified" or "PASS" has a command, an environment (OS, Xcode / Swift) and a commit. Evidence from another commit or environment does not count.
+- A document or the README describes a behavior (for example "an old database shows a startup error"): is it measured or guessed? Does the test check that behavior, or a nearby input?
+- Unverified never became PASS. A skipped job (a docs-only PR, `release` that was not due) and a skipped opt-in test (no fixture set) are not a pass.
+- A test run counts only if it finished: the summary line is there and every started test ended (`scripts/check-test-log.sh`). An exit code of 0 with no summary is not a pass.
+- Where the specification has an acceptance scenario for the change (`PRD-nn`), a test names it (`// Checks PRD-nn`) and really checks it.
 
-## 2. 依頼された保存・変更が、失敗したのに成功扱いになっていないか
+## 2. A requested save or change reported as done when it failed
 
-- `try?` で捨てた保存・再読み込みの失敗、利用者が入力した内容が、対象が消えていたために黙って捨てられる経路、保存失敗・再読み込み失敗の直後の状態。
-- 失敗した後に再試行して、画面とDBが一致するか。再起動しても一致するか。
-- 新しい、または変更した変更経路に、保存／再読み込みの失敗注入試験があるか（既読・購読・Star・ノート・本文保持を含む）。
-- 次は正常な無操作なので、指摘しない: キャンセル、選択が移った後に届いた古い非同期応答、対象のない任意の操作。区別がコードやPRで説明されているかを見る。
-- 例: PR #10 では、保存失敗の直後に再読み込みも失敗すると、旧contextのモデルを書き換えて「成功」を返す経路があった。
+- A save or reload failure dropped by `try?`; text the person typed, dropped because its target is gone; the state right after a failed save or reload.
+- After a failure, retry: do the screen and the database agree? After a restart?
+- A new or changed mutating path has a save-failure and reload-failure test (read state, subscriptions, Star, note, retention included). It calls `reloadIfNeeded()` first and resolves models by ID.
+- These are normal no-ops; do not flag them: cancellation, a stale async answer after the selection moved, an optional action with nothing to act on. Check that the code or the PR tells them apart from a failure.
+- Example: in PR #10, when a reload also failed right after a failed save, one path changed a model of the old context and returned success.
 
-## 3. 環境差で結果が変わらないか
+## 3. Does the result depend on the environment?
 
-- ローカル（macOS 27 / Swift 6.4、サポート下限27.0を確認できる唯一の環境）とCI（macOS 26 / Swift 6.3.3、ビルド下限26.6）で結果が変わりうる変更か。
-- 過去にCIだけで見つかった問題: PR #10（SwiftDataの保存失敗）、PR #12（パッケージ後の署名）、PR #14（コンパイラの障害）。
+- Local (macOS 27 / Swift 6.4, the only place the support floor 27.0 is exercised) and CI (macOS 26.6 / Swift 6.3.3, the build floor) can differ. Does this change touch a place where they did? See "Known gotchas" in [AGENTS.md](../AGENTS.md#known-gotchas).
+- Does it grow `ReaderView`'s modifier chain, call `NSButton.performClick` in a hosted test, or add a hosted test that folds columns outside `SplitViewFoldTests`? Those are in the same list.
 
-## 4. 範囲と決定
+## 4. Scope, decisions and the documents
 
-- 1PR1テーマか。不具合修正が磨き込みに束ねられていないか。「含めないもの」が書かれているか。
-- 製品の挙動や方針が変わるなら、仕様と決定記録（docs/decisions/）が同じPRで更新されているか。承認済みの表示が実態以上になっていないか。
-- 利用者が報告した症状を再現できないまま「直った」としていないか。
+- One theme per PR. A bug fix is not bundled with polish. "Not included" is written.
+- A change of behavior or policy changes the specification (and the architecture) in the same PR. A decision record is there only when a policy, or what a person can do or rely on, changed; its Status is not stronger than the facts, and a record it replaces says so.
+- A document PR removes what it replaces and does not repeat a rule that has a home. `python3 scripts/check_docs.py` passes.
+- A user-reported symptom was reproduced before it was called fixed.
+- A change that can make the reader wait is checked against the budgets of specification 2.1 (measured, or listed as not measured).
 
-## 5. データと外部への書込み
+## 5. Data and outside writes
 
-- 本人のライブラリ・資格情報・ブラウザプロファイルに触れていないか。入力は合成データか。
-- 依存の追加、push、公開、署名などが、利用者の指示の範囲内か。
+- It does not touch the person's library, credentials or browser profile; its input is synthetic.
+- Adding a dependency, pushing, publishing and signing are within the owner's instruction.
 
-## レビュー結果の書き方
+## Writing the result
 
-- 指摘は、重要度・場所・失敗する具体的な筋書き・直し方の案の順に書く。
-- 「指摘なし」と書くときは、確認した観点（上の1〜5のどれを、どのcommit範囲で）と、確認しなかった観点を書く。
-- 実行していないテスト、見ていない環境があれば、その旨を書く。
+- A finding has: severity, place, a concrete scenario in which it fails, and a suggested fix.
+- "No findings" says which of 1 to 5 were checked, over which commits, and which were not.
+- Say which tests were not run and which environments were not seen.
