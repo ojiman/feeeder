@@ -68,7 +68,7 @@
 | [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) | The way back is a ✕ at the top left of the right column | valid (with the original-page PR) |
 | [0048](0048-the-list-title-sits-below-the-band.md) | The list title sits below the toolbar band, level with the ✕ | valid (with the header PR) |
 | [0049](0049-one-note-and-no-ai-of-its-own.md) | One note, written beside the article; no hand-off and no AI of its own | valid (with the decision PR) |
-| [0050](0050-the-note-screen-closes-like-the-original-page.md) | The note screen closes like the original page; no list button; a wider note | valid (with the decision PR); some points open |
+| [0050](0050-the-note-screen-closes-like-the-original-page.md) | The note screen closes like the original page; a layout button; a wider note | valid (with the decision PR); one point open |
 
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
