@@ -13,6 +13,8 @@ public struct ReaderWorkspaceState {
     /// Whether the list of articles is shown beside the open note (the layout button, decision 0050): the screen is then the list, the
     /// article and the note. It starts hidden and stays as the person left it while the app runs. It has no effect while the note is closed.
     public var noteListShown = false
+    /// The list filter's text (specification 3.1.4). It stays when the scope changes and lives in memory only.
+    public var listFilter = ""
     public init() {}
     /// The layout button: switches the open note between beside the article and with the list. Nothing to switch while the note is closed.
     public mutating func switchNoteLayout() {

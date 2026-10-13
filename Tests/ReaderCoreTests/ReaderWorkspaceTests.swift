@@ -60,4 +60,14 @@ struct ReaderWorkspaceTests {
         let restored = workspace.reader(in: .all)                                          // the article and the reading position stay
         #expect(restored.selectedArticleID == article && restored.scrollOffsets[article] == 80 && restored.scrollAnchors[article] == "p-2")
     }
+
+    /// Specification 3.1.4: the list filter stays when the scope changes, and is not kept across launches (memory only).
+    @Test func theListFilterStaysAcrossScopes() {
+        var workspace = ReaderWorkspaceState()
+        #expect(workspace.listFilter.isEmpty)
+        workspace.listFilter = "swift"
+        workspace.scope = .starred; workspace.scope = .feed(UUID())
+        #expect(workspace.listFilter == "swift")
+        #expect(ReaderWorkspaceState().listFilter.isEmpty)                                 // a new launch starts empty
+    }
 }

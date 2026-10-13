@@ -157,11 +157,11 @@ normal                original page (v)     note beside article   note with the 
 - Publication time: the time for today, date and time for earlier days, the year too for other years. An unknown time is 「—」; the received time is never used instead.
 - Unread: the source name in the accent colour and brighter text. Read: the whole row a calm grey. A long source name ends in 「…」. The selected row keeps readable contrast.
 
-**List filter** `[not built #129]` (decision of the owner, 2026-10-14)
+**List filter** (decision 0055)
 
-- A filter icon in the top band of the list column opens a standard search field. `/` opens it and puts the cursor in it (3.1.5).
-- Typing narrows the list at once to the articles of the current scope (Feeds, Star, a folder, a subscription) whose title or feed text contains the typed text. Clearing the field restores the list.
-- Only the title and the feed's text are searched: not the full text the app saved, and not the note.
+- A magnifier at the right end of the list title's first line opens the system's search field in place of that line. `/` opens it and puts the cursor in it (3.1.5). The field stays while it has text; `Esc` in the empty field closes it.
+- Typing narrows the list at once to the articles of the current scope (Feeds, Star, a folder, a subscription) whose title or feed summary (the text the list row shows) contains the typed text, ignoring case, accents and full-width letters. The count under the title counts the narrowed list. Clearing the field restores the list.
+- Only the title and the feed summary are searched: not the article's body, not the full text the app saved, and not the note.
 - The filter stays when the scope changes. It is not kept across launches.
 - The chosen article stays chosen if it still matches. `j` / `k` move through the filtered list.
 - While Japanese text is being composed, the list does not change.
@@ -192,7 +192,7 @@ normal                original page (v)     note beside article   note with the 
 | `b` | Open the original page in the default browser |
 | `v` | Open the original page in the app |
 | `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050) |
-| `/` | Open the list filter and put the cursor in it, when no editable field is being typed in `[not built #129]` |
+| `/` | Open the list filter and put the cursor in it, when no editable field is being typed in |
 | `t` | Translate the open article / show the original, when no editable field is being typed in `[not built #153]` |
 
 - `j`, `k`, `s` and `n` also work in the original page.
@@ -409,7 +409,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-14 | Add a subscription from a URL | As in 3.5: the check runs when typing stops; 「追加」 only when the feed was read; a site URL finds its feed; `http://` is checked as `https://`, and a feed only on http says that http is not supported; each failure has its sentence; an existing subscription is not added; the folder field appears only when it should | unit tests, synthetic app, real Mac (Japanese input, #136) |
 | PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
-| PRD-17 | Narrow the list with a keyword `[not built #129]` | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed text contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | real Mac (the owner, with a library of several thousand articles); tests are named here when the feature is built |
+| PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
 | PRD-18 | Read an article in another language `[not built #153, #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); tests are named here when the feature is built |
 
 ### 7.1 Conditions to ship 1.0

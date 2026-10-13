@@ -43,9 +43,11 @@ struct ReaderView: View {
     private let notePasteboard: NSPasteboard
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var listFocused: Bool
+    /// The list filter's field is shown (`/` or the magnifier). Its text is `workspace.listFilter`.
+    @State private var filterPresented = false
 
     init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
-         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false, initialListShown: Bool = false,
+         initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false, initialListShown: Bool = false, initialListFilter: String = "",
          notePasteboard: NSPasteboard = .general,
          chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
         self.store = store; self.refresh = refresh
@@ -58,6 +60,7 @@ struct ReaderView: View {
         initialWorkspace.scope = initialScope
         initialWorkspace.noteOpen = initialNoteOpen
         initialWorkspace.noteListShown = initialListShown
+        initialWorkspace.listFilter = initialListFilter
         _columnVisibility = State(initialValue: SidebarFold.folded(pageOpen: false, noteOpen: initialNoteOpen) ? .doubleColumn : .all)
         _workspace = State(initialValue: initialWorkspace)
     }
@@ -83,7 +86,9 @@ struct ReaderView: View {
     }
 
     private var selectedArticle: Article? { selection.flatMap { store.article(id: $0) } }
-    private var visibleArticleIDs: [UUID] {
+    /// The articles of the scope, narrowed by the list filter (specification 3.1.4).
+    private var visibleArticleIDs: [UUID] { store.filteredIDs(scopeArticleIDs, matching: workspace.listFilter) }
+    private var scopeArticleIDs: [UUID] {
         switch scope ?? .all {
         case .folder(let name): store.folderArticleIDs(folder: name, keeping: selection)
         case .all: store.visibleArticleIDs(feedID: nil, unreadOnly: false, keeping: selection)
@@ -110,6 +115,8 @@ struct ReaderView: View {
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
             // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
             .onExitCommand { if originalPage.url == nil { closeNote() } }
+            .onKeyPress("/") { guard shortcutsEnabled else { return .ignored }; filterPresented = true; return .handled }
+
     }
 
     private var windowContent: some View {
@@ -349,6 +356,7 @@ struct ReaderView: View {
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
                 case "n": toggleNote()
+                case "/": filterPresented = true
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
@@ -365,7 +373,13 @@ struct ReaderView: View {
                     description: Text("購読を追加するか、ほかの一覧を選んでください。"))
             }
         }
-        .overlay(alignment: .top) { ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top) }
+        .overlay(alignment: .top) {
+            ListHeader(title: scopeTitle, count: visibleArticleIDs.count, filterShown: filterShown).ignoresSafeArea(.container, edges: .top)
+        }
+        .overlay(alignment: .top) {
+            ListFilterBar(text: $workspace.listFilter, shown: filterShown, open: { filterPresented = true },
+                          close: { filterPresented = false; listFocused = true }).ignoresSafeArea(.container, edges: .top)
+        }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
     }
@@ -424,6 +438,8 @@ struct ReaderView: View {
         }
     }
 
+    /// The filter's field stays while it has text, also across scopes (specification 3.1.4).
+    private var filterShown: Bool { filterPresented || !workspace.listFilter.isEmpty }
     private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }

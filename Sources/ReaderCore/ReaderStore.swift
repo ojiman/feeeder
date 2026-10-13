@@ -13,6 +13,8 @@ import SwiftData
     public private(set) var starCount = 0
     @ObservationIgnored var starredIDs: Set<UUID> = []
     @ObservationIgnored private var articleIndex: [UUID: Article] = [:]
+    /// The title and summary of each article, for the list filter (`filteredIDs`). Dropped on each reload.
+    @ObservationIgnored var searchTexts: [UUID: String] = [:]
     @ObservationIgnored private var feedIndex: [UUID: Feed] = [:]
     @ObservationIgnored private var feedArticles: [UUID: [Article]] = [:]
     @ObservationIgnored private var articleFeeds: [UUID: Set<UUID>] = [:]
@@ -79,6 +81,7 @@ import SwiftData
             $0.createdAt == $1.createdAt ? $0.id.uuidString < $1.id.uuidString : $0.createdAt < $1.createdAt
         }
         articleIndex = Dictionary(uniqueKeysWithValues: articles.map { ($0.id, $0) })
+        searchTexts = [:]
         feedIndex = Dictionary(uniqueKeysWithValues: feeds.map { ($0.id, $0) })
         feedArticles = [:]
         articleFeeds = [:]

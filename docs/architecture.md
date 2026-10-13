@@ -75,6 +75,8 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 
 ### 4.3 Keys
 
+- The list filter: `ReaderStore.filteredIDs(_:matching:)` narrows the scope's IDs with `ArticleFilter`, through `searchTexts`, a cache of folded title and summary that is not observed and is dropped on each reload (typing does not make the view watch every article; 10,000 articles: about 50 ms for the first keystroke and 17 ms after, debug build). `ListFilterField` wraps `NSSearchField` and hands its text on only when its editor has no marked text.
+
 - `ReaderKeyboardCommands` treats only an editable `NSTextView` or `NSTextField` as typing. Single-letter keys do not act while typing, while composing with an input method, or while a sheet is open.
 - `Esc` closes the note through `onExitCommand` on the window content. The note's editor passes `cancelOperation:` up instead of opening its completion list; while composing it only ends the composition.
 - In the original page, keys come from a separate `WKContentWorld`; they are checked for a real key press, an input element, an input method, modifier keys and the current article.
