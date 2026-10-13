@@ -7,7 +7,7 @@
 
 The built app is `Unagi Reader.app`, so its filename matches its existing bundle display name. Local builds, CI packaging, the download script and launch instructions use that name.
 
-The executable, bundle identifier, data directories and ZIP artifact name keep their existing names. This change does not move or delete an installed app. When installing the new build, replace the old app rather than keeping both copies.
+The executable, bundle identifier, data directories and ZIP artifact name keep their existing names. After the new build passes signature verification, the build script deletes the old generated `.build/UnagiReader.app`; it does not move or delete an installed app. When installing the new build, replace the old app rather than keeping both copies.
 
 The owner selected an orange icon with a charcoal eel in a U shape and rounded fins, without a book or text symbol. On 2026-10-13 the owner also authorized production preparation for macOS: remove the baked-in rounded corners and transparent margins while retaining the selected motif and colors. `Assets/AppIcon.png` is the 1024 × 1024 opaque, square source image and is not read by the build. `Assets/AppIcon.icns` contains its macOS sizes, made with `sips` and `iconutil`. The build copies it into the bundle and declares it in `CFBundleIconFile`.
 
