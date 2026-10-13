@@ -13,15 +13,14 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 3. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), in this order: [#152](https://github.com/ojiman/unagi-reader/issues/152) T1 the core (touches no screen; it can start beside the work above), then [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu. T2 and T3 touch `ReaderView.swift`, so they come after the filter.
 4. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
 5. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Do it last: the filter and translation add sections to it, and it is already in English, so the approved text is the final text.
-6. **Other conditions:** [#126](https://github.com/ojiman/unagi-reader/issues/126) XML entities in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign and distribute (research only).
+6. **Other conditions:** [#126](https://github.com/ojiman/unagi-reader/issues/126) XML entities in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign and distribute (research only), [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI (the owner put it in the milestone; it lets an agent check the screens).
 
 ## Next
 
 **The checks that let an agent verify its own work.** Today the owner is the only one who can check the screens, and the list of unverified items keeps growing. These touch no screen and can run beside the beta work:
 
 1. [#133](https://github.com/ojiman/unagi-reader/issues/133) UI test runs that end without a result line.
-2. [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI.
-3. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
+2. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
 
 **Not scheduled.** OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
 

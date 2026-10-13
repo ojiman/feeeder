@@ -6,11 +6,15 @@
                                             acceptance scenario checked by tests is named by a test (`// Checks PRD-04`).
   python3 scripts/check_docs.py --online    Also: the issues named in the specification's status marks and in the active
                                             parts of the roadmap are open (a closed issue means the mark or the line is
-                                            stale). Needs `gh` and a token (GH_TOKEN) that can read issues.
+                                            stale); every open issue of the milestone Beta is in the roadmap's 'Now'; and every
+                                            open `enhancement` of the milestone is named by a status mark of the
+                                            specification, or has the label `no-spec`. Needs `gh` and a token (GH_TOKEN)
+                                            that can read issues.
 
 The problems are printed as `path:line: message`; the exit status is 1 when there is any.
 """
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -207,6 +211,50 @@ def issue_problems(root, state_of):
     return problems
 
 
+def label_names(issue):
+    return {label["name"] for label in issue.get("labels", [])}
+
+
+def beta_spec_problems(root, beta_issues):
+    """Every open `enhancement` issue of the milestone Beta is named by a status mark of the specification
+    (`[not built #n]`), unless it has the label `no-spec` (it changes nothing the person sees)."""
+    path = os.path.join(root, "docs", "specification.md")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as handle:
+        marked = {number for number, _ in status_mark_issues(handle.read())}
+    return [f"docs/specification.md: #{issue['number']} is a beta enhancement, but no status mark names it: write the behavior in the "
+            f"specification with `[not built #{issue['number']}]`, or give the issue the label `no-spec`"
+            for issue in beta_issues
+            if "enhancement" in label_names(issue) and "no-spec" not in label_names(issue) and issue["number"] not in marked]
+
+
+def beta_roadmap_problems(root, beta_issues):
+    """Every open issue of the milestone Beta is linked from the roadmap's section 'Now'."""
+    path = os.path.join(root, "docs", "roadmap.md")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read()
+    now, in_now = [], False
+    for line in text.split("\n"):
+        if line.startswith("## "):
+            in_now = line.startswith("## Now")
+        elif in_now:
+            now.append(line)
+    listed = {int(n) for n in ROADMAP_ISSUE.findall("\n".join(now))}
+    return [f"docs/roadmap.md: #{issue['number']} is in the milestone Beta, but the section 'Now' does not list it"
+            for issue in beta_issues if issue["number"] not in listed]
+
+
+def github_beta_issues(repository):
+    result = subprocess.run(["gh", "issue", "list", "--repo", repository, "--milestone", "Beta", "--state", "open", "--limit", "200",
+                             "--json", "number,labels"], capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise LookupError(result.stderr.strip() or "gh failed")
+    return json.loads(result.stdout)
+
+
 def github_state(repository):
     def lookup(number):
         result = subprocess.run(["gh", "api", f"repos/{repository}/issues/{number}", "--jq", ".state"],
@@ -234,6 +282,12 @@ def main(argv=None):
             problems.append("--online needs the repository: set GITHUB_REPOSITORY or --repo owner/name")
         else:
             problems += issue_problems(args.root, github_state(repository))
+            try:
+                beta = github_beta_issues(repository)
+            except (LookupError, ValueError) as error:
+                problems.append(f"the issues of the milestone Beta cannot be read ({error})")
+            else:
+                problems += beta_spec_problems(args.root, beta) + beta_roadmap_problems(args.root, beta)
     if problems:
         print("\n".join(problems))
         print(f"\ndocs check: {len(problems)} problem(s)")

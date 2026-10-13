@@ -107,6 +107,38 @@ class ScenarioTagTests(unittest.TestCase):
             self.assertEqual(check_docs.scenario_tag_problems(root), [])
 
 
+def issue(number, *labels):
+    return {"number": number, "labels": [{"name": name} for name in labels]}
+
+
+class BetaCoverageTests(unittest.TestCase):
+    def test_a_beta_feature_needs_a_mark_in_the_specification_unless_it_says_no_spec(self):
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "docs/specification.md", "rule `[not built #10]` and `[未実装 #11（×）、#12]`\n")
+            beta = [issue(10, "enhancement"), issue(13, "enhancement", "area:reader-view"), issue(14, "enhancement", "no-spec"),
+                    issue(15, "bug"), issue(11, "enhancement"), issue(12, "enhancement")]
+            problems = check_docs.beta_spec_problems(root, beta)
+            self.assertEqual(len(problems), 1)
+            self.assertIn("#13", problems[0])
+            self.assertIn("no-spec", problems[0])
+
+    def test_a_beta_issue_must_be_listed_under_now_in_the_roadmap(self):
+        with tempfile.TemporaryDirectory() as root:
+            base = "https://github.com/o/r/issues/"
+            write(root, "docs/roadmap.md", f"## Now: the beta\n[#1]({base}1)\n## Next\n[#2]({base}2)\n## Done\n[#4]({base}4)\n")
+            problems = check_docs.beta_roadmap_problems(root, [issue(1, "bug"), issue(2, "bug"), issue(3, "documentation"), issue(4, "bug")])
+            self.assertEqual(len(problems), 3)
+            joined = "\n".join(problems)
+            self.assertNotIn("#1 ", joined)
+            for number in ("#2", "#3", "#4"):
+                self.assertIn(number, joined)
+
+    def test_without_the_files_there_is_nothing_to_check(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(check_docs.beta_spec_problems(root, [issue(1, "enhancement")]), [])
+            self.assertEqual(check_docs.beta_roadmap_problems(root, [issue(1, "bug")]), [])
+
+
 class IssueReferenceTests(unittest.TestCase):
     def test_the_issues_named_in_status_marks_are_found(self):
         text = "a `[未実装 #139（×）、#140（Esc）]` b `[実装済み。いまは「一覧」。#139]` c `[not built #7]` d `[built]` e [link](#3) f `[not measured #8]`\n"

@@ -43,7 +43,7 @@ bash scripts/test-check-docs.sh
 - **One issue, one pull request, `Fixes #n`.** Say that you take it. Before you start, look at the open PRs that touch the same files. An issue with an open question for the owner waits for the answer.
 - **PR titles start with the kind:** `feat:`, `fix:`, `refactor:`, `test:`, `docs:` or `ci:`.
 - **A bug found on the way** becomes a new issue, not a bigger PR.
-- **Labels say what can run beside what.** `area:no-screen` touches no screen and can run beside anything. `area:reader-view` touches `ReaderView.swift` and its long modifier chain: one at a time.
+- **Labels say what can run beside what.** `area:no-screen` touches no screen and can run beside anything. `area:reader-view` touches `ReaderView.swift` and its long modifier chain: one at a time. `no-spec` marks an enhancement that needs no specification entry.
 - **Where PRs collide:** `ReaderView.swift`, the end of the decision index, and decision numbers (take the next free number when you open the PR; renumber if `main` moved).
 - **The milestone Beta** is closed to new issues; only the owner adds to it.
 - **A plan** for work of several PRs goes to `docs/superpowers/plans/` and is deleted when its last PR merges.
@@ -70,7 +70,7 @@ Always:
 1. One theme per PR. Bugs the owner reported come before polish. Say what the PR does not include.
 2. A bug is reproduced by a failing test first; the PR records both results.
 3. Unverified behavior is never written as PASS (macOS 27.0, input methods, VoiceOver, Reduce Motion, long use). The PR lists what it leaves unverified.
-4. A change of behavior or policy changes the specification or the architecture in the same PR. When the owner **decides** a behavior before it is built, write it in the specification the same day with `[not built #n]` (a docs PR of its own) and let the issue link to that section; a decision left in an issue comment is lost. A **decision record** only when a policy, or what a person can do or rely on, changes; layout, sizes, timings and wording go to the specification only.
+4. A change of behavior or policy changes the specification or the architecture in the same PR. When the owner **decides** a behavior before it is built, write it in the specification the same day with `[not built #n]` (a docs PR of its own) and let the issue link to that section; a decision left in an issue comment is lost. CI enforces it: every open `enhancement` of the milestone Beta must be named by a mark in the specification, or carry the label `no-spec` (it changes nothing the person sees). A **decision record** only when a policy, or what a person can do or rely on, changes; layout, sizes, timings and wording go to the specification only.
 5. A save or change the person asked for is never reported as done when it was not (`try?` that drops a failure; text lost because its target is gone). Cancellation, a stale async answer and an action with nothing to act on are legitimate no-ops; keep them distinct.
 6. **A document PR removes what it replaces.** When you add a rule, delete the old wording in the same PR; do not repeat a rule that has a home (vision, specification, architecture, this file) — link to it. A PR that only adds text says why.
 
