@@ -46,7 +46,7 @@ struct SidebarTitlebarControls: NSViewRepresentable {
             while let current = view {
                 if let split = current as? NSSplitView {
                     observers.append(NotificationCenter.default.addObserver(forName: NSSplitView.didResizeSubviewsNotification, object: split, queue: .main) { [weak self] _ in
-                        MainActor.assumeIsolated { self?.placeButtons() }
+                        MainActor.assumeIsolated { self?.placeButtonsSoon() }
                     })
                 }
                 view = current.superview
@@ -77,8 +77,24 @@ struct SidebarTitlebarControls: NSViewRepresentable {
             // SwiftUI's navigation toolbar is placed after the sidebar separator.
             let right = convert(bounds, to: nil).maxX
             let left = host.convert(host.bounds, to: nil).minX
-            host.setFrameSize(NSSize(width: max(0, right - left), height: host.frame.height))
-            host.isHidden = bounds.width < 80
+            // Only a real change is written: a write inside a layout pass makes another pass, and the window gave up on a loop of them.
+            let width = max(0, right - left)
+            if abs(host.frame.width - width) > 0.5 { host.setFrameSize(NSSize(width: width, height: host.frame.height)) }
+            let hidden = bounds.width < 80
+            if host.isHidden != hidden { host.isHidden = hidden }
+        }
+
+        /// Works the width out a moment later, not inside the layout pass that told us. Several notices in one pass make one call.
+        private var placePending = false
+        private func placeButtonsSoon() {
+            guard !placePending else { return }
+            placePending = true
+            DispatchQueue.main.async { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.placePending = false
+                    self?.placeButtons()
+                }
+            }
         }
         func stopObserving() {
             for observer in observers { NotificationCenter.default.removeObserver(observer) }

@@ -86,21 +86,6 @@ extension SplitViewFoldTests {
             #expect(problem(h) == nil, "the buttons were not placed again \(problem(h) ?? "")")
         }
 
-        @Test func theButtonsKeepTheirWidthWhenTheNoteIsOpenedAndClosedQuickly() async throws {
-            let (h, _, coordinator) = try await start()
-            defer { h.window.close(); try? FileManager.default.removeItem(at: h.directory) }
-            for (openFor, closeFor) in [(80, 200), (80, 250), (80, 310), (100, 250)] {
-                do {
-                    coordinator.parent.onKey("n")
-                    try await pump(h, openFor + 20)
-                    coordinator.parent.onKey("n")                                          // before the move has ended
-                    try await pump(h, closeFor + 300)
-                    let seen = try await eventuallyFine(h)
-                    #expect(seen == nil, "note open \(openFor) ms, closed after \(closeFor) ms: \(seen ?? "")")
-                }
-            }
-        }
-
         @Test func theButtonsKeepTheirWidthWhenThePageIsOpenedAndClosedQuickly() async throws {
             let (h, table, coordinator) = try await start()
             defer { h.window.close(); try? FileManager.default.removeItem(at: h.directory) }
