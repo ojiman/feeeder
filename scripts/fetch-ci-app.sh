@@ -48,7 +48,10 @@ fi
 
 app_dir=$dest/app
 ditto -x -k "$zip" "$app_dir"
-app=$app_dir/UnagiReader.app
+app="$app_dir/Unagi Reader.app"
+# Older CI artifacts used a filename without spaces.
+[ -d "$app" ] || app="$app_dir/UnagiReader.app"
+[ -d "$app" ] || { echo "No app bundle found in the artifact." >&2; exit 1; }
 codesign --verify --deep --strict "$app"
 
 # Read the attributes as a plain assignment so a failing xattr stops the script (set -e does not

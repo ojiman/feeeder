@@ -32,7 +32,7 @@ case "${1:-}" in
     found=false
     while IFS= read -r path; do
       case "$path" in
-        Package.swift|Package.resolved|ThirdPartyNotices.md|scripts/build-app.sh|.github/workflows/*) found=true ;;
+        Package.swift|Package.resolved|ThirdPartyNotices.md|scripts/build-app.sh|Assets/*|.github/workflows/*) found=true ;;
       esac
     done
     echo "$found"

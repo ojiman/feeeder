@@ -1,12 +1,14 @@
 # Unagi Reader 製品要求仕様書（PRD）
 
-更新日: 2026-10-12
+更新日: 2026-10-13
 
 本書はV1の製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/unagi-reader/pull/6)、実装計画は[PR #7](https://github.com/ojiman/unagi-reader/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
 
 **方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)・[決定0049](decisions/0049-one-note-and-no-ai-of-its-own.md)）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め（0019）、さらに、ノートは**アプリに1つだけ**にして、ノートの管理・要約の送信・Claudeへの依頼・アプリ自前のAIをやめた（0049）。記事を読みながら、`n`で横にノートを開いて書く。AIは、システムのWriting Toolsと、「Markdownをコピー」で他のAIへ貼り付けることだけである。**本書は、決定0049に合わせた目標仕様で、コードは、決定0049の作業順の小さなPRで追いつく（それまでは古い）。** 旧仕様の来歴は決定0008（履歴のみ）・0013（履歴のみ）・0018（履歴のみ）にある。実機受入と最終PdM判断は継続中。
 
 技術設計は[Architecture](architecture.md)、決定の理由は[決定記録](decisions/README.md)、実測と未確認事項は検証記録（Git履歴）を参照する。過去の実装計画・検証結果を現行の仕様や合格証拠として流用しない。
+
+The app bundle is named `Unagi Reader.app`, matching the name shown under its icon. The icon is orange with a charcoal U-shaped eel; macOS applies the rounded corners ([decision 0051](decisions/0051-app-name-and-eel-icon.md)).
 
 ## 1. 目的と対象利用者
 
