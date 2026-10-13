@@ -23,18 +23,28 @@ Each is its own pull request, deletions first. See [decision 0049](decisions/004
 1. **Done (#115).** The hand-off to Claude is removed; 「Markdownをコピー」 stays.
 2. **Done (#116).** The on-device summary and the send to a note are removed.
 3. **Done (#118).** One note: the note list, rename, delete, undo and the records of articles in a note are removed; the first start keeps the note edited last. The note opens from any screen with the toolbar button or `⌥⌘I`, as the panel it already was.
-4. **Done (this stage).** The new layout: `n`, the move of about 0.3 s (the sidebar and the list fold, the note comes in from the right), and the 「一覧」 button. Then, from [decision 0050](decisions/0050-the-note-screen-closes-like-the-original-page.md) (after trying it): a layout button and a ✕ replace the 「一覧」 button, `Esc` closes the note, and the note is wider. Then the real-device check.
+4. **Done (#119, with fixes in #122).** The new layout: `n`, the move of about 0.3 s (the sidebar and the list fold, the note comes in from the right), and the 「一覧」 button.
+
+## Decision 0050 (after trying the new layout), in order
+
+[Decision 0050](decisions/0050-the-note-screen-closes-like-the-original-page.md) is merged (#120). The specification is ahead of the code until these pull requests land; each is its own pull request.
+
+1. **Next.** The layout button replaces the 「一覧」 button, and the ✕ is added (points 3 and 4).
+2. `Esc` closes the note; a test fixes that `j` / `k` move the article with the note open (points 1 and 2).
+3. The wider note, and the one-time drop of the saved width (point 5).
+
+Then the real-device check below.
 
 ## After S3 (the rename to Unagi Reader is done: [decision 0023](decisions/0023-rename-to-unagi-reader.md))
 
 - **Real-device check (the PdM).** Read, write in the note beside the articles, copy the note into another AI (decision 0049 removed the hand-off to Claude), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
-- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A fresh acceptance run of the reading features (the older acceptance records were removed, because they described old commits). A check that the user guide match the app. Signing and distribution only on the PdM's instruction.
+- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A fresh acceptance run of the reading features (the older acceptance records were removed, because they described old commits). A check that the user guide (English only since #124) matches the app. Signing and distribution only on the PdM's instruction.
 
 ## Candidates (not scheduled)
 
 - **Reading size.** One shared size in Appearance (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) and View-menu commands. A probe showed that a separate update path keeps the top visible line in place across 36 synthetic cases, and that the update time grows with the article (about 10 to 20 ms at 7,800 characters, about 0.2 to 0.35 s at 156,000). The probe code is in Git history (PR #28). Open: a time budget (the proposal: finish within about 100 ms up to about 50,000 characters, above that apply once after the key is released), and how it feels on the device.
 - **Note editor size.** The same scale for the note editor. Needs a real Japanese input check: the update waits while text is being composed.
-- **Translation.** A toolbar button that translates the open article on the Mac with the Translation framework. Design in [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md) (three PRs: the core, the button, the language menu). Not started until the design is merged.
+- **Translation.** A toolbar button that translates the open article on the Mac with the Translation framework. Design in [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md) (three PRs: the core, the button, the language menu). The design is merged (#104) and approved; the work is not started. The three pull requests are in the order given there.
 
 ## Not planned
 
