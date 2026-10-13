@@ -128,7 +128,10 @@ import Testing
         try send("s"); try await Task.sleep(for: .milliseconds(60))
         #expect(receiver.commands.isEmpty)
         _ = try await script("document.body.focus();'done'", in: view)
-        for key in ["j", "k", "s"] { try send(key); try await Task.sleep(for: .milliseconds(60)) }
+        for (index, key) in ["j", "k", "s"].enumerated() {
+            try send(key)
+            for _ in 0..<150 where receiver.commands.count <= index { try await Task.sleep(for: .milliseconds(20)) }   // the message comes from the page; a loaded machine is slow
+        }
         #expect(receiver.commands == [.next, .previous, .toggleStar])
     }
     func script(_ code: String, in view: WKWebView) async throws -> String {
