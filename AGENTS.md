@@ -49,6 +49,8 @@ CI runs two macOS jobs on macOS 26 / Xcode 26.6 / Swift 6.3.3. `regression` (the
 - `docs/roadmap.md` is the **order** of the planned work toward the beta and 1.0: the stages, what is next and why. It stays short, points to issues and decisions, and marks a stage `Done (#PR)`. It does not hold the details of a task.
 - **GitHub issues** hold the **units of work**: bugs, features, tech debt, decisions that wait for the owner, and checks that need a real Mac (template "Unverified check"). Write Problem, Acceptance Criteria, Constraints and Out of scope, not an implementation script, so that Claude Code, Codex or a person can take it. Close it from the pull request (`Fixes #n`). When the roadmap schedules something, it names the issue.
 - **Decisions** go to `docs/decisions/`; a plan for work that takes several pull requests goes to `docs/superpowers/plans/` until it is merged.
+- **An idea** (not decided, and nobody can say when it is done) is one line in the roadmap's candidates. A unit of work that someone can start today and know when it is done is an **issue**. A bug, tech debt or a decision that waits for the owner is an issue at once, scheduled or not.
+- Label an issue `area:reader-view` when it touches `ReaderView.swift` (one at a time) or `area:no-screen` when it touches no screen (can run beside anything). The labels are the list; the roadmap does not keep one by hand.
 - Work that is in neither the roadmap nor an issue is not tracked. Open an issue instead of only mentioning follow-up work in a chat or in a pull request.
 
 ### Working together
@@ -57,7 +59,7 @@ CI runs two macOS jobs on macOS 26 / Xcode 26.6 / Swift 6.3.3. `regression` (the
 - **An issue with an open question for the owner** waits: ask in the issue and do not start until it is answered.
 - **A bug found on the way** that is not part of the issue becomes a new issue, not a bigger pull request.
 - **Where pull requests collide:** `Sources/UnagiReader/ReaderView.swift` (its long modifier chain: one change at a time; see the known gotchas), the index in `docs/decisions/README.md` (one line per decision, added at the end), the long lines of `docs/specification.md`, and decision numbers. Take the next free decision number when you open the pull request; if `main` moved, renumber before the merge.
-- The milestone **Beta** holds what must be done before the beta; add an issue to it when a new condition appears.
+- The milestone **Beta** holds what must be done before the beta and is closed to new issues: only the owner adds to it. The beta is done when every issue in it is closed.
 
 ## Starting or resuming work
 
@@ -84,7 +86,7 @@ A new thread starts without the previous one's memory. Rebuild the state from Gi
 3. Run the checks relevant to the change (tests; the release build when UI or packaging changes; `git diff --check`). Report what passed, what was not run, and the environment (OS, Xcode/Swift) of each result.
 4. For UI changes, also exercise a synthetic app instance with its own data directory. Say which behaviors stay unverified on macOS.
 5. Never turn unverified behavior into PASS without evidence (macOS 27.0 support floor, IME, VoiceOver, Reduce Motion, long-running use). List what this change leaves unverified in the PR, and link the existing verification record or issue. Open a new issue (template: "Unverified check") only for items that need ongoing tracking, and only within what the user has allowed, since it is an external write.
-6. A change in product behavior or policy updates the spec/architecture in the same PR and adds a decision record. Do not edit an "approved" header to imply an approval that did not happen.
+6. A change in product behavior or policy updates the spec/architecture in the same PR. **A decision record is added only when a policy, or what a person can do or rely on, changes**: what the product does or never does, data, privacy, a new dependency, how the work is done. Layout, sizes, timings, wording and motion are not decisions: change the specification and say it in the PR text. When unsure, ask whether a future developer would ask "why is it so?" and the PR text could not answer. Do not edit an "approved" header to imply an approval that did not happen.
 7. Never report success for a save or change the user asked for when it did not happen (for example `try?` discarding a save or reload failure, or user-entered text dropped because its target is gone). Legitimate no-ops are fine and should be kept distinct: cancellation, a stale async response after the selection moved, and an optional action with nothing to act on.
 8. Risky changes (store/model, concurrency, external writes) get an independent review of a fixed commit using docs/review-checklist.md. A review that finds nothing lists what it checked and what it did not.
 
@@ -106,12 +108,11 @@ The first prune pass was done in 2026-10 (old plans and records of removed featu
 
 ## Language
 
-The project is meant to be used and read worldwide, so new project text is written in English. Many readers are not native English speakers, so write plain English: short sentences, common words, no idioms, and the same term for the same thing.
+The project is meant to be used and read worldwide. Many readers are not native English speakers, so write plain English: short sentences, common words, no idioms, and the same term for the same thing.
 
-- Write in English: commit messages, PR titles and bodies, new decision records, new documentation, and new code comments.
-- Leave existing text alone. Old commits, PRs, Japanese documents, and decision records stay as they are. Do not rewrite Git history or translate old records unless the user asks. A document may be translated into a new file; when the content changes, update both files in the same PR or say which one is behind.
-- The app's labels are currently Japanese only. Quote a label as it appears and add an English gloss when it helps the reader. Changing the app's language is a product decision and needs the user's instruction.
-- Issues and discussion may be in Japanese or English.
+- **The chat with the owner is in Japanese. Everything else is in English** (the owner, 2026-10-14): code comments, commit messages, pull request titles and bodies, issues, decision records, the specification, the user guide, the issue and pull request templates, and every other document.
+- **The app's labels are Japanese.** Quote a label as it appears, in quotation marks, and add a short English gloss when it helps. Changing the app's language is a product decision and needs the owner's instruction.
+- **Existing Japanese text is translated step by step, not at once.** The specification is translated one section per pull request (an issue tracks it); while a section is still Japanese, edit it in Japanese and do not mix two languages inside one section. Old decision records, old commits and old pull requests stay as they are (they are history). Do not rewrite Git history.
 
 ## Data policy
 

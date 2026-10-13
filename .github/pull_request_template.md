@@ -1,29 +1,29 @@
-## 概要
+## Summary
 
-<!-- 1PR1テーマ。何を、なぜ変えるか。 -->
+<!-- One theme per pull request. What changes, and why. -->
 
-## 関連するIssue
+## Related issue
 
-<!-- Fixes #番号（1つのIssueに1つのPR）。Issueがない作業は、先にIssueを作る。 -->
+<!-- Fixes #n (one issue, one pull request). If there is no issue, open one first. -->
 
-## 含めないもの
+## Not included
 
-<!-- この変更で意図的に扱わないこと。 -->
+<!-- What this change deliberately leaves out. -->
 
-## 決定・仕様の変更
+## Decisions and specification
 
-<!-- 製品の挙動や方針が変わる場合は、docs/decisions/ の記録へのリンク。なければ「なし」。 -->
+<!-- If product behavior or policy changes: the specification section changed, and a link to the decision record (a record only for a policy change; see AGENTS.md). Otherwise "none". -->
 
-## 検証
+## Verification
 
-<!-- コマンド・環境（OS、Xcode/Swift）・結果。不具合なら、修正前の失敗と修正後の成功。 -->
+<!-- Commands, environment (OS, Xcode/Swift) and results. For a bug: the failure before the fix and the pass after it. -->
 
-## 未検証
+## Not verified
 
-<!-- この変更で未検証のまま残るもの（PASSにしない）。既存の受入記録またはissueへのリンク。継続管理が必要なものだけ、許可の範囲で新規issue（テンプレート: Unverified check）。 -->
+<!-- What stays unverified (never mark it PASS). Link the existing record or issue. Open a new issue (template: Unverified check) only for items that need ongoing tracking, and only within what the owner has allowed. -->
 
-## リスク・戻し方
+## Risk and rollback
 
-<!-- データ・外部への書込み・依存の追加があれば。 -->
+<!-- Data, writes to the outside, new dependencies, if any. -->
 
-<!-- Markdownだけの変更（docs/** を含む）はCIが動かず、チェックは表示されません。 -->
+<!-- For a change of Markdown only (including docs/**) CI skips the macOS jobs; the `check` status still reports. -->

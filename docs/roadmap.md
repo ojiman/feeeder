@@ -10,12 +10,12 @@ Each stage has a short plan PR first (scope, files and tests it touches, the dec
 
 ## Now: the beta
 
-Everything that must be done before the beta is an issue in the milestone [Beta](https://github.com/ojiman/unagi-reader/milestone/1). If a new condition appears, open an issue and give it that milestone.
+Everything that must be done before the beta is an issue in the milestone [Beta](https://github.com/ojiman/unagi-reader/milestone/1). **The milestone is closed to new issues** (the owner, 2026-10-14): the owner has listed everything. **The beta is done when every issue in the milestone is closed.** Something found later goes to a later milestone, unless the owner moves it in.
 
 1. **Decision 0050, in order.** One at a time: all three touch the same files. [#139](https://github.com/ojiman/unagi-reader/issues/139) the layout button and the ✕, then [#140](https://github.com/ojiman/unagi-reader/issues/140) `Esc` and `j` / `k`, then [#141](https://github.com/ojiman/unagi-reader/issues/141) the wider note. The specification is already ahead of the code for these. ([Decision 0050](decisions/0050-the-note-screen-closes-like-the-original-page.md).)
 2. **Real-device check (the owner).** Read, add subscriptions, import OPML, write in the note beside the articles, copy the note into another AI, Japanese input in the note, a narrow window, and a long dogfooding week. The checklists are [#136](https://github.com/ojiman/unagi-reader/issues/136) and [#145](https://github.com/ojiman/unagi-reader/issues/145). Bugs found here come before any polish; each becomes an issue.
 3. **Beta preparation.** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run of the reading features; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Signing and distribution only on the owner's instruction.
-4. **Other conditions of the beta:** [#126](https://github.com/ojiman/unagi-reader/issues/126) the entity gap in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#134](https://github.com/ojiman/unagi-reader/issues/134) the decision about feeds that exist only on `http://`.
+4. **Other conditions of the beta:** [#126](https://github.com/ojiman/unagi-reader/issues/126) the entity gap in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#134](https://github.com/ojiman/unagi-reader/issues/134) the decision about feeds that exist only on `http://`, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign, notarize and distribute the beta (research only; nothing is signed or published without the owner's instruction).
 
 ## Next: planned features
 
@@ -24,11 +24,15 @@ Features the owner has decided to build, in the order the owner gave. They are n
 1. **Keyword filter for the article list** ([#129](https://github.com/ojiman/unagi-reader/issues/129)). The band of the middle column is ready for its icon (decision 0048). It waits for the owner's answers to the questions in the issue.
 2. **Translation** (the design is merged and approved: [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md)). Three pull requests, in order, each merged before the next: [#152](https://github.com/ojiman/unagi-reader/issues/152) T1 the core (no screen), [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu.
 3. **OPML export** ([#130](https://github.com/ojiman/unagi-reader/issues/130)). No screen of its own; it can be done at any time.
+4. **UI smoke tests in CI** ([#158](https://github.com/ojiman/unagi-reader/issues/158)). So that the owner is not the only one who checks the screens. No screen of its own; it can be done at any time.
+5. **The specification in English** ([#157](https://github.com/ojiman/unagi-reader/issues/157)). One section per pull request; no rule changes.
 
 ## Working in parallel
 
-- Do not touch `ReaderView.swift`, so they can run beside anything: [#126](https://github.com/ojiman/unagi-reader/issues/126), [#127](https://github.com/ojiman/unagi-reader/issues/127), [#130](https://github.com/ojiman/unagi-reader/issues/130) (OPML export), [#131](https://github.com/ojiman/unagi-reader/issues/131), [#133](https://github.com/ojiman/unagi-reader/issues/133), [#135](https://github.com/ojiman/unagi-reader/issues/135), and translation T1 ([#152](https://github.com/ojiman/unagi-reader/issues/152)).
-- Touch `ReaderView.swift` and the window's long modifier chain, so **one at a time**, and not together with the decision 0050 steps: [#128](https://github.com/ojiman/unagi-reader/issues/128) (menu bar commands), [#129](https://github.com/ojiman/unagi-reader/issues/129) (keyword filter; it also waits for the owner's answers), [#132](https://github.com/ojiman/unagi-reader/issues/132) (splitting the chain), and translation T2 ([#153](https://github.com/ojiman/unagi-reader/issues/153)) and T3 ([#154](https://github.com/ojiman/unagi-reader/issues/154)).
+The label on an issue says what it can run beside; there is no hand-kept list.
+
+- [`area:no-screen`](https://github.com/ojiman/unagi-reader/issues?q=is%3Aopen+label%3Aarea%3Ano-screen): touches no screen; can run beside anything.
+- [`area:reader-view`](https://github.com/ojiman/unagi-reader/issues?q=is%3Aopen+label%3Aarea%3Areader-view): touches `ReaderView.swift` and the window's long modifier chain; **one at a time**. This includes the steps of decision 0050.
 
 ## Candidates (ideas: no order, no issue)
 
