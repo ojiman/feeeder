@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import ReaderCore
 
+// Checks PRD-11 (specification 7).
 @MainActor struct FolderTests {
     @Test func sharedArticleCountsOnce() throws {
         let library = try TestLibrary(); defer { library.cleanup() }

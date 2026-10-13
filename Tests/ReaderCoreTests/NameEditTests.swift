@@ -2,6 +2,7 @@ import Testing
 @testable import ReaderCore
 
 /// What a name typed into a sidebar row means (decision 0043).
+// Checks PRD-16 (specification 7).
 struct NameEditTests {
     @Test func aChangedNameIsTheResultAndEverythingElseChangesNothing() {
         #expect(NameEdit.result(old: "金利", typed: " 新しい名前 ") == "新しい名前")              // trimmed like every name

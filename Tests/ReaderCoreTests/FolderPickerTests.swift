@@ -1,6 +1,7 @@
 import Testing
 @testable import ReaderCore
 
+// Checks PRD-16 (specification 7).
 struct FolderPickerTests {
     private let folders = ["技術", "ニュース", "Tech", "趣味"]
 

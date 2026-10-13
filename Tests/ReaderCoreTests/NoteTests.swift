@@ -4,6 +4,7 @@ import Testing
 @testable import ReaderCore
 
 /// Decision 0049: the app has one note.
+// Checks PRD-04 (specification 7).
 @MainActor struct NoteTests {
     let at = Date(timeIntervalSince1970: 1_791_152_000)
 

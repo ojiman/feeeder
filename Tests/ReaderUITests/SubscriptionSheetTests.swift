@@ -3,6 +3,7 @@ import SwiftUI
 import Testing
 @testable import UnagiReader
 
+// Checks PRD-14 (specification 7).
 @MainActor struct SubscriptionSheetTests {
     @Test func theXMLInputIsOnlyOfferedWithTheOptionKey() {
         #expect(!SubscriptionSheet.offersXMLInput(modifiers: []))

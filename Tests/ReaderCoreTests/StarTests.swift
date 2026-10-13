@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import ReaderCore
 
+// Checks PRD-09 (specification 7).
 @MainActor struct StarTests {
     let at = Date(timeIntervalSince1970: 1_791_152_000)
     @Test func togglePreservesReadDatesAndExpiry() throws {

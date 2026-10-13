@@ -3,6 +3,7 @@ import SwiftData
 import Testing
 @testable import ReaderCore
 
+// Checks PRD-03 (specification 7).
 @MainActor struct ArticleLoadingTests {
     @Test func explicitRefreshUpdatesPreviouslyExtractedPlainText() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }

@@ -2,7 +2,8 @@
 """Keeps the documents honest. Run it from the repository root (CI runs it on every pull request).
 
   python3 scripts/check_docs.py             Offline: relative links resolve, decision numbers are unique and in the index,
-                                            and a record that a newer one replaces names the newer one in its Status.
+                                            a record that a newer one replaces names the newer one in its Status, and each
+                                            acceptance scenario checked by tests is named by a test (`// Checks PRD-04`).
   python3 scripts/check_docs.py --online    Also: the issues named in the specification's status marks and in the active
                                             parts of the roadmap are open (a closed issue means the mark or the line is
                                             stale). Needs `gh` and a token (GH_TOKEN) that can read issues.
@@ -16,7 +17,7 @@ import subprocess
 import sys
 
 SKIP_DIRS = {".git", ".build", ".claude", ".superpowers", "node_modules"}
-MARK = re.compile(r"\[(\s*(?:未実装|実装済み|not built|built)[^\]]*)\]")
+MARK = re.compile(r"\[(\s*(?:未実装|実装済み|not built|not measured|built)[^\]]*)\]")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 ISSUE_NUMBER = re.compile(r"#(\d+)")
 ROADMAP_ISSUE = re.compile(r"issues/(\d+)\b")
@@ -114,6 +115,44 @@ def replaced_status_problems(folder, seen):
     return problems
 
 
+SCENARIO = re.compile(r"\bPRD-\d{2}\b")
+
+
+def scenario_tag_problems(root):
+    """Each acceptance scenario (specification 7) checked by "unit tests" or "UI tests" has a test that names it
+    (`// Checks PRD-04`), and every name in Tests/ is a scenario in use."""
+    path = os.path.join(root, "docs", "specification.md")
+    if not os.path.isfile(path):
+        return []
+    tested, in_use = set(), set()
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if len(cells) < 4 or not re.fullmatch(r"PRD-\d{2}", cells[0]):
+                continue
+            if cells[1].startswith("(unused)"):
+                continue
+            in_use.add(cells[0])
+            if re.search(r"\b(unit|UI) tests\b", cells[-1]):
+                tested.add(cells[0])
+    named = {}
+    for folder, dirs, files in os.walk(os.path.join(root, "Tests")):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        for file in sorted(files):
+            if not file.endswith(".swift"):
+                continue
+            relative = os.path.relpath(os.path.join(folder, file), root)
+            with open(os.path.join(folder, file), encoding="utf-8") as handle:
+                for number, line in enumerate(handle, 1):
+                    for scenario in SCENARIO.findall(line):
+                        named.setdefault(scenario, f"{relative}:{number}")
+    problems = [f"docs/specification.md: {scenario} is checked by tests, but no test names it (add `// Checks {scenario}` to the suite)"
+                for scenario in sorted(tested - set(named))]
+    problems += [f"{where}: {scenario} is not a scenario in use in specification 7"
+                 for scenario, where in sorted(named.items()) if scenario not in in_use]
+    return problems
+
+
 def status_mark_issues(text):
     """(issue number, line) for every issue named inside a status mark such as `[未実装 #139]` or `[not built #7]`."""
     found = []
@@ -184,7 +223,7 @@ def main(argv=None):
     parser.add_argument("--online", action="store_true", help="also check the issues named in the marks and the roadmap")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""))
     args = parser.parse_args(argv)
-    problems = link_problems(args.root) + decision_problems(args.root)
+    problems = link_problems(args.root) + decision_problems(args.root) + scenario_tag_problems(args.root)
     if args.online:
         repository = args.repo
         if not repository:
@@ -199,7 +238,7 @@ def main(argv=None):
         print("\n".join(problems))
         print(f"\ndocs check: {len(problems)} problem(s)")
         return 1
-    print("docs check: OK" + (" (links, decisions, issues)" if args.online else " (links, decisions; run with --online for the issues)"))
+    print("docs check: OK" + (" (links, decisions, scenarios, issues)" if args.online else " (links, decisions, scenarios; run with --online for the issues)"))
     return 0
 
 

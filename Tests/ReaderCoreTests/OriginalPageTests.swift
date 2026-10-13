@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import ReaderCore
 
+// Checks PRD-01 (specification 7).
 struct OriginalPageTests {
     @Test func selectingAnotherArticleReturnsToReaderWithoutOpeningItsOriginal() {
         let a = UUID(), b = UUID(), c = UUID()

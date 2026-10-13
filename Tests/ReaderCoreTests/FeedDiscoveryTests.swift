@@ -3,6 +3,7 @@ import Testing
 @testable import ReaderCore
 
 /// A site address is accepted too: the feed the page announces is used (decision 0038).
+// Checks PRD-14 (specification 7).
 @MainActor struct FeedDiscoveryTests {
     private let page = URL(string: "https://blog.example/")!
     private func find(_ html: String, base: URL? = nil) -> URL? { FeedDiscovery.feedURL(inHTML: Data(html.utf8), baseURL: base ?? page) }

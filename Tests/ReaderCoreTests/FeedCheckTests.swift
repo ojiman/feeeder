@@ -3,6 +3,7 @@ import Testing
 @testable import ReaderCore
 
 /// The add-subscription sheet checks the address while the person types (decision 0036).
+// Checks PRD-14 (specification 7).
 @MainActor struct FeedCheckTests {
     // MARK: What is worth fetching
 

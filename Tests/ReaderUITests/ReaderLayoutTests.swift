@@ -10,6 +10,7 @@ import Testing
 @Suite(.serialized) enum SplitViewFoldTests {}
 
 extension SplitViewFoldTests {
+    // Checks PRD-01 (specification 7).
     @Suite(.serialized) @MainActor struct ReaderLayoutTests {
         private func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
             if let result = view as? T { return result }

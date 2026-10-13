@@ -12,6 +12,7 @@ struct TestLibrary {
     func cleanup() { try? FileManager.default.removeItem(at: directory) }
 }
 
+// Checks PRD-02 (specification 7).
 @MainActor struct ReadHistoryTests {
     let received = Date(timeIntervalSince1970: 1_000_000)
     let displayed = Date(timeIntervalSince1970: 1_000_100)
