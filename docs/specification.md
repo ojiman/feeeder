@@ -8,7 +8,7 @@
 
 技術設計は[Architecture](architecture.md)、決定の理由は[決定記録](decisions/README.md)、実測と未確認事項は検証記録（Git履歴）を参照する。過去の実装計画・検証結果を現行の仕様や合格証拠として流用しない。
 
-The app bundle is named `Unagi Reader.app`, matching the name shown under its icon. Its icon is an orange rounded square with a charcoal U-shaped eel ([decision 0051](decisions/0051-app-bundle-name-with-spaces.md)).
+The app bundle is named `Unagi Reader.app`, matching the name shown under its icon. Its icon is an orange rounded square with a charcoal U-shaped eel ([decision 0051](decisions/0051-app-name-and-eel-icon.md)).
 
 ## 1. 目的と対象利用者
 

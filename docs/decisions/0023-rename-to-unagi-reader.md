@@ -5,6 +5,8 @@
 - Decider: the owner (PdM) chose the name Unagi Reader on 2026-10-10 and answered the open questions for this PR in chat on 2026-10-11: the repository is called `unagi-reader`, and both the data folder and the bundle identifier change.
 - Refines: the product name in [0019](0019-v1-simplification-notes.md) and the [vision](../vision.md).
 
+The app bundle filename is refined by [0051](0051-app-name-and-eel-icon.md).
+
 ## Decision
 
 1. **The product is called Unagi Reader.** It was called Feeeder. The app shows 「Unagi Reader」 in the window title, the navigation title and the bundle's display name. Old records, old commits and old decision text keep the old name.

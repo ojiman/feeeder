@@ -36,4 +36,6 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 PLIST
 codesign --force --sign - "$app_dir"
 codesign --verify --deep --strict "$app_dir"
+# Retire the old build only after its replacement has a valid signature.
+rm -rf "$PWD/.build/UnagiReader.app"
 printf 'Built: %s\n' "$app_dir"
