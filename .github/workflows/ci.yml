@@ -86,7 +86,11 @@ jobs:
           } | tee "$CI_RESULTS/environment.txt"
       - name: Run tests
         run: |
-          { time swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --force-resolved-versions --disable-keychain --disable-netrc; } 2>&1 | tee "$CI_RESULTS/tests.log"
+          # Written to a file, not through a pipe to `tee`: a run lost the end lines of fast tests on the pipe (#186).
+          status=0
+          { time swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --force-resolved-versions --disable-keychain --disable-netrc; } > "$CI_RESULTS/tests.log" 2>&1 || status=$?
+          cat "$CI_RESULTS/tests.log"
+          exit "$status"
       # A test process can end early with exit code 0 and no summary line; `swift test` then looks like a pass.
       - name: Check that the test run finished
         run: bash scripts/check-test-log.sh "$CI_RESULTS/tests.log"
