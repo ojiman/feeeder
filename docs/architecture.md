@@ -76,6 +76,7 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 ### 4.3 Keys
 
 - `ReaderKeyboardCommands` treats only an editable `NSTextView` or `NSTextField` as typing. Single-letter keys do not act while typing, while composing with an input method, or while a sheet is open.
+- `Esc` closes the note through `onExitCommand` on the window content. The note's editor passes `cancelOperation:` up instead of opening its completion list; while composing it only ends the composition.
 - In the original page, keys come from a separate `WKContentWorld`; they are checked for a real key press, an input element, an input method, modifier keys and the current article.
 
 ### 4.4 Colours and the window

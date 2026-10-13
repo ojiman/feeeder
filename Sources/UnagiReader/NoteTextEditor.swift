@@ -94,6 +94,16 @@ struct NoteTextEditor: NSViewRepresentable {
 
         func undoManager(for view: NSTextView) -> UndoManager? { undoHistory }
 
+        /// `Esc` (`cancelOperation:`) is not the text view's: it goes up to the window, which closes the note (decision 0050). While
+        /// Japanese text is being composed the input method takes the first `Esc`; if one still arrives here, it only ends the composition
+        /// (it never opens the text view's completion list).
+        func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            guard selector == #selector(NSResponder.cancelOperation(_:)) else { return false }
+            if textView.hasMarkedText() { textView.inputContext?.discardMarkedText(); return true }
+            textView.nextResponder?.tryToPerform(selector, with: nil)
+            return true
+        }
+
         private func undoOrRedoDone() {
             guard let textView, textView.string != agreedText else { return }
             save(textView.string)

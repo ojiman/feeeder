@@ -108,6 +108,8 @@ struct ReaderView: View {
         windowContent
             .modifier(OPMLImportPresentation(flow: opml))
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
+            // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
+            .onExitCommand { if originalPage.url == nil { closeNote() } }
     }
 
     private var windowContent: some View {
@@ -491,7 +493,7 @@ struct ReaderView: View {
             columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
         }
     }
-    /// The note's ✕: closes the note, the same move as opening it in reverse (decision 0050).
+    /// The note's ✕ and `Esc`: close the note, the same move as opening it in reverse (decision 0050).
     private func closeNote() {
         guard noteOpen else { return }
         toggleNote()

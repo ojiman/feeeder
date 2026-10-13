@@ -64,7 +64,7 @@ The app refreshes at launch, when you come back to it, and every 30 minutes; the
 | `n` | Open or close the note (also the toolbar button and `⌥⌘I`) |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |
-| `Esc` | Back to reading |
+| `Esc` | Back to reading: closes the original page, or the note |
 
 - Keys do not act while you type in a field or compose Japanese text. `j`, `k`, `s` and `n` also work on the original page.
 - An article becomes read when its text is shown, not when you scroll past it in the list.
