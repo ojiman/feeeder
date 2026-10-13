@@ -43,6 +43,13 @@ UNAGI_READER_V1_FIXTURE_DIR=/private/tmp/unagi-reader-v1-fixture-new swift test 
 
 CI runs two macOS jobs on macOS 26 / Xcode 26.6 / Swift 6.3.3. `regression` (the tests) runs for every change that touches code. `release` (the optimized build, ad hoc signature and packaged app) is the slow one, so a pull request runs it only when it changes `Package.swift`, `Package.resolved`, `ThirdPartyNotices.md`, `scripts/build-app.sh`, `Assets/*` or `.github/workflows/*`; every push to `main` and every manual run builds it. A third job, `check`, always runs on a pull request and is the one status the `main` ruleset requires: for a PR that touches only `docs/**` or Markdown it skips both macOS jobs and passes; otherwise it passes only when every job that was due passed (`scripts/ci-gate.sh`, tested by `scripts/test-ci-gate.sh`). A PR run therefore usually has no packaged app: `fetch-ci-app.sh` needs the `release` artifact, so run the workflow manually on the branch or build locally with `scripts/build-app.sh release`. The local toolchain is macOS 27 / Swift 6.4 and is the only place the support floor (macOS 27.0, decision 0007) is exercised; CI verifies only the build floor (macOS 26.6) because no macOS 27 runner exists yet. Do not use APIs that need the macOS 27 SDK until CI can build them.
 
+## Where work is tracked
+
+- `docs/roadmap.md` is the **order** of the planned work toward the beta and 1.0: the stages, what is next and why. It stays short, points to issues and decisions, and marks a stage `Done (#PR)`. It does not hold the details of a task.
+- **GitHub issues** hold the **units of work**: bugs, features, tech debt, decisions that wait for the owner, and checks that need a real Mac (template "Unverified check"). Write Problem, Acceptance Criteria, Constraints and Out of scope, not an implementation script, so that Claude Code, Codex or a person can take it. Close it from the pull request (`Fixes #n`). When the roadmap schedules something, it names the issue.
+- **Decisions** go to `docs/decisions/`; a plan for work that takes several pull requests goes to `docs/superpowers/plans/` until it is merged.
+- Work that is in neither the roadmap nor an issue is not tracked. Open an issue instead of only mentioning follow-up work in a chat or in a pull request.
+
 ## Starting or resuming work
 
 A new thread starts without the previous one's memory. Rebuild the state from Git, PRs and records, not from a summary:

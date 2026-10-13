@@ -2,6 +2,8 @@
 
 The order of work from the V1 simplification ([decision 0019](decisions/0019-v1-simplification-notes.md)) to the beta. The value and the questions to ask when in doubt are in the [vision](vision.md); the product is in the [specification](specification.md). Older plans, records and roadmaps were removed from the working tree by the prune PR; they are in Git history.
 
+Work that is not in a stage below (bugs, small features, tech debt, decisions waiting for the owner, checks on a real Mac) is tracked as [GitHub issues](https://github.com/ojiman/unagi-reader/issues). See "Where work is tracked" in [AGENTS.md](../AGENTS.md).
+
 ## How a stage runs
 
 Each stage has a short plan PR first (scope, files and tests it touches, the decisions it needs). Merging the plan approves it. Then one implementation PR per stage, with failing tests first, one independent review of a fixed commit when the change is risky, and the specification, the architecture and the user guide updated for what changed. A plan lives in `docs/superpowers/plans/` only until its stage is merged; then delete it (Git keeps it).
