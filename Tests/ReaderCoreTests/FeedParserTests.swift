@@ -136,6 +136,23 @@ struct FeedParserTests {
         let hidden = "<!DOC\u{01}TYPE rss [<!ENTITY x 'expanded'>]><rss><channel><title>&x;</title></channel></rss>"
         #expect(throws: FeedImportError.entities) { try FeedParser.parse(Data(hidden.utf8), sourceURL: url) }
     }
+    @Test func anEntityDeclarationHiddenByTheEncodingIsRefused() throws {
+        // UTF-7 hides "<!DOCTYPE" and "<!ENTITY" from the byte scan; the parser's declaration callbacks must refuse them.
+        func feed(_ subset: String, title: String) -> Data {
+            Data("<?xml version=\"1.0\" encoding=\"UTF-7\"?><+ACE-DOCTYPE rss +AFs-\(subset)+AF0-+AD4-<rss><channel><title>\(title)</title></channel></rss>".utf8)
+        }
+        let url = URL(string: "https://feed.example/rss")!
+        let internalEntity = "<+ACE-ENTITY x +ACI-EXPANDED+ACI-+AD4-"
+        let unparsed = "<+ACE-NOTATION png SYSTEM +ACI-png+ACI-+AD4-<+ACE-ENTITY x SYSTEM +ACI-x.png+ACI- NDATA png+AD4-"
+        for subset in [internalEntity, unparsed] {
+            for title in ["T", "&x;"] {
+                #expect(throws: FeedImportError.entities, "\(subset) \(title)") { try FeedParser.parse(feed(subset, title: title), sourceURL: url) }
+            }
+        }
+        // XMLParser reports no declaration of an external parsed entity; it is never resolved, so it expands to nothing.
+        let external = try FeedParser.parse(feed("<+ACE-ENTITY x SYSTEM +ACI-x.xml+ACI-+AD4-", title: "&x;"), sourceURL: url)
+        #expect(external.title == "feed.example")
+    }
     @Test func strayControlCharactersDoNotSinkAnOtherwiseGoodFeed() throws {
         let xml = "<rss><channel><title>合成\u{08}ニュース</title><item><guid>a</guid><title>A\u{0B}</title><link>https://feed.example/a</link><description>x\u{1F}y</description></item></channel></rss>"
         let result = try FeedParser.parse(Data(xml.utf8), sourceURL: URL(string: "https://feed.example/rss")!)
