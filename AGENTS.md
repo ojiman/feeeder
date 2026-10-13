@@ -59,6 +59,7 @@ CI runs two macOS jobs on macOS 26 / Xcode 26.6 / Swift 6.3.3. `regression` (the
 
 - **Take one issue at a time.** Say that you take it (assign yourself, or comment). One issue, one pull request, `Fixes #n`. Before you start, look at the open pull requests and issues that touch the same files.
 - **An issue with an open question for the owner** waits: ask in the issue and do not start until it is answered.
+- **Start a pull request title with its kind:** `feat:`, `fix:`, `refactor:`, `test:`, `docs:` or `ci:`. A reader can then tell the kind of change from the list.
 - **A bug found on the way** that is not part of the issue becomes a new issue, not a bigger pull request.
 - **Where pull requests collide:** `Sources/UnagiReader/ReaderView.swift` (its long modifier chain: one change at a time; see the known gotchas), the index in `docs/decisions/README.md` (one line per decision, added at the end), the long lines of `docs/specification.md`, and decision numbers. Take the next free decision number when you open the pull request; if `main` moved, renumber before the merge.
 - The milestone **Beta** holds what must be done before the beta and is closed to new issues: only the owner adds to it. The beta is done when every issue in it is closed.
