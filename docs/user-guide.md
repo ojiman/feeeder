@@ -1,160 +1,101 @@
 # Unagi Reader user guide
 
-This guide explains how to start Unagi Reader, how it handles your data, and how to use it. For a short overview, read the [README](../README.md) first.
-
-The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "元ページをブラウザで開く (Open the original page in the browser)".
-
-If this guide and the app differ, check the [specification](specification.md), then tell us.
+How to start Unagi Reader, how it keeps your data, and how to use it. The app is Japanese only; a label is shown here in Japanese with its meaning, for example 「全文を取得」 (Get full text). If this guide and the app differ, the [specification](specification.md) decides; please tell us.
 
 ## 1. Start the app
 
-You need a Mac with macOS 27.0 or later and the Swift toolchain from Xcode. From the project root, run:
+You need macOS 27.0 or later and the Swift toolchain from Xcode. From the project folder:
 
 ```sh
 bash scripts/build-app.sh release
 ```
 
-SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/Unagi Reader.app`. Open it from Finder.
+This makes `.build/Unagi Reader.app`; open it from Finder. It is ad hoc signed, not signed with a Developer ID and not notarized.
 
-- The app is ad hoc signed for local development. It is not signed with a Developer ID and it is not notarized.
-- The release build writes temporary files to `/private/tmp/unagi-reader-v1-release`. The debug build writes to `/private/tmp/unagi-reader-debug`. For the debug build you can leave out the argument.
-
-## 2. Your data and updates
-
-### Where the data is
-
-A normal start begins with an empty library. The library is stored in `Application Support/UnagiReader/Reader.store`. If you restart the same version of the app, your subscriptions, articles, read times, stars, and notes are kept.
-
-### Updates during the beta
-
-- **Compatibility between beta versions is not guaranteed.** An older database may fail to open. We have not verified how SwiftData behaves with an incompatible schema.
-- If the library cannot be opened, the app shows an error ("ライブラリを開けませんでした", "Could not open the library"). The app never deletes or recreates the library by itself.
-- From 1.0 onward, saved data will be kept across updates.
-- Release notes for beta versions will state this limit. A check that data survived in one past version does not promise the same for later beta versions.
-- There is no migration of data from the earlier prototype.
-- **The daily notes, weekly notes, and scraps of the older version are not moved to the note-based version. They are deleted the first time this version starts, and this cannot be undone.** Back up your data before you update (see below).
-- **Earlier "themes" are not carried over.** The learning goal, theme names, notes, recorded articles, and the questions, answers and 「いまの理解」 (Current understanding) of the builds that still had themes are not moved to this version. Your subscriptions, articles, read times, and stars stay. **The first time this version starts, the old theme content is gone, and this cannot be undone.** Back up the `UnagiReader` folder first (see the steps below).
-
-### Back up the library by hand
-
-Do this before you update a beta version, or if the app cannot open the library and you want to start again with an empty one. We have not yet tested these steps on a real Mac.
-
-1. Quit Unagi Reader with ⌘Q.
-2. In Finder, choose Go > Go to Folder (the Japanese menu is 移動 → フォルダへ移動) and open `~/Library/Application Support/`.
-3. Rename the whole `UnagiReader` folder, for example to `UnagiReader-backup-20261007-2100`. Keep `Reader.store` together with `Reader.store-shm` and `Reader.store-wal` if they exist. Do not copy only the database file. The folder also holds note data and hand-off management data.
-4. Start Unagi Reader. It creates a new `UnagiReader` folder and an empty library. Keep the renamed folder until you have checked the new one. A backup is not a promise that the data can be converted or restored.
-
-### Try the app with synthetic data
-
-To look around without touching your real library, start a separate instance with its own data directory and demo subscriptions:
+To look around without your real library, start a separate copy with synthetic subscriptions:
 
 ```sh
 open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
-- `--data-directory <path>` is for development checks. It sets where the app stores its data.
-- Use `open -n` so that a new instance starts. Without it, `open` can reuse an Unagi Reader that is already running and drop the arguments.
-- Before you do anything, check the process arguments (for example with `pgrep -fl UnagiReader`) and check that the window shows the demo subscriptions.
-- The demo URLs end in `.example`. No real pages exist there. Do not add real subscriptions, articles, or notes to Git. See [AGENTS.md](../AGENTS.md) for details. We have not re-run this procedure on macOS since it was written down.
+Use `open -n`: without it, macOS can reuse a running Unagi Reader and ignore the arguments. Check that the window shows the demo subscriptions (their addresses end in `.example`) before you do anything.
+
+## 2. Your data
+
+- The library is `~/Library/Application Support/UnagiReader/Reader.store`. A new library starts empty. Restarting the same version keeps everything.
+- **During the beta, a new version may not open an older library.** The app then shows 「ライブラリを開けませんでした」 (Could not open the library) and never deletes or recreates it by itself. From 1.0, data is kept across updates.
+- Builds before the one-note version kept themes, daily and weekly notes, or several notes. The first start of a newer build keeps your subscriptions, articles, read times and Stars, keeps only the note you edited last, and deletes the rest. This cannot be undone.
+
+### Back up the library by hand
+
+Do this before you update a beta, or when the app cannot open the library and you want to start again empty. These steps have not been tried on a real Mac yet.
+
+1. Quit Unagi Reader (⌘Q).
+2. In Finder choose Go ▸ Go to Folder (移動 ▸ フォルダへ移動) and open `~/Library/Application Support/`.
+3. Rename the whole `UnagiReader` folder, for example to `UnagiReader-backup-20261014`. Keep `Reader.store`, `Reader.store-shm` and `Reader.store-wal` together; do not copy only one file.
+4. Start Unagi Reader. It makes a new, empty library. Keep the renamed folder until you have checked the new one. A backup is not a promise that the data can be converted back.
 
 ## 3. Using the app
 
-### Layout
+### The screen
 
-The window is made of four areas. Reading uses three of them (sidebar, list, article); the fourth, the note, joins beside the article only while it is open. In Settings you can choose the appearance: follow the system, light, or dark.
-
-| Area | What it shows |
-|---|---|
-| Sidebar | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), and Sources (folders and subscriptions). |
-| List | The list of articles. |
-| Article | The article. With `v` the original page takes its place. |
-| Note | The one note, beside the article. It opens and closes with `n`, the toolbar button or `⌥⌘I`. |
-
-The areas appear in four ways: the **normal** screen (sidebar, list, article); the **original page** (`v`: the sidebar folds away and the page replaces the article); the **note beside the article** (`n`: the sidebar and the list fold away); and the **note with the list** (the list is shown too). The precise rules are in the specification, section 3.1.
+The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the 「一覧」 (List) button at the top left of the article brings the list back beside them. Appearance (system, light or dark) is in Settings.
 
 ### Subscriptions and folders
 
-- To move from another reader, choose "ファイル ▸ OPMLを取り込む…" (File ▸ Import OPML) and pick the OPML file. The subscriptions appear at once and their articles arrive one by one. Subscriptions you already have are not changed. A `http://` address is changed to `https://`, because the app cannot connect to plain `http://`. There is one level of folders: a deeper folder is merged into its top-level folder.
-- Click "＋" at the top right of the left column and enter an RSS or Atom URL (an address that starts with `http://` is checked as `https://`; the address of a site works too: the app looks for the feed the page announces, uses the first one, and shows its address under the field). When you stop typing (right away after a paste), the app checks the address and shows "✓" with the feed name under the field, or the reason it could not read it. "追加" (Add) is enabled only when the feed was read (Return also adds). If you have folders, a folder field appears once the feed was read: do nothing and press Return to add it unfiled, or type a name to narrow the folders (a name that is not a folder yet offers "作って追加", make it and add), and use ↑↓ to choose. When you open the sheet with the + of a folder row, the subscription goes into that folder and there is no field. While you type, an address whose host does not look finished is not sent. If the feed is already subscribed, the app says so and does not add it again. The + that appears when you point at a folder row adds to that folder; the other + buttons offer the folder field described above. Right-click a subscription and choose "フォルダへ移動…" to open a small chooser with a text field: type to narrow the existing folders, or type a new name and choose "作って移動" (make it and move into it). Use ↑↓, Return and Esc; "未分類" moves it back to unfiled. You can also move a subscription by dragging it onto a folder row in the sidebar. The row glides to its new place and the folder opens to show it (no motion with Reduce Motion) (drag it onto the "購読元" header to unfile it). The refresh button is next to it. Hold ⌥ (Option) while you open "＋" to get the trouble-shooting tools: typing feed XML by hand and a synthetic sample.
-- Right-click a subscription to refresh it, rename it (in its row, or press Return on the selected row), move it to a one-level folder, or unsubscribe.
-- When you select a folder, the list shows the articles of all subscriptions in it. Right-click a folder to rename or merge it.
+- **Add:** click ＋ at the top right of the sidebar and type an RSS or Atom address, or a site's address (the app finds the feed the page announces). An `http://` address is checked as `https://`. When you stop typing, the line under the field shows 「✓」 and the feed's name, or why it could not be read. 「追加」 (Add) works only when the feed was read; Return also adds.
+- **Folder when adding:** if you have folders, a folder field appears once the feed is read. Press Return to add it unfiled, or type to choose a folder; a new name offers 「作って追加」 (make it and add). The ＋ on a folder row adds straight into that folder.
+- **Import from another reader:** File ▸ 「OPMLを取り込む…」 (Import OPML). The subscriptions appear at once and their articles follow. Existing subscriptions do not change. Folders are one level deep.
+- **Manage:** right-click a subscription to refresh, rename (in the row; Return on the selected row too), move to a folder, or unsubscribe. 「フォルダへ移動…」 (Move to folder) opens a chooser: type to narrow, or type a new name and choose 「作って移動」; 「未分類」 (unfiled) moves it out. You can also drag a subscription onto a folder, or onto the 「購読元」 heading to unfile it.
+- Right-click a folder to rename it; a name that already exists joins the two folders.
+- Hold ⌥ (Option) while you click ＋ for the troubleshooting tools (feed XML by hand, a synthetic sample).
 
 ### Refresh
 
-The app refreshes on launch, when it returns, and every 30 minutes while it runs. You can also refresh from the toolbar. While it works, the arrow of the refresh button turns. New articles slide in from the top of the list and push the older rows down; if you have scrolled down the list, it stays where you are reading. The motion is the same for manual and automatic refresh, and it is off when Reduce Motion is on. If a download fails, you can still read the articles already saved.
+The app refreshes at launch, when you come back to it, and every 30 minutes; the toolbar button refreshes by hand, and its arrow turns while it works. New articles slide in at the top of the list; if you have scrolled down, the list stays where you are. If a download fails, the saved articles can still be read.
 
 ### Reading and keys
-
-Focus the article list, then use these keys:
 
 | Key | Action |
 |---|---|
 | `j` / `k` | Next / previous article |
-| `m` | Mark read / unread |
-| `s` | Add or remove a Star |
-| `n` | Open or close the note (the same as the toolbar button and `⌥⌘I`). Not while you type in the note or in a field. |
+| `m` | Read / unread |
+| `s` | Star on / off |
+| `n` | Open or close the note (also the toolbar button and `⌥⌘I`) |
 | `b` | Open the original page in your browser |
-| `v` | Open the original page inside the app. It slides in from the right while the sidebar folds away to the left, and the page uses the room. The ✕ at the top left of the page, `Esc`, or choosing another article closes it: the page slides out to the right and the sidebar comes back |
-| `Esc` | Go back to reading |
+| `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |
+| `Esc` | Back to reading |
 
-- Scrolling the list does not mark an article as read. The first read time is saved when the body or the RSS summary is actually shown.
-- The in-app browser contacts the site you chose and does not keep you signed in. `j`, `k`, `s`, and `n` also work on the original page. The app gives priority to text fields and to keys used with modifier keys.
-- When you open an article, the app shows the text the feed provides (or the RSS summary) as it is. For more, press "v" (the original page in the app) or "b" (your browser). "全文を取得" (Get full text) takes the text from the original page and shows it (menus of the page may be mixed in). Bodies that earlier versions took from pages are removed at the first start of this version (including ones you fetched on purpose); the feed text comes back for articles that are still in the feed, and "全文を取得" fetches it again.
-- Text extraction is best effort. The app labels the text as one of 「フィード提供本文」 (body provided by the feed), 「抽出本文・全文保証なし」 (extracted body, not guaranteed to be complete), or 「RSS要約のみ」 (RSS summary only). If the body cannot be fetched, you still get the summary and a link to the original. The app does not try to get around access limits.
-- The list shows favicons and, when available, article thumbnails. The article shows images in the text. Images are best effort. While an image loads or if it fails, the frame keeps its height. The image cache is 64 MiB. Successes are kept for 7 days and failures for 10 minutes. At most 4 images load at the same time.
-
-### Stars and notes
-
-- Press `s` (or use the button at the top right) to star an article. You can read starred articles again from the Star list.
+- Keys do not act while you type in a field or compose Japanese text. `j`, `k`, `s` and `n` also work on the original page.
+- An article becomes read when its text is shown, not when you scroll past it in the list.
+- The app shows the feed's own text (or its summary). 「全文を取得」 (Get full text) takes the text from the original page; parts of the page's menus may come with it. The end of the text says what you have: 「フィード提供本文」 (the feed's text), 「抽出本文 · 全文保証なし」 (extracted, may be incomplete) or 「RSS要約のみ」 (summary only). The app never gets around paywalls or logins.
+- The in-app browser does not keep you signed in to sites.
+- `s` or the button at the top right stars an article; the Star list shows them again.
 
 ### The note
 
-There is one note, and nothing to manage: no list of notes, no new note, no name, no rename and no delete. Press the note button in the toolbar, `⌥⌘I`, or `n` (when you are not typing in the note or in a field). In a move of about 0.3 seconds, the sidebar and the list of articles fold away to the left and the note comes in from the right: the article is on the left and the note on the right. Press again for the reverse move back to the screen you were on; the selected article and your place in it do not change. It works on any screen that has a list of articles (Feeds, Star, a folder, a subscription), and it is the same note on every screen. It starts closed. With Reduce Motion the screen changes without movement. The 「一覧」 (List) button at the top left of the article shows the list of articles again beside the article and the note (list, article and note from the left), and hides it again. `j` and `k` move to the next and previous article in both forms. If an older version had several notes, the first start of this version keeps the one you edited last and deletes the others, with the records of the articles that were in them. This cannot be undone.
+There is one note and nothing to manage: no list, no names, no delete.
 
-- A note is one Markdown document. You write plain text in your own words. A line that starts with `#` (up to six, then a space) is a heading and is shown bold and larger. A line that starts with `-`, `*`, `+` or a number such as `1.` is a list item: its mark is coloured and a wrapped line lines up with the text. This changes only how the text looks, never the saved text, and pressing Return does not continue a list. Pasting or dropping text from another app adds plain text only. While you are composing Japanese text, the look waits until you confirm or cancel. There is no length limit. It is saved as you type, exactly as you typed it. The app never writes into the note. You can drag the edge of the panel to change its width (you cannot drag it shut), and the app keeps the width for the next launch (this is still being checked in a real window).
-- The top of the note panel has two small arrows for the previous and next article and a copy button, 「Markdownをコピー」 (Copy Markdown). It copies the note's exact text, and it is disabled when the note is empty or has only whitespace.
-- Keys: `j` and `k` move between articles in the list, and `s`, `b`, `v`, `m` work as in the article list, but only when you are not typing in the note or in a field, and never while you compose Japanese text. While you write, `⌥⌘↓` (next article) and `⌥⌘↑` (previous article) work inside the note too.
+- `n`, `⌥⌘I` or the toolbar button opens it beside the article in a short move; the same again closes it and returns you to where you were. It is the same note on every screen.
+- It is plain Markdown in your own words, saved as you type, exactly as typed. A line starting with `#` is shown as a heading; a line starting with `-`, `*`, `+` or `1.` as a list item. Only the look changes, never the saved text. Paste adds plain text only.
+- `j` / `k` change the article while the note stays open (not while you type in the note). While you write, `⌥⌘↓` and `⌥⌘↑` change the article, and so do the two arrows above the note.
+- Drag the panel's edge to change its width; the width is kept.
+- 「Markdownをコピー」 (Copy Markdown) at the top of the note copies its exact text. It is disabled for an empty note.
 
 ## 4. AI
 
-The app has no AI of its own. It does not summarize, suggest or write for you, and it does not talk to any AI service. The system's Writing Tools in the note editor, and copying the note to another AI, are described in section 6.
+The app has no AI of its own. It does not summarize, suggest or write, and it never talks to an AI service.
+
+- **While you write:** on a Mac with Apple Intelligence, select text in the note and right-click for the system's Writing Tools (proofread, rewrite, summary, list, table and more).
+- **To ask another AI:** press 「Markdownをコピー」 and paste the note into the AI you like. Nothing leaves your Mac unless you paste it yourself.
 
 ## 5. How long data is kept
 
-- Article bodies and RSS summaries are kept for 30 days by default. In Settings you can choose 7, 30, 90, or 365 days.
-- For an unread article the 30 days start when it is first received. For a read article they start at the first read.
-- Shortening the period, or deleting all bodies at once, asks you to confirm what will be removed.
-- **The note is never deleted automatically.**
-- A Star does not extend the life of an article body.
+- Article texts and summaries: 30 days by default; 7, 30, 90 or 365 days in Settings. For an unread article the days count from when it arrived, for a read one from when you first read it. A Star does not extend them.
+- When the text expires, the title, the link and the Star stay.
+- Shortening the period, or deleting all texts at once, asks you first.
+- **The note is never deleted by the app.**
 
-## 6. Using the note with another AI
+## 6. For developers
 
-The app has no AI of its own and does not talk to Claude, Codex, Gemini or any other AI.
-
-- **While you write:** on a Mac that has Apple Intelligence, the system's Writing Tools (proofread, rewrite, tone, summary, key points, list, table and more) appear in the note editor when you select text and right-click. They are the system's, not the app's.
-- **To ask another AI:** press 「Markdownをコピー」 (Copy Markdown) at the top of the note panel. The note's exact text goes to the clipboard, and you paste it into the AI you like. The app starts no other app, makes no file and uses no network for this.
-- Nothing leaves your Mac unless you paste it somewhere yourself.
-- Earlier versions kept copies of the note in a `Handoffs` folder of the library. The app removes that folder when it starts.
-
-## 7. For developers: tests, CI, and compatibility checks
-
-Run the tests:
-
-```sh
-swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
-```
-
-- **CI** runs two jobs in parallel during the beta: regression tests and a release build. A change that touches only `docs/**` or Markdown skips CI.
-- **The CI app** is an ad hoc signed development build. It is not signed with a Developer ID, not notarized, and not published as a release. It is different from a ZIP of a released beta.
-- **To try a CI build on a Mac,** do not save it with a browser. Run `bash scripts/fetch-ci-app.sh <PR number>`. It needs macOS and a recent, signed-in `gh`. A file saved by a browser gets a quarantine attribute, and macOS blocks an app that is not notarized for every new build. A download with `gh` does not get the attribute. The script also checks that the build matches the head of the PR, verifies the signature, and prints a launch command for synthetic data.
-- If macOS blocks an app that you saved with a browser, open System Settings > Privacy & Security and choose "Open Anyway". It needs an administrator password.
-- **Compatibility between beta versions is not checked by CI.** A normal `swift test` skips the compatibility test when no fixture is given. To run it by hand:
-
-```sh
-bash scripts/prepare-v1-store-fixture.sh /private/tmp/unagi-reader-v1-fixture-new
-UNAGI_READER_V1_FIXTURE_DIR=/private/tmp/unagi-reader-v1-fixture-new swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
-```
-
-The fixture directory must not exist yet. The script builds a synthetic database with a fixed commit of a released beta, opens it with the new schema, and checks that the data is kept. When 1.0 ships, the schema will be frozen as `VersionedSchema`, and a check that starts from the 1.0 release tag will be added to CI.
-
-Tests use synthetic RSS and HTML and temporary databases. The [specification](specification.md), the [architecture](architecture.md), and the latest acceptance record (Git history) hold the requirements, the results, and the open items. The final acceptance of the whole V1, and the product owner's decision on the feel of the controls, are not finished.
+Commands, tests, CI and the rules for contributors are in [AGENTS.md](../AGENTS.md); how the app is built is in the [architecture](architecture.md).
