@@ -17,20 +17,35 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 3. **Beta preparation.** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run of the reading features; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Signing and distribution only on the owner's instruction.
 4. **Other conditions of the beta:** [#126](https://github.com/ojiman/unagi-reader/issues/126) the entity gap in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#134](https://github.com/ojiman/unagi-reader/issues/134) the decision about feeds that exist only on `http://`.
 
+## Next: planned features
+
+Features the owner has decided to build, in the order the owner gave. They are not conditions of the beta. A feature that touches no screen can start beside the beta work; one that touches `ReaderView.swift` waits for its turn (see "Working in parallel").
+
+1. **Keyword filter for the article list** ([#129](https://github.com/ojiman/unagi-reader/issues/129)). The band of the middle column is ready for its icon (decision 0048). It waits for the owner's answers to the questions in the issue.
+2. **Translation** (the design is merged and approved: [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md)). Three pull requests, in order, each merged before the next: [#152](https://github.com/ojiman/unagi-reader/issues/152) T1 the core (no screen), [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu.
+3. **OPML export** ([#130](https://github.com/ojiman/unagi-reader/issues/130)). No screen of its own; it can be done at any time.
+
 ## Working in parallel
 
-- Do not touch `ReaderView.swift`, so they can run beside anything: [#126](https://github.com/ojiman/unagi-reader/issues/126), [#127](https://github.com/ojiman/unagi-reader/issues/127), [#130](https://github.com/ojiman/unagi-reader/issues/130) (OPML export), [#131](https://github.com/ojiman/unagi-reader/issues/131), [#133](https://github.com/ojiman/unagi-reader/issues/133), [#135](https://github.com/ojiman/unagi-reader/issues/135).
-- Touch `ReaderView.swift` and the window's long modifier chain, so **one at a time**, and not together with the decision 0050 steps: [#128](https://github.com/ojiman/unagi-reader/issues/128) (menu bar commands), [#129](https://github.com/ojiman/unagi-reader/issues/129) (keyword filter; it also waits for the owner's answers), [#132](https://github.com/ojiman/unagi-reader/issues/132) (splitting the chain).
+- Do not touch `ReaderView.swift`, so they can run beside anything: [#126](https://github.com/ojiman/unagi-reader/issues/126), [#127](https://github.com/ojiman/unagi-reader/issues/127), [#130](https://github.com/ojiman/unagi-reader/issues/130) (OPML export), [#131](https://github.com/ojiman/unagi-reader/issues/131), [#133](https://github.com/ojiman/unagi-reader/issues/133), [#135](https://github.com/ojiman/unagi-reader/issues/135), and translation T1 ([#152](https://github.com/ojiman/unagi-reader/issues/152)).
+- Touch `ReaderView.swift` and the window's long modifier chain, so **one at a time**, and not together with the decision 0050 steps: [#128](https://github.com/ojiman/unagi-reader/issues/128) (menu bar commands), [#129](https://github.com/ojiman/unagi-reader/issues/129) (keyword filter; it also waits for the owner's answers), [#132](https://github.com/ojiman/unagi-reader/issues/132) (splitting the chain), and translation T2 ([#153](https://github.com/ojiman/unagi-reader/issues/153)) and T3 ([#154](https://github.com/ojiman/unagi-reader/issues/154)).
 
-## Candidates (not scheduled; an issue is opened when one is scheduled)
+## Candidates (ideas: no order, no issue)
+
+A candidate is an idea. It has no order and no issue. When the owner decides to build it, it moves to "Next" and gets an issue (Problem, Acceptance Criteria, Constraints, Out of scope). When it is dropped, it moves to "Not planned". A candidate is never a requirement: the specification lists only what V1 is and is not.
 
 - **Reading size.** One shared size in Appearance (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) and View-menu commands. A probe showed that a separate update path keeps the top visible line in place across 36 synthetic cases, and that the update time grows with the article (about 10 to 20 ms at 7,800 characters, about 0.2 to 0.35 s at 156,000). The probe code is in Git history (PR #28). Open: a time budget (the proposal: finish within about 100 ms up to about 50,000 characters, above that apply once after the key is released), and how it feels on the device.
 - **Note editor size.** The same scale for the note editor. Needs a real Japanese input check: the update waits while text is being composed.
-- **Translation.** A toolbar button that translates the open article on the Mac with the Translation framework. The design is merged and approved ([docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md); decision numbers and parts that mention removed features are to be re-checked at the start). Three pull requests, in order: the core, the button, the language menu.
+- **A summary as an insertion into the note**, redone to Apple's Human Interface Guidelines (decision 0049 removed the old one; a new decision is needed to bring it back).
+- **A draft helper from an AI outside the Mac** (bring your own key); needs a new decision.
+- **A language setting and a time zone setting** (a language setting is needed before the public release).
+- **More styling in the note editor:** tables, check lists, a preview.
+- **More than one note, and note folders, search and tags** (decision 0049 chose one note).
+- **Passing only a part of the note to an AI**, system sharing services, a view of past days, copying the URL.
 
 ## Not planned
 
-Goals and learning plans; AI suggestions of notes; AI editing of the note; note folders, tags and search (after V1); system sharing services (after V1); sync and accounts; a settings framework; key remapping; a language setting before the public release is planned but has no stage yet.
+Goals and learning plans; AI suggestions of notes; AI editing of the note; sync and accounts (Backend, accounts and sync start again from the product decision only if they become necessary); a settings framework; key remapping.
 
 ## Before 1.0
 
