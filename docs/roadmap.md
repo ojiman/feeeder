@@ -8,7 +8,7 @@ The **order** of the work to the beta and 1.0, and why. The units of work are [G
 
 Everything that must be done before the beta is an issue in the milestone [Beta](https://github.com/ojiman/unagi-reader/milestone/1). It is closed to new issues; only the owner adds to it. **The beta is done when every issue in it is closed.**
 
-1. **Decision 0050, in order** (the same files): [#139](https://github.com/ojiman/unagi-reader/issues/139) the layout button and the ✕, then [#140](https://github.com/ojiman/unagi-reader/issues/140) `Esc` and `j` / `k`, then [#141](https://github.com/ojiman/unagi-reader/issues/141) the wider note.
+1. **Decision 0050, in order** (the same files): [#140](https://github.com/ojiman/unagi-reader/issues/140) `Esc` and `j` / `k`, then [#141](https://github.com/ojiman/unagi-reader/issues/141) the wider note.
 2. **The keyword filter** ([#129](https://github.com/ojiman/unagi-reader/issues/129)). It touches `ReaderView.swift`, so it comes after 0050. The owner has decided everything in the issue: the filter stays across scopes, not across restarts; `/` opens it; it searches the title and the feed's text only.
 3. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), the core is done (decision 0054); then [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu. T2 and T3 touch `ReaderView.swift`, so they come after the filter.
 4. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.

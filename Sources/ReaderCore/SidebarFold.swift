@@ -11,7 +11,7 @@ public enum SidebarFold {
         pageOpen || noteOpen
     }
 
-    /// The list of articles is folded too while the note is open, unless the person showed it with the 「一覧」 button: then the screen is
+    /// The list of articles is folded too while the note is open, unless the person showed it with the layout button: then the screen is
     /// the list, the article and the note. With the note closed the list is always there.
     public static func listFolded(noteOpen: Bool, listShown: Bool) -> Bool {
         noteOpen && !listShown

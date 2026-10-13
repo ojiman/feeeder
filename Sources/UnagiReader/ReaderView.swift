@@ -152,6 +152,11 @@ struct ReaderView: View {
                 Button { toggleNote() } label: { Image(systemName: "note.text") }
                     .keyboardShortcut("i", modifiers: [.option, .command])
                     .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
+                // One button for the two layouts of the open note; the icon shows the layout on the screen (decision 0050).
+                Button(action: switchNoteLayout) { Image(systemName: workspace.noteListShown ? "rectangle.split.3x1" : "rectangle.split.2x1") }
+                    .help(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
+                    .accessibilityLabel(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
+                    .disabled(!noteOpen)
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
@@ -370,7 +375,8 @@ struct ReaderView: View {
                   canNext: NoteArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
                   onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                   onNext: { guard panelMayMove else { return }; perform(.next) },
-                  onCopy: { _ = copyNote() })
+                  onCopy: { _ = copyNote() },
+                  onClose: closeNote)
             .modifier(NotePanelWidthMemory())
     }
 
@@ -391,22 +397,7 @@ struct ReaderView: View {
                     .offset(x: originalSlide)
             }
         }.clipped()
-            .overlay(alignment: .topLeading) { listButton }
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }
-    }
-
-    /// 「一覧」 at the top left of the article, while the note is open: shows the list beside the article and the note, or hides it again.
-    /// It sits where the ✕ of the original page sits (below the toolbar band), and the original page has its own ✕ in its place.
-    @ViewBuilder private var listButton: some View {
-        if noteOpen, originalPage.url == nil {
-            Button(action: toggleListBesideNote) {
-                Label("一覧", systemImage: workspace.noteListShown ? "sidebar.squares.left" : "list.bullet")
-                    .font(.system(size: 12, weight: .semibold))
-            }
-            .buttonStyle(.borderless).padding(10)
-            .help(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
-            .accessibilityLabel(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
-        }
     }
 
     @ViewBuilder private var detail: some View {
@@ -500,9 +491,14 @@ struct ReaderView: View {
             columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
         }
     }
-    /// The 「一覧」 button: shows or hides the list beside the open note.
-    private func toggleListBesideNote() {
-        withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) { workspace.noteListShown.toggle() }
+    /// The note's ✕: closes the note, the same move as opening it in reverse (decision 0050).
+    private func closeNote() {
+        guard noteOpen else { return }
+        toggleNote()
+    }
+    /// The layout button: shows or hides the list beside the open note.
+    private func switchNoteLayout() {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) { workspace.switchNoteLayout() }
     }
     /// The columns to show: the sidebar is folded while the original page or the note is open (decisions 0046 and 0049).
     private func targetColumns(pageOpen: Bool) -> NavigationSplitViewVisibility {

@@ -25,14 +25,14 @@ import Testing
     fileprivate func buttons(in view: NSView) -> [NSButton] {
         (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap { buttons(in: $0) }
     }
-    /// Only the two narrow chevrons and the copy button in the inspector, ordered left to right.
+    /// Only the two narrow chevrons and the copy button in the inspector, ordered left to right (the ✕ at the left is left out).
     fileprivate func panelButtons(in h: Harness) -> [NSButton] {
         let width = h.window.contentView?.bounds.width ?? 1_240
         let candidates = buttons(in: h.host)
         var positioned: [(button: NSButton, frame: NSRect)] = []
         for button in candidates {
             let frame = button.convert(button.bounds, to: nil)
-            guard frame.minX > width - 420, frame.width > 0 else { continue }
+            guard frame.minX > width - 160, frame.width > 0 else { continue }     // the right end of the note's header
             guard button is NSPopUpButton || frame.width <= 20 else { continue }
             positioned.append((button, frame))
         }

@@ -39,7 +39,7 @@ Do this before you update a beta, or when the app cannot open the library and yo
 
 ### The screen
 
-The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the 「一覧」 (List) button at the top left of the article brings the list back beside them. Appearance (system, light or dark) is in Settings.
+The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button next to the note button in the toolbar brings the list back beside them, and hides it again. Appearance (system, light or dark) is in Settings.
 
 ### Subscriptions and folders
 
@@ -76,7 +76,7 @@ The app refreshes at launch, when you come back to it, and every 30 minutes; the
 
 There is one note and nothing to manage: no list, no names, no delete.
 
-- `n`, `⌥⌘I` or the toolbar button opens it beside the article in a short move; the same again closes it and returns you to where you were. It is the same note on every screen.
+- `n`, `⌥⌘I` or the toolbar button opens it beside the article in a short move; the same again, or the ✕ at the top left of the note, closes it and returns you to where you were. It is the same note on every screen.
 - It is plain Markdown in your own words, saved as you type, exactly as typed. A line starting with `#` is shown as a heading; a line starting with `-`, `*`, `+` or `1.` as a list item. Only the look changes, never the saved text. Paste adds plain text only.
 - `j` / `k` change the article while the note stays open (not while you type in the note). While you write, `⌥⌘↓` and `⌥⌘↑` change the article, and so do the two arrows above the note.
 - Drag the panel's edge to change its width; the width is kept.
