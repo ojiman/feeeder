@@ -1,64 +1,56 @@
 # Roadmap
 
-The **order** of the planned work to the beta and 1.0. The value and the questions to ask when in doubt are in the [vision](vision.md); the product is in the [specification](specification.md). Older plans, records and roadmaps were removed from the working tree by the prune PR; they are in Git history.
-
-This file is the order and the reasons; the units of work are [GitHub issues](https://github.com/ojiman/unagi-reader/issues). See "Where work is tracked" in [AGENTS.md](../AGENTS.md).
-
-## How a stage runs
-
-Each stage has a short plan PR first (scope, files and tests it touches, the decisions it needs). Merging the plan approves it. Then one implementation PR per stage, with failing tests first, one independent review of a fixed commit when the change is risky, and the specification, the architecture and the user guide updated for what changed. A plan lives in `docs/superpowers/plans/` only until its stage is merged; then delete it (Git keeps it).
+The **order** of the work to the beta and 1.0, and why. The units of work are [GitHub issues](https://github.com/ojiman/unagi-reader/issues); how they are written and taken is in [AGENTS.md](../AGENTS.md). The value is in the [vision](vision.md), the product in the [specification](specification.md).
 
 ## Now: the beta
 
-Everything that must be done before the beta is an issue in the milestone [Beta](https://github.com/ojiman/unagi-reader/milestone/1). **The milestone is closed to new issues** (the owner, 2026-10-14): the owner has listed everything. **The beta is done when every issue in the milestone is closed.** Something found later goes to a later milestone, unless the owner moves it in.
+**What the beta is for** (a draft by the agent, 2026-10-14; the owner confirms or rewrites it): the first build that someone other than the owner uses. It answers one question: does the loop (read → note → understand) hold for an engineer who reads many feeds, without the owner beside them? What we want back: where they waited (specification 2.1), where they had to manage or decide something (vision, question 2), and whether they still write in the note after a week. Who, and how many: the owner decides.
 
-1. **Decision 0050, in order.** One at a time: all three touch the same files. [#139](https://github.com/ojiman/unagi-reader/issues/139) the layout button and the ✕, then [#140](https://github.com/ojiman/unagi-reader/issues/140) `Esc` and `j` / `k`, then [#141](https://github.com/ojiman/unagi-reader/issues/141) the wider note. The specification is already ahead of the code for these. ([Decision 0050](decisions/0050-the-note-screen-closes-like-the-original-page.md).)
-2. **Real-device check (the owner).** Read, add subscriptions, import OPML, write in the note beside the articles, copy the note into another AI, Japanese input in the note, a narrow window, and a long dogfooding week. The checklists are [#136](https://github.com/ojiman/unagi-reader/issues/136) and [#145](https://github.com/ojiman/unagi-reader/issues/145). Bugs found here come before any polish; each becomes an issue.
-3. **Beta preparation.** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run of the reading features; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Signing and distribution only on the owner's instruction.
-4. **Other conditions of the beta:** [#126](https://github.com/ojiman/unagi-reader/issues/126) the entity gap in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#134](https://github.com/ojiman/unagi-reader/issues/134) the decision about feeds that exist only on `http://`, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign, notarize and distribute the beta (research only; nothing is signed or published without the owner's instruction).
+Everything that must be done before the beta is an issue in the milestone [Beta](https://github.com/ojiman/unagi-reader/milestone/1). It is closed to new issues; only the owner adds to it. **The beta is done when every issue in it is closed.**
 
-## Next: planned features
+1. **Decision 0050, in order** (the same files): [#139](https://github.com/ojiman/unagi-reader/issues/139) the layout button and the ✕, then [#140](https://github.com/ojiman/unagi-reader/issues/140) `Esc` and `j` / `k`, then [#141](https://github.com/ojiman/unagi-reader/issues/141) the wider note.
+2. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
+3. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification (now in English, so the approved text is the final text).
+4. **Other conditions:** [#126](https://github.com/ojiman/unagi-reader/issues/126) XML entities in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#134](https://github.com/ojiman/unagi-reader/issues/134) feeds only on `http://`, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign and distribute (research only).
 
-Features the owner has decided to build, in the order the owner gave. They are not conditions of the beta. A feature that touches no screen can start beside the beta work; one that touches `ReaderView.swift` waits for its turn (see "Working in parallel").
+## Next
 
-1. **Keyword filter for the article list** ([#129](https://github.com/ojiman/unagi-reader/issues/129)). The band of the middle column is ready for its icon (decision 0048). It waits for the owner's answers to the questions in the issue.
-2. **Translation** (the design is merged and approved: [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md)). Three pull requests, in order, each merged before the next: [#152](https://github.com/ojiman/unagi-reader/issues/152) T1 the core (no screen), [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu.
-3. **OPML export** ([#130](https://github.com/ojiman/unagi-reader/issues/130)). No screen of its own; it can be done at any time.
-4. **UI smoke tests in CI** ([#158](https://github.com/ojiman/unagi-reader/issues/158)). So that the owner is not the only one who checks the screens. No screen of its own; it can be done at any time.
-5. **The specification in English** ([#157](https://github.com/ojiman/unagi-reader/issues/157)). One section per pull request; no rule changes.
+**First, the checks that let an agent verify its own work.** Today the owner is the only one who can check the screens, and the list of unverified items keeps growing. These touch no screen and can run beside the beta work:
 
-## Working in parallel
+1. [#133](https://github.com/ojiman/unagi-reader/issues/133) UI test runs that end without a result line.
+2. [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI.
+3. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
 
-The label on an issue says what it can run beside; there is no hand-kept list.
+**Then the planned features, in the owner's order.** A feature that touches `ReaderView.swift` waits for its turn (label `area:reader-view`).
 
-- [`area:no-screen`](https://github.com/ojiman/unagi-reader/issues?q=is%3Aopen+label%3Aarea%3Ano-screen): touches no screen; can run beside anything.
-- [`area:reader-view`](https://github.com/ojiman/unagi-reader/issues?q=is%3Aopen+label%3Aarea%3Areader-view): touches `ReaderView.swift` and the window's long modifier chain; **one at a time**. This includes the steps of decision 0050.
+1. Keyword filter for the article list ([#129](https://github.com/ojiman/unagi-reader/issues/129)); waits for the owner's answers in the issue.
+2. Translation: [design](superpowers/plans/2026-10-12-translation-design.md); [#152](https://github.com/ojiman/unagi-reader/issues/152) T1 the core, [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu, in this order.
+3. OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)), at any time.
 
-## Candidates (ideas: no order, no issue)
+## Candidates
 
-A candidate is an idea. It has no order and no issue. When the owner decides to build it, it moves to "Next" and gets an issue (Problem, Acceptance Criteria, Constraints, Out of scope). When it is dropped, it moves to "Not planned". A candidate is never a requirement: the specification lists only what V1 is and is not.
+Ideas: no order, no issue. When the owner decides to build one, it moves to Next with an issue; when it is dropped, to Not planned.
 
-- **Reading size.** One shared size in Appearance (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) and View-menu commands. A probe showed that a separate update path keeps the top visible line in place across 36 synthetic cases, and that the update time grows with the article (about 10 to 20 ms at 7,800 characters, about 0.2 to 0.35 s at 156,000). The probe code is in Git history (PR #28). Open: a time budget (the proposal: finish within about 100 ms up to about 50,000 characters, above that apply once after the key is released), and how it feels on the device.
-- **Note editor size.** The same scale for the note editor. Needs a real Japanese input check: the update waits while text is being composed.
-- **A summary as an insertion into the note**, redone to Apple's Human Interface Guidelines (decision 0049 removed the old one; a new decision is needed to bring it back).
-- **A draft helper from an AI outside the Mac** (bring your own key); needs a new decision.
-- **A language setting and a time zone setting** (a language setting is needed before the public release).
-- **More styling in the note editor:** tables, check lists, a preview.
-- **More than one note, and note folders, search and tags** (decision 0049 chose one note).
-- **Passing only a part of the note to an AI**, system sharing services, a view of past days, copying the URL.
+- Reading size: one size for the article in Appearance (14 / 16 / 18 / 20 pt) and View-menu commands. A probe (PR #28) kept the top line in place; open: the time budget for long articles and the feel.
+- The same size scale for the note editor (needs a real Japanese input check).
+- A summary inserted into the note, redone to Apple's Human Interface Guidelines (needs a new decision; 0049 removed the old one).
+- A draft helper from an AI outside the Mac, with the person's own key (needs a new decision).
+- A language setting and a time zone setting (a language setting is needed before a public release).
+- More styling in the note editor: tables, check lists, a preview.
+- More than one note; note folders, search and tags (0049 chose one note).
+- Passing part of the note to an AI; system sharing services; a view of past days; copying the URL.
 
 ## Not planned
 
-Goals and learning plans; AI suggestions of notes; AI editing of the note; sync and accounts (Backend, accounts and sync start again from the product decision only if they become necessary); a settings framework; key remapping.
+Goals and learning plans; AI suggestions of notes; AI editing of the note; sync and accounts; a settings framework; key remapping.
 
 ## Before 1.0
 
-[#138](https://github.com/ojiman/unagi-reader/issues/138) a second prune pass over the verification records, the decision records and the user guide, run as an audit; the owner approves what to cut.
+The conditions in [specification 7.1](specification.md). A prune of the documents before the release (the second pass was done on 2026-10-14).
 
-## Done (history)
+## Done
 
-- **V1 simplification** ([decision 0019](decisions/0019-v1-simplification-notes.md)): stages S1 to S5 (notes replace themes, the summary and the Claude review, light styling of the editor). Parts of it were removed later by decision 0049 (the summary, the send to a note, the hand-off to Claude, the list of notes). The rename to Unagi Reader ([decision 0023](decisions/0023-rename-to-unagi-reader.md)) is done.
-- **Decision 0049** (one note, no AI of its own), steps 1 to 4: [#115](https://github.com/ojiman/unagi-reader/pull/115) the hand-off to Claude removed (「Markdownをコピー」 stays), [#116](https://github.com/ojiman/unagi-reader/pull/116) the summary and the send to a note removed, [#118](https://github.com/ojiman/unagi-reader/pull/118) one note, [#119](https://github.com/ojiman/unagi-reader/pull/119) the new layout (`n`, the move of about 0.3 s, 「一覧」), with fixes in [#122](https://github.com/ojiman/unagi-reader/pull/122).
-- **Layout and motion** (decisions 0044, 0046 to 0048): the original page slides out, the sidebar folds, the ✕, the title below the band ([#106](https://github.com/ojiman/unagi-reader/pull/106), [#111](https://github.com/ojiman/unagi-reader/pull/111), [#112](https://github.com/ojiman/unagi-reader/pull/112), [#113](https://github.com/ojiman/unagi-reader/pull/113)).
-- **Subscriptions** (decisions 0036 to 0041): the address is checked as it is typed, the folder in the add sheet, the feed found from a site address, `http://` checked as `https://`, OPML import, rename in the row ([#93](https://github.com/ojiman/unagi-reader/pull/93) to [#98](https://github.com/ojiman/unagi-reader/pull/98), [#100](https://github.com/ojiman/unagi-reader/pull/100)).
-- **Name and icon** (decision 0051): [#121](https://github.com/ojiman/unagi-reader/pull/121).
+- V1 simplification (decision 0019), stages S1 to S5; parts later removed by decision 0049. Rename to Unagi Reader (0023).
+- One note, no AI of its own (decision 0049): [#115](https://github.com/ojiman/unagi-reader/pull/115), [#116](https://github.com/ojiman/unagi-reader/pull/116), [#118](https://github.com/ojiman/unagi-reader/pull/118), [#119](https://github.com/ojiman/unagi-reader/pull/119), [#122](https://github.com/ojiman/unagi-reader/pull/122).
+- Layout and motion (0044, 0046 to 0048), subscriptions (0036 to 0041, 0043), name and icon (0051).
+- Documents in English and pruned; budgets for no waiting (2026-10-14).

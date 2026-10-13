@@ -1,371 +1,364 @@
-# Unagi Reader 製品要求仕様書（PRD）
+# Unagi Reader specification (V1)
 
-更新日: 2026-10-13
+What V1 is and is not, as the person sees it. Why the product exists is in the [vision](vision.md); how it is built is in the [architecture](architecture.md); why each rule is so is in the [decision records](decisions/README.md). How to write this file: [spec-style.md](spec-style.md). What is not written here is not a requirement.
 
-本書はV1の製品要件を定める。Dogfooding改訂仕様は[PR #6](https://github.com/ojiman/unagi-reader/pull/6)、実装計画は[PR #7](https://github.com/ojiman/unagi-reader/pull/7)でPdM承認済み。以後の変更は対象PRの明示的な承認またはマージで承認する。**仕様・計画の承認と、実機での最終製品受入は別であり、後者は未完了。**
+- **Approval.** The owner approves this text as a whole in #144. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
+- **Status marks.** A rule that is not built yet ends with `[not built #issue]`. A rule with no mark is built.
 
-**方向の変更（[決定0019](decisions/0019-v1-simplification-notes.md)・[決定0049](decisions/0049-one-note-and-no-ai-of-its-own.md)）**: 「テーマ」を**ノート**（Markdownのメモ帳）に改め（0019）、さらに、ノートは**アプリに1つだけ**にして、ノートの管理・要約の送信・Claudeへの依頼・アプリ自前のAIをやめた（0049）。記事を読みながら、`n`で横にノートを開いて書く。AIは、システムのWriting Toolsと、「Markdownをコピー」で他のAIへ貼り付けることだけである。**本書は、決定0049に合わせた目標仕様で、コードは、決定0049の作業順の小さなPRで追いつく（それまでは古い）。** 旧仕様の来歴は決定0008（履歴のみ）・0013（履歴のみ）・0018（履歴のみ）にある。実機受入と最終PdM判断は継続中。
+## 1. Purpose and scope
 
-技術設計は[Architecture](architecture.md)、決定の理由は[決定記録](decisions/README.md)、実測と未確認事項は検証記録（Git履歴）を参照する。過去の実装計画・検証結果を現行の仕様や合格証拠として流用しない。
+- The value, the user and the questions to ask when in doubt are in the [vision](vision.md): read → note → understand, in one app, with no waiting.
+- The reading baseline is Reeder Classic 5.5.1: a smooth three-column reader, a calm dark look, Vim-style keys.
+- V1 runs on the person's own Mac. No backend, no account, no sync.
+- A new library starts empty; there is no migration from the prototype ([decision 0001](decisions/0001-fresh-library-no-prototype-migration.md)).
+- Data between beta versions is not guaranteed; saves and restarts within one version are. From 1.0, data is kept across updates (7.1). If the library cannot be opened, the app shows an error and never deletes or recreates it (how SwiftData behaves with an incompatible store is not verified). Beta release notes state this limit ([decision 0003](decisions/0003-beta-data-compatibility.md)).
 
-The app bundle is named `Unagi Reader.app`, matching the name shown under its icon. The icon is orange with a charcoal U-shaped eel; macOS applies the rounded corners ([decision 0051](decisions/0051-app-name-and-eel-icon.md)).
+## 2. Promises
 
-## 1. 目的と対象利用者
+- The screen and the keys stay smooth; focus, the reading position, Japanese input and the system's accessibility are kept.
+- Whatever body text can be had is shown readably. When none can be had, the RSS summary and a link to the original page keep the reading going. The app says how much text it has (coverage, 3.0) and never promises the full text.
+- Read is history, Star is "come back to chew on this", and the note is the one place for the person's own words. They are independent.
+- Article text within the retention period and the note can be read offline. Nothing the person wrote is deleted by the app.
+- The app has no AI of its own (section 5).
 
-**提供価値と対象利用者**は[ビジョン](vision.md)（英語。オーナーの言葉）に固定してある。要約: 量産される記事の中から本当に重要な記事を見つけ、自分の価値に変える。対象は2026年のITエンジニア。読む・メモする・理解するのループ（AIへの相談は、システムのWriting Toolsと、ノートのコピーで。決定0049）を、1つのアプリの中で、待たされない体験として提供し、データは自分のMacに残る。使い心地は価値の一部であり、機能を足すより軽さを守る。Reeder Classic 5.5.1の滑らかな3カラム、落ち着いたダーク表示、Vim風のキーボード操作を読書体験の基準とする。機能の追加や設計に迷ったときは、ビジョンの「迷ったときの問い」に照らす。
+### 2.1 No waiting: budgets
 
-**ループ**: 読む（サイドバー・一覧・記事の3カラムと、キー操作）→ 書く（記事を見ながら、`n`で横に開いた1つのノートに、自分の言葉で書く）→ 理解する（自分の言葉のノートが残る）。AIが要るときは、システムのWriting Toolsを使うか、ノートをコピーして好きなAIへ貼り付ける。アプリは自前のAIを持たず、AIを使わなくてもすべての操作ができる。
+The vision promises that reading and typing never wait. These are the budgets a change must not break. They are targets: none is measured on the current build yet. `[not measured #164]`
 
-V1は本人のMacで使う。Backend、アカウント、複数端末同期は持たない。新規ライブラリは空で開始し、プロトタイプからのデータ移行は対象外（[決定0001](decisions/0001-fresh-library-no-prototype-migration.md)）。
-
-ベータ間のデータ互換は保証しない。同じ版での保存・再起動による保持は維持し、1.0以降は更新・モデル変更をまたぐ保持を保証する。ライブラリの初期化がエラーを返した場合は起動エラーを示し、自動削除・作り直しをしない。非互換DBのSwiftData上の挙動は未検証。ベータ配布時は互換性の制約をリリースノートに明記する（[決定0003](decisions/0003-beta-data-compatibility.md)）。
-
-## 2. 製品の約束
-
-- 滑らかな画面（サイドバー・一覧・記事、開いたときだけ横に加わるノート）とキーボード操作を提供し、フォーカス・読書位置・日本語入力・システムのアクセシビリティを保つ。
-- 取得できる本文を読みやすく表示し、取得できないときもRSS要約と元ページへのリンクで読書を続けられる。全文完全性は保証せず、入力カバー範囲を示す。
-- 既読は閲覧履歴、Starは「あとで咀嚼したい」の印、ノートは自分の言葉で書く1つの場所として区別する。ノートは、1つのMarkdownの文書だけを持つ。
-- 保持期間内の記事内容と、ノートはオフラインで読める。本人が書いた内容は自動削除しない。
-- アプリは自前のAIを持たない。ノートを書くときは、システムのWriting Toolsが使える（使えるかどうかはMacの設定による）。ノートは、ボタン1つで、そのままコピーして、どのAIへも貼り付けられる。AIが使えなくても、すべてできる。
-
-## 3. V1の読書と理解
-
-### 3.0 用語
-
-この仕様書、ユーザーガイド、決定記録、Issueで、次の言葉を同じ意味で使う。表の「コードの名前」は、その言葉に当たるコードの場所で、仕様からコードへ、迷わずに行くための手がかりである。領域（サイドバー・一覧・記事・元ページ・ノート）の用語は、3.1.1に定める。
-
-**購読と整理**
-
-| 用語 | 意味 | コードの名前 |
+| ID | Budget | How it is measured |
 |---|---|---|
-| 購読 | 1つのフィードを購読していること。サイドバーの1行 | `Feed` |
-| 購読元 | サイドバーの区画の名前。一覧の記事では、その記事が来た購読の名前 | `Feed.title` |
-| フィード | 購読先のRSS 1.0・RSS 2.0・Atomの配信。アドレスは`Feed.sourceURL` | `FeedParser`、`ParsedFeed` |
-| フォルダ | 購読を入れる、1階層のまとまり。名前だけで存在し、最後の購読が外れると消える | `Feed.folder` |
-| 未分類 | フォルダに入っていない購読。フォルダの名前としては使えない | `Feed.folder`が空、`FolderPicker` |
-| 対象 | 一覧に出す範囲。すべての記事・未読・Star・フォルダ・購読のどれか | `ReaderWorkspaceScope` |
+| W1 | `j` / `k` to the start of the next article's display: 95th percentile ≤ 100 ms, maximum ≤ 200 ms | Release build, `--performance-output <file>` (`selectionMilliseconds`), the synthetic library of `BenchmarkFixtureTests` (100 subscriptions, 10,000 articles). An older build measured about 40 ms at the 95th percentile (PR #14) |
+| W2 | No main-thread stall over 100 ms while reading with keys, while typing in the note, or while a refresh runs | The same run: `schedulingGapsOver100ms` is empty |
+| W3 | Launch to a list with articles: ≤ 1 s with the same library | Not instrumented yet |
 
-**記事と読書**
+## 3. Reading and the note
 
-| 用語 | 意味 | コードの名前 |
+### 3.0 Terms
+
+These words mean the same thing in this specification, the user guide, the decision records and the issues. "Code" is where the term lives in the code. The areas of the screen are in 3.1.1.
+
+**Subscriptions**
+
+| Term | Meaning | Code |
 |---|---|---|
-| 記事 | フィードの1項目 | `Article` |
-| 本文 | 記事の読む文章。フィードが提供したもの、または「全文を取得」で抽出したもの | `ContentSnapshot`、`ArticleContent` |
-| RSS要約 | フィードが記事に付けた短い説明 | `Article.summary` |
-| カバー範囲 | 本文がどこまで取れたかの区別。「フィード提供本文」「抽出本文 · 全文保証なし」「RSS要約のみ」「本文は利用できません」 | `ContentCoverage` |
-| 全文取得 | ボタン「全文を取得」（取得済みなら「本文を再取得」）。元のページから本文を抽出する。押したときだけ行う | `ArticleLoadingController`、`ArticleExtractor` |
-| 既読・未読 | 本文またはRSS要約が記事の領域に実際に表示されたとき、初回既読日時を記録して既読になる。記録がなければ未読 | `Article.firstReadAt`、`ReaderStore.markDisplayed` |
-| Star | 記事に付ける「あとで咀嚼したい」の印（3.2） | `Article.starredAt` |
-| 保持期間 | 本文・RSS要約を残す日数（7・30・90・365日） | `RetentionPolicy`、`ReaderSettings` |
-| 期限切れ | 保持期間を過ぎた本文・RSS要約。自動で削除し、Star・タイトル・URLは残す | `Article.contentDeletedAt`、`ReaderStore.purgeExpired` |
+| subscription (購読) | One feed the person follows; one row in the sidebar | `Feed` |
+| source name (購読元) | The name of a subscription, shown in the sidebar and on each article in the list. 「購読元」 is also the sidebar section's heading | `Feed.title` |
+| feed (フィード) | An RSS 1.0, RSS 2.0 or Atom document; its address is `Feed.sourceURL` | `FeedParser`, `ParsedFeed` |
+| folder (フォルダ) | A one-level group of subscriptions. It exists only by name and disappears with its last subscription | `Feed.folder` |
+| 未分類 (unfiled) | Subscriptions in no folder. Not usable as a folder name | empty `Feed.folder`, `FolderPicker` |
+| scope (対象) | What the list shows: all articles, unread, Star, a folder or one subscription | `ReaderWorkspaceScope` |
 
-**取得と追加**
+**Articles and reading**
 
-| 用語 | 意味 | コードの名前 |
+| Term | Meaning | Code |
 |---|---|---|
-| 更新 | フィードを取り直して、新しい記事を入れること。手動、起動・復帰・30分ごと | `FeedRefreshController` |
-| 追加の画面 | URLを入れて購読を追加する画面 | `SubscriptionSheet` |
-| 確認 | 入力中のURLを取得して読み、追加できるかを調べること | `FeedChecker`、`FeedCheckRequest` |
-| フィードの発見 | サイトのURLから、ページが示すフィードを探すこと | `FeedDiscovery` |
-| OPML | 購読の一覧を運ぶファイルの形式。取り込みだけがある（書き出しは#130） | `OPMLParser`、`OPMLImporter`、`OPMLImportFlow` |
+| article (記事) | One item of a feed | `Article` |
+| body (本文) | The text to read: what the feed provided, or what 「全文を取得」 extracted | `ContentSnapshot`, `ArticleContent` |
+| RSS summary (RSS要約) | The short description the feed gives an article | `Article.summary` |
+| coverage (カバー範囲) | How much text the app has: 「フィード提供本文」, 「抽出本文 · 全文保証なし」, 「RSS要約のみ」, 「本文は利用できません」 | `ContentCoverage` |
+| full-text fetch | The button 「全文を取得」 (「本文を再取得」 once fetched): extracts the body from the original page, only when pressed | `ArticleLoadingController`, `ArticleExtractor` |
+| read / unread (既読・未読) | An article becomes read, and its first read time is saved, when its body or RSS summary is actually shown in the article area | `Article.firstReadAt`, `ReaderStore.markDisplayed` |
+| Star | The mark "come back to chew on this" (3.2) | `Article.starredAt` |
+| retention period (保持期間) | Days the body and RSS summary are kept: 7, 30, 90 or 365 | `RetentionPolicy`, `ReaderSettings` |
+| expired (期限切れ) | A body or RSS summary past the period. It is deleted; the Star, title and URL stay | `Article.contentDeletedAt`, `ReaderStore.purgeExpired` |
 
-**ノートと画面の部品**
+**Fetching and adding**
 
-| 用語 | 意味 | コードの名前 |
+| Term | Meaning | Code |
 |---|---|---|
-| ノート | アプリに1つだけのMarkdownのメモ（3.3） | `Note` |
-| Markdownをコピー | ノートの本文を、そのままペーストボードへ入れる操作（3.3） | `NotePanel`、`ReaderView.copyNote` |
-| 一覧の題 | 一覧の上の、対象の名前と件数のブロック（3.1.4） | `ListHeader` |
-| ✕（「×」） | 右の列の左上のボタン。元ページを閉じる。ノートを閉じる（#139） | `OriginalPageView` |
-| 設定 | 設定のウインドウ。外観と保持期間 | `ReaderSettingsView` |
+| refresh (更新) | Fetching the feeds again for new articles: by hand, at launch, on return, every 30 minutes | `FeedRefreshController` |
+| add sheet | The sheet that adds a subscription from a URL | `SubscriptionSheet` |
+| check (確認) | Fetching and parsing the URL being typed to see if it can be added | `FeedChecker`, `FeedCheckRequest` |
+| feed discovery | Finding the feed a site's page announces | `FeedDiscovery` |
+| OPML | The file format that carries a list of subscriptions. Import only (export: #130) | `OPMLParser`, `OPMLImporter`, `OPMLImportFlow` |
 
-**言葉の使い分け**
+**The note and screen parts**
 
-- 「元ページ」を使う。「原文」は使わない。
-- 「一覧」を使う。「リスト」は、リスト形式の文（Markdownのリスト）にだけ使う。
-- 「購読」は1件の購読、「購読元」は区画の名前と、記事が来た購読の名前、とする。
-- 画面の表示名は、そのまま引用する（アプリの表示は日本語）。
-
-### 3.1 画面の構成と読書操作
-
-画面は**4つの領域**でできている。読む画面は、そのうち3つ（サイドバー・一覧・記事）を並べた3カラムで、4つ目の**ノート**は、開いたときだけ記事の右に加わる。領域がどう並び、どう入れ替わるかを「表示」と呼び、4つある（3.1.2）。規則の書き方は[docs/spec-style.md](spec-style.md)に従う。末尾の印は、コードの現状を示す: `[実装済み]`、`[未実装 #番号]`（Issueで追跡する）。
-
-#### 3.1.1 領域と用語
-
-| 領域 | コード | 役割 |
+| Term | Meaning | Code |
 |---|---|---|
-| サイドバー | `ReaderView.sidebar`、`SidebarRow` | 読む対象（Feeds・フォルダ・購読元）を選ぶ |
-| 一覧 | `NativeArticleList`、`ListHeader` | 選んだ対象の記事の一覧 |
-| 記事 | `ArticleDetailView`、`NativeArticleText` | 記事の本文（RSS表示） |
-| 元ページ | `OriginalPageView` | 記事の領域に代わって、アプリ内ブラウザで元のページを見せる（以前の文書の「原文」と同じもの） |
-| ノート | `ReaderView.notePanel`（inspector） | 1つだけのMarkdownのメモ（3.3） |
+| note (ノート) | The app's one Markdown note (3.3) | `Note` |
+| 「Markdownをコピー」 (Copy Markdown) | Puts the note's text, unchanged, on the pasteboard (3.3) | `NotePanel`, `ReaderView.copyNote` |
+| list title | The scope's name and count above the list (3.1.4) | `ListHeader` |
+| ✕ | The button at the top left of the right column. It closes the original page, and the note (#139) | `OriginalPageView` |
+| Settings (設定) | The settings window: appearance and retention | `ReaderSettingsView` |
 
-#### 3.1.2 4つの表示
+**Word use**
 
-| 表示 | 見える領域 | 状態 |
+- Say 「元ページ」 (original page), never 「原文」.
+- Say 「一覧」 (list) for the article list; 「リスト」 only for a Markdown list.
+- 「購読」 is one subscription; 「購読元」 is the section heading and the name of the subscription an article came from.
+- Quote screen labels exactly; the app's labels are Japanese.
+
+### 3.1 The screen and reading
+
+The screen has **four areas**. Reading shows three of them side by side (sidebar, list, article); the fourth, the note, joins on the right of the article only while it is open. How the areas are arranged is a **layout**; there are four (3.1.2).
+
+#### 3.1.1 Areas
+
+| Area | Code | Role |
 |---|---|---|
-| 通常 | サイドバー・一覧・記事 | `[実装済み]` |
-| 元ページ | 一覧・元ページ。サイドバーは畳まれる。元ページは、記事の領域とサイドバーを合わせた幅を使う | `[実装済み]` |
-| ノート（記事の隣） | 記事・ノート。サイドバーと一覧は畳まれる | `[実装済み]` |
-| ノート（一覧つき） | 一覧・記事・ノート。サイドバーは畳まれる | `[実装済み。切り替えのボタンはいま「一覧」。「配置」ボタンへの置き換えは #139]` |
+| sidebar (サイドバー) | `ReaderView.sidebar`, `SidebarRow` | Choose what to read (Feeds, folders, subscriptions) |
+| list (一覧) | `NativeArticleList`, `ListHeader` | The articles of the chosen scope |
+| article (記事) | `ArticleDetailView`, `NativeArticleText` | The article's body (the RSS view) |
+| original page (元ページ) | `OriginalPageView` | The original web page in an in-app browser, in place of the article area |
+| note (ノート) | `ReaderView.notePanel` (inspector) | The one Markdown note (3.3) |
+
+#### 3.1.2 Four layouts
+
+| Layout | Areas shown | Status |
+|---|---|---|
+| normal | sidebar, list, article | |
+| original page | list, original page. The sidebar folds; the page uses the article's and the sidebar's width | |
+| note beside the article | article, note. The sidebar and the list fold | |
+| note with the list | list, article, note. The sidebar folds | The switch is the 「一覧」 button today; the layout button is `[not built #139]` |
 
 ```
-通常                 元ページ(v)          ノート(記事の隣)      ノート(一覧つき)
-┌────┬────┬──────┐  ┌────┬─────────┐  ┌─────────┬─────┐  ┌────┬───────┬─────┐
-│サイド│一覧│ 記事 │  │一覧│ 元ページ │  │  記事   │ノート│  │一覧│  記事  │ノート│
-│バー │    │      │  │    │         │  │         │     │  │    │       │     │
-└────┴────┴──────┘  └────┴─────────┘  └─────────┴─────┘  └────┴───────┴─────┘
-（幅は目安。サイドバーは、元ページとノートのときは畳まれて見えない）
+normal                original page (v)     note beside article   note with the list
+┌────┬────┬───────┐  ┌────┬─────────┐      ┌─────────┬─────┐     ┌────┬───────┬─────┐
+│side│list│article│  │list│original │      │ article │note │     │list│article│note │
+│bar │    │       │  │    │  page   │      │         │     │     │    │       │     │
+└────┴────┴───────┘  └────┴─────────┘      └─────────┴─────┘     └────┴───────┴─────┘
+(widths are rough; the sidebar is folded away in the original page and note layouts)
 ```
 
-#### 3.1.3 表示の切り替え
+#### 3.1.3 Changing the layout
 
-| 操作 | 結果 | 状態 |
+| Action | Result | Status |
 |---|---|---|
-| `v` | 通常 → 元ページ。サイドバーが畳まれ、元ページが右から入る。一覧は幅を保ったまま左端へ寄る | `[実装済み]` |
-| `Esc`・「×」・`j`/`k`・一覧クリック | 元ページ → 通常。元ページが右へすべり出て、サイドバーが戻る（閉じ方によらず）。`j`/`k`と一覧クリックでは、選んだ記事の読書表示が、元ページの下から現れる | `[実装済み]` |
-| `n`・`⌥⌘I`・ツールバーのノートのボタン | 通常 → ノート（記事の隣）。サイドバーと一覧が畳まれ、ノートが右から入る。`n`は、編集できる欄に入力していないときだけ。`n`はノートに何も書き込まない（要約・出典・見出しは入れない） | `[実装済み]` |
-| 同じ操作をもう一度 | ノートを閉じる。元の画面（対象・選択記事・読書位置）へ戻る（逆の動き） | `[実装済み]` |
-| 「配置」ボタン（ノートのボタンの隣） | ノート（記事の隣）⇔ノート（一覧つき）。ノートが閉じている間は押せない（ツールバーの高さを変えない）。選んだ記事・スクロール位置・ノートの文は変わらない。段階は2つだけで、3つ目以降は持たない。キーは付けない | `[未実装 #139]`（いまは「一覧」ボタンで同じ切り替え） |
-| `Esc`・ノートの「×」（右の列の左上。元ページの「×」と同じ場所） | ノートを閉じて、同じ記事の通常の表示へ戻る。一覧の選択はその記事。日本語の変換中は、変換の取り消しが先 | `[未実装 #139（×）、#140（Esc）]` |
-| `j`/`k`（フォーカスが記事か一覧） | ノートを開いたまま、次・前の記事へ移る。ノートのエディタにフォーカスがあるときは文字入力 | `[実装済み。規則のテストは #140]` |
-| `⌥⌘↑`/`⌥⌘↓`、ノートの上の矢印 | ノートを開いたまま、記事だけを次・前に替える | `[実装済み]` |
+| `v` | normal → original page. The sidebar folds, the page comes in from the right, the list keeps its width and moves to the left edge | |
+| `Esc`, the ✕, `j` / `k`, a click in the list | original page → normal. The page slides out to the right and the sidebar returns, whichever way it was closed. With `j` / `k` or a click, the chosen article's text appears from under the page | |
+| `n`, `⌥⌘I`, the note button in the toolbar | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
+| the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
+| the layout button (next to the note button) | note beside the article ⇄ note with the list. Disabled while the note is closed (the toolbar does not change height). The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | `[not built #139]` (today the 「一覧」 button does the same switch) |
+| `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | `[not built #139 (✕), #140 (Esc)]` |
+| `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | A test of this rule: `[not built #140]` |
+| `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
 
-- **動き。** 畳む・戻す・すべりは、約0.3秒の1つの動きで、システムの標準の分割ビューの動きを使う。ウィンドウの幅によらない。Reduce Motionでは動かさず、配置を一度に替える。（決定0044・0046・0049）
-- 選んだ記事とスクロール位置は、ノートの開閉と配置の切り替えで変わらない。
-- 元ページの上部の左の「×」は、`Esc`と同じ。
+- **Motion.** Folding, returning and sliding are one movement of about 0.3 s, the system's split view motion, whatever the window width. With Reduce Motion nothing moves; the layout changes at once (decisions 0044, 0046, 0049).
+- Opening or closing the note and switching its layout never change the chosen article or the scroll position.
 
-#### 3.1.4 領域ごとの規則
+#### 3.1.4 Rules per area
 
-**サイドバー**
+**Sidebar**
 
-- Feeds（すべての記事・未読・Star）と、購読元（フォルダ・購読元）から、対象を選ぶ。購読元の横にサイトアイコンを出す。購読元の区画は畳める。
-- 右上は右詰めで、購読追加・更新の順に置く。更新中は、更新ボタンの矢印そのものが回り（Reduce Motionでは動かさない）、ボタンは押せるまま（更新中の再実行は何もしない）。
-- 「購読元」の見出しの右端に、マウスを重ねたときだけ小さな＋（左上の＋と同じオレンジ）が出て、購読元を追加できる。見出しは固定され、項目が多くても届く。
-- Hide Sidebarとフォルダ整理ボタンは置かない。
-- 元ページとノートの表示のときは畳まれる（3.1.3）。
+- Choose the scope from Feeds (all articles, unread, Star) and 「購読元」 (folders and subscriptions). Each subscription shows its site icon. The 「購読元」 section can be collapsed.
+- At the top right, right-aligned: add subscription, then refresh. While a refresh runs, the refresh arrow itself turns (not with Reduce Motion) and the button stays enabled (pressing it again does nothing).
+- A small orange ＋ appears at the right end of the 「購読元」 heading on mouse-over and adds a subscription. The heading stays in place however long the list is.
+- No Hide Sidebar button and no folder-management button.
 
-**一覧**
+**List**
 
-- 一覧の上に、題と件数を、ウインドウの上の帯（窓のボタンの行）の下に置く（Reederと同じ。題の1行目は、右の列の「×」と同じ高さ。大きさは17pt。決定0048）。
-- 記事は、上段左に購読元、右に公開日時、下段にタイトル・要約・記事画像を並べる。見出しとFaviconで興味を判断するため、見出しを一番大きくし（14pt）、要約（11pt）と購読元・公開日時（10pt）は補足として小さくする。
-- 境界のドラッグで幅を広げられる。
-- 読む面（一覧・記事・ノート）は、同じ1色の暗い面にそろえ、ツールバーやノートの上部に別の灰色の帯と線を置かない（サイドバーだけが少し明るい）。
-- 色は控えめにする。アクセントは落ち着いたオレンジ1色で、未読の小さな点、購読追加・更新ボタン、ノートの箇条書きの記号にだけ使う（購読元の名前は色を付けず灰色）。選択行はシステムの青ではなく、静かな灰色にする。
-- 新しい記事が更新で届いたとき、一覧が先頭にあれば、新しい記事が上から滑り込み、既存の行が下へ押し出される（動きは1回の更新で最大20件まで。Reduce Motionでは動かさない）。先頭にないときは、読んでいる記事の位置を動かさない。手動更新も、起動・復帰・30分ごとの自動更新も同じ動きである。
-- 公開日時は、今日なら時刻、過去なら日付と時刻、現在の年以外なら年も示す。日時不明は「—」とし、受信日時で補わない。
-- 未読は、購読元名の落ち着いたアクセント色（オレンジの印は付けない）と明るい文字、既読は行全体を落ち着いた灰色にする。長い購読元名は末尾を「…」で省く。選択中は読みやすいコントラストを保つ。
+- The list title (scope name and count) sits below the window's top band, level with the ✕ of the right column, at 17 pt (as in Reeder; decision 0048).
+- A row: source name on the left and publication time on the right of the top line; title, summary and article image below. The title is the largest (14 pt); the summary (11 pt) and the source name and time (10 pt) are smaller, because the title and the favicon decide interest.
+- The column's edge can be dragged wider.
+- The reading surfaces (list, article, note) are one dark colour, with no separate grey bars or lines in the toolbar or above the note; only the sidebar is slightly lighter.
+- One calm orange accent, only for the unread mark, the add and refresh buttons and the note's list markers. The selected row is a quiet grey, not the system blue.
+- When a refresh brings new articles and the list is at the top, they slide in from the top and push the rows down (at most 20 per refresh; not with Reduce Motion). When the list is not at the top, the article being read does not move. Manual and automatic refreshes behave the same.
+- Publication time: the time for today, date and time for earlier days, the year too for other years. An unknown time is 「—」; the received time is never used instead.
+- Unread: the source name in the accent colour and brighter text. Read: the whole row a calm grey. A long source name ends in 「…」. The selected row keeps readable contrast.
 
-**記事**
+**Article**
 
-- 記事の見出しは26pt・semiboldとする。上部のボタンはStar・外部ブラウザ（globe）。外観の切替はSettingsのAppearance（システム／ライト／ダーク）に置く。
-- 記事を開いたときは、フィードが提供した本文（なければRSS要約）をそのまま出し、元ページの取得も本文の差し替えもしない（RSS優先）。詳しくは「v」（アプリ内の元ページ）か「b」（ブラウザ）で見る。
-- 「全文を取得」（取得済みなら「本文を再取得」）を押したときだけ、元のページから本文を抽出して出す。抽出は、短い断片が過半の（ページのメニューや数字ばかりの）結果を本文とせず、失敗時は今の本文を保って失敗を示す。全文取得に失敗しても、RSS要約と元ページへのリンクを示し、paywall・ログイン・robots制限などを回避しない。
-- RSS提供内容と抽出本文のリンク・引用構造を保持し、リンクはクリックして既定ブラウザへ開ける。引用は本文と区別し、本文カバー範囲は末尾に一度だけ控えめに示す。書式情報のない保存本文はテキストとして読める。
-- 次の記事は下から上、前の記事は上から下へ、短く素早く入る（一覧の順に合わせる）。読み込み完了で本文領域の高さを変えない。
-- 本文またはRSS要約が記事の領域に実表示された時点で、初回既読日時を記録する。一覧のスクロールと本文取得だけでは既読にしない。再受信・再表示でも初回日時を更新しない。
+- The title is 26 pt semibold. The buttons at the top: Star and the external browser (globe). Appearance (system / light / dark) is in Settings.
+- Opening an article shows the feed's body (or the RSS summary) as it is; it never fetches the original page or swaps the text (RSS first, decision 0033). For more, `v` (in the app) or `b` (the browser).
+- Only 「全文を取得」 (「本文を再取得」 once fetched) extracts the body from the original page. A result made mostly of short fragments (menus, numbers) is not taken as the body. On failure the current text stays and the failure is shown, with the RSS summary and the link to the original page. Paywalls, logins and robots rules are never bypassed.
+- Links and quotes of the feed's text and of the extracted text are kept. A link opens in the default browser. Quotes look different from the text. Coverage is shown once, quietly, at the end. A saved body without layout data is shown as plain text.
+- The next article comes in from below, the previous from above, short and quick (following the list order). The text area does not change height when loading ends.
+- An article becomes read when its body or RSS summary is actually shown in the article area. Scrolling the list or fetching the body does not mark it read. Receiving or showing it again does not change the first read time.
 
-**ノート**
+**Note**
 
-- アプリに1つだけのMarkdownのメモ。仕様は3.3。開閉と配置は3.1.3。ノートは、パネルの開閉・幅を復元する。
+- The rules are in 3.3. The width is kept across launches; whether the note is open is kept while the app runs.
 
-#### 3.1.5 キー操作
+#### 3.1.5 Keys
 
-| キー | 操作 |
+| Key | Action |
 |---|---|
-| `j` / `k` | 次／前記事 |
-| `s` | Starの付け外し |
-| `n` | ノートを開く／閉じる（ツールバーのボタン、`⌥⌘I`と同じ。編集できる欄に入力していないとき） |
-| `m` | 既読／未読切替 |
-| `b` | 元ページを既定の外部ブラウザで開く |
-| `v` | 元ページをアプリ内で開く |
-| `Esc` | 元ページまたはノートを閉じて、同じ記事の記憶した読書位置の元の画面へ戻る（日本語の変換中は、変換の取り消しが先。決定0050） |
+| `j` / `k` | Next / previous article |
+| `s` | Star on / off |
+| `n` | Open / close the note (as the toolbar button and `⌥⌘I`), when no editable field is being typed in |
+| `m` | Read / unread |
+| `b` | Open the original page in the default browser |
+| `v` | Open the original page in the app |
+| `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050). For the note: `[not built #140]` |
 
-- 元ページの中でも`j/k/s/n`を使える。
-- テキスト入力欄（ノートのエディタを含む）・IME変換・修飾キー付き操作では、文字入力と標準操作を優先する。
-- 主要操作はキーボードだけでも完結する。外部ブラウザ内の操作は対象外。
+- `j`, `k`, `s` and `n` also work in the original page.
+- In text fields (the note editor too), during input-method composition and with modifier keys, typing and the standard actions come first.
+- Everything important can be done with the keyboard alone. Actions inside the external browser are out of scope.
 
 ### 3.2 Star
 
-**Star**は、記事に付ける「あとで咀嚼したい」の印である。記事ごとに、付いている／いないの2つの状態があり、現在の状態と付与日時を保存する。
+A **Star** is the mark "come back to chew on this". An article has a Star or not; the app saves the state and when it was given.
 
-- キー`s`とツールバーのボタンは、同じ状態を変える（3.1.5）。
-- 付けても外しても、既読日時は変わらない。
-- 外すとStarの一覧から外れ、付け直すと新しい付与日時を使う。
-- 選択中の記事のStarを外しても、次に移動するまでは、表示と位置を保つ。
-- 記事の本文が期限切れになっても、Star・タイトル・URLは保持する（3.3）。
-- Starはノートとは独立している。Starを付けても外しても、ノートには何も起こらない。
-- 作らない: Starを整理する画面、Starから自動でノートを作る流れ（決定0019）。
+- `s` and the toolbar button change the same state.
+- Starring or unstarring never changes the read time.
+- Unstarring removes the article from the Star list; starring again uses a new time.
+- Unstarring the chosen article keeps it shown and in place until the person moves on.
+- When the body expires, the Star, title and URL stay.
+- A Star never does anything to the note.
+- Not built: a screen to organize Stars, a flow that makes notes from Stars (decision 0019).
 
-### 3.3 ノートと保持・削除
+### 3.3 The note, retention and deletion
 
-**ノート**は、アプリに**1つだけ**の、Markdownのテキスト文書である（[決定0049](decisions/0049-one-note-and-no-ai-of-its-own.md)）。この節は、ノートの中身と保存、記事の保持と削除を定める。ノートの開閉と配置は3.1.2と3.1.3に定める。
+The **note** is the app's **one** plain-text Markdown document ([decision 0049](decisions/0049-one-note-and-no-ai-of-its-own.md)). Opening and layout are in 3.1.2 and 3.1.3.
 
-**ノートの基本**
+**Basics**
 
-- 一覧・新規作成・名前・フォルダ・削除・削除の取り消しは無い。ゴール・タグ・フォルダ・検索・入れ子は持たない。
-- 入力のたびに保存し、次の起動でも、続きから書ける。
-- 入力した文字を整えず、そのまま保存する。保存の失敗を成功扱いにしない。IME変換中の入力を妨げない。
-- ノートの文章は、アプリのAIや他の操作が、本人の操作なしに書き込まない。ノートの開閉と配置を替えても、文は変わらない。
+- No list of notes, no new note, no name, no folders, no delete, no undo of a delete. No goals, tags, search or nesting.
+- Every change is saved; the next launch continues where the person stopped.
+- The text is saved exactly as typed. A failed save is never shown as saved. Input-method composition is never disturbed.
+- Nothing writes into the note without the person: not the app, not an AI, not opening, closing or a layout change.
 
-**エディタ**
+**Editor**
 
-- プレーンなMarkdownの文字を編集する。システムの文字サービス・元に戻す・日本語入力・Writing Tools（書き直し・校正・要約・要点・リスト・表など。システムがテキスト欄に出す。第5節）を使える。
-- パネルの幅は、境界のドラッグで変えられ、次の起動でも保ち、ドラッグでは畳めない。
-- 幅は、初めは640pt、広げられるのは1,280ptまで、最小は300pt。窓が狭いときは、記事の最小幅360ptと、3列のときは一覧の最小幅280ptを残す。以前の版で保存した幅は、この版の最初の起動で一度だけ捨てる。`[未実装 #141]`（いまは、初めが380pt、最大が640pt）
-- 表示だけの整形をする。保存される文字は、一切変わらない。
-  - `#`で始まる行（見出し。`#`は1〜6個で、後ろに空白か行末）を、太く大きくする。
-  - `-` `*` `+` または番号（`1.` `1)`）で始まる行（リスト。行頭の空白は8個まで）の記号に色を付け、折り返した行を文字の位置に揃える。
-  - Enterでリストを続けたり、引用符・ダッシュを置き換えたりしない。
-  - 日本語の変換中は整形せず、確定か取り消しの後に整える。
-- 貼り付けとドロップは、プレーンテキストだけを入れる。
-- 作らない（V1後）: 太字・斜体・コード・表・チェックリスト・プレビュー。
+- Plain Markdown text with the system's text services, undo, Japanese input and Writing Tools (5.1).
+- The panel's edge can be dragged; the width is kept across launches; dragging never folds the panel.
+- Width: 640 pt at first, up to 1,280 pt, at least 300 pt. In a narrow window it leaves 360 pt for the article, and 280 pt for the list in the three-column layout. A width saved by an earlier version is dropped once, at the first launch of this version. `[not built #141]` (today: 380 pt at first, 640 pt at most)
+- Display-only styling; the saved text never changes:
+  - A line that starts with one to six `#` and then a space or the line end is a heading: bold and larger.
+  - A line that starts with `-`, `*`, `+` or a number (`1.`, `1)`), after at most 8 spaces, is a list item: the marker is coloured and wrapped lines align with the text.
+  - Return does not continue a list; quotes and dashes are not replaced.
+  - Nothing is styled during Japanese composition; it is styled after the text is confirmed or cancelled.
+- Paste and drop insert plain text only.
+- Not in V1: bold, italic, code, tables, check lists, a preview.
 
-**Markdownをコピー**
+**「Markdownをコピー」 (Copy Markdown)**
 
-- ノートのパネルのヘッダーに「Markdownをコピー」がある。本文を、そのまま（文字を整えず）コピーする。
-- 本文が空または空白だけのときは、操作を無効にする。
-- コピーしたものを、本人が、好きなAI（Claude・Codex・Geminiなど）へ貼り付ける。アプリは、ほかのアプリを起動せず、ファイルを作らず、通信しない。
+- In the note panel's header. Copies the note's text exactly, as UTF-8 text on the system pasteboard, the end unchanged.
+- Disabled when the note is empty or only whitespace.
+- The app starts no other app, makes no file, uses no network and shows no confirmation.
 
-**保持と削除**
+**Retention and deletion**
 
-| 対象 | 保持 | 起算点・条件 |
+| What | Kept | Counted from |
 |---|---|---|
-| 記事の本文・RSS要約 | 初期30日。Settingsで7 / 30 / 90 / 365日から選ぶ | 未読は初回受信、既読は初回既読から。再受信・再表示で延長しない |
-| Star・タイトル・URL | 本文が期限切れになっても保持 | — |
-| ノートの全文 | 本人が文字を消すまで保持（記事の期限切れ・本文削除・購読解除でも） | — |
+| article body and RSS summary | 30 days by default; 7, 30, 90 or 365 in Settings | unread: first received; read: first read. Receiving or showing again does not extend it |
+| Star, title, URL | after the body expires too | — |
+| the note's text | until the person deletes the characters (also after an article expires, its body is deleted, or a subscription is removed) | — |
 
-- 期限を短くするとき、本文を一括で削除するときは、対象を確認する。
-- 期限切れの本文・要約は自動で削除し、削除した状態と、元ページへのリンクを残す。
-- ノートそのものを削除する機能は無い。ノートの文章を消すのは、本人が文字を消すときだけである。
+- Shortening the period and deleting all bodies at once ask the person to confirm what will go.
+- An expired body or summary is deleted; the article shows that it was, and keeps the link to the original page.
+- There is no way to delete the note itself.
 
-### 3.4 Faviconとサムネイル
+### 3.4 Favicons and images
 
-- 購読元のFaviconと、記事の画像を区別する。
-- 記事の画像は、RSS/Atomが提供するものを優先する。はてなブックマークでは、記事画像のメタデータを使う。
-- 一覧と記事の読書表示に、利用できる画像を示す。
-- 画像がない・取得に失敗した・オフラインのときも、読書を止めない。非同期で画像が届いても、行の高さ・選択・スクロール位置を変えない。
-- 再利用のためのキャッシュを持つが、ノートの保存の約束には含めない。
+- A subscription's favicon and an article's image are different things.
+- An article's image comes first from the RSS/Atom feed. For Hatena Bookmark, the article image metadata is used.
+- The list and the article show an image when there is one.
+- No image, a failed image or being offline never stops reading. A late image never changes a row height, the selection or the scroll position.
+- Images are cached for reuse; the cache is not part of what the app promises to keep.
 
-### 3.5 購読の追加と管理
+### 3.5 Adding and managing subscriptions
 
-**URLで追加する**
+**Adding from a URL**
 
-- 購読はRSS/Atom URLから追加する。追加の画面は、URL欄と「キャンセル」「追加」だけにする（決定0032）。
-- `http://`のアドレスは`https://`で確認し、購読するのもそのURLにする。ポート番号つきは打ったまま（決定0040）。`http://`でしか読めないフィードには対応しない。`https://`で読めなかったときは「HTTPSでは読み込めませんでした。HTTPには対応していません。」と示す（決定0053）。
-- サイトのURLでもよい。ページが`<link rel="alternate" type="application/rss+xml">`などで示すフィードを探し、最初の1件を使う。見つけたフィードのURLを画面に示し、購読するのはそのフィードのURL。保存済みの購読の更新では行わない（決定0038）。
-- URLは入力中に確認する（決定0036）。
-  - 入力が止まって約0.8秒後（貼り付けはすぐ）に取得して読み、欄の下の1行に「確認中…」・「✓ フィード名」・失敗の理由のどれかを示す。
-  - 「追加」は、フィードを読めたときだけ押せる（200であるだけでなく、RSS 1.0・RSS 2.0・Atomとして解析できたとき）。確認で取得したフィードをそのまま追加に使う。
-  - 入力中は、ホストが完成して見えないURL（例: `https://exa`、`https://example.c`）は送らない。Returnを押したときは、localhostのような名前も使う。
-  - すでに購読しているURLは「すでに購読しています」と示し、追加しない。
-  - 失敗の理由は、原因ごとの短い文で示す（404・読めない・サーバーのエラー・ネットワークなし・応答なし・サーバーが見つからない・安全な接続ができない・httpは使えない・大きすぎる・Webページでフィードではない・XMLの誤り）。XMLが禁じる制御文字だけが原因のときは、それを除いて読む。
-- XMLの直接入力と合成サンプルは、⌥を押しながら追加を開いたときだけ出る障害確認用である。
+- A subscription is added from an RSS or Atom URL. The add sheet has only the URL field, 「キャンセル」 and 「追加」 (decision 0032).
+- An `http://` address is checked, and subscribed, as `https://`. An address with a port number is used as typed (decision 0040). A feed that is only on `http://` is not supported: when the `https://` form cannot be loaded, the app shows 「HTTPSでは読み込めませんでした。HTTPには対応していません。」 (decision 0053).
+- A site's URL works too: the app finds the feeds the page announces (`<link rel="alternate" type="application/rss+xml">` and the like), uses the first, shows its URL, and subscribes to it. A saved subscription's refresh does not do this (decision 0038).
+- The URL is checked while it is typed (decision 0036):
+  - About 0.8 s after typing stops (at once after a paste), the app fetches and parses it and shows one line under the field: 「確認中…」, 「✓ <feed name>」 or why it failed.
+  - 「追加」 is enabled only when the feed could be read (parsed as RSS 1.0, RSS 2.0 or Atom, not only a 200 answer). The checked feed is the one added.
+  - While typing, a URL whose host does not look complete (`https://exa`, `https://example.c`) is not sent. Return sends names such as localhost too.
+  - A URL already subscribed shows 「すでに購読しています」 and is not added.
+  - A failure has a short sentence per cause: 404, unreadable, server error, no network, no answer, server not found, no secure connection, http not usable, too large, a web page and not a feed, an XML error. When the only problem is control characters that XML forbids, they are removed and the feed is read.
+- Direct XML input and the synthetic sample appear only when the sheet is opened with ⌥ held (for checking failures).
 
-**追加先のフォルダ**
+**The folder when adding**
 
-- フォルダ行にマウスを重ねたときの＋から開いたときは、そのフォルダに決まる。画面の見出しに「「Tech」に購読を追加」のように示す。
-- 「購読元」の見出しとツールバーの＋から開いたときは、フィードを読めた後に、フォルダの入力欄と候補（「フォルダへ移動…」と同じ部品）が現れる（フォルダが1つ以上あるときだけ）。何も選ばず貼り付けてReturnなら未分類に追加し（速い道を保つ）、名前を打てば最も近い候補が選ばれ、まだ無い名前は「作って追加」を選べる（決定0037）。
+- Opened from the ＋ that appears on a folder row, the sheet adds to that folder and says so in its heading, for example 「「Tech」に購読を追加」.
+- Opened from the 「購読元」 heading or the toolbar ＋, a folder field with candidates (the same part as 「フォルダへ移動…」) appears once the feed is read, when at least one folder exists. Paste and Return with nothing chosen adds to 未分類 (the fast path stays). Typing a name selects the closest candidate; a new name offers 「作って追加」 (decision 0037).
 
-**OPMLで取り込む**
+**Importing OPML**
 
-- ファイル ▸「OPMLを取り込む…」。ショートカットは付けない。
-- 購読は一度の保存ですぐ追加し、記事はあとから順に届く。フォルダは1階層で、深い階層は最上位のフォルダにまとめる。すでにある購読は追加も移動もしない。結果は短い文で示す（決定0041）。
+- File ▸ 「OPMLを取り込む…」. No shortcut.
+- Subscriptions are added at once in one save; articles arrive afterwards. Folders are one level: deeper levels go into the top folder. Existing subscriptions are neither added again nor moved. The result is one short sentence (decision 0041).
 
-**購読の管理**
+**Managing subscriptions**
 
-- 追加済み購読の右クリックで、更新・名前の変更（行の中でその場で）・フォルダへ移動・解除を操作する（決定0043）。
-- 購読を別のフォルダへ移すと、行がなめらかに新しい場所へ動き、移した先のフォルダが開く（Reduce Motionでは動かさない）。
-- フォルダへ移す方法は2つ。右クリックの「フォルダへ移動…」（入力欄つきの小さな選択画面。打つと既存のフォルダが絞り込まれ、まだ無い名前なら「作って移動」を選んで、入力と移動を同時にできる。↑↓・Return・Esc。「未分類」へも戻せる。フォルダは最初の購読を入れて作る）と、サイドバーでフォルダへのドラッグ&ドロップ。
-- フォルダの名前変更と記事の集約を提供し、複数購読に属する同じ記事・未読件数を重複計上しない。空フォルダ・入れ子は持たず、最後の購読が外れるとフォルダ表示も消える。
+- Right-click a subscription: refresh, rename (in the row itself), move to a folder, unsubscribe (decision 0043).
+- A subscription moved to another folder moves smoothly to its new place, and the folder opens (not with Reduce Motion).
+- Two ways to move to a folder: 「フォルダへ移動…」 in the menu (a small chooser with a field: typing filters the folders; a new name offers 「作って移動」; ↑ ↓, Return, Esc; 「未分類」 too; a folder is made by moving its first subscription into it), and drag and drop in the sidebar.
+- A folder can be renamed (a name that already exists joins the two folders) and shows the articles of all its subscriptions. An article in several subscriptions and its unread state are counted once. No empty folders and no nesting: a folder disappears with its last subscription.
 
-## 4. 製品判断の軸
+## 4. How to decide
 
-迷ったときは、[ビジョン](vision.md)の「迷ったときの問い」に照らす。そのうえで、次の順に優先する。
+Use the [vision](vision.md)'s questions first. Then, in this order:
 
-- **読書の連続性**（待たせない、位置を失わない）。
-- **開いたことと、関心の区別**（既読は閲覧履歴、Starは関心の印）。
-- **本人が選ぶ記録**（自動で貯めない）。
-- **入力範囲の正直な表示**（取れた範囲を、そのまま示す）。
+- **Reading never breaks:** no waiting, no lost position.
+- **Opening is not interest:** read is history; Star is interest.
+- **The person chooses what to keep:** nothing piles up on its own.
+- **Honest about the input:** show what was fetched, as it is.
 
-してはいけないこと:
+Never:
 
-- 取得の成功率を上げるために、制限を回避しない。
-- 欠けた本文を、推測で補わない。
-- 個人の読書履歴を、サーバーへ預けることを前提にしない。
+- Bypass a restriction to fetch more.
+- Fill a missing body by guessing.
+- Depend on a server holding the person's reading history.
 
-## 5. AIの使い方
+## 5. AI
 
-V1のアプリは、**自前のAI機能を持たない**（[決定0049](decisions/0049-one-note-and-no-ai-of-its-own.md)）。
+The app has **no AI of its own** ([decision 0049](decisions/0049-one-note-and-no-ai-of-its-own.md)). It never summarizes, suggests or writes into the note, never sends text to an outside service, and never uses the network for AI. Everything works without AI.
 
-- しない: AIによる要約・提案・ノートへの書き込み、外部サービスへの送信。
-- AIのために、アプリが自動で通信することも起こさない。
-- AIが使えなくても、すべての操作ができる。
+### 5.1 Writing Tools in the note
 
-### 5.1 ノートを書くとき: システムのWriting Tools
+- The note editor is a standard macOS text view, so the system shows **Writing Tools** (proofread, rewrite, tone, summary, key points, list, table, Compose and more) on a Mac with Apple Intelligence, for example from the right-click menu on selected text.
+- Writing Tools act only when the person selects text and chooses them. The app adds nothing and does not promise their quality.
+- On a Mac where they are not available, writing, editing and copying the note all still work.
+- To summarize an article, the person pastes its text into the note and uses Writing Tools.
 
-- ノートのエディタは、macOSの標準のテキスト欄なので、**Writing Tools**（校正・書き直し・口調の変更・要約・要点・リスト・表・Composeなど）を、システムが出す。Apple Intelligenceが使えるMacで、選んだ文字の右クリックなどから使える。
-- Writing Toolsは、本人が文字を選んで操作したときだけ働く、システムの機能である。アプリは何も足さず、結果の質も保証しない。
-- 使えない設定のMacでも、ノートの作成・編集・コピーのすべてができる。
-- 記事の文章を要約したいときは、本人が文字を選んでノートに貼り付け、Writing Toolsを使う。
+### 5.2 Giving the note to another AI
 
-### 5.2 ノートを他のAIへ渡す: Markdownをコピー
+- The person presses 「Markdownをコピー」 (3.3) and pastes the text into any AI (Claude, Codex, Gemini and so on). Text leaves the Mac only when the person pastes it.
 
-- 「Markdownをコピー」の動き（本文をそのままコピーする、空のときは無効）は、3.3に定める。
-- 本文は、システムのペーストボードへ、UTF-8の文字として、末尾も変えずに入る。
-- 本人が、Claude・Codex・Geminiなど、好きなAIへ貼り付けて渡す。端末の外へ出るのは、本人が貼り付けたときだけである。
-- アプリは、AIを起動せず、ファイルを作らず、通信せず、確認の画面も持たない。
+## 6. Limits and what V1 does not build
 
-## 6. 制約と対象外
+**Platform and policy**
 
-**動作環境と方針**
+- macOS 27.0 or later (the support floor). CI builds for 26.6 ([decision 0007](decisions/0007-support-floor-macos-27.md)).
+- The source is Apache-2.0. LICENSE and the third-party licenses, copyright notices and NOTICE are shipped. Feeds, articles, trademarks and service terms are not under the app's license.
+- Only code, the specification and synthetic samples and tests are published; never the person's subscriptions, history, articles, note or credentials. Check the diff and the history before publishing.
+- Publishing the source is a separate decision after product acceptance. The App Store and a signed release are not conditions of V1. Approving a policy is not permission to publish or distribute.
 
-- macOS 27.0以降（サポート下限）。CIのビルド下限は26.6のまま（[決定0007](decisions/0007-support-floor-macos-27.md)）。
-- ソースはApache-2.0。LICENSEと必要な第三者ライセンス・著作権表示・NOTICEを同梱する。記事・feed・商標・サービス規約には、Unagi Readerのライセンスを適用しない。
-- 公開するのは、コード・仕様・合成サンプル／テストだけ。本人の購読・履歴・取得記事・ノート・認証情報を含めず、公開の前に差分と履歴を確認する。
-- ソースの公開は、製品の受入のあとの、別の判断とする。App Storeでの公開と、署名した配布は、V1の受入条件ではない。方針の承認を、公開・配布の操作の許可とは扱わない。
-- エージェントによる開発の境界と検証は、[Architecture §4](architecture.md#4-aiエージェントによる開発)に定める。指示文だけで、OSの隔離が成立したとは扱わない。
+**Not built in V1**
 
-**対象外（V1では作らない）**
-
-| 分類 | 作らない | 根拠 |
+| Area | Not built | Why |
 |---|---|---|
-| 基盤 | Backend、アカウント、同期、サーバー側の巡回・AI処理、共有ノート、push通知 | [ビジョン](vision.md) |
-| 購読 | 入れ子のフォルダ、空のフォルダ | 3.5 |
-| ノート | 複数のノート、ノートのフォルダ・階層・タグ・検索・ゴール、時間軸（日次・週）のノート、システムの共有サービス（メッセージ・メールなど） | 決定0019・0049 |
-| 取得 | paywall、購読制、ログイン、captcha、robots制限の回避。全文完全性の保証 | 第4節 |
-| AI | アプリ自前のAI機能（要約・下書き支援など。必要になれば、新しい決定記録で）、アプリ内のBYOK/API生成、端末外のAI（Private Cloud Computeなど）、特定のAIアプリへの専用連携（「Markdownをコピー」だけを置く）、AIの自動送信・記録・事実性の保証 | 決定0049 |
-| 設定 | アプリ内の表示言語・タイムゾーンの設定 | — |
-| 旧データ | 旧プロトタイプのLikeと、その互換・移行（Starは、別の新しい関心の印） | 決定0001 |
+| Platform | backend, accounts, sync, server-side fetching or AI, shared notes, push notifications | [vision](vision.md) |
+| Subscriptions | nested folders, empty folders | 3.5 |
+| Note | more than one note; folders, levels, tags, search or goals for notes; daily or weekly notes; system sharing services | decisions 0019, 0049 |
+| Fetching | bypassing paywalls, subscriptions, logins, captchas or robots rules; a full-text guarantee | section 4 |
+| AI | an AI of the app's own (summary, draft help: a new decision is needed), keys or API calls in the app, AI off the Mac (Private Cloud Compute and the like), a dedicated link to one AI app (only 「Markdownをコピー」), sending or recording automatically, a guarantee of facts | decision 0049 |
+| Settings | an in-app language or time zone setting | — |
+| Old data | the prototype's Like and any migration of it (Star is a new mark) | decision 0001 |
 
-V1のあとで検討する候補と、作業の順序は、[ロードマップ](roadmap.md)で管理する。この仕様書に書かれていないものは、要件ではない。
+Ideas for after V1, and the order of the work, are in the [roadmap](roadmap.md).
 
-## 7. 観察可能なV1受入シナリオ
+## 7. V1 acceptance scenarios
 
-以下は合格条件であり、実行済み・合格済みの一覧ではない。仕様の詳細は第3・5節と合わせて確認する。「確認する場所」は、その条件を確かめられる場所で、実機でしか確かめられないものは、Issueの確認項目（#136、#145）に載せる。
+These are the conditions for passing, not a list of what has passed. "Where it is checked" names the place a condition can be checked; what only a real Mac can show is in the checklists of #136 and #145. A test that checks a scenario names its ID in a comment (`// PRD-02`), so `grep -rn "PRD-02" Tests` lists the tests of a scenario.
 
-| ID | 利用者シナリオ | 合格条件 | 確認する場所 |
+| ID | Scenario | Passes when | Where it is checked |
 |---|---|---|---|
-| PRD-01 | 購読を整理し、滑らかに読む | 4つの領域と4つの表示・外観・フォルダ／未読件数・キー操作・ノートの開閉が第3.1節どおり動く。本文取り違え・目立つ停止・スクロール飛びがなく、入力／IME・VoiceOver等を妨げない。PdMがReeder Classicと実機比較する | 実機（PdM。Reeder Classicとの比較）。一部はUIテスト |
-| PRD-02 | 未読一覧から記事を開く | 一覧スクロールでは未読。本文／RSS要約の実表示で初回既読日時を記録する | 単体テスト、合成データのアプリ |
-| PRD-03 | 全文取得に失敗した記事を読む | 読書を遮らず要約・カバー範囲・元ページへのリンクを示し、制限を回避しない | 単体テスト、合成データのアプリ |
-| PRD-04 | ノートに書く | 記事を読みながら`n`／ボタン／`⌥⌘I`でノートを開くと、`v`と同じ動きで、左が記事、右がノートになる。「配置」ボタンで、一覧も出した3列にできる。`j`/`k`はノートを開いたまま記事を移り、`Esc`・「×」で閉じると元の画面に戻る。AIなしで完結し、再起動・オフライン・購読解除・本文期限後も読める。日本語入力が妨げられない | UIテスト、実機（日本語入力・VoiceOver）。`[配置ボタンと×は未実装 #139、Escは未実装 #140]` |
-| PRD-05 | ノートを他のAIへ渡す | ノートのヘッダーの「Markdownをコピー」で、本文がそのままコピーされ、本人が好きなAIへ貼り付けられる。アプリは他のアプリを起動せず、ファイルを作らず、通信しない。空のノートでは無効 | 単体テスト、実機 |
-| PRD-06 | （欠番） | 決定0049で、アプリ自前の要約をやめた。番号は他の文書の参照のため残す | — |
-| PRD-07 | 最終デモをレビューする | PdM／本人が本表と製品範囲を実演確認し、明示的に承認する。それまでは製品受入としない | PdM |
-| PRD-08 | 保持・削除を設定する | 第3.3節の期限・確認・ノートの非自動削除が成立する。期限切れ本文を読める／AI入力に使えると誤認させない | 単体テスト |
-| PRD-09 | Starを読み返す | キーとボタンが同じ状態を変更し、Star一覧を移動できる。再起動・本文期限後もStar／タイトル／URLを保つ。Starとノートは独立している | 単体テスト、合成データのアプリ |
-| PRD-10 | （欠番） | 決定0049で、要約をノートへ送る操作をやめた。番号は他の文書の参照のため残す | — |
-| PRD-11 | 多くの記事を読み分ける | フォルダ操作・重複しない集約・購読アイコン／記事画像が成立し、画像到着・失敗・オフラインで行高・選択・位置を変えない | UIテスト、実機 |
-| PRD-12 | （欠番） | 決定0019で、「未整理のStar」とテーマの提案を削除した。番号は他の文書の参照のため残す | — |
-| PRD-13 | AIが使えないMac | Writing Toolsが使えない設定でも、ノートの作成・編集・コピーが完結し、アプリが通信を起こさない | 実機（Writing Toolsが使えない設定） |
-| PRD-14 | 購読をURLで追加する | 第3.5節どおり、入力が止まると確認が走り、読めたときだけ「追加」が押せる。サイトのURLからフィードが見つかる。`http://`は`https://`で確認され、読めなければHTTPに対応していないと示される。失敗は原因ごとの短い文で示される。すでにある購読は追加されない。フォルダの欄が、条件のときだけ出る | 単体テスト、合成データのアプリ、実機（日本語入力。#136） |
-| PRD-15 | OPMLで他のリーダーから引っ越す | ファイル ▸「OPMLを取り込む…」で、購読がすぐ並び、記事はあとから届く。フォルダは1階層にまとまり、すでにある購読は変わらない。結果が短い文で示される | 単体テスト、実機（メニュー、実際のOPML。#136） |
-| PRD-16 | 購読を管理する | 右クリックで、更新・名前の変更（行の中でその場で。選んだ行でReturnでも）・フォルダへ移動・解除ができる。フォルダへは、選択画面とドラッグ&ドロップで移せる | 単体テスト、実機（右クリック・Return・ドラッグ。#136） |
+| PRD-01 | Read smoothly, with subscriptions in order | The four areas, the four layouts, appearance, folders and unread counts, the keys and the note open and close as in 3.1. No wrong body, no visible stall, no scroll jump; input, input methods and VoiceOver are not disturbed. The budgets of 2.1 hold. The owner compares with Reeder Classic on a real Mac | real Mac (the owner, against Reeder Classic); parts in UI tests; 2.1 |
+| PRD-02 | Open an article from the unread list | Scrolling the list keeps articles unread. Showing the body or the RSS summary saves the first read time | unit tests, synthetic app |
+| PRD-03 | Read an article whose full-text fetch failed | Reading goes on; the summary, the coverage and the link to the original page are shown; no restriction is bypassed | unit tests, synthetic app |
+| PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver). `[not built #139 (layout button, ✕), #140 (Esc)]` |
+| PRD-05 | Give the note to another AI | 「Markdownをコピー」 copies the text exactly; the person pastes it into any AI. The app starts no app, makes no file, uses no network. Disabled for an empty note | unit tests, real Mac |
+| PRD-06 | (unused) | The app's own summary was removed by decision 0049; the number stays because other documents cite it | — |
+| PRD-07 | Review the final demo | The owner sees this table and the product scope demonstrated and approves them explicitly. Until then the product is not accepted | the owner |
+| PRD-08 | Set retention and deletion | The periods, the confirmations and "the note is never deleted automatically" of 3.3 hold. An expired body never looks readable | unit tests |
+| PRD-09 | Read Stars again | The key and the button change the same state; the Star list can be read in order. Star, title and URL survive a restart and the body's expiry. Star and note are independent | unit tests, synthetic app |
+| PRD-10 | (unused) | Sending a summary to a note was removed by decision 0049 | — |
+| PRD-11 | Read many articles | Folders, counts without duplicates, icons and article images work; a late, failed or offline image never changes the row height, the selection or the position | UI tests, real Mac |
+| PRD-12 | (unused) | Removed by decision 0019 (unsorted Stars, theme suggestions) | — |
+| PRD-13 | A Mac without AI | With Writing Tools unavailable, the note can be written, edited and copied, and the app uses no network for AI | real Mac (Writing Tools off) |
+| PRD-14 | Add a subscription from a URL | As in 3.5: the check runs when typing stops; 「追加」 only when the feed was read; a site URL finds its feed; `http://` is checked as `https://`, and a feed only on http says that http is not supported; each failure has its sentence; an existing subscription is not added; the folder field appears only when it should | unit tests, synthetic app, real Mac (Japanese input, #136) |
+| PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
+| PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 
-### 7.1 1.0の出荷条件
+### 7.1 Conditions to ship 1.0
 
-- 保存スキーマを`VersionedSchema`として固定する。
-- 1.0リリースタグを起点とする合成ストアの保持検証をCIへ必須で組み込む。購読・記事・既読・Star・ノートを新版で開き、再openして保持を確認する。未実行・スキップを成功扱いにせず、以後のモデル変更でも継続する。
-- Bundle ID、保存先、署名・sandbox構成を確定して保存・再起動・更新を検証する。ベータDBを開けるか確認し、開けない場合の退避案内を用意する。
-- 配布物のversion・build番号・署名・案内・ZIP・hashの作成を再現可能にし、CIのad hoc開発ビルドとの違いを示す。
+- The store schema is frozen as a `VersionedSchema`.
+- CI runs a required check from the 1.0 release tag: a synthetic store with subscriptions, articles, read times, Stars and the note is opened by the new version and reopened, and nothing is lost. A skipped or not-run check is never a pass. It stays for every later model change.
+- The Bundle ID, the store location, signing and the sandbox are fixed, and saving, restarting and updating are checked with them. Whether a beta store opens is checked; if it does not, the person is told how to keep it.
+- The version and build numbers, the signature, the notes, the ZIP and its hash can be made again from the repository, and the release says how it differs from CI's ad hoc build.
