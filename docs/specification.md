@@ -30,19 +30,75 @@ V1は本人のMacで使う。Backend、アカウント、複数端末同期は�
 
 ## 3. V1の読書と理解
 
+### 3.0 用語
+
+この仕様書、ユーザーガイド、決定記録、Issueで、次の言葉を同じ意味で使う。表の「コードの名前」は、その言葉に当たるコードの場所で、仕様からコードへ、迷わずに行くための手がかりである。領域（サイドバー・一覧・記事・元ページ・ノート）の用語は、3.1.1に定める。
+
+**購読と整理**
+
+| 用語 | 意味 | コードの名前 |
+|---|---|---|
+| 購読 | 1つのフィードを購読していること。サイドバーの1行 | `Feed` |
+| 購読元 | サイドバーの区画の名前。一覧の記事では、その記事が来た購読の名前 | `Feed.title` |
+| フィード | 購読先のRSS 1.0・RSS 2.0・Atomの配信。アドレスは`Feed.sourceURL` | `FeedParser`、`ParsedFeed` |
+| フォルダ | 購読を入れる、1階層のまとまり。名前だけで存在し、最後の購読が外れると消える | `Feed.folder` |
+| 未分類 | フォルダに入っていない購読。フォルダの名前としては使えない | `Feed.folder`が空、`FolderPicker` |
+| 対象 | 一覧に出す範囲。すべての記事・未読・Star・フォルダ・購読のどれか | `ReaderWorkspaceScope` |
+
+**記事と読書**
+
+| 用語 | 意味 | コードの名前 |
+|---|---|---|
+| 記事 | フィードの1項目 | `Article` |
+| 本文 | 記事の読む文章。フィードが提供したもの、または「全文を取得」で抽出したもの | `ContentSnapshot`、`ArticleContent` |
+| RSS要約 | フィードが記事に付けた短い説明 | `Article.summary` |
+| カバー範囲 | 本文がどこまで取れたかの区別。「フィード提供本文」「抽出本文 · 全文保証なし」「RSS要約のみ」「本文は利用できません」 | `ContentCoverage` |
+| 全文取得 | ボタン「全文を取得」（取得済みなら「本文を再取得」）。元のページから本文を抽出する。押したときだけ行う | `ArticleLoadingController`、`ArticleExtractor` |
+| 既読・未読 | 本文またはRSS要約が記事の領域に実際に表示されたとき、初回既読日時を記録して既読になる。記録がなければ未読 | `Article.firstReadAt`、`ReaderStore.markDisplayed` |
+| Star | 記事に付ける「あとで咀嚼したい」の印（3.2） | `Article.starredAt` |
+| 保持期間 | 本文・RSS要約を残す日数（7・30・90・365日） | `RetentionPolicy`、`ReaderSettings` |
+| 期限切れ | 保持期間を過ぎた本文・RSS要約。自動で削除し、Star・タイトル・URLは残す | `Article.contentDeletedAt`、`ReaderStore.purgeExpired` |
+
+**取得と追加**
+
+| 用語 | 意味 | コードの名前 |
+|---|---|---|
+| 更新 | フィードを取り直して、新しい記事を入れること。手動、起動・復帰・30分ごと | `FeedRefreshController` |
+| 追加の画面 | URLを入れて購読を追加する画面 | `SubscriptionSheet` |
+| 確認 | 入力中のURLを取得して読み、追加できるかを調べること | `FeedChecker`、`FeedCheckRequest` |
+| フィードの発見 | サイトのURLから、ページが示すフィードを探すこと | `FeedDiscovery` |
+| OPML | 購読の一覧を運ぶファイルの形式。取り込みだけがある（書き出しは#130） | `OPMLParser`、`OPMLImporter`、`OPMLImportFlow` |
+
+**ノートと画面の部品**
+
+| 用語 | 意味 | コードの名前 |
+|---|---|---|
+| ノート | アプリに1つだけのMarkdownのメモ（3.3） | `Note` |
+| Markdownをコピー | ノートの本文を、そのままペーストボードへ入れる操作（3.3） | `NotePanel`、`ReaderView.copyNote` |
+| 一覧の題 | 一覧の上の、対象の名前と件数のブロック（3.1.4） | `ListHeader` |
+| ✕（「×」） | 右の列の左上のボタン。元ページを閉じる。ノートを閉じる（#139） | `OriginalPageView` |
+| 設定 | 設定のウインドウ。外観と保持期間 | `ReaderSettingsView` |
+
+**言葉の使い分け**
+
+- 「元ページ」を使う。「原文」は使わない。
+- 「一覧」を使う。「リスト」は、リスト形式の文（Markdownのリスト）にだけ使う。
+- 「購読」は1件の購読、「購読元」は区画の名前と、記事が来た購読の名前、とする。
+- 画面の表示名は、そのまま引用する（アプリの表示は日本語）。
+
 ### 3.1 画面の構成と読書操作
 
 画面は**4つの領域**でできている。読む画面は、そのうち3つ（サイドバー・一覧・記事）を並べた3カラムで、4つ目の**ノート**は、開いたときだけ記事の右に加わる。領域がどう並び、どう入れ替わるかを「表示」と呼び、4つある（3.1.2）。規則の書き方は[docs/spec-style.md](spec-style.md)に従う。末尾の印は、コードの現状を示す: `[実装済み]`、`[未実装 #番号]`（Issueで追跡する）。
 
 #### 3.1.1 領域と用語
 
-| 領域 | 英語名 | コード | 役割 |
-|---|---|---|---|
-| サイドバー | sidebar | `ReaderView.sidebar`、`SidebarRow` | 読む対象（Feeds・フォルダ・購読元）を選ぶ |
-| 一覧 | list | `NativeArticleList`、`ListHeader` | 選んだ対象の記事の一覧 |
-| 記事 | article | `ArticleDetailView`、`NativeArticleText` | 記事の本文（RSS表示） |
-| 元ページ | original page | `OriginalPageView` | 記事の領域に代わって、アプリ内ブラウザで元のページを見せる（以前の文書の「原文」と同じもの） |
-| ノート | note | `ReaderView.notePanel`（inspector） | 1つだけのMarkdownのメモ（3.3） |
+| 領域 | コード | 役割 |
+|---|---|---|
+| サイドバー | `ReaderView.sidebar`、`SidebarRow` | 読む対象（Feeds・フォルダ・購読元）を選ぶ |
+| 一覧 | `NativeArticleList`、`ListHeader` | 選んだ対象の記事の一覧 |
+| 記事 | `ArticleDetailView`、`NativeArticleText` | 記事の本文（RSS表示） |
+| 元ページ | `OriginalPageView` | 記事の領域に代わって、アプリ内ブラウザで元のページを見せる（以前の文書の「原文」と同じもの） |
+| ノート | `ReaderView.notePanel`（inspector） | 1つだけのMarkdownのメモ（3.3） |
 
 #### 3.1.2 4つの表示
 
