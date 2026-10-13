@@ -8,7 +8,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 |---|---|
 | docs/vision.md | The owner's statement of the value, the user, the promises and the questions to ask when in doubt. Above the specification. |
 | README.md | English public overview: concept, status, how to try it. Derived from the spec; it does not define product behavior. |
-| docs/user-guide.md, docs/user-guide.ja.md | Operations, data retention and backup, Claude hand-off, verification steps. English and Japanese; keep them in step. |
+| docs/user-guide.md | Operations, data retention and backup, using the note with another AI, verification steps. English only; app labels are quoted in Japanese with an English gloss. |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
 | docs/architecture.md | Technical choices and the four-axis agent harness (§4). |
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |
@@ -93,7 +93,7 @@ The first prune pass was done in 2026-10 (old plans and records of removed featu
 The project is meant to be used and read worldwide, so new project text is written in English. Many readers are not native English speakers, so write plain English: short sentences, common words, no idioms, and the same term for the same thing.
 
 - Write in English: commit messages, PR titles and bodies, new decision records, new documentation, and new code comments.
-- Leave existing text alone. Old commits, PRs, Japanese documents, and decision records stay as they are. Do not rewrite Git history or translate old records unless the user asks. A document may be translated into a new file (for example `docs/user-guide.md` from `docs/user-guide.ja.md`); when the content changes, update both files in the same PR or say which one is behind.
+- Leave existing text alone. Old commits, PRs, Japanese documents, and decision records stay as they are. Do not rewrite Git history or translate old records unless the user asks. A document may be translated into a new file; when the content changes, update both files in the same PR or say which one is behind.
 - The app's labels are currently Japanese only. Quote a label as it appears and add an English gloss when it helps the reader. Changing the app's language is a product decision and needs the user's instruction.
 - Issues and discussion may be in Japanese or English.
 
