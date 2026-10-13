@@ -101,11 +101,11 @@ RSS HTML・Atom XHTML・抽出本文は共通の`ArticleMarkup`で段落テキ�
 
 | 記録 | 用途 |
 |---|---|
-| [Claude技術probe](verification/2026-10-04-claude-desktop-handoff.md) | 合成TXT・許可操作・経路の制約（決定0049で削除した機能の記録） |
+| Claude技術probe (Git history) | 合成TXT・許可操作・経路の制約（決定0049で削除した機能の記録） |
 | 初回V1受入（Git履歴） | 本体ハンドオフ・保持・性能の当時の測定と未検証 |
 | Dogfooding受入（Git履歴） | Star・日次／週・画像・保存の改修結果 |
 | 読書UI追加受入（Git履歴） | リンク／引用・各カラム・CI障害対応・原文復帰の追加結果 |
-| [端末内AIの実測](verification/on-device-ai-findings.md) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語。決定0049で削除した機能の記録） |
+| 端末内AIの実測 (Git history) | 利用可否・サイズ・時間・要約の質・失敗（合成データのみ。英語。決定0049で削除した機能の記録） |
 
 実サイトの抽出品質、IME・VoiceOver・OSのReduce Motion、原文復帰の絶対差1行以内、MainActor停止の原因、画像付き1万記事の再計測、短い間隔の連打・通信中操作、長時間の期限／復帰、30日の保持でノートの咀嚼に足りるか、本人の実際のStarでのまとまりの精度と閾値、数百件での提案の速度、Apple Intelligenceが無効な環境での挙動、レンズを具体化した問いの質、保存容量、最終PdM比較は、対象commitと環境の証拠で個別に判定する。未確認を本書の整理でPASSへ変えない。
 
