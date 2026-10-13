@@ -4,7 +4,7 @@ The order of work from the V1 simplification ([decision 0019](decisions/0019-v1-
 
 ## How a stage runs
 
-Each stage has a short plan PR first (scope, files and tests it touches, the decisions it needs). Merging the plan approves it. Then one implementation PR per stage, with failing tests first, one independent review of a fixed commit when the change is risky, and the specification, the architecture and the user guides updated for what changed. A plan lives in `docs/superpowers/plans/` only until its stage is merged; then delete it (Git keeps it).
+Each stage has a short plan PR first (scope, files and tests it touches, the decisions it needs). Merging the plan approves it. Then one implementation PR per stage, with failing tests first, one independent review of a fixed commit when the change is risky, and the specification, the architecture and the user guide updated for what changed. A plan lives in `docs/superpowers/plans/` only until its stage is merged; then delete it (Git keeps it).
 
 ## Stages
 
@@ -28,7 +28,7 @@ Each is its own pull request, deletions first. See [decision 0049](decisions/004
 ## After S3 (the rename to Unagi Reader is done: [decision 0023](decisions/0023-rename-to-unagi-reader.md))
 
 - **Real-device check (the PdM).** Read, write in the note beside the articles, copy the note into another AI (decision 0049 removed the hand-off to Claude), Japanese input in the note, a narrow window, and a long dogfooding week. Bugs found here come before any polish.
-- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A fresh acceptance run of the reading features (the older acceptance records were removed, because they described old commits). A check that the user guides match the app. Signing and distribution only on the PdM's instruction.
+- **Beta preparation.** The PdM approves `docs/specification.md` (its header still says approval is needed). A fresh acceptance run of the reading features (the older acceptance records were removed, because they described old commits). A check that the user guide match the app. Signing and distribution only on the PdM's instruction.
 
 ## Candidates (not scheduled)
 
@@ -42,4 +42,4 @@ Goals and learning plans; AI suggestions of notes; AI editing of the note; note 
 
 ## Prune before 1.0
 
-The first pass was done by the prune PR (plans, records for removed features). Before 1.0: a second pass over the verification records that remain, the decision records and the user guides, run as an audit; the PdM approves what to cut.
+The first pass was done by the prune PR (plans, records for removed features). Before 1.0: a second pass over the verification records that remain, the decision records and the user guide, run as an audit; the PdM approves what to cut.

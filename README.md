@@ -53,7 +53,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 | | |
 |---|---|
 | [Vision](docs/vision.md) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
-| [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, backup, using the note with another AI |
+| [User guide](docs/user-guide.md) | Operations, backup, using the note with another AI |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are |
