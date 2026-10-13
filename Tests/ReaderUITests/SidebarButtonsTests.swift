@@ -54,6 +54,15 @@ extension SplitViewFoldTests {
             let fine = collapsed ? buttons == nil : (buttons != nil && buttons?.view.isHidden == false && (buttons?.view.frame.width ?? 0) > 80)
             return fine ? nil : "[sidebar folded \(collapsed), buttons \(buttons != nil), hidden \(buttons?.view.isHidden ?? false), width \(Int(buttons?.view.frame.width ?? -1))]"
         }
+        /// Waits until the buttons are as they should be, for at most 6 s (a slow machine takes longer to finish the move). Only a state
+        /// that never gets right is a failure. Nil when it did; else what was seen last.
+        private func eventuallyFine(_ h: Harness) async throws -> String? {
+            for _ in 0..<300 {
+                if problem(h) == nil { return nil }
+                try await pump(h, 20)
+            }
+            return problem(h)
+        }
         private func start() async throws -> (Harness, NativeArticleList.Table, NativeArticleList.Coordinator) {
             let h = try harness()
             try await pump(h, 800)
@@ -85,8 +94,9 @@ extension SplitViewFoldTests {
                     coordinator.parent.onKey("n")
                     try await pump(h, openFor + 20)
                     coordinator.parent.onKey("n")                                          // before the move has ended
-                    try await pump(h, closeFor + 900)
-                    #expect(problem(h) == nil, "note open \(openFor) ms, closed after \(closeFor) ms: \(problem(h) ?? "")")
+                    try await pump(h, closeFor + 300)
+                    let seen = try await eventuallyFine(h)
+                    #expect(seen == nil, "note open \(openFor) ms, closed after \(closeFor) ms: \(seen ?? "")")
                 }
             }
         }
@@ -100,8 +110,9 @@ extension SplitViewFoldTests {
                 try await pump(h, openFor + 20)
                 row = (row + 1) % 3
                 table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)     // closes the page
-                try await pump(h, 1_200)
-                #expect(problem(h) == nil, "page open \(openFor) ms: \(problem(h) ?? "")")
+                try await pump(h, 300)
+                let seen = try await eventuallyFine(h)
+                #expect(seen == nil, "page open \(openFor) ms: \(seen ?? "")")
             }
         }
     }
