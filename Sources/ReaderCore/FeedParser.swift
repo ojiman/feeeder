@@ -322,6 +322,8 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
     }
     func parser(_ parser: XMLParser, foundInternalEntityDeclarationWithName name: String, value: String?) { failure = .entities; parser.abortParsing() }
     func parser(_ parser: XMLParser, foundExternalEntityDeclarationWithName name: String, publicID: String?, systemID: String?) { failure = .entities; parser.abortParsing() }
+    func parser(_ parser: XMLParser, foundUnparsedEntityDeclarationWithName name: String, publicID: String?, systemID: String?, notationName: String?) { failure = .entities; parser.abortParsing() }
+    func parser(_ parser: XMLParser, foundNotationDeclarationWithName name: String, publicID: String?, systemID: String?) { failure = .entities; parser.abortParsing() }
     func parser(_ parser: XMLParser, resolveExternalEntityName name: String, systemID: String?) -> Data? { nil }
 }
 
