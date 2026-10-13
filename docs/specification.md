@@ -324,7 +324,7 @@ A button translates the open article into another language, on the Mac, with the
 - The button is a menu with a main action: a click translates (or goes back); the menu lists the languages the system reports, with a check on the current one. It has no other items.
 - The first target is the language of the app (Japanese), not the first system language. A choice made in the menu is remembered across launches.
 
-**Core rules** `[not built #152]`
+**Core rules** (decision 0054)
 
 - A late answer for another article, another language, another press or a changed body is dropped. If 「全文を取得」 changed the body, the translation is dropped, the original shows and the button is off.
 - A translation is not stored: it is not in the library and not under the retention rules. It is kept in memory for a few recently translated articles and is gone when the app closes.
@@ -410,7 +410,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword `[not built #129]` | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed text contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | real Mac (the owner, with a library of several thousand articles); tests are named here when the feature is built |
-| PRD-18 | Read an article in another language `[not built #152, #153, #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); tests are named here when the feature is built |
+| PRD-18 | Read an article in another language `[not built #153, #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); tests are named here when the feature is built |
 
 ### 7.1 Conditions to ship 1.0
 
