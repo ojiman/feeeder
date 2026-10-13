@@ -48,6 +48,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0050](0050-the-note-screen-closes-like-the-original-page.md) | The note screen closes like the original page; a layout button; a wider note | valid |
 | [0051](0051-app-name-and-eel-icon.md) | App bundle filename matches Unagi Reader; orange eel icon | valid |
 | [0052](0052-the-reading-screen-is-four-areas.md) | The vision describes the screen as four areas, not "three columns" | valid |
+| [0053](0053-plain-http-feeds-are-not-supported.md) | Plain `http://` feeds are not supported; the sentence when the https form fails | valid |
 
 ## Removed from the working tree
 

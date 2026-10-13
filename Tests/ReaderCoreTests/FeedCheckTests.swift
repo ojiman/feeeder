@@ -201,6 +201,33 @@ import Testing
         #expect(FeedCheckMessage.text(for: FeedImportError.invalidXML, pastedXML: true) == "貼り付けたXMLに誤りがあり、読めませんでした。")
     }
 
+    @Test func aFeedTypedWithHttpThatHttpsCannotLoadSaysThatHttpIsNotSupported() {
+        let httpOnly = "HTTPSでは読み込めませんでした。HTTPには対応していません。"
+        func text(_ error: any Error) -> String { FeedCheckMessage.text(for: error, plainHTTP: true) }
+        for code: URLError.Code in [.cannotConnectToHost, .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate] {
+            #expect(text(URLError(code)) == httpOnly)
+        }
+        // A cause that does not depend on the scheme keeps its own sentence.
+        #expect(text(URLError(.notConnectedToInternet)) == "ネットワークに接続できません。")
+        #expect(text(URLError(.timedOut)) == "サーバーから応答がありません。")
+        #expect(text(URLError(.cannotFindHost)) == "サーバーが見つかりません。URLを確認してください。")
+        #expect(text(HTTPError.status(404)) == "ページが見つかりません（404）。URLを確認してください。")
+        #expect(text(URLError(.appTransportSecurityRequiresSecureConnection)) == "http:// には接続できません。https:// のURLを入れてください。")   // a port: https was not tried
+        #expect(text(FeedImportError.htmlPage) == "フィードではなくWebページです。フィードのURLを入れてください。")
+        // An address typed with https is not blamed on http.
+        #expect(FeedCheckMessage.text(for: URLError(.cannotConnectToHost)) == "接続できませんでした。")
+    }
+    @Test func theCheckerTellsAnHttpAddressApartFromAnHttpsOne() async {
+        let httpOnly = "HTTPSでは読み込めませんでした。HTTPには対応していません。"
+        let checker = FeedChecker(fetch: { _ in throw URLError(.cannotConnectToHost) }, sleep: { _ in })
+        checker.update(source: "http://example.com/feed.xml", delay: .zero); await settle(checker)
+        #expect(checker.state == .failed(httpOnly))
+        checker.update(source: "https://example.com/feed.xml", delay: .zero); await settle(checker)
+        #expect(checker.state == .failed("接続できませんでした。"))
+        checker.update(source: "  HTTP://example.com/feed.xml", delay: .zero); await settle(checker)      // pasted with spaces and capitals
+        #expect(checker.state == .failed(httpOnly))
+    }
+
     @Test func theDefaultFetchReadsTheRealResponse() async throws {
         let url = URL(string: "https://\(UUID().uuidString.lowercased()).example/rss")!
         let client = FeedClient(http: HTTPClient(protocolClasses: [StubURLProtocol.self]))

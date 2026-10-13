@@ -253,7 +253,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 **Adding from a URL**
 
 - A subscription is added from an RSS or Atom URL. The add sheet has only the URL field, 「キャンセル」 and 「追加」 (decision 0032).
-- An `http://` address is checked, and subscribed, as `https://`. An address with a port number is used as typed (decision 0040).
+- An `http://` address is checked, and subscribed, as `https://`. An address with a port number is used as typed (decision 0040). A feed that is only on `http://` is not supported: when the `https://` form cannot be loaded, the app shows 「HTTPSでは読み込めませんでした。HTTPには対応していません。」 (decision 0053).
 - A site's URL works too: the app finds the feeds the page announces (`<link rel="alternate" type="application/rss+xml">` and the like), uses the first, shows its URL, and subscribes to it. A saved subscription's refresh does not do this (decision 0038).
 - The URL is checked while it is typed (decision 0036):
   - About 0.8 s after typing stops (at once after a paste), the app fetches and parses it and shows one line under the field: 「確認中…」, 「✓ <feed name>」 or why it failed.
@@ -352,7 +352,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-11 | Read many articles | Folders, counts without duplicates, icons and article images work; a late, failed or offline image never changes the row height, the selection or the position | UI tests, real Mac |
 | PRD-12 | (unused) | Removed by decision 0019 (unsorted Stars, theme suggestions) | — |
 | PRD-13 | A Mac without AI | With Writing Tools unavailable, the note can be written, edited and copied, and the app uses no network for AI | real Mac (Writing Tools off) |
-| PRD-14 | Add a subscription from a URL | As in 3.5: the check runs when typing stops; 「追加」 only when the feed was read; a site URL finds its feed; `http://` is checked as `https://`; each failure has its sentence; an existing subscription is not added; the folder field appears only when it should | unit tests, synthetic app, real Mac (Japanese input, #136) |
+| PRD-14 | Add a subscription from a URL | As in 3.5: the check runs when typing stops; 「追加」 only when the feed was read; a site URL finds its feed; `http://` is checked as `https://`, and a feed only on http says that http is not supported; each failure has its sentence; an existing subscription is not added; the folder field appears only when it should | unit tests, synthetic app, real Mac (Japanese input, #136) |
 | PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 

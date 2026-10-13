@@ -69,6 +69,7 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
         state = .idle
         let mine = generation
         let request = FeedCheckRequest.make(source: source, xml: xml, manual: manual, asked: asked)
+        let plainHTTP = !manual && source.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().hasPrefix("http://")
         var hint: String?
         if request == nil {
             hint = asked && manual && ArticleURL.validated(source) != nil ? "XMLを入れてください。" : FeedCheckRequest.hint(source: source, asked: asked)
@@ -85,7 +86,7 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
                 state = .ready(feed)
             } catch {
                 guard mine == generation, !Task.isCancelled, !(error is CancellationError) else { return }
-                state = .failed(FeedCheckMessage.text(for: error, pastedXML: manual))
+                state = .failed(FeedCheckMessage.text(for: error, pastedXML: manual, plainHTTP: plainHTTP))
             }
         }
     }
