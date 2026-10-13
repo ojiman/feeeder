@@ -67,7 +67,7 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 
 ### 4.2 The note panel
 
-- `NotePanel` is the inspector. Its width is set by `inspectorColumnWidth` on the panel's content (on the inspector itself it has no effect). `NotePanelWidth` holds the range, the default and the saved value in `UserDefaults`, clamped on save and load.
+- `NotePanel` is the inspector. Its width is set by `inspectorColumnWidth` on the panel's content (on the inspector itself it has no effect). `NotePanelWidth` holds the range, the default and the saved value in `UserDefaults`, clamped on save and load. The key changed with decision 0050 (`notePanelWidth.0050`); loading removes the old `notePanelWidth`, so an earlier width is dropped once.
 - `NotePanelWidthMemory` measures with `onGeometryChange` and saves once the width has been still for 0.6 s. The width is not `ReaderView` state: that redrew the whole window on every drag frame and froze it.
 - `ReaderWorkspaceState.noteOpen` and `noteListShown` live in memory only. `toggleNote` changes `noteOpen` and the column visibility in one animation; the note's ✕ calls it too. The layout button calls `switchNoteLayout`, which does nothing while the note is closed. Dragging the edge shut reopens the panel on the next turn (`noteOpenBinding`).
 - `NoteTextEditor` styles headings and list markers through `NoteLineStyle.runs(in:baseOffset:)` (ReaderCore, pure) and `NoteEditorStyle`. It changes display attributes only, in `NSTextStorageDelegate.didProcessEditing` for the edited paragraphs, never the text. It does nothing while `hasMarkedText()` is true. Paste and drop take plain text only; smart quotes, dashes, replacement and link detection are off. `textDidChange` saves once per change.

@@ -221,6 +221,10 @@ extension SplitViewFoldTests {
             let list = try #require(table(in: h))
             list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
             try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) && (x(article(in: h)) ?? 999) < 40 }
+            // Decision 0050 point 5: the note is 640 pt wide at first (in this test's own defaults, nothing saved by the person).
+            if UserDefaults.standard.object(forKey: NotePanelWidth.key) == nil {
+                try await settle(h) { abs(1_240 - (x(editor(in: h)) ?? 0) - NotePanelWidth.defaultWidth) < 2 }
+            }
         }
     }
 }
