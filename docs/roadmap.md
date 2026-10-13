@@ -25,7 +25,6 @@ Features the owner has decided to build, in the order the owner gave. They are n
 2. **Translation** (the design is merged and approved: [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md)). Three pull requests, in order, each merged before the next: [#152](https://github.com/ojiman/unagi-reader/issues/152) T1 the core (no screen), [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu.
 3. **OPML export** ([#130](https://github.com/ojiman/unagi-reader/issues/130)). No screen of its own; it can be done at any time.
 4. **UI smoke tests in CI** ([#158](https://github.com/ojiman/unagi-reader/issues/158)). So that the owner is not the only one who checks the screens. No screen of its own; it can be done at any time.
-5. **The specification in English** ([#157](https://github.com/ojiman/unagi-reader/issues/157)). One section per pull request; no rule changes.
 
 ## Working in parallel
 
