@@ -61,13 +61,16 @@ open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-rea
 
 ### Layout
 
-The window has three columns. In Settings you can choose the appearance: follow the system, light, or dark.
+The window is made of four areas. Reading uses three of them (sidebar, list, article); the fourth, the note, joins beside the article only while it is open. In Settings you can choose the appearance: follow the system, light, or dark.
 
-| Column | What it shows |
+| Area | What it shows |
 |---|---|
-| Left | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), and Sources (folders and subscriptions). |
-| Middle | The list of articles. |
-| Right | The article. The note opens beside it as the standard inspector, from any screen that has a list of articles (the toolbar button or `⌥⌘I` opens and closes it). |
+| Sidebar | Choose what to read. Feeds (すべての記事 all articles, 未読 unread, Star), and Sources (folders and subscriptions). |
+| List | The list of articles. |
+| Article | The article. With `v` the original page takes its place. |
+| Note | The one note, beside the article. It opens and closes with `n`, the toolbar button or `⌥⌘I`. |
+
+The areas appear in four ways: the **normal** screen (sidebar, list, article); the **original page** (`v`: the sidebar folds away and the page replaces the article); the **note beside the article** (`n`: the sidebar and the list fold away); and the **note with the list** (the list is shown too). The precise rules are in the specification, section 3.1.
 
 ### Subscriptions and folders
 
