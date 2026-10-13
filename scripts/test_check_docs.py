@@ -133,6 +133,22 @@ class BetaCoverageTests(unittest.TestCase):
             for number in ("#2", "#3", "#4"):
                 self.assertIn(number, joined)
 
+    def test_the_issues_a_pull_request_closes_need_no_mark_and_no_roadmap_line(self):
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "docs/specification.md", "nothing marked\n")
+            write(root, "docs/roadmap.md", "## Now: the beta\n## Next\n")
+            beta = [issue(10, "enhancement"), issue(11, "enhancement")]
+            spec = check_docs.beta_spec_problems(root, beta, closing={10})
+            roadmap = check_docs.beta_roadmap_problems(root, beta, closing={10})
+            self.assertEqual(len(spec), 1)
+            self.assertIn("#11", spec[0])
+            self.assertEqual(len(roadmap), 1)
+            self.assertIn("#11", roadmap[0])
+
+    def test_the_closing_issues_are_read_from_a_list(self):
+        self.assertEqual(check_docs.closing_issues("126, 139"), {126, 139})
+        self.assertEqual(check_docs.closing_issues(""), set())
+
     def test_without_the_files_there_is_nothing_to_check(self):
         with tempfile.TemporaryDirectory() as root:
             self.assertEqual(check_docs.beta_spec_problems(root, [issue(1, "enhancement")]), [])

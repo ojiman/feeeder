@@ -156,6 +156,7 @@ jobs:
     permissions:
       contents: read
       issues: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -170,7 +171,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python3 scripts/check_docs.py --online
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # A pull request that closes a beta issue removes its roadmap line and marks; the check treats that issue as done.
+          if [ -n "$PR" ]; then
+            CLOSING_ISSUES=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json closingIssuesReferences --jq '[.closingIssuesReferences[].number] | map(tostring) | join(",")')
+            export CLOSING_ISSUES
+          fi
+          python3 scripts/check_docs.py --online
       - name: Decide
         env:
           CHANGES: ${{ needs.changes.result }}

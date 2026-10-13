@@ -215,9 +215,15 @@ def label_names(issue):
     return {label["name"] for label in issue.get("labels", [])}
 
 
-def beta_spec_problems(root, beta_issues):
+def closing_issues(text):
+    """The issue numbers in a list such as "126, 139" (the issues a pull request closes)."""
+    return {int(n) for n in re.findall(r"\d+", text or "")}
+
+
+def beta_spec_problems(root, beta_issues, closing=frozenset()):
     """Every open `enhancement` issue of the milestone Beta is named by a status mark of the specification
-    (`[not built #n]`), unless it has the label `no-spec` (it changes nothing the person sees)."""
+    (`[not built #n]`), unless it has the label `no-spec` (it changes nothing the person sees). An issue the pull request
+    closes is done: its mark goes away in that pull request."""
     path = os.path.join(root, "docs", "specification.md")
     if not os.path.isfile(path):
         return []
@@ -226,11 +232,12 @@ def beta_spec_problems(root, beta_issues):
     return [f"docs/specification.md: #{issue['number']} is a beta enhancement, but no status mark names it: write the behavior in the "
             f"specification with `[not built #{issue['number']}]`, or give the issue the label `no-spec`"
             for issue in beta_issues
-            if "enhancement" in label_names(issue) and "no-spec" not in label_names(issue) and issue["number"] not in marked]
+            if "enhancement" in label_names(issue) and "no-spec" not in label_names(issue)
+            and issue["number"] not in marked and issue["number"] not in closing]
 
 
-def beta_roadmap_problems(root, beta_issues):
-    """Every open issue of the milestone Beta is linked from the roadmap's section 'Now'."""
+def beta_roadmap_problems(root, beta_issues, closing=frozenset()):
+    """Every open issue of the milestone Beta is linked from the roadmap's section 'Now', except the ones the pull request closes."""
     path = os.path.join(root, "docs", "roadmap.md")
     if not os.path.isfile(path):
         return []
@@ -244,7 +251,7 @@ def beta_roadmap_problems(root, beta_issues):
             now.append(line)
     listed = {int(n) for n in ROADMAP_ISSUE.findall("\n".join(now))}
     return [f"docs/roadmap.md: #{issue['number']} is in the milestone Beta, but the section 'Now' does not list it"
-            for issue in beta_issues if issue["number"] not in listed]
+            for issue in beta_issues if issue["number"] not in listed and issue["number"] not in closing]
 
 
 def github_beta_issues(repository):
@@ -270,6 +277,8 @@ def main(argv=None):
     parser.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     parser.add_argument("--online", action="store_true", help="also check the issues named in the marks and the roadmap")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""))
+    parser.add_argument("--closing", default=os.environ.get("CLOSING_ISSUES", ""),
+                        help="the issues the pull request closes, such as \"126,139\": the beta checks treat them as done")
     args = parser.parse_args(argv)
     problems = link_problems(args.root) + decision_problems(args.root) + scenario_tag_problems(args.root)
     if args.online:
@@ -287,7 +296,8 @@ def main(argv=None):
             except (LookupError, ValueError) as error:
                 problems.append(f"the issues of the milestone Beta cannot be read ({error})")
             else:
-                problems += beta_spec_problems(args.root, beta) + beta_roadmap_problems(args.root, beta)
+                closing = closing_issues(args.closing)
+                problems += beta_spec_problems(args.root, beta, closing) + beta_roadmap_problems(args.root, beta, closing)
     if problems:
         print("\n".join(problems))
         print(f"\ndocs check: {len(problems)} problem(s)")
