@@ -11,7 +11,7 @@ struct SidebarTitlebarControls: NSViewRepresentable {
         view.host.rootView = Buttons(refreshing: refreshing, onAdd: onAdd, onRefresh: onRefresh)
         view.sidebarVisible = visible
     }
-    static func dismantleNSView(_ view: Anchor, coordinator: ()) { view.detach() }
+    static func dismantleNSView(_ view: Anchor, coordinator: ()) { view.detach(); view.stopObserving() }
 
     final class Anchor: NSView {
         let accessory = NSTitlebarAccessoryViewController()
@@ -27,9 +27,30 @@ struct SidebarTitlebarControls: NSViewRepresentable {
             accessory.layoutAttribute = .left
         }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+        /// What tells the buttons' width to be worked out again. The width comes from where this view is in the window. While the sidebar
+        /// slides in or out, the views above this one are still on their way, so a width worked out at the first frame can be 0 and
+        /// nothing here changes afterwards (the buttons stayed invisible next to a sidebar that was there). The split view says when its
+        /// panes have a new size, also at the end of the move.
+        private var observers: [NSObjectProtocol] = []
+
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             updateAttachment()
+            observeSizeChanges()
+        }
+
+        private func observeSizeChanges() {
+            stopObserving()
+            guard window != nil else { return }
+            var view: NSView? = superview
+            while let current = view {
+                if let split = current as? NSSplitView {
+                    observers.append(NotificationCenter.default.addObserver(forName: NSSplitView.didResizeSubviewsNotification, object: split, queue: .main) { [weak self] _ in
+                        MainActor.assumeIsolated { self?.placeButtons() }
+                    })
+                }
+                view = current.superview
+            }
         }
         private func updateAttachment() {
             let target = sidebarVisible ? window : nil
@@ -39,16 +60,29 @@ struct SidebarTitlebarControls: NSViewRepresentable {
                 installedWindow = window
                 window.addTitlebarAccessoryViewController(accessory)
                 needsLayout = true
+                // The sidebar may still be sliding in. Work the width out once more when the move has ended, in case no resize
+                // notification came with the last frame.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                    MainActor.assumeIsolated { self?.placeButtons() }
+                }
             }
         }
         override func layout() {
             super.layout()
+            placeButtons()
+        }
+
+        private func placeButtons() {
             guard installedWindow != nil else { return }
             // SwiftUI's navigation toolbar is placed after the sidebar separator.
             let right = convert(bounds, to: nil).maxX
             let left = host.convert(host.bounds, to: nil).minX
             host.setFrameSize(NSSize(width: max(0, right - left), height: host.frame.height))
             host.isHidden = bounds.width < 80
+        }
+        func stopObserving() {
+            for observer in observers { NotificationCenter.default.removeObserver(observer) }
+            observers = []
         }
         func detach() {
             if let window = installedWindow, let index = window.titlebarAccessoryViewControllers.firstIndex(where: { $0 === accessory }) {
