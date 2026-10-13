@@ -11,7 +11,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | docs/user-guide.md | Operations, data retention and backup, using the note with another AI, verification steps. English only; app labels are quoted in Japanese with an English gloss. |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
 | docs/spec-style.md | How to write the specification so that a person or an AI reads it right: layers, rules as lists and tables, status marks, names. |
-| docs/architecture.md | Technical choices and the four-axis agent harness (§4). |
+| docs/architecture.md | How it is built: the parts and the technical contracts a change must keep. |
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |
 | docs/review-checklist.md | Lens for independent review of a fixed commit. |
 | docs/verification/ | Evidence logs per change. Logs, not specs. |
@@ -76,7 +76,7 @@ A new thread starts without the previous one's memory. Rebuild the state from Gi
 ## Boundaries
 
 - Work as one supervised implementation writer. Do not start unattended workers or resume the Keychain probe. A reviewer may inspect a fixed commit when the task calls for it; do not claim read-only isolation from a prompt alone.
-- Use synthetic RSS/HTML and temporary databases for tests. Do not read the user's library, credentials, Keychain, browser profile, or unrelated projects. /private/tmp is disposable scratch, not a security boundary.
+- Use synthetic RSS/HTML and temporary databases for tests. Do not read the user's library, credentials, Keychain, browser profile, or unrelated projects. /private/tmp is disposable scratch, not a security boundary. Use GitHub only through the host's signed-in `gh`; never read, copy or pass a token. An Apple ID, certificates and signing keys are never given to an agent.
 - Local edits, tests, builds, and commits are allowed. Review concrete URLs, dependencies, migrations, and external writes against the user's current instruction. Authorization already given in the task does not need to be requested again.
 - Do not push directly to main. Use a branch and PR when GitHub publication is requested. Do not sign, submit, or publish an app without the user's instruction.
 - `docs/vision.md` is the owner's words. Do not change it without the owner's instruction. When you propose or judge a feature, check it against its questions (does it make the loop smoother, does it add something to manage, can it make the reader wait, can text leave the Mac without the person copying it themselves).
