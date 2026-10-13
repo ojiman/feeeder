@@ -13,7 +13,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 3. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), the core is done (decision 0054); then [#153](https://github.com/ojiman/unagi-reader/issues/153) T2 the button and the display, then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu. T2 and T3 touch `ReaderView.swift`, so they come after the filter.
 4. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
 5. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Do it last: the filter and translation add sections to it, and it is already in English, so the approved text is the final text.
-6. **Other conditions:** [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign and distribute (research only), [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI (the owner put it in the milestone; it lets an agent check the screens).
+6. **Other conditions:** the owner decides how the beta is signed and published ([findings](superpowers/plans/2026-10-14-beta-distribution.md), section 6); [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI (the owner put it in the milestone; it lets an agent check the screens).
 
 ## Next
 
