@@ -15,7 +15,7 @@ Unagi Reader is for engineers in 2026 who read many feeds every day. Its value i
 - **Bring your own AI.** The app has none of its own. Copy the note as it is and paste it into any AI you like, or use the system's Writing Tools in the note editor. Nothing leaves your Mac unless you paste it.
 - **Keep it yours.** No account, no backend, no sync. Everything lives in a local database.
 
-The full statement, with the promises and the questions to ask when in doubt, is in the [vision](docs/vision.md). The current build is moving to this shape in stages ([decision 0019](docs/decisions/0019-v1-simplification-notes.md)); the target is in the [specification](docs/specification.md).
+The full statement, with the promises and the questions to ask when in doubt, is in the [vision](docs/vision.md). What the app does, rule by rule, is in the [specification](docs/specification.md).
 
 ## Try it
 
@@ -54,8 +54,9 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 |---|---|
 | [Vision](docs/vision.md) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
 | [User guide](docs/user-guide.md) | Operations, backup, using the note with another AI |
-| [Specification](docs/specification.md) | Product requirements (Japanese) |
+| [Specification](docs/specification.md) | What V1 does and does not do |
 | [Architecture](docs/architecture.md) | How it is built |
+| [Roadmap](docs/roadmap.md) | The order of the work |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are |
 | [AGENTS.md](AGENTS.md) | Development workflow, commands and boundaries |
 
