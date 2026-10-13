@@ -100,8 +100,8 @@ jobs:
           retention-days: 7
 
   # The optimized build, the ad hoc signature, and the packaged app. It takes the longest, so a pull request runs it
-  # only when it changes how the app is built or packaged (Package.swift, scripts/build-app.sh, the notices file, or
-  # the workflows). Every push to main and every manual run builds it.
+  # only when it changes how the app is built or packaged (Package.swift, scripts/build-app.sh, the notices file,
+  # app assets, or the workflows). Every push to main and every manual run builds it.
   release:
     name: release
     needs: changes
