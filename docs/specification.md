@@ -79,7 +79,7 @@ These words mean the same thing in this specification, the user guide, the decis
 | note (ノート) | The app's one Markdown note (3.3) | `Note` |
 | 「Markdownをコピー」 (Copy Markdown) | Puts the note's text, unchanged, on the pasteboard (3.3) | `NotePanel`, `ReaderView.copyNote` |
 | list title | The scope's name and count above the list (3.1.4) | `ListHeader` |
-| ✕ | The button at the top left of the right column. It closes the original page, and the note (#139) | `OriginalPageView` |
+| ✕ | The button at the top left of the right column. It closes the original page, and the note | `OriginalPageView`, `NotePanel` |
 | Settings (設定) | The settings window: appearance and retention | `ReaderSettingsView` |
 
 **Word use**
@@ -110,7 +110,7 @@ The screen has **four areas**. Reading shows three of them side by side (sidebar
 | normal | sidebar, list, article | |
 | original page | list, original page. The sidebar folds; the page uses the article's and the sidebar's width | |
 | note beside the article | article, note. The sidebar and the list fold | |
-| note with the list | list, article, note. The sidebar folds | The switch is the 「一覧」 button today; the layout button is `[not built #139]` |
+| note with the list | list, article, note. The sidebar folds | |
 
 ```
 normal                original page (v)     note beside article   note with the list
@@ -129,8 +129,8 @@ normal                original page (v)     note beside article   note with the 
 | `Esc`, the ✕, `j` / `k`, a click in the list | original page → normal. The page slides out to the right and the sidebar returns, whichever way it was closed. With `j` / `k` or a click, the chosen article's text appears from under the page | |
 | `n`, `⌥⌘I`, the note button in the toolbar | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
 | the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
-| the layout button (next to the note button) | note beside the article ⇄ note with the list. Disabled while the note is closed (the toolbar does not change height). The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | `[not built #139]` (today the 「一覧」 button does the same switch) |
-| `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | `[not built #139 (✕), #140 (Esc)]` |
+| the layout button (next to the note button) | note beside the article ⇄ note with the list. Disabled while the note is closed (the toolbar does not change height). The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
+| `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | `Esc`: `[not built #140]` |
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | A test of this rule: `[not built #140]` |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
 
@@ -396,7 +396,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-01 | Read smoothly, with subscriptions in order | The four areas, the four layouts, appearance, folders and unread counts, the keys and the note open and close as in 3.1. No wrong body, no visible stall, no scroll jump; input, input methods and VoiceOver are not disturbed. The budgets of 2.1 hold. The owner compares with Reeder Classic on a real Mac | real Mac (the owner, against Reeder Classic); parts in UI tests; 2.1 |
 | PRD-02 | Open an article from the unread list | Scrolling the list keeps articles unread. Showing the body or the RSS summary saves the first read time | unit tests, synthetic app |
 | PRD-03 | Read an article whose full-text fetch failed | Reading goes on; the summary, the coverage and the link to the original page are shown; no restriction is bypassed | unit tests, synthetic app |
-| PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver). `[not built #139 (layout button, ✕), #140 (Esc)]` |
+| PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver). `Esc`: `[not built #140]` |
 | PRD-05 | Give the note to another AI | 「Markdownをコピー」 copies the text exactly; the person pastes it into any AI. The app starts no app, makes no file, uses no network. Disabled for an empty note | unit tests, real Mac |
 | PRD-06 | (unused) | The app's own summary was removed by decision 0049; the number stays because other documents cite it | — |
 | PRD-07 | Review the final demo | The owner sees this table and the product scope demonstrated and approves them explicitly. Until then the product is not accepted | the owner |

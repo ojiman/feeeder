@@ -124,7 +124,23 @@ extension SplitViewFoldTests {
             try await settle(h) { !noteVisible(h) && sidebarButtonsMounted(h) && h.window.firstResponder === list }
         }
 
-        @Test func theListButtonShowsTheListBesideTheArticleAndTheNote() async throws {
+        /// Decision 0050 point 3: the ✕ sits at the top left of the note, as the original page's ✕ sits at the top left of the page. Pressing
+        /// it is not tested here: its SwiftUI button has no target to send to, and `performClick` can end a hosted run (AGENTS.md). It calls
+        /// the same `toggleNote` as `n`, which the tests above check.
+        @Test func theNoteHasACrossAtItsTopLeft() async throws {
+            let h = try harness(noteOpen: true)
+            defer { finish(h) }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+            try await settle(h) { noteVisible(h) && (x(article(in: h)) ?? 999) < 40 }
+            func buttons(_ view: NSView) -> [NSButton] { ((view as? NSButton).map { [$0] } ?? []) + view.subviews.flatMap { buttons($0) } }
+            let noteLeft = try #require(x(editor(in: h)))
+            try await settle(h) {
+                buttons(h.host).contains { let frame = $0.convert($0.bounds, to: nil); return abs(frame.minX - noteLeft) < 24 && frame.minY > 700 }
+            }
+        }
+
+        @Test func theLayoutButtonShowsTheListBesideTheArticleAndTheNote() async throws {
             let h = try harness(noteOpen: true, listShown: true)
             defer { finish(h) }
             try await settle(h) { table(in: h)?.numberOfRows == 3 && noteVisible(h) }

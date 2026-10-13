@@ -42,4 +42,22 @@ struct ReaderWorkspaceTests {
         let restored = workspace.reader(in: .starred)
         #expect(restored.selectedArticleID == article && restored.scrollOffsets[article] == 120 && restored.scrollAnchors[article] == "p-3")
     }
+
+    /// Decision 0050 point 4: the layout button switches the open note between beside the article and with the list. While the note is
+    /// closed it is disabled, and switching does nothing.
+    @Test func theLayoutButtonSwitchesOnlyAnOpenNote() {
+        var workspace = ReaderWorkspaceState()
+        let article = UUID()
+        var reader = ReaderSelectionState(); reader.select(article); reader.recordScroll(articleID: article, anchor: "p-2", offset: 80)
+        workspace.rememberReader(reader, in: .all)
+        workspace.switchNoteLayout()
+        #expect(!workspace.noteListShown)                                                  // the note is closed: nothing to switch
+        workspace.noteOpen = true
+        workspace.switchNoteLayout()
+        #expect(workspace.noteListShown)
+        workspace.switchNoteLayout()
+        #expect(!workspace.noteListShown)
+        let restored = workspace.reader(in: .all)                                          // the article and the reading position stay
+        #expect(restored.selectedArticleID == article && restored.scrollOffsets[article] == 80 && restored.scrollAnchors[article] == "p-2")
+    }
 }
