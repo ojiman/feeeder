@@ -50,6 +50,14 @@ CI runs two macOS jobs on macOS 26 / Xcode 26.6 / Swift 6.3.3. `regression` (the
 - **Decisions** go to `docs/decisions/`; a plan for work that takes several pull requests goes to `docs/superpowers/plans/` until it is merged.
 - Work that is in neither the roadmap nor an issue is not tracked. Open an issue instead of only mentioning follow-up work in a chat or in a pull request.
 
+### Working together
+
+- **Take one issue at a time.** Say that you take it (assign yourself, or comment). One issue, one pull request, `Fixes #n`. Before you start, look at the open pull requests and issues that touch the same files.
+- **An issue with an open question for the owner** waits: ask in the issue and do not start until it is answered.
+- **A bug found on the way** that is not part of the issue becomes a new issue, not a bigger pull request.
+- **Where pull requests collide:** `Sources/UnagiReader/ReaderView.swift` (its long modifier chain: one change at a time; see the known gotchas), the index in `docs/decisions/README.md` (one line per decision, added at the end), the long lines of `docs/specification.md`, and decision numbers. Take the next free decision number when you open the pull request; if `main` moved, renumber before the merge.
+- The milestone **Beta** holds what must be done before the beta; add an issue to it when a new condition appears.
+
 ## Starting or resuming work
 
 A new thread starts without the previous one's memory. Rebuild the state from Git, PRs and records, not from a summary:
