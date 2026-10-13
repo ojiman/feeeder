@@ -3,8 +3,8 @@
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-12
 - Decider: the owner (PdM), after a long run of trials with the note screen: "I think I found the truth." The owner proposed the whole change and answered each open point in chat. The details below follow the owner's answers.
-- Replaces: [0019](0019-v1-simplification-notes.md) points 2, 3, 5, 6 and 8 (many notes in the sidebar, links made by sending, sending a summary, the summary settings, Claude from the note); [0020](0020-summary-send-contract.md); [0035](0035-rename-a-note.md); [0042](0042-undo-a-note-deletion.md); [0043](0043-rename-in-the-sidebar-row.md) for notes only (renaming a subscription stays); [0012](0012-claude-handoff-from-themes.md), [0021](0021-note-share-menu-and-review.md) and [0022](0022-note-only-package-clean-up.md) (the Claude hand-off); [0015](0015-article-summary-details.md); the note-screen parts of [0046](0046-sidebar-folds-like-reeder.md) and [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) (the ✕ and the fold on a note screen; the original page keeps both).
-- Replaces in part: [0045](0045-the-note-as-a-place-to-think.md) (its remaining ideas about references, quotes and the review package no longer apply: there are no references and no package).
+- Replaces: [0019](0019-v1-simplification-notes.md) points 2, 3, 5, 6 and 8 (many notes in the sidebar, links made by sending, sending a summary, the summary settings, Claude from the note); 0020 (Git history); 0035 (Git history); 0042 (Git history); [0043](0043-rename-in-the-sidebar-row.md) for notes only (renaming a subscription stays); 0012 (Git history), 0021 (Git history) and 0022 (Git history) (the Claude hand-off); 0015 (Git history); the note-screen parts of [0046](0046-sidebar-folds-like-reeder.md) and [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) (the ✕ and the fold on a note screen; the original page keeps both).
+- Replaces in part: 0045 (Git history) (its remaining ideas about references, quotes and the review package no longer apply: there are no references and no package).
 
 ## Background
 

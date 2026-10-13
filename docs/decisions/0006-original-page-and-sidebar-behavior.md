@@ -24,4 +24,4 @@ Dogfoodingで、左カラムの操作整理と、原文表示から戻る際の�
 ## 出典
 
 - 旧 docs/architecture.md §6.3・§6.7（commit `7451608` 時点。`git show 7451608:docs/architecture.md`）
-- [PR #11](https://github.com/ojiman/feeeder/pull/11)（左カラム）、[PR #14](https://github.com/ojiman/feeeder/pull/14)（原文表示と復帰）
+- [PR #11](https://github.com/ojiman/unagi-reader/pull/11)（左カラム）、[PR #14](https://github.com/ojiman/unagi-reader/pull/14)（原文表示と復帰）

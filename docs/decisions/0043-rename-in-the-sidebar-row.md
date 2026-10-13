@@ -1,9 +1,9 @@
 # 0043 Rename in the sidebar row
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: valid for subscriptions. The renaming of notes is replaced by [0049](0049-one-note-and-no-ai-of-its-own.md) (one note, no name).
 - Date: 2026-10-12
 - Decider: the owner (PdM) agreed to the Product Owner's advice in a discussion of note management: say the same things in the same way for notes and subscriptions. The details below are the Product Owner's.
-- Refines: [0035](0035-rename-a-note.md) (the note's name was asked for in an alert) and [0032](0032-simple-add-subscription.md) point 3 (a subscription's name was edited in a sheet).
+- Refines: 0035 (Git history) (the note's name was asked for in an alert) and [0032](0032-simple-add-subscription.md) point 3 (a subscription's name was edited in a sheet).
 
 ## Decision
 

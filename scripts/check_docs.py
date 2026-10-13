@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Keeps the documents honest. Run it from the repository root (CI runs it on every pull request).
 
-  python3 scripts/check_docs.py             Offline: relative links resolve, decision numbers are unique and in the index.
+  python3 scripts/check_docs.py             Offline: relative links resolve, decision numbers are unique and in the index,
+                                            and a record that a newer one replaces names the newer one in its Status.
   python3 scripts/check_docs.py --online    Also: the issues named in the specification's status marks and in the active
                                             parts of the roadmap are open (a closed issue means the mark or the line is
                                             stale). Needs `gh` and a token (GH_TOKEN) that can read issues.
@@ -83,6 +84,33 @@ def decision_problems(root):
         for name in names:
             if f"]({name})" not in index:
                 problems.append(f"docs/decisions/{name}: not in the index (docs/decisions/README.md)")
+    problems += replaced_status_problems(folder, seen)
+    return problems
+
+
+def header_field(lines, field):
+    """The value of a header line such as `- Status: valid` (only the lines before the first section)."""
+    for line in lines:
+        if line.startswith("## "):
+            break
+        if line.startswith(f"- {field}:"):
+            return line[len(field) + 3:].strip()
+    return None
+
+
+def replaced_status_problems(folder, seen):
+    """A record named on a newer record's `- Replaces:` (or `- Replaces in part:`) line must name the newer one in its Status."""
+    problems = []
+    texts = {number: open(os.path.join(folder, names[0]), encoding="utf-8").read().split("\n") for number, names in seen.items()}
+    for number, lines in sorted(texts.items()):
+        for field in ("Replaces", "Replaces in part"):
+            value = header_field(lines, field) or ""
+            for old in re.findall(r"\]\((\d{4})-[^)]*\.md\)", value):
+                if old not in texts or old == number:
+                    continue
+                status = header_field(texts[old], "Status") or header_field(texts[old], "状態") or ""
+                if number not in status:
+                    problems.append(f"docs/decisions/{seen[old][0]}: replaced by {number}, but its Status does not say so")
     return problems
 
 

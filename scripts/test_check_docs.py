@@ -56,6 +56,24 @@ class DecisionTests(unittest.TestCase):
             write(root, "docs/decisions/README.md", "| [0001](0001-a.md) | a |\n")
             self.assertEqual(check_docs.decision_problems(root), [])
 
+    def test_a_replaced_record_whose_status_does_not_name_the_new_one_is_reported(self):
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "docs/decisions/0001-a.md", "# a\n\n- Status: valid\n")
+            write(root, "docs/decisions/0002-b.md", "# b\n\n- Status: valid in part (replaced by 0003)\n")
+            write(root, "docs/decisions/0003-c.md", "# c\n\n- Status: valid\n- Replaces: [0001](0001-a.md) point 2\n- Replaces in part: [0002](0002-b.md)\n")
+            write(root, "docs/decisions/README.md", "[0001](0001-a.md) [0002](0002-b.md) [0003](0003-c.md)\n")
+            problems = check_docs.decision_problems(root)
+            self.assertEqual(len(problems), 1)
+            self.assertIn("0001-a.md", problems[0])
+            self.assertIn("0003", problems[0])
+
+    def test_a_refinement_does_not_need_a_status_change(self):
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "docs/decisions/0001-a.md", "# a\n\n- Status: valid\n")
+            write(root, "docs/decisions/0002-b.md", "# b\n\n- Status: valid\n- Refines: [0001](0001-a.md)\n")
+            write(root, "docs/decisions/README.md", "[0001](0001-a.md) [0002](0002-b.md)\n")
+            self.assertEqual(check_docs.decision_problems(root), [])
+
 
 class IssueReferenceTests(unittest.TestCase):
     def test_the_issues_named_in_status_marks_are_found(self):
