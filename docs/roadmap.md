@@ -34,6 +34,7 @@ Each is its own pull request, deletions first. See [decision 0049](decisions/004
 
 - **Reading size.** One shared size in Appearance (Small / Standard / Large / Extra Large = 14 / 16 / 18 / 20 pt, default Standard) and View-menu commands. A probe showed that a separate update path keeps the top visible line in place across 36 synthetic cases, and that the update time grows with the article (about 10 to 20 ms at 7,800 characters, about 0.2 to 0.35 s at 156,000). The probe code is in Git history (PR #28). Open: a time budget (the proposal: finish within about 100 ms up to about 50,000 characters, above that apply once after the key is released), and how it feels on the device.
 - **Note editor size.** The same scale for the note editor. Needs a real Japanese input check: the update waits while text is being composed.
+- **Translation.** A toolbar button that translates the open article on the Mac with the Translation framework. Design in [docs/superpowers/plans/2026-10-12-translation-design.md](superpowers/plans/2026-10-12-translation-design.md) (three PRs: the core, the button, the language menu). Not started until the design is merged.
 
 ## Not planned
 
