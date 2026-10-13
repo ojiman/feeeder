@@ -42,7 +42,7 @@ struct ReaderSettingsView: View {
             Button("キャンセル", role: .cancel) { cancel() }
         } message: {
             if let preview {
-                Text("本文\(preview.bodyCount)件・RSS要約\(preview.summaryCount)件、約\(byteCount(preview.estimatedBytes))が削除対象です。ノートの記録は残ります。削除した本文は保持期間を延長しても復元されません。")
+                Text("本文\(preview.bodyCount)件・RSS要約\(preview.summaryCount)件、約\(byteCount(preview.estimatedBytes))が削除対象です。ノートは残ります。削除した本文は保持期間を延長しても復元されません。")
             }
         }
         .alert("変更できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
@@ -70,7 +70,7 @@ struct ReaderSettingsView: View {
                         perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
                     }
                 }
-                .help("ノートの記録（タイトル・リンク・記録した要約・ノート）は自動削除しません。")
+                .help("ノートは自動削除しません。")
             }
         }
         .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
