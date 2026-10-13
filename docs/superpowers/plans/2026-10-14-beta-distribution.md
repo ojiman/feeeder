@@ -2,7 +2,7 @@
 
 - Status: research for the owner (issue #156). Nothing was signed, notarized, uploaded or published. Deleted when the release issues it proposes are closed.
 - Date: 2026-10-14
-- Sources: Apple's pages read on 2026-10-14: [Notarizing macOS software before distribution](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), [Developer ID](https://developer.apple.com/developer-id/), [Compare memberships](https://developer.apple.com/support/compare-memberships/). Facts marked **(check)** are from general knowledge, not read on those pages today; check them before acting.
+- Sources: Apple's pages read on 2026-10-14: [Notarizing macOS software before distribution](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), [Developer ID](https://developer.apple.com/developer-id/), [Compare memberships](https://developer.apple.com/support/compare-memberships/). The body of the notarization page did not load in the reader used (only its title), so its steps (sections 2.3 to 2.6) are from general knowledge. Facts marked **(check)** were not read on Apple's pages today; check them before acting.
 
 ## 1. Where the app is today
 
