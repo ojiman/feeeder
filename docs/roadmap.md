@@ -11,7 +11,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 1. **Decision 0050, in order** (the same files): [#139](https://github.com/ojiman/unagi-reader/issues/139) the layout button and the ✕, then [#140](https://github.com/ojiman/unagi-reader/issues/140) `Esc` and `j` / `k`, then [#141](https://github.com/ojiman/unagi-reader/issues/141) the wider note.
 2. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
 3. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification (now in English, so the approved text is the final text).
-4. **Other conditions:** [#126](https://github.com/ojiman/unagi-reader/issues/126) XML entities in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#134](https://github.com/ojiman/unagi-reader/issues/134) feeds only on `http://`, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign and distribute (research only).
+4. **Other conditions:** [#126](https://github.com/ojiman/unagi-reader/issues/126) XML entities in the feed parser (security), [#127](https://github.com/ojiman/unagi-reader/issues/127) the layout test that fails on macOS 27, [#156](https://github.com/ojiman/unagi-reader/issues/156) how to sign and distribute (research only).
 
 ## Next
 
@@ -52,5 +52,5 @@ The conditions in [specification 7.1](specification.md). A prune of the document
 
 - V1 simplification (decision 0019), stages S1 to S5; parts later removed by decision 0049. Rename to Unagi Reader (0023).
 - One note, no AI of its own (decision 0049): [#115](https://github.com/ojiman/unagi-reader/pull/115), [#116](https://github.com/ojiman/unagi-reader/pull/116), [#118](https://github.com/ojiman/unagi-reader/pull/118), [#119](https://github.com/ojiman/unagi-reader/pull/119), [#122](https://github.com/ojiman/unagi-reader/pull/122).
-- Layout and motion (0044, 0046 to 0048), subscriptions (0036 to 0041, 0043), name and icon (0051).
+- Layout and motion (0044, 0046 to 0048), subscriptions (0036 to 0041, 0043, 0053), name and icon (0051).
 - Documents in English and pruned; budgets for no waiting (2026-10-14).
