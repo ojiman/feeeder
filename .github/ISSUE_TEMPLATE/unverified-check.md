@@ -1,28 +1,28 @@
 ---
 name: Unverified check
-about: 自動テストでは確認できず、人または実機で確認が必要な項目を、担当と期限つきで追跡する
-title: "[未検証] "
+about: Track an item that automatic tests cannot check and that needs a person or a real Mac, with an owner and a deadline
+title: "[Unverified] "
 labels: ["unverified"]
 ---
 
-## 確認する項目
+## What to check
 
-<!-- 例: macOS 27での起動と原文表示 / IME変換中のキー操作 / VoiceOverでのStar操作 -->
+<!-- Examples: launch and the original page on macOS 27 / key handling while Japanese text is being composed / VoiceOver on the Star button -->
 
-## 関連するPR・機能
+## Related pull requests and features
 
-## 環境
+## Environment
 
-<!-- OS、機種、設定（Reduce Motion、VoiceOverなど）。サポート下限の macOS 27.0 で確認するか（CIは26のランナーなので、27の挙動は手元の実機で確認する）。 -->
+<!-- OS, machine, settings (Reduce Motion, VoiceOver, ...). Check on the support floor, macOS 27.0, if it matters (CI runs macOS 26, so macOS 27 behavior is checked by hand). -->
 
-## 手順
+## Steps
 
-<!-- 合成データの専用アプリ（--data-directory）で再現できる手順。本人のライブラリは使わない。 -->
+<!-- Steps that work in the app with synthetic data (--data-directory). Never use the owner's library. -->
 
-## 期待する結果
+## Expected result
 
-## 結果
+## Result
 
-<!-- PASS / FAIL / NOT_RUN と、証拠（画面、ログ、日時）。 -->
+<!-- PASS / FAIL / NOT_RUN, with the evidence (screen, log, date). -->
 
-## 担当・期限
+## Owner and deadline
