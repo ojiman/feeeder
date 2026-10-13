@@ -4,6 +4,7 @@ import ReaderCore
 import Testing
 @testable import UnagiReader
 
+// Checks PRD-04, PRD-05 (specification 7).
 @Suite(.serialized) @MainActor struct NoteReaderTests {
     fileprivate func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
         if let result = view as? T { return result }

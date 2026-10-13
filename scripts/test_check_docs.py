@@ -75,11 +75,43 @@ class DecisionTests(unittest.TestCase):
             self.assertEqual(check_docs.decision_problems(root), [])
 
 
+SPEC_TABLE = ("| ID | Scenario | Passes when | Where it is checked |\n|---|---|---|---|\n"
+              "| PRD-01 | a | b | unit tests, real Mac |\n"
+              "| PRD-02 | a | b | real Mac |\n"
+              "| PRD-03 | (unused) | removed | — |\n"
+              "| PRD-04 | a | b | UI tests |\n")
+
+
+class ScenarioTagTests(unittest.TestCase):
+    def test_a_scenario_checked_by_tests_needs_a_tagged_test(self):
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "docs/specification.md", SPEC_TABLE)
+            write(root, "Tests/A/ATests.swift", "// Checks PRD-01 (specification 7).\nstruct ATests {}\n")
+            problems = check_docs.scenario_tag_problems(root)
+            self.assertEqual(len(problems), 1)
+            self.assertIn("PRD-04", problems[0])
+
+    def test_a_tag_must_name_a_scenario_in_use(self):
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "docs/specification.md", SPEC_TABLE)
+            write(root, "Tests/A/ATests.swift", "// Checks PRD-01, PRD-04 (specification 7).\n// Checks PRD-03 and PRD-09.\n")
+            problems = check_docs.scenario_tag_problems(root)
+            joined = "\n".join(problems)
+            self.assertIn("PRD-03", joined)
+            self.assertIn("PRD-09", joined)
+            self.assertNotIn("PRD-01", joined)
+            self.assertEqual(len(problems), 2)
+
+    def test_no_specification_means_nothing_to_check(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(check_docs.scenario_tag_problems(root), [])
+
+
 class IssueReferenceTests(unittest.TestCase):
     def test_the_issues_named_in_status_marks_are_found(self):
-        text = "a `[未実装 #139（×）、#140（Esc）]` b `[実装済み。いまは「一覧」。#139]` c `[not built #7]` d `[built]` e [link](#3)\n"
+        text = "a `[未実装 #139（×）、#140（Esc）]` b `[実装済み。いまは「一覧」。#139]` c `[not built #7]` d `[built]` e [link](#3) f `[not measured #8]`\n"
         found = check_docs.status_mark_issues(text)
-        self.assertEqual(sorted(n for n, _ in found), [7, 139, 139, 140])
+        self.assertEqual(sorted(n for n, _ in found), [7, 8, 139, 139, 140])
 
     def test_roadmap_issues_count_except_in_the_history(self):
         base = "https://github.com/o/r/issues/"

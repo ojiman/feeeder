@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import ReaderCore
 
+// Checks PRD-16 (specification 7).
 @MainActor struct SubscriptionTests {
     @Test func selectedFolderIsSavedOnImportAndRetainedOnRefresh() throws {
         let library = try TestLibrary(); defer { library.cleanup() }

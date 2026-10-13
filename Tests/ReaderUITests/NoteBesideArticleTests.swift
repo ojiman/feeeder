@@ -8,6 +8,7 @@ import Testing
 /// from the right (article on the left, note on the right); closing it brings everything back. The tests look at where the views are
 /// in a hosted window.
 extension SplitViewFoldTests {
+    // Checks PRD-04 (specification 7).
     @Suite(.serialized) @MainActor struct NoteBesideArticleTests {
         private let noteText = "既存のノート"
 

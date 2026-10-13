@@ -4,6 +4,7 @@ import Testing
 import ReaderCore
 @testable import UnagiReader
 
+// Checks PRD-11 (specification 7).
 @MainActor struct NativeArticleListTests {
     @Test func selectedFolderListReceivesKeyboardFocusAfterMount() {
         var selection: UUID?

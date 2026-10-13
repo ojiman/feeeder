@@ -3,6 +3,7 @@ import Testing
 import SwiftData
 @testable import ReaderCore
 
+// Checks PRD-08 (specification 7).
 @MainActor struct ContentRetentionTests {
     let start = Date(timeIntervalSince1970: 1_000_000)
     let day: TimeInterval = 86_400

@@ -17,6 +17,7 @@ private actor ImageClient: HTTPFetching {
     }
 }
 
+// Checks PRD-11 (specification 7).
 struct ReaderImageTests {
     func png(width: Int, height: Int) throws -> Data {
         let context = try #require(CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
