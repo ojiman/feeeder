@@ -1,9 +1,9 @@
 # Translation: design
 
-- Status: proposal. Merging this PR approves the design and the order of work; it changes no behavior. The owner's decisions are listed at the end with a recommended answer for each.
+- Status: approved when it was merged (2026-10-12). It is deleted when the last translation PR (#154) is merged. What the person sees is in the [specification](../../specification.md) 3.6; this file keeps the engine choice, the parts and the order of work.
 - Date: 2026-10-12
 - Owner's request: a translate button at the top right; press it and the article is translated into a language of the person's choice. The owner suggested Foundation Models.
-- Reading order: [vision](../../vision.md), [specification](../../specification.md), this design. A decision record (the next free number; 0044 was taken by the original-page motion) is added by the first implementation PR.
+- Reading order: [vision](../../vision.md), the specification 3.6, this design. A decision record (the next free number) is added by the first implementation PR.
 
 ## 1. What it is
 
@@ -40,22 +40,16 @@ Two more facts decide it:
 - The Translation framework has a strategy setting (`preferredStrategy`). With the default high-fidelity strategy the system uses Apple Intelligence models when the Mac has them and falls back to the traditional models when it does not. So the framework already gives the better quality where it is available, and still works everywhere. We do not need to build that choice.
 - "Any language" means any language **Apple supports**. The target list is whatever `LanguageAvailability` reports (a few dozen languages); the app does not invent its own list.
 
-Foundation Models stays for what it is good at, and is **not** used for this feature: for example a later "explain in simple words" or "summary in the target language" (the summary settings already use it).
+Foundation Models is **not** used for this feature. (The app no longer uses it at all: decision 0049.)
 
 Sources: Apple's documentation for [TranslationSession](https://developer.apple.com/documentation/translation/translationsession), the [Translation framework](https://developer.apple.com/documentation/translation) and [SystemLanguageModel](https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel), read on 2026-10-12. Nothing here was tried on a Mac yet; section 9 lists what must be checked on a real Mac.
 
 ## 4. What the person sees
 
-- **Button.** In the toolbar group at the top right, before 「元ページをブラウザで開く」 (the send-to-a-note button no longer exists; see decision 0049). Label 「翻訳」 (help: 「翻訳する／原文に戻す (t)」). Its icon is filled while the translation is shown. It is always present and disabled when no article is open (the toolbar must not change height, as the existing comment in `ReaderView` says). **A menu bar command too**: 「表示 ▸ 翻訳 / 原文に戻す」, because on macOS every toolbar item must also be a command in the menu bar (section 12). The key is `t`, free since the theme picker was removed; like the other keys it does nothing inside a text field.
-- **Language.** The button is a menu with a primary action: a click translates (or goes back); the menu lists the target languages, with a check on the current one. The first target is the **language of the app** (Japanese: the app's labels are Japanese only today, and when a language setting arrives it follows that setting). It is **not** the first system language: the owner keeps the system in English because it suits software work, and still wants to read in Japanese. A choice made in the menu is remembered in the app's preferences, so the person who reads Japanese articles in English once picks English once. The menu has no other items.
-- **While it works.** The existing status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」 with a small determinate progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. The article title and paragraphs change from the top as results arrive. Reduce Motion: no animation is used.
-- **When it is done.** The row says what was done in a few words, for example 「英語 → 日本語」, with a link 「原文を表示」 (the same as the button). The reading position (the paragraph at the top) is kept when the text switches.
-- **What is not translated.** The note, the article list and the sidebar stay as they are. Decision 0049 removed the summary and the hand-off to Claude, so nothing is made from the article's text any more; 「Markdownをコピー」 copies the note exactly and is not affected.
-- **Moving on.** Moving to another article shows that article in its original language and stops the running translation. Translation is not sticky: nothing is translated that the person did not ask for. (A per-subscription "always translate" is a later idea, section 10.)
-- **The two ways an article is shown.** An article is shown either as **reader text** (the text of the feed, or the full text after 「全文を取得」) or as the **original page** in the app's browser (key `v`). Version 1 translates the reader text only. While the original page is open the button is disabled, with the help text 「元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます」. Reason: there is no public way to translate a page inside the app's web view; it would need our own code that reads the text nodes of the page, translates them and writes them back, which breaks on dynamic pages and is out of proportion for this version. The reader text is the better place to read a translation anyway: it is clean, and 「全文を取得」 gives it the whole article. When the reader text is short (a feed excerpt), the status row says so and points to 「全文を取得」, so the person knows why only a few lines were translated; the app does not fetch the page by itself.
-- **Same language.** If the article is already in the target language the button says so in the status row (「すでに日本語です」) and does nothing else.
+It is in the specification, section 3.6 (the button, the key `t`, the status row, the language menu, the failure sentences). Two reasons that the specification does not repeat:
 
-Failure messages are one short sentence each, in the style of the add sheet: the language pair is not supported, the person did not allow the download, the language pack is missing and the Mac is offline, a paragraph could not be translated (the original paragraph stays, and the row says how many).
+- **The default target is the language of the app, not the first system language.** The owner keeps the system in English because it suits software work, and still wants to read in Japanese. When a language setting for the app arrives, the default follows it.
+- **Only the reader text is translated, not the original page.** There is no public way to translate a page inside the app's web view; it would need our own code that reads the text nodes of the page, translates them and writes them back, which breaks on dynamic pages and is out of proportion for this version. The reader text is also the better place to read a translation: it is clean, and 「全文を取得」 gives it the whole article.
 
 ## 5. How it works
 
@@ -150,17 +144,12 @@ Read on 2026-10-12: [Windows](https://developer.apple.com/design/human-interface
 
 ## 11. Decisions
 
-Answered by the owner on 2026-10-12:
+Answered by the owner on 2026-10-12; the results are in the specification 3.6.
 
-1. **Engine.** The Translation framework. Yes.
-2. **Default target language.** Not the first system language (the owner's is English). The language of the app (Japanese), then the remembered choice. Section 4. *(Product Owner's proposal, to settle the owner's point that Japanese must be one press away.)*
-3. **Not sticky.** Each article opens in its original language; translating is an explicit press. Yes.
-4. **The key.** `t`. Yes.
-5. **Summary and Claude hand-off use the original text.** Yes. *(Moot since decision 0049 removed both.)*
-6. **Links in the translated text** are left out in the first version. Yes (the owner prefers it simple).
-
-7. **Reader text and original page.** Version 1 translates the reader text; the button is disabled while the original page is open, and a short feed excerpt is pointed to 「全文を取得」 (section 4). Yes (the owner: it should simply be disabled). A page-level translation (reading the page's text nodes) is not planned.
-
-To be confirmed by the owner:
-
-8. **Scope.** Three pull requests, in this order, each merged before the next: T1 the core, T2 the button, T3 the language menu (section 10). The extras listed under "Later" are not built.
+1. The engine is the Translation framework (section 3).
+2. The default target is the language of the app (section 4).
+3. Translation is not sticky: each article opens in its original language.
+4. The key is `t`.
+5. Links in the translated text are left out in the first version.
+6. Version 1 translates the reader text only; the button is disabled while the original page is open.
+7. The scope is three pull requests, in the order of section 10; the extras under "Later" are not built.
