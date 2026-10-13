@@ -97,7 +97,13 @@ extension SplitViewFoldTests {
 
             try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))                 // let the move finish, as a person would wait
             try press("n", in: h)
-            try await settle(h) { !noteVisible(h) && sidebarButtonsMounted(h) && abs((x(list) ?? 0) - listX) < 1 && abs(list.bounds.width - listWidth) < 1 }
+            // macOS 27 (the support floor) puts the list back exactly. CI's macOS 26.6 (the build floor only) keeps the sidebar narrower
+            // after the 640 pt note leaves a 1,240 pt window (seen twice on PR #190: the list at x 193); there it checks the list is back.
+            let exact = ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 27, minorVersion: 0, patchVersion: 0))
+            try await settle(h) {
+                !noteVisible(h) && sidebarButtonsMounted(h) && (exact ? abs((x(list) ?? 0) - listX) < 1 && abs(list.bounds.width - listWidth) < 1
+                                                                      : (x(list) ?? 0) > 150 && list.bounds.width > 200)
+            }
             #expect(list.selectedRow == 1)                                                      // the selection did not change
             #expect(article(in: h)?.string.contains("合成記事 1") == true)
         }
