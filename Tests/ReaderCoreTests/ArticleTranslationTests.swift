@@ -188,6 +188,28 @@ import Testing
         #expect(translation.press(title: "T", content: a, target: "ja", decision: .translate(source: "en")) == nil)
     }
 
+    @Test func aTranslationWithFailedParagraphsIsNotCachedSoTheNextPressTriesAgain() async throws {
+        let translation = ArticleTranslation()
+        let article = content(english)
+        let job = try #require(translation.press(title: "T", content: article, target: "ja", decision: .translate(source: "en")))
+        await translation.run(job, translate: fake(failing: [0]))
+        translation.reset()
+        #expect(translation.press(title: "T", content: article, target: "ja", decision: .translate(source: "en")) != nil)
+    }
+
+    /// The app's task ended without a new press (the view went away): nothing runs any more, so the original shows.
+    @Test func aCancelledRunShowsTheOriginal() async throws {
+        let translation = ArticleTranslation()
+        let job = try #require(translation.press(title: "T", content: content(english), target: "ja", decision: .translate(source: "en")))
+        let gate = AsyncStream<Void>.makeStream()
+        let running = Task { await translation.run(job, translate: fake(before: { index in if index == 0 { for await _ in gate.stream { return } } })) }
+        while translation.state == .translating(done: 0, total: 4) { await Task.yield() }
+        running.cancel()
+        gate.continuation.finish()
+        await running.value
+        #expect(translation.state == .idle && translation.shown == nil)
+    }
+
     @Test func aFailedTranslationIsNotCached() async throws {
         let translation = ArticleTranslation()
         let article = content(english)

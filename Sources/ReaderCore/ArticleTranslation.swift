@@ -128,6 +128,7 @@ public typealias TranslationBatch = @Sendable ([TranslationPlan.Item]) -> AsyncT
         do {
             for try await response in translate(job.plan.items) {
                 guard job.generation == generation else { return }
+                guard !Task.isCancelled else { reset(); return }      // the app stopped the work without a new press
                 answered += 1
                 if let text = response.text { translated[response.index] = text }
                 shown = job.plan.apply(translated)
@@ -135,13 +136,16 @@ public typealias TranslationBatch = @Sendable ([TranslationPlan.Item]) -> AsyncT
                 onProgress(state)
             }
         } catch {
-            guard job.generation == generation, !(error is CancellationError) else { return }
+            guard job.generation == generation else { return }
+            if error is CancellationError || Task.isCancelled { reset(); return }
             if translated.isEmpty { shown = nil; key = nil; state = .failed(describe(error)); return }
         }
         guard job.generation == generation else { return }
+        guard !Task.isCancelled else { reset(); return }
         let result = Result(shown: job.plan.apply(translated), failed: total - translated.count, source: job.source)
         shown = result.shown; state = .done(failed: result.failed, source: result.source)
-        remember(job.plan.key, result)
+        // Only a whole translation is kept: after a failure the next press tries again.
+        if result.failed == 0 { remember(job.plan.key, result) }
     }
 
     /// The system started getting the language ready for this job.
