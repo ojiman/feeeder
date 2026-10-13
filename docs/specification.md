@@ -11,7 +11,7 @@ What V1 is and is not, as the person sees it. Why the product exists is in the [
 - The reading baseline is Reeder Classic 5.5.1: a smooth three-column reader, a calm dark look, Vim-style keys.
 - V1 runs on the person's own Mac. No backend, no account, no sync.
 - A new library starts empty; there is no migration from the prototype ([decision 0001](decisions/0001-fresh-library-no-prototype-migration.md)).
-- Data between beta versions is not guaranteed; saves and restarts within one version are. From 1.0, data is kept across updates (7.1). If the library cannot be opened, the app shows an error and never deletes or recreates it. Beta release notes state this limit ([decision 0003](decisions/0003-beta-data-compatibility.md)).
+- Data between beta versions is not guaranteed; saves and restarts within one version are. From 1.0, data is kept across updates (7.1). If the library cannot be opened, the app shows an error and never deletes or recreates it (how SwiftData behaves with an incompatible store is not verified). Beta release notes state this limit ([decision 0003](decisions/0003-beta-data-compatibility.md)).
 
 ## 2. Promises
 
