@@ -10,6 +10,7 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 | README.md | English public overview: concept, status, how to try it. Derived from the spec; it does not define product behavior. |
 | docs/user-guide.md | Operations, data retention and backup, using the note with another AI, verification steps. English only; app labels are quoted in Japanese with an English gloss. |
 | docs/specification.md | V1 product source of truth (PRD). The user's PdM approval is still required before V1 is accepted. |
+| docs/spec-style.md | How to write the specification so that a person or an AI reads it right: layers, rules as lists and tables, status marks, names. |
 | docs/architecture.md | Technical choices and the four-axis agent harness (§4). |
 | docs/decisions/ | Dated decision records: who decided what, and why. Start here to learn why something is the way it is. |
 | docs/review-checklist.md | Lens for independent review of a fixed commit. |

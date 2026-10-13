@@ -10,7 +10,7 @@ More articles are written than anyone can read. The hard part is finding the few
 
 Unagi Reader is for engineers in 2026 who read many feeds every day. Its value is **one loop in one app, with no waiting: read, take notes, understand.**
 
-- **Read fast.** Three columns and Vim-style keys. Scrolling and typing never wait on a reload, the network or AI.
+- **Read fast.** Sidebar, list and article, with the note beside them, and Vim-style keys. Scrolling and typing never wait on a reload, the network or AI.
 - **Note it while you read.** One plain Markdown note, written in your own words next to the article.
 - **Bring your own AI.** The app has none of its own. Copy the note as it is and paste it into any AI you like, or use the system's Writing Tools in the note editor. Nothing leaves your Mac unless you paste it.
 - **Keep it yours.** No account, no backend, no sync. Everything lives in a local database.
