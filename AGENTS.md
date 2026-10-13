@@ -1,6 +1,6 @@
 # Unagi Reader development
 
-Instructions for coding agents (Claude Code, Codex) and the person who reviews them: where things are, how to verify, where the boundaries are. Keep it short; details live in the linked documents.
+Instructions for coding agents (Claude Code, Codex) and the person who reviews them: where things are, how to verify, where the boundaries are. Keep it short; details live in the linked documents. This is the only instruction file: Claude Code reads `AGENTS.md` directly (v2.1.277 or later), so there is no `CLAUDE.md`.
 
 ## Where things are
 
@@ -14,6 +14,7 @@ Instructions for coding agents (Claude Code, Codex) and the person who reviews t
 | docs/roadmap.md | The order of the work. Units of work are GitHub issues. |
 | docs/user-guide.md, README.md | How to use it. They follow the specification and define nothing. |
 | docs/review-checklist.md | The lens for an independent review of a fixed commit. |
+| SECURITY.md | How to report a vulnerability (privately), and what to expect. |
 | docs/verification/ | Evidence for a few risky changes. Logs, not rules. |
 | Sources/ReaderCore, Sources/UnagiReader | The core (no UI) and the SwiftUI / AppKit app. |
 | Tests/ | Tests, synthetic data only. A test that checks an acceptance scenario says so in a comment (`// PRD-04`). |
@@ -42,7 +43,7 @@ bash scripts/test-check-docs.sh
 - **The roadmap** is the order, short, with links. **An issue** is a unit of work someone can start today and know when it is done: Problem, Acceptance Criteria, Constraints, Out of scope. A bug, tech debt or a question for the owner is an issue at once. **An idea** is one line in the roadmap's candidates. Work in none of these is not tracked: open an issue instead of leaving a note in a chat or a PR.
 - **One issue, one pull request, `Fixes #n`.** Say that you take it. Before you start, look at the open PRs that touch the same files. An issue with an open question for the owner waits for the answer.
 - **PR titles start with the kind:** `feat:`, `fix:`, `refactor:`, `test:`, `docs:` or `ci:`.
-- **A bug found on the way** becomes a new issue, not a bigger PR.
+- **A bug found on the way** becomes a new issue, not a bigger PR. A **security hole** does not: do not put details in a public issue ([SECURITY.md](SECURITY.md)); tell the owner, who reports it as a private advisory.
 - **Labels say what can run beside what.** `area:no-screen` touches no screen and can run beside anything. `area:reader-view` touches `ReaderView.swift` and its long modifier chain: one at a time. `no-spec` marks an enhancement that needs no specification entry.
 - **Where PRs collide:** `ReaderView.swift`, the end of the decision index, and decision numbers (take the next free number when you open the PR; renumber if `main` moved).
 - **The milestone Beta** is closed to new issues; only the owner adds to it.
@@ -58,7 +59,7 @@ A new thread has no memory of the last one. Rebuild the state from Git and GitHu
 - GitHub only through the host's signed-in `gh`; never read, copy or pass a token. An Apple ID, certificates and signing keys are never given to an agent.
 - Local edits, tests, builds and commits are allowed. Check concrete URLs, dependencies, migrations and external writes against the person's current instruction; what the task already allows need not be asked again.
 - Never: read credentials, a destructive `reset` or `clean`, `sudo`, turning the sandbox off, running an outside script. Do not use subagents as a habit; never give a child agent the whole conversation, the person's data or credentials.
-- Never push to `main`. Never sign, submit or publish an app without the owner's instruction. A new or changed dependency (SwiftSoup is pinned exactly) needs the owner's instruction.
+- Never push to `main`. Never sign, submit or publish an app without the owner's instruction. A new or changed dependency (SwiftSoup is pinned exactly) needs the owner's instruction. Dependabot opens update PRs every week for the Swift packages and the GitHub Actions (`.github/dependabot.yml`); they are changed dependencies, so do not merge one yourself. Read the change and its CI result, and leave the decision to the owner. Their titles ("Bump …") are exempt from the PR title rule.
 - Work as one supervised implementation writer ([decision 0002](docs/decisions/0002-single-supervised-writer.md)). No unattended workers, and do not resume the Keychain probe. A reviewer reading a fixed commit is not "read-only isolation" because a prompt says so.
 - `docs/vision.md` is the owner's words; change it only on the owner's instruction. Check every feature against its four questions.
 - Data: no compatibility between betas, saves within one version are kept, from 1.0 nothing is lost ([decision 0003](docs/decisions/0003-beta-data-compatibility.md), specification 7.1). Never delete an unreadable store automatically.
