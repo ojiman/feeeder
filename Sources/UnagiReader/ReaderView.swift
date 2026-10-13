@@ -108,6 +108,8 @@ struct ReaderView: View {
         windowContent
             .modifier(OPMLImportPresentation(flow: opml))
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
+            // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
+            .onExitCommand { if originalPage.url == nil { closeNote() } }
     }
 
     private var windowContent: some View {
@@ -491,10 +493,14 @@ struct ReaderView: View {
             columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
         }
     }
-    /// The note's ✕: closes the note, the same move as opening it in reverse (decision 0050).
+    /// The note's ✕ and `Esc`: close the note, the same move as opening it in reverse (decision 0050).
     private func closeNote() {
         guard noteOpen else { return }
         toggleNote()
+        // The list takes the keyboard, as after the original page. If the editor had it, the focus state may still say the list has it;
+        // a change from false to true is what moves it (seen in CI on macOS 26.6).
+        listFocused = false
+        Task { @MainActor in listFocused = true }
     }
     /// The layout button: shows or hides the list beside the open note.
     private func switchNoteLayout() {

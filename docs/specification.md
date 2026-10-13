@@ -130,8 +130,8 @@ normal                original page (v)     note beside article   note with the 
 | `n`, `⌥⌘I`, the note button in the toolbar | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
 | the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
 | the layout button (next to the note button) | note beside the article ⇄ note with the list. Disabled while the note is closed (the toolbar does not change height). The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
-| `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | `Esc`: `[not built #140]` |
-| `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | A test of this rule: `[not built #140]` |
+| `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | |
+| `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
 
 - **Motion.** Folding, returning and sliding are one movement of about 0.3 s, the system's split view motion, whatever the window width. With Reduce Motion nothing moves; the layout changes at once (decisions 0044, 0046, 0049).
@@ -191,7 +191,7 @@ normal                original page (v)     note beside article   note with the 
 | `m` | Read / unread |
 | `b` | Open the original page in the default browser |
 | `v` | Open the original page in the app |
-| `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050). For the note: `[not built #140]` |
+| `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050) |
 | `/` | Open the list filter and put the cursor in it, when no editable field is being typed in `[not built #129]` |
 | `t` | Translate the open article / show the original, when no editable field is being typed in `[not built #153]` |
 
@@ -396,7 +396,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-01 | Read smoothly, with subscriptions in order | The four areas, the four layouts, appearance, folders and unread counts, the keys and the note open and close as in 3.1. No wrong body, no visible stall, no scroll jump; input, input methods and VoiceOver are not disturbed. The budgets of 2.1 hold. The owner compares with Reeder Classic on a real Mac | real Mac (the owner, against Reeder Classic); parts in UI tests; 2.1 |
 | PRD-02 | Open an article from the unread list | Scrolling the list keeps articles unread. Showing the body or the RSS summary saves the first read time | unit tests, synthetic app |
 | PRD-03 | Read an article whose full-text fetch failed | Reading goes on; the summary, the coverage and the link to the original page are shown; no restriction is bypassed | unit tests, synthetic app |
-| PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver). `Esc`: `[not built #140]` |
+| PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver) |
 | PRD-05 | Give the note to another AI | 「Markdownをコピー」 copies the text exactly; the person pastes it into any AI. The app starts no app, makes no file, uses no network. Disabled for an empty note | unit tests, real Mac |
 | PRD-06 | (unused) | The app's own summary was removed by decision 0049; the number stays because other documents cite it | — |
 | PRD-07 | Review the final demo | The owner sees this table and the product scope demonstrated and approves them explicitly. Until then the product is not accepted | the owner |

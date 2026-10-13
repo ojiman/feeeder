@@ -140,6 +140,68 @@ extension SplitViewFoldTests {
             }
         }
 
+        private func escape(to view: NSView, in h: Harness) throws {
+            let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: h.window.windowNumber,
+                                                      context: nil, characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53))
+            view.keyDown(with: event)
+        }
+        /// The window with the note open and the keyboard nowhere yet: article 1 is shown.
+        private func openNote(_ h: Harness) async throws -> NativeArticleList.Table {
+            h.window.makeKeyAndOrderFront(nil)
+            try await settle(h) { table(in: h)?.numberOfRows == 3 && sidebarButtonsMounted(h) }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+            h.window.makeFirstResponder(list)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 1") == true }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            try press("n", in: h)
+            try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            return list
+        }
+
+        /// Decision 0050 point 2: `Esc` closes the note, from the article or from the note's editor, and shows the same article with
+        /// the list selection on it.
+        @Test func escapeFromTheArticleClosesTheNote() async throws {
+            let h = try harness()
+            defer { finish(h) }
+            let list = try await openNote(h)
+            let reader = try #require(article(in: h))
+            h.window.makeFirstResponder(reader)
+            try escape(to: reader, in: h)
+            try await settle(h) { !noteVisible(h) && sidebarButtonsMounted(h) && h.window.firstResponder === list }
+            #expect(list.selectedRow == 1 && article(in: h)?.string.contains("合成記事 1") == true)
+        }
+
+        @Test func escapeFromTheEditorClosesTheNoteButNotWhileComposing() async throws {
+            let h = try harness()
+            defer { finish(h) }
+            let list = try await openNote(h)
+            let note = try #require(editor(in: h))
+            h.window.makeFirstResponder(note)
+            note.setMarkedText("か", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: note.string.count, length: 0))
+            func shown() -> Bool { (x(note) ?? 99_999) < 1_240 - 50 }                         // the composed text changes what `editor(in:)` finds
+            try escape(to: note, in: h)
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            #expect(shown())                                                                  // composing: the note stays
+            note.unmarkText()
+            try escape(to: note, in: h)
+            try await settle(h) { !shown() && sidebarButtonsMounted(h) && h.window.firstResponder === list }
+            #expect(list.selectedRow == 1)
+        }
+
+        /// Decision 0050 point 1: with the note open, `j` / `k` move the article and the note stays open.
+        @Test func jAndKMoveTheArticleWithTheNoteOpen() async throws {
+            let h = try harness()
+            defer { finish(h) }
+            let list = try await openNote(h)
+            try press("j", in: h)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 2") == true }
+            try press("k", in: h)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 1") == true }
+            #expect(noteVisible(h) && list.selectedRow == 1)
+        }
+
         @Test func theLayoutButtonShowsTheListBesideTheArticleAndTheNote() async throws {
             let h = try harness(noteOpen: true, listShown: true)
             defer { finish(h) }
