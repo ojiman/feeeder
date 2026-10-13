@@ -2,9 +2,9 @@
 
 This guide explains how to start Unagi Reader, how it handles your data, and how to use it. For a short overview, read the [README](../README.md) first.
 
-This is an English translation of the [Japanese user guide](user-guide.ja.md). The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "新しいノート (New note)".
+The app itself is Japanese only. In this guide, an app label is shown in Japanese with an English meaning after it, for example "元ページをブラウザで開く (Open the original page in the browser)".
 
-If the two guides differ, check the Japanese guide and the [specification](specification.md), then tell us.
+If this guide and the app differ, check the [specification](specification.md), then tell us.
 
 ## 1. Start the app
 

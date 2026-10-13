@@ -38,7 +38,7 @@ No code. The `docs/vision.md` edit. A new place to keep the note (a file): not n
 
 ## Not verified
 
-Whether the list can be folded with the system's split view: a first attempt (`detailOnly`) did not fold the list column (PoC of decision 0045), so a small experiment comes first. The feel of the move on the owner's Mac. The opening of an old store that has links between articles and notes after the entity is removed.
+Whether the list can be folded with the system's split view: a first attempt (`detailOnly`) did not fold the list column (PoC of decision 0045). Settled in the step 4 pull request: the AppKit split view item folds it (`ListColumnCollapse`). The feel of the move on the owner's Mac. The opening of an old store that has links between articles and notes after the entity is removed: checked once on macOS 27 with the opt-in test of [verification 0049-one-note-store](../verification/0049-one-note-store.md); not on macOS 26.
 
 ## Sources
 

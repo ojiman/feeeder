@@ -2,7 +2,7 @@ import SwiftUI
 import ReaderCore
 
 /// 「フォルダへ移動…」: type to narrow the existing folders, or type a name that is not a folder yet and move into it in the same step.
-/// ↑↓ choose, Return moves, Esc closes (the same keys as the small chooser of 「ノートに要約を送る」). The candidates come from `FolderPicker`.
+/// ↑↓ choose, Return moves, Esc closes (the same keys as the subscription form's folder field). The candidates come from `FolderPicker`.
 struct MoveToFolderView: View {
     let folders: [String]
     let current: String

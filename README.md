@@ -8,11 +8,11 @@ A fast, keyboard-driven RSS reader for macOS that turns the few articles that ma
 
 More articles are written than anyone can read. The hard part is finding the few that matter and turning them into something of your own. Most readers stop at "read" and "starred", and a separate notes app or AI chat breaks the flow of reading.
 
-Unagi Reader is for engineers in 2026 who read many feeds every day. Its value is **one loop in one app, with no waiting: read, take notes, ask AI, understand.**
+Unagi Reader is for engineers in 2026 who read many feeds every day. Its value is **one loop in one app, with no waiting: read, take notes, understand.**
 
 - **Read fast.** Three columns and Vim-style keys. Scrolling and typing never wait on a reload, the network or AI.
 - **Note it while you read.** One plain Markdown note, written in your own words next to the article.
-- **Ask AI when you choose.** Copy the note as it is and paste it into any AI you like, or use the system's Writing Tools in the note editor. Nothing leaves your Mac unless you paste it.
+- **Bring your own AI.** The app has none of its own. Copy the note as it is and paste it into any AI you like, or use the system's Writing Tools in the note editor. Nothing leaves your Mac unless you paste it.
 - **Keep it yours.** No account, no backend, no sync. Everything lives in a local database.
 
 The full statement, with the promises and the questions to ask when in doubt, is in the [vision](docs/vision.md). The current build is moving to this shape in stages ([decision 0019](docs/decisions/0019-v1-simplification-notes.md)); the target is in the [specification](docs/specification.md).
@@ -53,7 +53,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 | | |
 |---|---|
 | [Vision](docs/vision.md) | What the product is for, for whom, the promises, and the questions to ask when in doubt |
-| [User guide](docs/user-guide.md) ([Japanese](docs/user-guide.ja.md)) | Operations, backup, using the note with another AI |
+| [User guide](docs/user-guide.md) | Operations, backup, using the note with another AI |
 | [Specification](docs/specification.md) | Product requirements (Japanese) |
 | [Architecture](docs/architecture.md) | Technical choices (Japanese) |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are |
