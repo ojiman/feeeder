@@ -12,7 +12,7 @@ XcodeのSwiftツールチェーンで、プロジェクトルートから実行�
 bash scripts/build-app.sh release
 ```
 
-生成される `.build/UnagiReader.app` をFinderから開いてください。ad hoc署名されたローカル開発用アプリです。Developer ID署名・公証は行いません。releaseの中間出力は `/private/tmp/unagi-reader-v1-release`、debugは `/private/tmp/unagi-reader-debug` に置きます。debug buildは引数を省略できます。
+生成される `.build/Unagi Reader.app` をFinderから開いてください。ad hoc署名されたローカル開発用アプリです。Developer ID署名・公証は行いません。releaseの中間出力は `/private/tmp/unagi-reader-v1-release`、debugは `/private/tmp/unagi-reader-debug` に置きます。debug buildは引数を省略できます。
 
 通常起動は空ライブラリから開始します。V1の保存先は `Application Support/UnagiReader/Reader.store`。同じ版での再起動では購読・記事・既読日時・Star・ノートを保持します。旧版の日次ノート・週ノート・スクラップは、ノート中心の版へ移行されず、**この版の初回起動で削除されます（元に戻せません）**。更新前に、下の手順で`UnagiReader`フォルダを退避してください（ベータ間の互換は保証しません）。ベータ中はバージョン更新をまたぐデータ保持を保証せず、1.0以降は保証します。旧スキーマのDBは開けない場合があります。初期化がエラーを返した場合は「ライブラリを開けませんでした」と表示し、アプリによる自動削除・作り直しは行いません。非互換スキーマでのSwiftDataの挙動は未検証です。ベータ配布時のリリースノートにもこの制約を記載します。過去のリリースノートの保持検証は、その版での結果であり、以後のベータ間の互換性保証ではありません。プロトタイプのデータ移行はありません。
 
@@ -28,7 +28,7 @@ bash scripts/build-app.sh release
 合成デモは保存先と挿入を明示して起動します。
 
 ```sh
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
+open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
 `--data-directory <path>` は開発検証用の保存先指定です。`open -n`で新しいインスタンスを起動し、操作前にプロセス引数と合成購読の表示を確認してください。詳細は[AGENTS.md](../AGENTS.md)を参照してください。合成デモの `.example` URLに実在ページはありません。実際の購読・記事・ノートをGitへ追加しないでください。

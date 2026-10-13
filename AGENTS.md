@@ -25,10 +25,10 @@ Instructions for coding agents (Codex, Claude Code) and for the person reviewing
 ```sh
 swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build          # local tests
 swift test --scratch-path /private/tmp/unagi-reader-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
-bash scripts/build-app.sh release                                        # ad hoc signed .build/UnagiReader.app (debug is the default)
+bash scripts/build-app.sh release                                        # ad hoc signed .build/Unagi Reader.app (debug is the default)
 bash scripts/fetch-ci-app.sh <PR number>                                  # a PR's CI-built app without a browser, so no quarantine attribute (needs macOS and gh)
 bash scripts/test-fetch-ci-app.sh                                         # control-flow tests for that script with stubbed tools (no macOS, network or gh needed)
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
+open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo   # synthetic run in a NEW instance, never the user's library
 git diff --check
 ```
 

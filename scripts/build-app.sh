@@ -6,7 +6,7 @@ case "$configuration" in debug|release) ;; *) echo "Usage: build-app.sh [debug|r
 if [ "$configuration" = release ]; then build_dir=/private/tmp/unagi-reader-v1-release; else build_dir=/private/tmp/unagi-reader-debug; fi
 swift build -c "$configuration" --scratch-path "$build_dir"
 binary_dir=$(swift build -c "$configuration" --scratch-path "$build_dir" --show-bin-path)
-app_dir="$PWD/.build/UnagiReader.app"
+app_dir="$PWD/.build/Unagi Reader.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 # An executable left by an earlier build under another name would break the signature.
 find "$app_dir/Contents/MacOS" -type f ! -name UnagiReader -delete

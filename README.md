@@ -25,10 +25,10 @@ You need a Mac on macOS 27.0 or later and the Swift toolchain from Xcode.
 git clone https://github.com/ojiman/unagi-reader.git
 cd unagi-reader
 bash scripts/build-app.sh release
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
+open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
-The last command opens a separate instance with synthetic subscriptions and its own data directory, so you can look around without touching a real library. To use the app for real, open `.build/UnagiReader.app` normally.
+The last command opens a separate instance with synthetic subscriptions and its own data directory, so you can look around without touching a real library. To use the app for real, open `.build/Unagi Reader.app` normally.
 
 The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quarantine attribute (for example, one saved by a browser) until you choose "Open Anyway" in System Settings > Privacy & Security. Building from source avoids this.
 

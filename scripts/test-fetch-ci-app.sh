@@ -23,9 +23,13 @@ esac
 EOF
 cat > "$bin/ditto" <<'EOF'
 #!/bin/bash
-for last; do :; done; mkdir -p "$last/UnagiReader.app"
+for last; do :; done; mkdir -p "$last/${FAKE_APP_NAME:-Unagi Reader.app}"
 EOF
-printf '#!/bin/bash\nexit 0\n' > "$bin/codesign"
+cat > "$bin/codesign" <<'EOF'
+#!/bin/bash
+for last; do :; done
+[ -d "$last" ]
+EOF
 cat > "$bin/xattr" <<'EOF'
 #!/bin/bash
 if [ -n "${FAKE_XFAIL:-}" ]; then echo "xattr: [Errno 1] Operation not permitted" >&2; exit 1; fi
@@ -52,6 +56,7 @@ run_case() {
 
 run_case "PR happy path"                 0 'Ready: .*no quarantine attribute' 'WARNING|Artifact was built' -- 10
 run_case "--run happy path"              0 'Ready: '                          'WARNING'                      -- --run 999
+run_case "older artifact"                0 'Ready: .*UnagiReader.app'         'WARNING' FAKE_APP_NAME=UnagiReader.app -- --run 998
 run_case "built for another head"        1 'Artifact was built for'           'Ready:'  FAKE_BUILT=bbbbbbb2222222222222222222222222222222bb -- 10
 run_case "no successful CI run"          1 'No successful CI run'             'Ready:'  FAKE_NORUN=1 -- 10
 run_case "quarantine attribute present"  1 'WARNING: .*com.apple.quarantine'  'Ready:'  FAKE_Q=1 -- 10

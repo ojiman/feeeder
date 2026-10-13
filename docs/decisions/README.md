@@ -69,6 +69,8 @@
 | [0048](0048-the-list-title-sits-below-the-band.md) | The list title sits below the toolbar band, level with the ✕ | valid (with the header PR) |
 | [0049](0049-one-note-and-no-ai-of-its-own.md) | One note, written beside the article; no hand-off and no AI of its own | valid (with the decision PR) |
 
+| [0051](0051-app-bundle-name-with-spaces.md) | App bundle filename matches Unagi Reader | approved in chat; implementation pending merge |
+
 0001〜0006は、すでに他の文書にあった決定を転記したものです。誤りがあれば、新しい記録で置換してください。
 
 置き換わった記録（0004、0008、0010、0011、0013、0014、0016、0018）は、2026-10のprune PRで作業ツリーから外しました。内容と来歴はGit履歴にあります（`git log --follow -- docs/decisions/<ファイル名>`）。

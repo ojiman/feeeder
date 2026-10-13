@@ -14,7 +14,7 @@ You need a Mac with macOS 27.0 or later and the Swift toolchain from Xcode. From
 bash scripts/build-app.sh release
 ```
 
-SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/UnagiReader.app`. Open it from Finder.
+SwiftPM downloads the pinned version of SwiftSoup (2.13.9). The build creates `.build/Unagi Reader.app`. Open it from Finder.
 
 - The app is ad hoc signed for local development. It is not signed with a Developer ID and it is not notarized.
 - The release build writes temporary files to `/private/tmp/unagi-reader-v1-release`. The debug build writes to `/private/tmp/unagi-reader-debug`. For the debug build you can leave out the argument.
@@ -49,7 +49,7 @@ Do this before you update a beta version, or if the app cannot open the library 
 To look around without touching your real library, start a separate instance with its own data directory and demo subscriptions:
 
 ```sh
-open -n '.build/UnagiReader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
+open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo
 ```
 
 - `--data-directory <path>` is for development checks. It sets where the app stores its data.
