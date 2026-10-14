@@ -152,7 +152,7 @@ struct ReaderView: View {
         } content: {
             articleList.id(scope)
                 .frame(width: listHeldWidth)
-                .frame(maxWidth: .infinity, alignment: .trailing).clipped()
+                .frame(maxWidth: .infinity, alignment: .leading).clipped()
                 .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { if listHeldWidth == nil, $0 > 1 { listWidth.value = $0 } }
                 .background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
                 .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion))
