@@ -401,7 +401,10 @@ struct ReaderView: View {
                            enabled: article != nil && originalPage.url == nil && displayedContent?.articleID == article?.id, action: toggleTranslation),
                 BandButton(id: "browser", symbol: "globe", help: "元ページをブラウザで開く (b)", label: "元ページをブラウザで開く",
                            enabled: article?.originalURL.flatMap { ArticleURL.validated($0) } != nil, action: openExternal),
-            ])
+            ],
+            // The sidebar and the list are folded: the note beside the article (decision 0049).
+            atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen)
+                && SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown))
     }
 
     /// The note beside the reader (the inspector).
