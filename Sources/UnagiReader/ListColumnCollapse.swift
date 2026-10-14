@@ -12,7 +12,7 @@ import ReaderCore
 /// This is a workaround kept in this one file. To take it out: delete this file and the `background` that uses it in `ReaderView`.
 struct ListColumnCollapse: NSViewRepresentable {
     var collapsed: Bool
-    /// False for Reduce Motion: the column changes at once.
+    /// False for Reduce Motion: the column changes at once (so it does in a narrow window, see `SidebarFold.animatesListFold`).
     var animated: Bool
 
     func makeNSView(context: Context) -> Probe { Probe() }
@@ -68,7 +68,7 @@ struct ListColumnCollapse: NSViewRepresentable {
 
         private func update() {
             guard let wanted, let window, let item = listItem() else { return }
-            let immediate = isFirst || !animated
+            let immediate = isFirst || !animated || !SidebarFold.animatesListFold(windowWidth: window.frame.width)
             isFirst = false
             guard item.isCollapsed != wanted else { return }
             restoring?.cancel()

@@ -28,4 +28,13 @@ struct SidebarFoldTests {
         #expect(!SidebarFold.listFolded(noteOpen: false, listShown: false))
         #expect(!SidebarFold.listFolded(noteOpen: false, listShown: true))
     }
+
+    /// #222: the system's move of the list ended the app in narrow windows.
+    @Test func aNarrowWindowFoldsTheListAtOnce() {
+        #expect(!SidebarFold.animatesListFold(windowWidth: 960))
+        #expect(!SidebarFold.animatesListFold(windowWidth: 1_240))                              // the window's first size
+        #expect(!SidebarFold.animatesListFold(windowWidth: 1_399))
+        #expect(SidebarFold.animatesListFold(windowWidth: 1_400))
+        #expect(SidebarFold.animatesListFold(windowWidth: 2_560))
+    }
 }
