@@ -14,11 +14,21 @@ public enum NotePanelWidth {
     public static let articleMinimum: Double = 360
     public static let listMinimum: Double = 280
 
-    /// The widest the panel can be in a window of this width: the article keeps its minimum, and so does the list in the three-column
-    /// layout. Never below the panel's own minimum.
-    public static func maximum(windowWidth: Double, listShown: Bool) -> Double {
+    /// The room the three columns keep beyond their widths (the dividers and rounding; the columns do not fit to the last point without it).
+    public static let margin: Double = 80
+
+    /// The list's width at first (the list column's ideal width).
+    public static let listDefaultWidth: Double = 400
+
+    /// The widest the panel can be in a window of this width: the article keeps its minimum, and the list keeps the width it has when it
+    /// is shown (`listWidth`; at least its minimum, and no more than the window leaves beside the article and the smallest panel). The
+    /// list's room is kept also while the list is folded: when it comes back, the note must not have to shrink at the same time (that
+    /// made the layout loop until AppKit raised an exception). Never below the panel's own minimum.
+    public static func maximum(windowWidth: Double, listWidth: Double = listDefaultWidth) -> Double {
         guard windowWidth.isFinite else { return range.upperBound }
-        let room = windowWidth - articleMinimum - (listShown ? listMinimum : 0)
+        let wanted = listWidth.isFinite ? max(listWidth, listMinimum) : listMinimum
+        let list = min(wanted, max(listMinimum, windowWidth - articleMinimum - range.lowerBound))
+        let room = windowWidth - articleMinimum - list - margin
         return min(max(room, range.lowerBound), range.upperBound)
     }
 

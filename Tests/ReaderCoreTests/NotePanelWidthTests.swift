@@ -70,19 +70,22 @@ struct NotePanelWidthTests {
         #expect(NotePanelWidth.key != NotePanelWidth.earlierKey)
     }
 
-    /// Specification 3.5: a narrow window leaves 360 pt for the article, and 280 pt for the list in the three-column layout.
+    /// Specification 3.5: a narrow window leaves 360 pt for the article, and for the list the width it has when it is shown (400 pt at
+    /// first, at least 280 pt), and 80 pt more, also while the list is folded.
     @Test func aNarrowWindowLimitsThePanel() {
-        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listShown: false) == 880)
-        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listShown: true) == 600)
-        #expect(NotePanelWidth.maximum(windowWidth: 3_000, listShown: false) == 1_280)         // never above the widest we offer
-        #expect(NotePanelWidth.maximum(windowWidth: 960, listShown: true) == 320)              // the smallest window still fits the panel's 300
-        #expect(NotePanelWidth.maximum(windowWidth: 700, listShown: true) == 300)              // never below the panel's own minimum
-        #expect(NotePanelWidth.maximum(windowWidth: .nan, listShown: false) == 1_280)
+        #expect(NotePanelWidth.maximum(windowWidth: 1_240) == 400)                              // the list's room is kept while it is folded
+        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listWidth: 280) == 520)
+        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listWidth: 100) == 520)             // never less than the list's minimum
+        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listWidth: 640) == 300)             // a wide list takes the room (the list gives way to 580)
+        #expect(NotePanelWidth.maximum(windowWidth: 3_000) == 1_280)                           // never above the widest we offer
+        #expect(NotePanelWidth.maximum(windowWidth: 960) == 300)                               // the smallest window: the panel's own minimum
+        #expect(NotePanelWidth.maximum(windowWidth: 700, listWidth: 640) == 300)
+        #expect(NotePanelWidth.maximum(windowWidth: .nan) == 1_280)
     }
 
-    /// A window that squeezed the panel must not change the width the person kept (a 1,100 pt note in a 1,240 pt window is shown at 880 pt).
+    /// A window that squeezed the panel must not change the width the person kept (a 1,100 pt note in a 1,240 pt window is shown at 400 pt).
     @Test func aWidthAtTheWindowsLimitIsNotKept() {
-        #expect(NotePanelWidth.shouldSave(new: 880, saved: 1_100, firstSeen: 1_100, limit: 880) == false)
-        #expect(NotePanelWidth.shouldSave(new: 700, saved: 1_100, firstSeen: 1_100, limit: 880) == true)     // dragged to a width of its own
+        #expect(NotePanelWidth.shouldSave(new: 400, saved: 1_100, firstSeen: 1_100, limit: 400) == false)
+        #expect(NotePanelWidth.shouldSave(new: 700, saved: 1_100, firstSeen: 1_100, limit: 400) == true)     // dragged to a width of its own
     }
 }

@@ -148,7 +148,9 @@ extension SplitViewFoldTests {
             let list = try #require(table(in: h)), noteView = try #require(editor(in: h))
             #expect(try #require(x(list)) >= -1, "\(state(h))")                                   // not pushed out to the left
             #expect(list.bounds.width >= NotePanelWidth.listMinimum - 20, "list \(list.bounds.width) \(state(h))")   // (the table has its own insets)
-            #expect(try #require(x(noteView)) >= NotePanelWidth.listMinimum + NotePanelWidth.articleMinimum - 1, "\(state(h))")
+            // The article column between the list and the note keeps its 360 pt.
+            let listRight = try #require(right(list))
+            #expect(try #require(x(noteView)) - listRight >= NotePanelWidth.articleMinimum - 1, "list right \(listRight), \(state(h))")
             #expect(try #require(right(noteView)) <= 1_241, "\(state(h))")
         }
 
@@ -315,9 +317,11 @@ extension SplitViewFoldTests {
             let list = try #require(table(in: h))
             list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
             try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) && (x(article(in: h)) ?? 999) < 40 }
-            // Decision 0050 point 5: the note is 640 pt wide at first (in this test's own defaults, nothing saved by the person).
+            // Decision 0050 point 5: the note is 640 pt wide at first (in this test's own defaults, nothing saved by the person), or what the
+            // 1,240 pt window leaves after the article's 360 pt and the list's 280 pt (specification 3.5).
             if UserDefaults.standard.object(forKey: NotePanelWidth.key) == nil {
-                try await settle(h) { abs(1_240 - (x(editor(in: h)) ?? 0) - NotePanelWidth.defaultWidth) < 2 }
+                let expected = min(NotePanelWidth.defaultWidth, NotePanelWidth.maximum(windowWidth: 1_240))
+                try await settle(h) { abs(1_240 - (x(editor(in: h)) ?? 0) - expected) < 2 }
             }
         }
     }
