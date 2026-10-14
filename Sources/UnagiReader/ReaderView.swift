@@ -365,9 +365,12 @@ struct ReaderView: View {
             ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top)
         }
         .overlay(alignment: .top) {
-            ListFilterBar(text: $workspace.listFilter, shown: filterShown,
-                          atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen), open: { filterPresented = true },
-                          close: { filterPresented = false; listFocused = true }).ignoresSafeArea(.container, edges: .top)
+            // A band folds with its column (decision 0057): the folded list's view still draws, so its controls are taken away.
+            if !SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown) {
+                ListFilterBar(text: $workspace.listFilter, shown: filterShown,
+                              atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen), open: { filterPresented = true },
+                              close: { filterPresented = false; listFocused = true }).ignoresSafeArea(.container, edges: .top)
+            }
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
@@ -389,10 +392,6 @@ struct ReaderView: View {
             buttons: [
                 BandButton(id: "note", symbol: "note.text", help: "ノートを開く／閉じる (⌥⌘I)",
                            label: noteOpen ? "ノートを閉じる" : "ノートを開く", action: toggleNote),
-                // The layout of the open note (decision 0050); it moves to the note's band with #198.
-                BandButton(id: "layout", symbol: workspace.noteListShown ? "rectangle.split.3x1" : "rectangle.split.2x1",
-                           help: workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す",
-                           label: workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す", enabled: noteOpen, action: switchNoteLayout),
                 BandButton(id: "star", symbol: article?.starredAt == nil ? "star" : "star.fill", help: "Starを切り替える (s)",
                            label: article?.starredAt == nil ? "Starを付ける" : "Starを外す", enabled: article != nil) { perform(.toggleStar) },
                 // `translate` has no filled form (specification 3.6).
@@ -405,7 +404,8 @@ struct ReaderView: View {
             ],
             // The sidebar and the list are folded: the note beside the article (decision 0049).
             atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen)
-                && SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown))
+                && SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown),
+            originalHost: originalPage.url.map { $0.host ?? $0.absoluteString }, closeOriginal: closeOriginal)
     }
 
     /// The note beside the reader (the inspector).
@@ -416,7 +416,8 @@ struct ReaderView: View {
                   onPrevious: { guard panelMayMove else { return }; perform(.previous) },
                   onNext: { guard panelMayMove else { return }; perform(.next) },
                   onCopy: { _ = copyNote() },
-                  onClose: closeNote)
+                  onClose: closeNote,
+                  listShown: workspace.noteListShown, onSwitchLayout: switchNoteLayout)
             .modifier(NotePanelWidthMemory())
     }
 
@@ -435,7 +436,7 @@ struct ReaderView: View {
                 })
                     .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
                     .offset(x: originalSlide)
-                    .padding(.top, ArticleBand.height)                     // below the article band; its ✕ moves into the band with #198
+                    .padding(.top, ArticleBand.height)                     // below the article band, which holds its ✕ and host name
             }
         }.clipped()
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }

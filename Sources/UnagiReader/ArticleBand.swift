@@ -20,20 +20,36 @@ struct ArticleBand: View {
     let buttons: [BandButton]
     /// The column starts at the window's left edge, under the window buttons.
     var atLeftEdge = false
+    /// While the original page is open: its host name, and its ✕ in place of the status (decisions 0047, 0057).
+    var originalHost: String? = nil
+    var closeOriginal: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 2) {
-            TranslationStatusRow(state: status, showOriginal: showOriginal)
+            if let originalHost {
+                BandButton(id: "close-original", symbol: "xmark", help: "記事に戻る (Esc)", label: "記事に戻る", action: closeOriginal)
+                Text(originalHost).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            } else {
+                TranslationStatusRow(state: status, showOriginal: showOriginal)
+            }
             Spacer(minLength: 8)
             ForEach(buttons) { $0 }
         }
-        .padding(.horizontal, 12)
-        .padding(.leading, atLeftEdge ? Self.windowButtonsWidth : 0)
-        .frame(height: Self.controlLine)
-        .padding(.top, Self.controlTop)
-        .frame(maxWidth: .infinity)
-        .frame(height: Self.height, alignment: .top)
-        .background { BandDragArea() }
+        .bandLayout(atLeftEdge: atLeftEdge)
+    }
+}
+
+extension View {
+    /// The layout every band shares: the controls on the window buttons' line, the band as high as the window buttons' band, its empty
+    /// part moving the window.
+    func bandLayout(atLeftEdge: Bool = false) -> some View {
+        padding(.horizontal, 12)
+            .padding(.leading, atLeftEdge ? ArticleBand.windowButtonsWidth : 0)
+            .frame(height: ArticleBand.controlLine)
+            .padding(.top, ArticleBand.controlTop)
+            .frame(maxWidth: .infinity)
+            .frame(height: ArticleBand.height, alignment: .top)
+            .background { BandDragArea() }
     }
 }
 
@@ -44,6 +60,7 @@ struct BandButton: View, Identifiable {
     let help: String
     let label: String
     var enabled = true
+    var shortcut: KeyboardShortcut? = nil
     let action: () -> Void
 
     var body: some View {
@@ -52,6 +69,7 @@ struct BandButton: View, Identifiable {
         }
         .buttonStyle(.borderless)
         .foregroundStyle(.secondary)
+        .keyboardShortcut(shortcut)
         .help(help).accessibilityLabel(label)
         .disabled(!enabled)
     }

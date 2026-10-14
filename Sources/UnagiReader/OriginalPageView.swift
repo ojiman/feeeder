@@ -10,18 +10,6 @@ struct OriginalPageView: View {
     @State private var loading = true
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                // The ✕ at the top left of the right column closes the page and brings the sidebar back (decision 0046).
-                Button(action: onClose) { Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)) }
-                    .buttonStyle(.borderless)
-                    .help("記事に戻る (Esc)").accessibilityLabel("記事に戻る")
-                Text(url.host ?? url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                Spacer()
-                if loading {
-                    ProgressView().controlSize(.small).frame(width: 16, height: 16)
-                        .accessibilityLabel("元ページを読み込み中")
-                }
-            }.padding(10).background(.bar)
             if let failure {
                 OriginalFailureView(message: failure, onCommand: onCommand)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -30,6 +18,13 @@ struct OriginalPageView: View {
             }
         }
         .background(AppPalette.surfaceColor)
+        // The ✕ and the host name are in the article band (decision 0057); the page shows only that it is loading.
+        .overlay(alignment: .topTrailing) {
+            if loading {
+                ProgressView().controlSize(.small).frame(width: 16, height: 16).padding(8)
+                    .accessibilityLabel("元ページを読み込み中")
+            }
+        }
     }
 }
 

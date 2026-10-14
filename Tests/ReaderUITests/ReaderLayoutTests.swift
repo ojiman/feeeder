@@ -56,6 +56,14 @@ extension SplitViewFoldTests {
                 let coordinator = try #require(table.delegate as? NativeArticleList.Coordinator)
                 coordinator.parent.onKey("v")
                 try await settle(host) { !pageIsClosed() }
+                // Decision 0057: the page's ✕ is at the left of the article band, at the top of the window, right of the list.
+                func bandButtons(_ view: NSView) -> [NSRect] {
+                    ((view as? NSButton).map { [$0.convert($0.bounds, to: nil)] } ?? []) + view.subviews.flatMap { bandButtons($0) }
+                }
+                try await settle(host) {
+                    let listRight = table.convert(table.bounds, to: nil).maxX
+                    return bandButtons(host).contains { $0.minY >= 800 - ArticleBand.height && $0.minX >= listRight && $0.minX < listRight + 60 }
+                }
                 // Decision 0046: the sidebar folds with the page, so its titlebar buttons leave and the list moves to the window's left edge with the same width.
                 try await settle(host, state: state) { !accessoryMounted() && table.convert(table.bounds, to: nil).minX < 1 }
                 #expect(abs(table.bounds.width - frame.width) < 1)

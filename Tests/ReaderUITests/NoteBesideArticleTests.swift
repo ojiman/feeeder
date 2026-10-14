@@ -244,6 +244,23 @@ extension SplitViewFoldTests {
             try await settle(h) { !column.isCollapsed && list.bounds.width >= 280 - 1 && (x(list) ?? 0) > 100 }
         }
 
+        /// Decision 0057: the note's controls (✕, layout, previous, next, copy) sit in the note's own band at the top of the window.
+        @Test func theNoteControlsSitInTheNoteBand() async throws {
+            let h = try harness(noteOpen: true)
+            defer { finish(h) }
+            let list = try #require(table(in: h))
+            list.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+            try await settle(h) { noteVisible(h) && (x(article(in: h)) ?? 999) < 40 }
+            func buttons(_ view: NSView) -> [NSButton] { ((view as? NSButton).map { [$0] } ?? []) + view.subviews.flatMap { buttons($0) } }
+            let noteLeft = try #require(x(editor(in: h)))
+            try await settle(h) {
+                buttons(h.host).map { $0.convert($0.bounds, to: nil) }
+                    .filter { $0.minY >= 800 - ArticleBand.height && $0.minX >= noteLeft - 1 && $0.width >= 20 }.count == 5
+            }
+            // Nothing of the folded list is left in the band over the article (the list's magnifier went with its column).
+            #expect(buttons(h.host).map { $0.convert($0.bounds, to: nil) }.filter { $0.minY >= 800 - ArticleBand.height && $0.maxX <= noteLeft }.count == 4)
+        }
+
         @Test func aNoteOpenAtTheStartHasTheListFolded() async throws {
             let h = try harness(noteOpen: true)
             defer { finish(h) }
