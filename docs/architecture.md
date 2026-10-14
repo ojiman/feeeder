@@ -65,6 +65,8 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 - Moving to the next or previous article animates the reading view's layer (`CAAnimationGroup`); the direction comes from the list order. It does not play for a body update of the same article.
 - `NativeArticleList` inserts new leading rows with an animation only when `ListInsertion.leadingCount` says the new order is "new rows + old order", at most 20, the list is at the top and the selection did not change; otherwise it reloads and keeps the visible article in place.
 
+- The window has no title bar and no system toolbar (`.windowStyle(.hiddenTitleBar)`; decision 0057). Each column draws its own band: `ArticleBand` (status and `BandButton`s) over the article column, `BandDragArea` (a `WindowDragGesture`) on empty band space. A SwiftUI `.toolbar` must not come back: the system toolbar lies over the bands and takes their clicks. The menu bar holds the band's actions (`ReaderMenuCommands`, `TranslationCommands`).
+
 ### 4.2 The note panel
 
 - `NotePanel` is the inspector. Its width is set by `inspectorColumnWidth` on the panel's content (on the inspector itself it has no effect). `NotePanelWidth` holds the range, the default and the saved value in `UserDefaults`, clamped on save and load. The key changed with decision 0050 (`notePanelWidth.0050`); loading removes the old `notePanelWidth`, so an earlier width is dropped once.

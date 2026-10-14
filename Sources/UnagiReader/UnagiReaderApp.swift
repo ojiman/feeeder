@@ -73,7 +73,9 @@ struct UnagiReaderApp: App {
 
         }
         .defaultSize(width: 1240, height: 810)
-        .commands { CommandGroup(replacing: .newItem) {}; OPMLCommands(); TranslationCommands() }
+        // No title bar and no system toolbar: each column draws its own band (decision 0057).
+        .windowStyle(.hiddenTitleBar)
+        .commands { CommandGroup(replacing: .newItem) {}; OPMLCommands(); ReaderMenuCommands(); TranslationCommands() }
         Settings {
             if let store { ReaderSettingsView(store: store, appearance: $appearance) }
         }

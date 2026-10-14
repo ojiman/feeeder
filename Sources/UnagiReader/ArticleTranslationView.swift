@@ -124,7 +124,7 @@ struct TranslationHost: View {
     }
 }
 
-/// The row above the article text while a translation is made or shown (specification 3.6).
+/// The translation status: short text at the left of the article band (specification 3.6, decision 0057).
 struct TranslationStatusRow: View {
     let state: ArticleTranslation.State
     let showOriginal: () -> Void
@@ -132,8 +132,7 @@ struct TranslationStatusRow: View {
     var body: some View {
         if let content {
             HStack(spacing: 8) { content }
-                .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 .accessibilityElement(children: .combine)
         }
     }
@@ -141,12 +140,8 @@ struct TranslationStatusRow: View {
     private var content: AnyView? {
         switch state {
         case .idle: nil
-        case .preparing: AnyView(Label("言語を準備しています…", systemImage: "arrow.down.circle"))
-        case .translating(let done, let total):
-            AnyView(Group {
-                Text("翻訳中…")
-                ProgressView(value: Double(done), total: Double(max(total, 1))).progressViewStyle(.linear).frame(width: 80)
-            })
+        case .preparing: AnyView(Text("言語を準備しています…"))
+        case .translating(let done, let total): AnyView(Text("翻訳中 \(done)/\(total)").monospacedDigit())
         case .done(let failed, let source):
             AnyView(Group {
                 Text(Self.pair(source: source, target: TranslationTarget.appLanguage))
