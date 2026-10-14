@@ -69,4 +69,20 @@ struct NotePanelWidthTests {
         #expect(NotePanelWidth.load(from: store) == 900)                                  // a new choice is kept
         #expect(NotePanelWidth.key != NotePanelWidth.earlierKey)
     }
+
+    /// Specification 3.5: a narrow window leaves 360 pt for the article, and 280 pt for the list in the three-column layout.
+    @Test func aNarrowWindowLimitsThePanel() {
+        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listShown: false) == 880)
+        #expect(NotePanelWidth.maximum(windowWidth: 1_240, listShown: true) == 600)
+        #expect(NotePanelWidth.maximum(windowWidth: 3_000, listShown: false) == 1_280)         // never above the widest we offer
+        #expect(NotePanelWidth.maximum(windowWidth: 960, listShown: true) == 320)              // the smallest window still fits the panel's 300
+        #expect(NotePanelWidth.maximum(windowWidth: 700, listShown: true) == 300)              // never below the panel's own minimum
+        #expect(NotePanelWidth.maximum(windowWidth: .nan, listShown: false) == 1_280)
+    }
+
+    /// A window that squeezed the panel must not change the width the person kept (a 1,100 pt note in a 1,240 pt window is shown at 880 pt).
+    @Test func aWidthAtTheWindowsLimitIsNotKept() {
+        #expect(NotePanelWidth.shouldSave(new: 880, saved: 1_100, firstSeen: 1_100, limit: 880) == false)
+        #expect(NotePanelWidth.shouldSave(new: 700, saved: 1_100, firstSeen: 1_100, limit: 880) == true)     // dragged to a width of its own
+    }
 }

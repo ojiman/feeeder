@@ -10,6 +10,18 @@ public enum NotePanelWidth {
     public static let key = "notePanelWidth.0050"
     public static let earlierKey = "notePanelWidth"
 
+    /// What a narrow window leaves for the other columns (specification 3.5): the article, and the list in the three-column layout.
+    public static let articleMinimum: Double = 360
+    public static let listMinimum: Double = 280
+
+    /// The widest the panel can be in a window of this width: the article keeps its minimum, and so does the list in the three-column
+    /// layout. Never below the panel's own minimum.
+    public static func maximum(windowWidth: Double, listShown: Bool) -> Double {
+        guard windowWidth.isFinite else { return range.upperBound }
+        let room = windowWidth - articleMinimum - (listShown ? listMinimum : 0)
+        return min(max(room, range.lowerBound), range.upperBound)
+    }
+
     public static func clamped(_ value: Double?) -> Double {
         guard let value, value.isFinite else { return defaultWidth }
         return min(max(value, range.lowerBound), range.upperBound)
@@ -31,8 +43,9 @@ public enum NotePanelWidth {
     /// Whether a measured width is one the person chose. The layout reports the first width it gave the panel and may squeeze it below
     /// the minimum in a small window; neither is a choice. A width counts when it is inside the range we offer, differs from the first
     /// one seen for this panel by more than 1 pt, and is not already saved.
-    public static func shouldSave(new: Double, saved: Double?, firstSeen: Double?) -> Bool {
-        guard new.isFinite, range.contains(new), let firstSeen, firstSeen.isFinite, abs(new - firstSeen) > 1 else { return false }
+    /// A width that is the window's limit (`maximum`) is the layout's, not a choice: a window that gave way must not change the width kept.
+    public static func shouldSave(new: Double, saved: Double?, firstSeen: Double?, limit: Double = range.upperBound + 1) -> Bool {
+        guard new.isFinite, range.contains(new), let firstSeen, firstSeen.isFinite, abs(new - firstSeen) > 1, abs(new - limit) > 1 else { return false }
         return needsSaving(new: new, saved: saved)
     }
 }
