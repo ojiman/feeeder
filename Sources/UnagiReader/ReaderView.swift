@@ -17,6 +17,8 @@ struct ReaderView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     /// The panel's width when the app started (the ideal width of the inspector). The width while the person drags is kept in `NotePanelWidthMemory`.
     @State private var startingPanelWidth = NotePanelWidth.load()
+    /// The window's width, for the most the note panel may take. It is read only by `NoteInspectorColumn`, so a window resize does not redraw the reader.
+    @State private var windowSpace = WindowSpace()
     /// True for one turn after the person dragged the panel shut, so that it is shown again (see `noteOpenBinding`).
     @State private var panelReopening = false
     @State private var saveError: String?
@@ -149,15 +151,16 @@ struct ReaderView: View {
             articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
                 .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion))
         } detail: {
-            originalColumn.frame(minWidth: 360)
+            originalColumn.frame(minWidth: NotePanelWidth.articleMinimum)
                 .overlay(alignment: .top) { articleBand.ignoresSafeArea(.container, edges: .top) }
                 // The width goes on the panel's content. Put on the inspector itself it had no effect, and the panel stayed about 270 pt wide.
                 .inspector(isPresented: noteOpenBinding) {
-                    notePanel.inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
+                    NoteInspectorColumn(space: windowSpace, listShown: workspace.noteListShown, startingWidth: startingPanelWidth) { limit in notePanel(limit: limit) }
                 }
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 960, minHeight: 600)
+        .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { windowSpace.width = $0 }
         .tint(AppPalette.accentColor)
         .containerBackground(AppPalette.surfaceColor, for: .window)
         .task(id: selectedExpiry) {
@@ -422,7 +425,7 @@ struct ReaderView: View {
     }
 
     /// The note beside the reader (the inspector).
-    private var notePanel: some View {
+    private func notePanel(limit: Double) -> some View {
         NotePanel(store: store,
                   canPrevious: NoteArticleSwitcher.canMove(-1, from: selection, in: visibleArticleIDs),
                   canNext: NoteArticleSwitcher.canMove(1, from: selection, in: visibleArticleIDs),
@@ -431,7 +434,7 @@ struct ReaderView: View {
                   onCopy: { _ = copyNote() },
                   onClose: closeNote,
                   listShown: workspace.noteListShown, onSwitchLayout: switchNoteLayout)
-            .modifier(NotePanelWidthMemory())
+            .modifier(NotePanelWidthMemory(limit: limit))
     }
 
     /// Not while Japanese text is being composed.

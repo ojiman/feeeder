@@ -108,6 +108,47 @@ extension SplitViewFoldTests {
             #expect(article(in: h)?.string.contains("合成記事 1") == true)
         }
 
+        /// Specification 3.5 (Width): a wide saved note width gives way in a narrow window; the article keeps 360 pt and nothing leaves the
+        /// window (issue: the note at 1,100 pt in a 1,240 pt window pushed the article out to the left).
+        @Test func aWideSavedNoteLeavesTheArticleItsWidthInANarrowWindow() async throws {
+            let saved = UserDefaults.standard.object(forKey: NotePanelWidth.key)
+            UserDefaults.standard.set(1_100.0, forKey: NotePanelWidth.key)
+            defer { if let saved { UserDefaults.standard.set(saved, forKey: NotePanelWidth.key) } else { UserDefaults.standard.removeObject(forKey: NotePanelWidth.key) } }
+            let h = try harness()
+            defer { finish(h) }
+            try await settle(h) { table(in: h)?.numberOfRows == 3 && sidebarButtonsMounted(h) }
+            try #require(table(in: h)).selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 1") == true }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            try press("n", in: h)
+            try await settle(h) { noteVisible(h) && !sidebarButtonsMounted(h) }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            h.host.layoutSubtreeIfNeeded()
+            let articleView = try #require(article(in: h)), noteView = try #require(editor(in: h))
+            #expect(try #require(x(articleView)) >= -1, "\(state(h))")                          // not pushed out to the left
+            #expect(try #require(x(noteView)) >= NotePanelWidth.articleMinimum - 1, "\(state(h))")        // the article column keeps its width
+            #expect(try #require(right(noteView)) <= 1_241, "\(state(h))")                       // nothing is outside the window on the right
+        }
+
+        /// The same in the three-column layout (the list is shown beside the note): the list keeps its 280 pt too.
+        @Test func aWideSavedNoteLeavesTheListAndTheArticleTheirWidthsInThreeColumns() async throws {
+            let saved = UserDefaults.standard.object(forKey: NotePanelWidth.key)
+            UserDefaults.standard.set(1_100.0, forKey: NotePanelWidth.key)
+            defer { if let saved { UserDefaults.standard.set(saved, forKey: NotePanelWidth.key) } else { UserDefaults.standard.removeObject(forKey: NotePanelWidth.key) } }
+            let h = try harness(noteOpen: true, listShown: true)
+            defer { finish(h) }
+            try await settle(h) { table(in: h)?.numberOfRows == 3 && noteVisible(h) }
+            try #require(table(in: h)).selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+            try await settle(h) { article(in: h)?.string.contains("合成記事 1") == true }
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            h.host.layoutSubtreeIfNeeded()
+            let list = try #require(table(in: h)), noteView = try #require(editor(in: h))
+            #expect(try #require(x(list)) >= -1, "\(state(h))")                                   // not pushed out to the left
+            #expect(list.bounds.width >= NotePanelWidth.listMinimum - 20, "list \(list.bounds.width) \(state(h))")   // (the table has its own insets)
+            #expect(try #require(x(noteView)) >= NotePanelWidth.listMinimum + NotePanelWidth.articleMinimum - 1, "\(state(h))")
+            #expect(try #require(right(noteView)) <= 1_241, "\(state(h))")
+        }
+
         /// Opening the note must not take the keyboard: the editor gets it only when the person clicks it, so `j`, `k`, `s` and the other
         /// keys still work. The list that had the keyboard goes away, so the reader gets it.
         @Test func openingTheNoteDoesNotTakeTheKeyboard() async throws {

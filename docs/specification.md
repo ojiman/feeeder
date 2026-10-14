@@ -242,7 +242,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 
 - Plain Markdown text with the system's text services, undo, Japanese input and Writing Tools (5.1).
 - The panel's edge can be dragged; the width is kept across launches; dragging never folds the panel.
-- Width: 640 pt at first, up to 1,280 pt, at least 300 pt. In a narrow window it leaves 360 pt for the article, and 280 pt for the list in the three-column layout. A width saved by an earlier version is dropped once, at the first launch of this version.
+- Width: 640 pt at first, up to 1,280 pt, at least 300 pt. In a narrow window it leaves 360 pt for the article, and 280 pt for the list in the three-column layout. A saved width that the window cannot hold is shown narrower and stays saved. A width saved by an earlier version is dropped once, at the first launch of this version.
 - Display-only styling; the saved text never changes:
   - A line that starts with one to six `#` and then a space or the line end is a heading: bold and larger.
   - A line that starts with `-`, `*`, `+` or a number (`1.`, `1)`), after at most 8 spaces, is a list item: the marker is coloured and wrapped lines align with the text.
