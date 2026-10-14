@@ -1,44 +1,64 @@
 import SwiftUI
 import AppKit
 
-/// The list filter in the list's band (specification 3.1.4, decision 0057): only a magnifier at the right; clicking it, or `/`, puts the
-/// system's search field across the band. The field stays while it has text; left empty, it turns back into the magnifier.
+/// The list filter in the list's band (specification 3.1.4, decision 0057): a magnifier at the right; clicking it, or `/`, grows the
+/// system's search field out of it toward the left. Any click elsewhere closes the field again: with text the filter stays and the
+/// magnifier is filled, empty there is no filter.
 struct ListFilterBar: View {
     @Binding var text: String
     let shown: Bool
     /// The list starts at the window's left edge (the sidebar is folded), under the window buttons.
     var atLeftEdge = false
     let open: () -> Void
+    /// `Esc` in the empty field: closes it and gives the list the keyboard.
     let close: () -> Void
+    /// The keyboard went elsewhere: closes the field and leaves the keyboard where the person clicked.
+    let dismiss: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The opening and closing motion: the field grows out of the magnifier (none with Reduce Motion).
+    static let motion = Animation.snappy(duration: 0.25)
 
     var body: some View {
-        HStack(spacing: 6) {
-            if shown {
-                ListFilterField(text: $text, close: close).frame(height: 22)
-            } else {
-                Spacer(minLength: 0)
-                BandButton(id: "filter", symbol: "magnifyingglass", help: "記事を絞り込む (/)", label: "記事を絞り込む", action: open)
+        HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            ZStack(alignment: .trailing) {
+                if shown {
+                    ListFilterField(text: $text, close: close, dismiss: dismiss)
+                        .frame(height: ArticleBand.controlLine)
+                        .transition(.opacity)
+                } else {
+                    BandButton(id: "filter", symbol: text.isEmpty ? "magnifyingglass" : "magnifyingglass.circle.fill",
+                               help: text.isEmpty ? "記事を絞り込む (/)" : "「\(text)」で絞り込み中 (/)",
+                               label: text.isEmpty ? "記事を絞り込む" : "「\(text)」で絞り込み中", action: open)
+                        .transition(.opacity)
+                }
             }
+            // The field's width grows from the magnifier's to the whole band.
+            .frame(maxWidth: shown ? .infinity : 28, alignment: .trailing)
         }
         .padding(.horizontal, 12)
         .padding(.leading, atLeftEdge ? ArticleBand.windowButtonsWidth : 0)
         .frame(height: ArticleBand.controlLine)
         .padding(.top, ArticleBand.controlTop)
         .frame(maxWidth: .infinity, alignment: .top)
+        .animation(reduceMotion ? nil : Self.motion, value: shown)
     }
 }
 
 /// The system's search field. The list follows its text, but not while Japanese text is being composed in it: the text is handed on
-/// only when the field's editor has no marked text, and again when the composition is committed. `Esc` in an empty field, or leaving it
-/// empty, closes it.
+/// only when the field's editor has no marked text, and again when the composition is committed. `Esc` in an empty field, or the keyboard
+/// going elsewhere, closes it (the text, and so the filter, stays).
 struct ListFilterField: NSViewRepresentable {
     @Binding var text: String
     let close: () -> Void
+    let dismiss: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSSearchField {
         let field = NSSearchField()
+        field.controlSize = .large                                         // as high as the band's buttons
         field.placeholderString = "絞り込み"
         field.sendsSearchStringImmediately = true
         field.delegate = context.coordinator
@@ -71,10 +91,11 @@ struct ListFilterField: NSViewRepresentable {
             text = value
         }
         @objc func searched(_ field: NSSearchField) { Self.hand(field.stringValue, from: field, to: &parent.text) }
-        /// The keyboard went elsewhere: an empty field turns back into the magnifier.
+        /// The keyboard went elsewhere (a click anywhere): the field turns back into the magnifier; its text, and so the filter, stays.
         func controlTextDidEndEditing(_ notification: Notification) {
-            guard let field = notification.object as? NSSearchField, field.stringValue.isEmpty else { return }
-            parent.close()
+            guard let field = notification.object as? NSSearchField else { return }
+            Self.hand(field.stringValue, from: field, to: &parent.text)
+            parent.dismiss()
         }
         func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
             guard selector == #selector(NSResponder.cancelOperation(_:)), !textView.hasMarkedText(), textView.string.isEmpty else { return false }

@@ -174,7 +174,7 @@ normal                original page (v)     note beside article   note with the 
 
 **List filter** (decision 0055)
 
-- Only a magnifier is shown in the list's band. Clicking it or `/` opens the system's search field across the band, with the cursor in it (3.1.5). The field stays while it has text, also across scopes; left empty (`Esc`, or the keyboard goes elsewhere) it turns back into the magnifier.
+- Only a magnifier is shown in the list's band. Clicking it or `/` grows the system's search field (as high as the band's buttons) out of it toward the left in about 0.25 s, with the cursor in it (3.1.5; no movement with Reduce Motion). Any click elsewhere turns the field back into the magnifier: with text the filter stays, also across scopes, and the magnifier is filled; empty, there is no filter. `Esc` in the empty field closes it and gives the list the keyboard.
 - Typing narrows the list at once to the articles of the current scope (Feeds, Star, a folder, a subscription) whose title or feed summary (the text the list row shows) contains the typed text, ignoring case, accents and full-width letters. The count under the title counts the narrowed list. Clearing the field restores the list.
 - Only the title and the feed summary are searched: not the article's body, not the full text the app saved, and not the note.
 - The filter stays when the scope changes. It is not kept across launches.
