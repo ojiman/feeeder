@@ -137,7 +137,7 @@ normal                original page (v)     note beside article   note with the 
 
 #### 3.1.4 Rules per area
 
-**Bands** (decision 0057) `[not built #197, #198]`
+**Bands** (decision 0057) `[not built #198]`
 
 - The window has no system toolbar and no visible title bar. Each column has its own band at the top of the window, as high as the window buttons' band (52 pt), in the column's colour, with no line under it. A band folds with its column. No column has a second row of controls below its band.
 - What each band holds, left to right:
@@ -145,7 +145,7 @@ normal                original page (v)     note beside article   note with the 
 | Column | Left | Right | Issue |
 |---|---|---|---|
 | sidebar | the window buttons | add subscription, refresh (as now) | |
-| list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) | #197 |
+| list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) | |
 | article | the translation status as short text (3.6) | the note button, Star, translate, globe (and the layout button until #198) | |
 | original page | ✕, the page's host name | | #198 |
 | note | ✕, the layout button | previous, next, copy | #198 |
@@ -174,7 +174,7 @@ normal                original page (v)     note beside article   note with the 
 
 **List filter** (decision 0055)
 
-- Only a magnifier is shown in the list's band. Clicking it or `/` opens the system's search field across the band, with the cursor in it (3.1.5). The field stays while it has text, also across scopes; left empty (`Esc`, or the keyboard goes elsewhere) it turns back into the magnifier. `[not built #197]` (today: the magnifier on the list title's line, and the field takes that line's place)
+- Only a magnifier is shown in the list's band. Clicking it or `/` opens the system's search field across the band, with the cursor in it (3.1.5). The field stays while it has text, also across scopes; left empty (`Esc`, or the keyboard goes elsewhere) it turns back into the magnifier.
 - Typing narrows the list at once to the articles of the current scope (Feeds, Star, a folder, a subscription) whose title or feed summary (the text the list row shows) contains the typed text, ignoring case, accents and full-width letters. The count under the title counts the narrowed list. Clearing the field restores the list.
 - Only the title and the feed summary are searched: not the article's body, not the full text the app saved, and not the note.
 - The filter stays when the scope changes. It is not kept across launches.

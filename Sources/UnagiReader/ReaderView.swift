@@ -362,10 +362,11 @@ struct ReaderView: View {
             }
         }
         .overlay(alignment: .top) {
-            ListHeader(title: scopeTitle, count: visibleArticleIDs.count, filterShown: filterShown).ignoresSafeArea(.container, edges: .top)
+            ListHeader(title: scopeTitle, count: visibleArticleIDs.count).ignoresSafeArea(.container, edges: .top)
         }
         .overlay(alignment: .top) {
-            ListFilterBar(text: $workspace.listFilter, shown: filterShown, open: { filterPresented = true },
+            ListFilterBar(text: $workspace.listFilter, shown: filterShown,
+                          atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen), open: { filterPresented = true },
                           close: { filterPresented = false; listFocused = true }).ignoresSafeArea(.container, edges: .top)
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }

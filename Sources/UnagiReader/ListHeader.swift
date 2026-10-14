@@ -12,8 +12,6 @@ import SwiftUI
 struct ListHeader: View {
     let title: String
     let count: Int
-    /// The list filter's field takes the place of the title line (`ListFilterBar`).
-    var filterShown = false
 
     /// Same left and right margin as the text of the rows below, so the title and the rows share one edge.
     static let sideMargin = NativeArticleList.Metrics.contentMargin
@@ -31,7 +29,7 @@ struct ListHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(size: 17, weight: .semibold)).lineLimit(1).truncationMode(.tail).opacity(filterShown ? 0 : 1)
+            Text(title).font(.system(size: 17, weight: .semibold)).lineLimit(1).truncationMode(.tail)
             Text("\(count)件の記事").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
