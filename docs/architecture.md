@@ -58,6 +58,7 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 
 - `SidebarFold` (ReaderCore, pure) decides the columns: `folded(pageOpen:noteOpen:)` for the sidebar, `listFolded(noteOpen:listShown:)` for the list. Every fold, return and slide is one `withAnimation` of `SidebarFold.motionDuration`; with Reduce Motion nothing moves.
 - `NavigationSplitView` cannot fold its middle column, so `ListColumnCollapse` finds the AppKit `NSSplitViewItem`, sets `canCollapse` for the moment, and changes `isCollapsed` inside the same `NSAnimationContext`. It remembers the list width and restores it after the return (the note panel is still there in the first frame and squeezes the list).
+- The window may restore a folded list column from its saved state (after the app ended without quitting while the note was open). `ListColumnCollapse` unfolds it again whenever it is folded while the note is closed (#195); the list then comes back at its smallest width.
 - After a fold the input focus goes to the article text so `j` / `k` keep working; the note editor takes focus only when clicked.
 - Hosted tests that fold columns run one after another under `SplitViewFoldTests`.
 - `OriginalPageState.selectionChanged` closes the original page when another article is chosen; keys and clicks share one selection path.

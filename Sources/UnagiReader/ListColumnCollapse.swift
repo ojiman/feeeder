@@ -33,6 +33,21 @@ struct ListColumnCollapse: NSViewRepresentable {
             update()
         }
 
+        /// The window can fold the list by itself after the first change: it restores the split view's saved state, which holds a folded
+        /// list when the app ended without quitting while the note was open (#195). The note starts closed, so the list is put back. This
+        /// view fills the list, so a fold resizes it; the check runs after that layout pass.
+        private var moving = false
+        override func setFrameSize(_ newSize: NSSize) {
+            super.setFrameSize(newSize)
+            guard !moving, wanted == false else { return }
+            DispatchQueue.main.async { [weak self] in self?.keepWanted() }
+        }
+        private func keepWanted() {
+            guard !moving, wanted == false, let window, let item = listItem(), item.isCollapsed else { return }
+            item.isCollapsed = false
+            finish(item, window: window, collapsed: false)
+        }
+
         /// The width the list had before it was folded. When it comes back the note's panel is still there for the first frames of the
         /// move, so the split view gives the list only the room that is left (its smallest width); `restoreWidth` sets the old width
         /// again after the move.
@@ -63,6 +78,7 @@ struct ListColumnCollapse: NSViewRepresentable {
                 item.isCollapsed = wanted
                 finish(item, window: window, collapsed: wanted)
             } else {
+                moving = true
                 NSAnimationContext.runAnimationGroup { context in
                     context.duration = SidebarFold.motionDuration
                     context.allowsImplicitAnimation = true
@@ -74,6 +90,7 @@ struct ListColumnCollapse: NSViewRepresentable {
         }
 
         private func settled(collapsed: Bool) {
+            moving = false
             guard let window, let item = listItem() else { return }
             finish(item, window: window, collapsed: collapsed)
         }

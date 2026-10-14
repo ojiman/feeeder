@@ -221,6 +221,29 @@ extension SplitViewFoldTests {
             try await settle(h) { (x(editor(in: h)) ?? 0) >= (right(article(in: h)) ?? 99_999) - 1 }
         }
 
+        /// Issue #195: the window can restore a folded list column (saved while the note was open, then the app ended without quitting).
+        /// The note starts closed, so the list must come back by itself.
+        @Test func aListFoldedByTheSystemComesBackWhileTheNoteIsClosed() async throws {
+            let h = try harness()
+            defer { finish(h) }
+            try await settle(h) { table(in: h)?.numberOfRows == 3 && sidebarButtonsMounted(h) }
+            let list = try #require(table(in: h))
+            try await Task.sleep(for: .seconds(SidebarFold.motionDuration * 2))
+            var view: NSView? = list.superview
+            var item: NSSplitViewItem?
+            while let current = view, item == nil {
+                if let split = current as? NSSplitView, let controller = split.delegate as? NSSplitViewController {
+                    item = controller.splitViewItems.first { list.isDescendant(of: $0.viewController.view) }
+                }
+                view = current.superview
+            }
+            let column = try #require(item)
+            column.canCollapse = true
+            column.isCollapsed = true                                                          // what a restored window state does
+            // Back and usable: the width it had before the system folded it is not known, so it comes back at least at its smallest width.
+            try await settle(h) { !column.isCollapsed && list.bounds.width >= 280 - 1 && (x(list) ?? 0) > 100 }
+        }
+
         @Test func aNoteOpenAtTheStartHasTheListFolded() async throws {
             let h = try harness(noteOpen: true)
             defer { finish(h) }
