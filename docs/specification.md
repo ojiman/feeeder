@@ -125,9 +125,9 @@ normal                original page (v)     note beside article   note with the 
 |---|---|---|
 | `v` | normal → original page. The sidebar folds, the page comes in from the right, the list keeps its width and moves to the left edge | |
 | `Esc`, the ✕, `j` / `k`, a click in the list | original page → normal. The page slides out to the right and the sidebar returns, whichever way it was closed. With `j` / `k` or a click, the chosen article's text appears from under the page | |
-| `n`, `⌥⌘I`, the note button (in the article band; in the toolbar until #196) | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
+| `n`, `⌥⌘I`, the note button (in the article band) | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
 | the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
-| the layout button (in the note band, beside the ✕; next to the note button in the toolbar until #198) | note beside the article ⇄ note with the list. The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
+| the layout button (in the note band, beside the ✕; next to the note button in the article band until #198) | note beside the article ⇄ note with the list. The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
 | `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | |
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
@@ -137,7 +137,7 @@ normal                original page (v)     note beside article   note with the 
 
 #### 3.1.4 Rules per area
 
-**Bands** (decision 0057) `[not built #196, #197, #198]`
+**Bands** (decision 0057) `[not built #197, #198]`
 
 - The window has no system toolbar and no visible title bar. Each column has its own band at the top of the window, as high as the window buttons' band (52 pt), in the column's colour, with no line under it. A band folds with its column. No column has a second row of controls below its band.
 - What each band holds, left to right:
@@ -146,7 +146,7 @@ normal                original page (v)     note beside article   note with the 
 |---|---|---|---|
 | sidebar | the window buttons | add subscription, refresh (as now) | |
 | list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) | #197 |
-| article | the translation status as short text (3.6) | the note button, Star, translate, globe | #196 |
+| article | the translation status as short text (3.6) | the note button, Star, translate, globe (and the layout button until #198) | |
 | original page | ✕, the page's host name | | #198 |
 | note | ✕, the layout button | previous, next, copy | #198 |
 
@@ -328,9 +328,9 @@ A button translates the open article into another language, on the Mac, with the
 
 **While it works and when it is done**
 
-- The status, as short text at the left of the article band (`[not built #196]`; today a row above the article text), says 「翻訳中…」 with a small progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. Title and paragraphs change from the top as results arrive. The reading position is kept. Reduce Motion: no animation.
-- When done, the row says what was done, for example 「英語 → 日本語」, with a link 「原文を表示」.
-- If the article is already in the target language, the row says 「すでに日本語です」 and nothing else happens.
+- The status, as short text at the left of the article band, says 「翻訳中 3/12」 (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. Title and paragraphs change from the top as results arrive. The reading position is kept. Reduce Motion: no animation.
+- When done, the status says what was done, for example 「英語 → 日本語」, with a link 「原文を表示」.
+- If the article is already in the target language, the status says 「すでに日本語です」 and nothing else happens.
 - A failure is one short sentence in the row, never an alert: the language pair is not supported; the download was not allowed; the language pack is missing and the Mac is offline. If one paragraph fails, its original text stays and the row says how many failed.
 
 **Language** `[not built #154]`

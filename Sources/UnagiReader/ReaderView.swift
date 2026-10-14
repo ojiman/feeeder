@@ -118,6 +118,7 @@ struct ReaderView: View {
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
             // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
             .onExitCommand { if originalPage.url == nil { closeNote() } }
+            .focusedSceneValue(\.readerActions, readerActions)
             .modifier(ArticleTranslationPresentation(controller: translation, articleID: selection, title: selectedArticle?.title,
                 content: displayedContent, keysEnabled: shortcutsEnabled, readerShown: originalPage.url == nil))
             .onKeyPress("/") { guard shortcutsEnabled else { return .ignored }; filterPresented = true; return .handled }
@@ -148,6 +149,7 @@ struct ReaderView: View {
                 .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion))
         } detail: {
             originalColumn.frame(minWidth: 360)
+                .overlay(alignment: .top) { articleBand.ignoresSafeArea(.container, edges: .top) }
                 // The width goes on the panel's content. Put on the inspector itself it had no effect, and the panel stayed about 270 pt wide.
                 .inspector(isPresented: noteOpenBinding) {
                     notePanel.inspectorColumnWidth(min: NotePanelWidth.range.lowerBound, ideal: startingPanelWidth, max: NotePanelWidth.range.upperBound)
@@ -157,34 +159,6 @@ struct ReaderView: View {
         .frame(minWidth: 960, minHeight: 600)
         .tint(AppPalette.accentColor)
         .containerBackground(AppPalette.surfaceColor, for: .window)
-        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)       // no bar of its own gray with a line under it: the toolbar sits on the surface
-        .toolbar {
-            // Always present, disabled when no article is open. If these buttons came and went with the selection,
-            // the toolbar would change height each time and the whole window would shift (and the title would move).
-            ToolbarItemGroup(placement: .primaryAction) {
-                let article = selectedArticle
-                Button { toggleNote() } label: { Image(systemName: "note.text") }
-                    .keyboardShortcut("i", modifiers: [.option, .command])
-                    .help("ノートを開く／閉じる (⌥⌘I)").accessibilityLabel(noteOpen ? "ノートを閉じる" : "ノートを開く")
-                // One button for the two layouts of the open note; the icon shows the layout on the screen (decision 0050).
-                Button(action: switchNoteLayout) { Image(systemName: workspace.noteListShown ? "rectangle.split.3x1" : "rectangle.split.2x1") }
-                    .help(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
-                    .accessibilityLabel(workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す")
-                    .disabled(!noteOpen)
-                Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
-                    .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
-                    .disabled(article == nil)
-                // Translate the article in place, or show the original (specification 3.6). `translate` has no filled form.
-                let translated = translation.isOn(for: article?.id)
-                Button(action: toggleTranslation) { Image(systemName: translated ? "character.bubble.fill" : "character.bubble") }
-                    .help(originalPage.url != nil ? "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます" : "翻訳する／原文に戻す (t)")
-                    .accessibilityLabel(translated ? "原文を表示" : "翻訳")
-                    .disabled(article == nil || originalPage.url != nil || displayedContent?.articleID != article?.id)
-                Button(action: openExternal) { Image(systemName: "globe") }
-                    .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
-                    .disabled(article?.originalURL.flatMap { ArticleURL.validated($0) } == nil)
-            }
-        }
         .task(id: selectedExpiry) {
             guard let expiry = selectedExpiry else { return }
             do {
@@ -378,6 +352,8 @@ struct ReaderView: View {
             onTopOffset: { id, offset in scrollMemory.state.listScrollAnchor = id; scrollMemory.state.listScrollOffset = offset },
             headerInset: ListHeader.height)
         .focused($listFocused)
+        // The list's band: its empty part moves the window (decision 0057).
+        .overlay(alignment: .top) { BandDragArea().frame(height: ListHeader.bandHeight).ignoresSafeArea(.container, edges: .top) }
         .navigationTitle("")                                           // the list draws its own title (ListHeader); the system one ran out of the column
         .overlay {
             if visibleArticleIDs.isEmpty {
@@ -394,6 +370,41 @@ struct ReaderView: View {
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
+    }
+
+    private var readerActions: ReaderActions {
+        let article = selectedArticle
+        return ReaderActions(noteOpen: noteOpen, toggleNote: toggleNote, starred: article?.starredAt != nil, canStar: article != nil,
+                             toggleStar: { perform(.toggleStar) },
+                             canOpenBrowser: article?.originalURL.flatMap { ArticleURL.validated($0) } != nil, openBrowser: openExternal)
+    }
+    /// The article column's band (decision 0057). The buttons are always there and disabled when they cannot act, so nothing moves.
+    private var articleBand: some View {
+        let article = selectedArticle
+        let translated = translation.isOn(for: article?.id)
+        return ArticleBand(
+            status: translation.state.key?.articleID == article?.id || translation.state.key == nil ? translation.state.state : .idle,
+            showOriginal: { translation.reset() },
+            buttons: [
+                BandButton(id: "note", symbol: "note.text", help: "ノートを開く／閉じる (⌥⌘I)",
+                           label: noteOpen ? "ノートを閉じる" : "ノートを開く", action: toggleNote),
+                // The layout of the open note (decision 0050); it moves to the note's band with #198.
+                BandButton(id: "layout", symbol: workspace.noteListShown ? "rectangle.split.3x1" : "rectangle.split.2x1",
+                           help: workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す",
+                           label: workspace.noteListShown ? "記事の一覧を隠す" : "記事の一覧を出す", enabled: noteOpen, action: switchNoteLayout),
+                BandButton(id: "star", symbol: article?.starredAt == nil ? "star" : "star.fill", help: "Starを切り替える (s)",
+                           label: article?.starredAt == nil ? "Starを付ける" : "Starを外す", enabled: article != nil) { perform(.toggleStar) },
+                // `translate` has no filled form (specification 3.6).
+                BandButton(id: "translate", symbol: translated ? "character.bubble.fill" : "character.bubble",
+                           help: originalPage.url != nil ? "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます" : "翻訳する／原文に戻す (t)",
+                           label: translated ? "原文を表示" : "翻訳",
+                           enabled: article != nil && originalPage.url == nil && displayedContent?.articleID == article?.id, action: toggleTranslation),
+                BandButton(id: "browser", symbol: "globe", help: "元ページをブラウザで開く (b)", label: "元ページをブラウザで開く",
+                           enabled: article?.originalURL.flatMap { ArticleURL.validated($0) } != nil, action: openExternal),
+            ],
+            // The sidebar and the list are folded: the note beside the article (decision 0049).
+            atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen)
+                && SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown))
     }
 
     /// The note beside the reader (the inspector).
@@ -423,6 +434,7 @@ struct ReaderView: View {
                 })
                     .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
                     .offset(x: originalSlide)
+                    .padding(.top, ArticleBand.height)                     // below the article band; its ✕ moves into the band with #198
             }
         }.clipped()
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }
@@ -438,9 +450,7 @@ struct ReaderView: View {
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
                 onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward, pageMotion: originalPage.url == nil,
-                translated: translation.shown(for: article.id),
-                translationState: translation.state.key?.articleID == article.id || translation.state.key == nil ? translation.state.state : .idle,
-                showOriginal: { translation.reset() })
+                translated: translation.shown(for: article.id))
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
@@ -507,7 +517,7 @@ struct ReaderView: View {
 
     private var noteOpen: Bool { workspace.noteOpen }
     private var noteOpenBinding: Binding<Bool> {
-        // The panel is closed only by the toolbar button or ⌥⌘I (`toggleNote`). Dragging its edge shut also reports `false` here. The note
+        // The panel is closed only by the note button, ⌥⌘I, the ✕ or `Esc` (`toggleNote`). Dragging its edge shut also reports `false` here. The note
         // stays open, and the panel is shown again on the next turn: ignoring the report left the panel gone while the app still counted it as
         // open, and the person could lose the panel with no way back that they would find.
         Binding(get: { noteOpen && !panelReopening }, set: { open in
