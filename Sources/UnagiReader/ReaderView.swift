@@ -466,8 +466,8 @@ struct ReaderView: View {
         }
     }
 
-    /// The filter's field is open only while it is being used; the filter itself stays while it has text (specification 3.1.4).
-    private var filterShown: Bool { filterPresented }
+    /// The filter's field stays while it has text, also across scopes (specification 3.1.4).
+    private var filterShown: Bool { filterPresented || !workspace.listFilter.isEmpty }
     private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }

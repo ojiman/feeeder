@@ -76,9 +76,6 @@ import Testing
     @Test func theFieldIsTheSystemSearchFieldOverTheList() async throws {
         let h = try harness(filter: "swift")
         defer { finish(h) }
-        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 }
-        #expect(find(NSSearchField.self, in: h.host) == nil)                                      // the filter is on, the field is closed
-        #expect(try #require(find(NativeArticleList.Table.self, in: h.host)).keyHandler?("/") == true)
         try await settle(h) { find(NSSearchField.self, in: h.host) != nil && find(NativeArticleList.Table.self, in: h.host) != nil }
         let field = try #require(find(NSSearchField.self, in: h.host)), table = try #require(find(NativeArticleList.Table.self, in: h.host))
         let fieldFrame = field.convert(field.bounds, to: nil), list = table.convert(table.bounds, to: nil)
@@ -100,8 +97,8 @@ import Testing
         try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
     }
 
-    /// Issue #206: a field with text that loses the keyboard also turns back into the magnifier, and the list stays narrowed.
-    @Test func aFieldWithTextLeftAloneClosesAndTheFilterStays() async throws {
+    /// The owner's rule (3.1.4): a field with text stays open when the keyboard goes elsewhere, and the list stays narrowed.
+    @Test func aFieldWithTextStaysOpenWhenTheKeyboardGoesElsewhere() async throws {
         let h = try harness(filter: "")
         defer { finish(h) }
         h.window.makeKeyAndOrderFront(nil)
@@ -114,8 +111,8 @@ import Testing
         #expect(field.sendAction(field.action, to: field.target))
         try await settle(h) { table.numberOfRows == 2 }
         h.window.makeFirstResponder(table)                                                       // a click elsewhere
-        try await settle(h) { find(NSSearchField.self, in: h.host) == nil }
-        #expect(table.numberOfRows == 2)                                                         // the filter stays
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(find(NSSearchField.self, in: h.host) != nil && table.numberOfRows == 2)
     }
 
     /// Specification 3.1.4: an empty field that loses the keyboard turns back into the magnifier.
