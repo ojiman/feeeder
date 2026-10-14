@@ -64,6 +64,12 @@ extension SplitViewFoldTests {
                     let listRight = table.convert(table.bounds, to: nil).maxX
                     return bandButtons(host).contains { $0.minY >= 800 - ArticleBand.height && $0.minX >= listRight && $0.minX < listRight + 60 }
                 }
+                // Issue #204: the page starts right below the band's controls, with no dark strip of empty band above it.
+                func pageTop() -> CGFloat? {
+                    let page: NSView? = find(OriginalReaderWebView.self, in: host) ?? find(OriginalFailureHostingView<AnyView>.self, in: host)
+                    return page.map { 800 - $0.convert($0.bounds, to: nil).maxY }
+                }
+                try await settle(host) { (pageTop() ?? 99) < 40 }
                 // Decision 0046: the sidebar folds with the page, so its titlebar buttons leave and the list moves to the window's left edge with the same width.
                 try await settle(host, state: state) { !accessoryMounted() && table.convert(table.bounds, to: nil).minX < 1 }
                 #expect(abs(table.bounds.width - frame.width) < 1)

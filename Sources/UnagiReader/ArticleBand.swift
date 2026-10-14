@@ -10,6 +10,8 @@ struct ArticleBand: View {
     /// running app on macOS 27.0.1).
     static let controlLine: CGFloat = 28
     static let controlTop: CGFloat = 2
+    /// The band over the original page: only as high as its controls, so that no strip of empty band shows above the white page (#204).
+    static let compactHeight: CGFloat = controlTop + controlLine + 4
     /// Room for the window buttons when the article column is at the window's left edge (the sidebar and the list are folded).
     static let windowButtonsWidth: CGFloat = 78
     /// How far below the top the article's text starts, so that its first line keeps the place it had under the old toolbar.
@@ -35,20 +37,20 @@ struct ArticleBand: View {
             Spacer(minLength: 8)
             ForEach(buttons) { $0 }
         }
-        .bandLayout(atLeftEdge: atLeftEdge)
+        .bandLayout(atLeftEdge: atLeftEdge, height: originalHost == nil ? Self.height : Self.compactHeight)
     }
 }
 
 extension View {
     /// The layout every band shares: the controls on the window buttons' line, the band as high as the window buttons' band, its empty
     /// part moving the window.
-    func bandLayout(atLeftEdge: Bool = false) -> some View {
+    func bandLayout(atLeftEdge: Bool = false, height: CGFloat = ArticleBand.height) -> some View {
         padding(.horizontal, 12)
             .padding(.leading, atLeftEdge ? ArticleBand.windowButtonsWidth : 0)
             .frame(height: ArticleBand.controlLine)
             .padding(.top, ArticleBand.controlTop)
             .frame(maxWidth: .infinity)
-            .frame(height: ArticleBand.height, alignment: .top)
+            .frame(height: height, alignment: .top)
             .background { BandDragArea() }
     }
 }
