@@ -28,6 +28,8 @@ import ReaderCore
         samples.append(max(0, (ProcessInfo.processInfo.systemUptime - value.1) * 1000))
         write()
     }
+    /// A motion starts (issue #212): `MotionMeter` records its frames when the output is on.
+    static func motionBegan(_ name: String, duration: Double) { MotionMeter.shared.began(name, duration: duration) }
     static func heartbeat() {
         let now = ProcessInfo.processInfo.systemUptime
         if let prior = lastHeartbeat, now - prior > 0.12 { gaps.append((now - prior - 0.02) * 1000) }
@@ -35,7 +37,7 @@ import ReaderCore
     }
     static func write() {
         guard let output else { return }
-        let values: [String: Any] = ["selectionMilliseconds": samples, "schedulingGapsOver100ms": gaps,
+        let values: [String: Any] = ["selectionMilliseconds": samples, "schedulingGapsOver100ms": gaps, "motions": MotionMeter.shared.records,
             "os": ProcessInfo.processInfo.operatingSystemVersionString,
             "displayRefreshRate": CGDisplayCopyDisplayMode(CGMainDisplayID())?.refreshRate ?? 0]
         do {
