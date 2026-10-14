@@ -99,7 +99,10 @@ extension SplitViewFoldTests {
             try press("n", in: h)
             // macOS 27 (the support floor) puts the list back exactly. CI's macOS 26.6 (the build floor only) keeps the sidebar narrower
             // after the 640 pt note leaves a 1,240 pt window (seen twice on PR #190: the list at x 193); there it checks the list is back.
+            // In a window narrower than 1,400 pt the list returns at once (#222), while the note is still leaving: the sidebar then comes back
+            // at its smallest width, as on macOS 26.6, and the list is checked to be back.
             let exact = ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 27, minorVersion: 0, patchVersion: 0))
+                && SidebarFold.animatesListFold(windowWidth: 1_240)
             try await settle(h) {
                 !noteVisible(h) && sidebarButtonsMounted(h) && (exact ? abs((x(list) ?? 0) - listX) < 1 && abs(list.bounds.width - listWidth) < 1
                                                                       : (x(list) ?? 0) > 150 && list.bounds.width > 200)
