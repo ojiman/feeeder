@@ -2,29 +2,45 @@ import SwiftUI
 import WebKit
 import ReaderCore
 
+/// When the original page's web view is shown (issue #218). A page that has not started to arrive is blank, and while the column was
+/// still widening it kept the width of an intermediate frame: a white page with a dark, unexplained column beside it. So the web
+/// view stays hidden behind the app's surface, with the loading spinner in the middle, until the page has painted its first content
+/// (or has finished loading without any).
+struct OriginalPageReveal {
+    private var didPaint = false
+    private var didFail = false
+    var showsPage: Bool { didPaint && !didFail }
+    var showsPlaceholder: Bool { !didPaint && !didFail }
+    mutating func painted() { didPaint = true }
+    mutating func failed() { didFail = true }
+}
+
 struct OriginalPageView: View {
     let url: URL
     let onClose: () -> Void
     let onCommand: (ReaderCommand) -> Void
     @State private var failure: String?
-    @State private var loading = true
+    @State private var reveal = OriginalPageReveal()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
             if let failure {
                 OriginalFailureView(message: failure, onCommand: onCommand)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                OriginalWebView(url: url, onClose: onClose, onCommand: onCommand, onFailure: { loading = false; failure = $0 }, onLoading: { loading = $0 })
+                OriginalWebView(url: url, onClose: onClose, onCommand: onCommand,
+                                onFailure: { reveal.failed(); failure = $0 }, onPainted: { reveal.painted() })
+                    .opacity(reveal.showsPage ? 1 : 0)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: reveal.showsPage)
+                if reveal.showsPlaceholder {
+                    // The ✕ and the host name are in the article band (decision 0057); the column says that it is loading.
+                    ProgressView().controlSize(.regular)
+                        .accessibilityLabel("元ページを読み込み中")
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppPalette.surfaceColor)
-        // The ✕ and the host name are in the article band (decision 0057); the page shows only that it is loading.
-        .overlay(alignment: .topTrailing) {
-            if loading {
-                ProgressView().controlSize(.small).frame(width: 16, height: 16).padding(8)
-                    .accessibilityLabel("元ページを読み込み中")
-            }
-        }
     }
 }
 
@@ -75,8 +91,8 @@ private struct OriginalWebView: NSViewRepresentable {
     let onClose: () -> Void
     let onCommand: (ReaderCommand) -> Void
     let onFailure: (String) -> Void
-    let onLoading: (Bool) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(onFailure: onFailure, onLoading: onLoading) }
+    let onPainted: () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(onFailure: onFailure, onPainted: onPainted) }
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         // Original-page browsing has a separate, temporary session.
@@ -87,6 +103,12 @@ private struct OriginalWebView: NSViewRepresentable {
         view.allowsBackForwardNavigationGestures = true
         context.coordinator.keyboard = OriginalKeyboardBridge(onCommand: onCommand)
         context.coordinator.keyboard?.install(in: view)
+        let paint = OriginalPaintBridge(onPainted: { [weak coordinator = context.coordinator, weak view] in
+            guard let coordinator, let view else { return }
+            coordinator.painted(view)
+        })
+        paint.install(in: view)
+        context.coordinator.paint = paint
         view.load(URLRequest(url: url))
         return view
     }
@@ -95,17 +117,25 @@ private struct OriginalWebView: NSViewRepresentable {
         coordinator.active = false
         view.stopLoading(); view.navigationDelegate = nil; view.uiDelegate = nil
         coordinator.keyboard?.uninstall(); coordinator.keyboard = nil
+        coordinator.paint?.uninstall(from: view); coordinator.paint = nil
     }
     @MainActor final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         let onFailure: (String) -> Void
-        let onLoading: (Bool) -> Void
+        let onPainted: () -> Void
         var active = true
         var keyboard: OriginalKeyboardBridge?
-        init(onFailure: @escaping (String) -> Void, onLoading: @escaping (Bool) -> Void) {
-            self.onFailure = onFailure; self.onLoading = onLoading
+        var paint: OriginalPaintBridge?
+        init(onFailure: @escaping (String) -> Void, onPainted: @escaping () -> Void) {
+            self.onFailure = onFailure; self.onPainted = onPainted
         }
-        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { if active { onLoading(true) } }
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { if active { onLoading(false) } }
+        /// The page has painted: it is laid out for the column's width now, and the web view is shown.
+        func painted(_ webView: WKWebView) {
+            guard active else { return }
+            webView.needsLayout = true; webView.layoutSubtreeIfNeeded()
+            onPainted()
+        }
+        /// A page that finishes without painting anything (a blank page) is shown as it is.
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { painted(webView) }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void) {
             guard let url = action.request.url, ArticleURL.validated(url.absoluteString) != nil else { decisionHandler(.cancel); return }
             if action.targetFrame == nil { webView.load(action.request); decisionHandler(.cancel) }

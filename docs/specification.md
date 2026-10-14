@@ -132,6 +132,7 @@ normal                original page (v)     note beside article   note with the 
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
 
+- **The original page while it loads.** The page slides in at once, but its web view stays hidden behind the app's own dark surface, with a loading spinner in the middle of the column, until the page has painted its first content (or has finished loading). Then it is shown (a 0.15 s fade; none with Reduce Motion). A failed load shows its own sentence. The page itself (a white page, its own delay) is the page's business.
 - **Motion.** Folding, returning and sliding are one movement of about 0.3 s, the system's split view motion, whatever the window width. With Reduce Motion nothing moves; the layout changes at once (decisions 0044, 0046, 0049).
 - Opening or closing the note and switching its layout never change the chosen article or the scroll position.
 

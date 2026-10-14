@@ -9,7 +9,7 @@ How Unagi Reader is built, and the technical contracts a change must keep. What 
 | Window | SwiftUI `NavigationSplitView` (sidebar, list, reading area) with the note as an `.inspector` of the reading area |
 | Article list | AppKit `NSTableView` (`NativeArticleList`, sizes in `NativeArticleList.Metrics`) |
 | Article text | AppKit `NSTextView` (`NativeArticleText`) |
-| Original page | `WKWebView` (`OriginalPageView`) |
+| Original page | `WKWebView` (`OriginalPageView`), shown when `OriginalPaintBridge` reports its first contentful paint (`OriginalPageReveal`) |
 | Note editor | AppKit `NSTextView` in an `NSViewRepresentable` (`NoteTextEditor`); SwiftUI's `TextEditor` cannot set display attributes |
 | Core | `Sources/ReaderCore`: SwiftData models, `ReaderStore`, feed parsing (`XMLParser`), retention. No UI |
 | Network | `URLSession` on the Mac. SwiftSoup 2.13.9, pinned exactly, to read the HTML in feeds (`ArticleMarkup`) |
