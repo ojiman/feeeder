@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ReaderCore
 
 /// A text view that takes and gives only plain text: pasting or dropping rich text inserts its plain text, and copying puts only the
 /// characters on the pasteboard (the headings' size and the list marks' colour are not part of the note).
@@ -7,6 +8,22 @@ final class NoteTextView: NSTextView {
     override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }
     override var writablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }
     override var acceptableDragTypes: [NSPasteboard.PasteboardType] { [.string] }
+    /// The editor does not restyle while text is being composed, so the text being composed would take the typing attributes, which can be
+    /// left over from a heading (a heading line without text is still drawn as body text, and after Return the bold font and the marks'
+    /// grey stay). It takes the look of its own line instead: the heading's font or the body's, and the text colour. Only the font and the
+    /// colour are set: the input method's own marks stay.
+    override func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
+        super.setMarkedText(string, selectedRange: selectedRange, replacementRange: replacementRange)
+        let marked = markedRange()
+        guard let storage = textStorage, marked.location != NSNotFound, marked.length > 0 else { return }
+        let source = storage.string as NSString
+        let paragraph = source.paragraphRange(for: marked)
+        var font = NoteEditorStyle.baseFont
+        for run in NoteLineStyle.runs(in: source.substring(with: paragraph), baseOffset: paragraph.location) {
+            if case .heading(let level) = run.kind, NSIntersectionRange(run.line, marked).length > 0 { font = NoteEditorStyle.headingFont(level: level) }
+        }
+        storage.addAttributes([.font: font, .foregroundColor: NSColor.labelColor], range: marked)
+    }
     override func paste(_ sender: Any?) { pasteAsPlainText(sender) }
     override func pasteAsRichText(_ sender: Any?) { pasteAsPlainText(sender) }
 }

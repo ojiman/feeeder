@@ -87,6 +87,43 @@ import ReaderCore
         #expect(try #require(font(r.view, at: 2)).pointSize > NoteEditorStyle.baseFont.pointSize)
         #expect(r.sink.changes.last == "# 日本")
     }
+    /// A heading line that has no text yet is drawn as body text, so the first composed text would start in the body's look and jump when
+    /// it is committed; the text being composed already has the heading's font.
+    @Test func composingInAHeadingLineLooksLikeTheHeading() throws {
+        let r = try rig("## "); defer { r.window.close() }
+        r.window.makeFirstResponder(r.view)
+        let heading = NoteEditorStyle.headingFont(level: 2).pointSize
+        r.view.setSelectedRange(NSRange(location: 3, length: 0))
+        var replacement = NSRange(location: 3, length: 0)
+        for step in ["に", "にほ", "にほん"] {
+            r.view.setMarkedText(step, selectedRange: NSRange(location: step.utf16.count, length: 0), replacementRange: replacement)
+            replacement = r.view.markedRange()
+            #expect(try #require(font(r.view, at: replacement.location)).pointSize == heading)
+        }
+        r.view.insertText("日本", replacementRange: r.view.markedRange())
+        #expect(try #require(font(r.view, at: 3)).pointSize == heading)
+    }
+    /// The log of a real input method showed typing attributes left over from a heading (its bold font and the marks' grey) on a body line
+    /// after Return; the text composed there must look like the line, not like the leftover.
+    @Test func composingInABodyLineIgnoresTypingAttributesLeftFromAHeading() throws {
+        let r = try rig("## 見出し\n\n"); defer { r.window.close() }
+        r.window.makeFirstResponder(r.view)
+        let end = r.view.string.utf16.count
+        r.view.setSelectedRange(NSRange(location: end, length: 0))
+        r.view.typingAttributes = [.font: NoteEditorStyle.headingFont(level: 2), .foregroundColor: NoteEditorStyle.marksColor]
+        r.view.setMarkedText("あ", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: end, length: 0))
+        let marked = r.view.markedRange()
+        #expect(try #require(font(r.view, at: marked.location)) == NoteEditorStyle.baseFont)
+        #expect(color(r.view, at: marked.location) == NSColor.labelColor)
+    }
+    @Test func composingInABodyLineKeepsTheBodyLook() throws {
+        let r = try rig("## 見出し\n\n"); defer { r.window.close() }
+        r.window.makeFirstResponder(r.view)
+        let end = r.view.string.utf16.count
+        r.view.setSelectedRange(NSRange(location: end, length: 0))
+        r.view.setMarkedText("あ", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: end, length: 0))
+        #expect(try #require(font(r.view, at: r.view.markedRange().location)).pointSize == NoteEditorStyle.baseFont.pointSize)
+    }
     @Test func cancellingACompositionRestylesToo() throws {
         let r = try rig("# "); defer { r.window.close() }
         r.window.makeFirstResponder(r.view)
