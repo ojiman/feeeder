@@ -125,9 +125,9 @@ normal                original page (v)     note beside article   note with the 
 |---|---|---|
 | `v` | normal → original page. The sidebar folds, the page comes in from the right, the list keeps its width and moves to the left edge | |
 | `Esc`, the ✕, `j` / `k`, a click in the list | original page → normal. The page slides out to the right and the sidebar returns, whichever way it was closed. With `j` / `k` or a click, the chosen article's text appears from under the page | |
-| `n`, `⌥⌘I`, the note button in the toolbar | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
+| `n`, `⌥⌘I`, the note button (in the article band; in the toolbar until #196) | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
 | the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
-| the layout button (next to the note button) | note beside the article ⇄ note with the list. Disabled while the note is closed (the toolbar does not change height). The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
+| the layout button (in the note band, beside the ✕; next to the note button in the toolbar until #198) | note beside the article ⇄ note with the list. The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
 | `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | |
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
@@ -136,6 +136,23 @@ normal                original page (v)     note beside article   note with the 
 - Opening or closing the note and switching its layout never change the chosen article or the scroll position.
 
 #### 3.1.4 Rules per area
+
+**Bands** (decision 0057) `[not built #196, #197, #198]`
+
+- The window has no system toolbar and no visible title bar. Each column has its own band at the top of the window, as high as the window buttons' band (52 pt), in the column's colour, with no line under it. A band folds with its column. No column has a second row of controls below its band.
+- What each band holds, left to right:
+
+| Column | Left | Right | Issue |
+|---|---|---|---|
+| sidebar | the window buttons | add subscription, refresh (as now) | |
+| list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) | #197 |
+| article | the translation status as short text (3.6) | the note button, Star, translate, globe | #196 |
+| original page | ✕, the page's host name | | #198 |
+| note | ✕, the layout button | previous, next, copy | #198 |
+
+- One style: monochrome symbols of one size and one hit area; colour only for a state (a filled Star, a filled translate). No links and no accent-coloured symbols in a band.
+- Dragging an empty part of a band moves the window; a double-click does what the system setting says.
+- Every band control also has a menu bar command; the keys stay as they are (3.1.5).
 
 **Sidebar**
 
@@ -146,10 +163,10 @@ normal                original page (v)     note beside article   note with the 
 
 **List**
 
-- The list title (scope name and count) sits below the window's top band, level with the ✕ of the right column, at 17 pt (as in Reeder; decision 0048).
+- The list title (scope name and count) sits below the list's band, at 17 pt (as in Reeder; decision 0048).
 - A row: source name on the left and publication time on the right of the top line; title, summary and article image below. The title is the largest (14 pt); the summary (11 pt) and the source name and time (10 pt) are smaller, because the title and the favicon decide interest.
 - The column's edge can be dragged wider.
-- The reading surfaces (list, article, note) are one dark colour, with no separate grey bars or lines in the toolbar or above the note; only the sidebar is slightly lighter.
+- The reading surfaces (list, article, note) are one dark colour, with no separate grey bars or lines in the bands; only the sidebar is slightly lighter.
 - One calm orange accent, only for the unread mark, the add and refresh buttons and the note's list markers. The selected row is a quiet grey, not the system blue.
 - When a refresh brings new articles and the list is at the top, they slide in from the top and push the rows down (at most 20 per refresh; not with Reduce Motion). When the list is not at the top, the article being read does not move. Manual and automatic refreshes behave the same.
 - Publication time: the time for today, date and time for earlier days, the year too for other years. An unknown time is 「—」; the received time is never used instead.
@@ -157,7 +174,7 @@ normal                original page (v)     note beside article   note with the 
 
 **List filter** (decision 0055)
 
-- A magnifier at the right end of the list title's first line opens the system's search field in place of that line. `/` opens it and puts the cursor in it (3.1.5). The field stays while it has text; `Esc` in the empty field closes it.
+- Only a magnifier is shown in the list's band. Clicking it or `/` opens the system's search field across the band, with the cursor in it (3.1.5). The field stays while it has text, also across scopes; left empty (`Esc`, or the keyboard goes elsewhere) it turns back into the magnifier. `[not built #197]` (today: the magnifier on the list title's line, and the field takes that line's place)
 - Typing narrows the list at once to the articles of the current scope (Feeds, Star, a folder, a subscription) whose title or feed summary (the text the list row shows) contains the typed text, ignoring case, accents and full-width letters. The count under the title counts the narrowed list. Clearing the field restores the list.
 - Only the title and the feed summary are searched: not the article's body, not the full text the app saved, and not the note.
 - The filter stays when the scope changes. It is not kept across launches.
@@ -185,7 +202,7 @@ normal                original page (v)     note beside article   note with the 
 |---|---|
 | `j` / `k` | Next / previous article |
 | `s` | Star on / off |
-| `n` | Open / close the note (as the toolbar button and `⌥⌘I`), when no editable field is being typed in |
+| `n` | Open / close the note (as the note button and `⌥⌘I`), when no editable field is being typed in |
 | `m` | Read / unread |
 | `b` | Open the original page in the default browser |
 | `v` | Open the original page in the app |
@@ -201,7 +218,7 @@ normal                original page (v)     note beside article   note with the 
 
 A **Star** is the mark "come back to chew on this". An article has a Star or not; the app saves the state and when it was given.
 
-- `s` and the toolbar button change the same state.
+- `s` and the Star button change the same state.
 - Starring or unstarring never changes the read time.
 - Unstarring removes the article from the Star list; starring again uses a new time.
 - Unstarring the chosen article keeps it shown and in place until the person moves on.
@@ -277,7 +294,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 **The folder when adding**
 
 - Opened from the ＋ that appears on a folder row, the sheet adds to that folder and says so in its heading, for example 「「Tech」に購読を追加」.
-- Opened from the 「購読元」 heading or the toolbar ＋, a folder field with candidates (the same part as 「フォルダへ移動…」) appears once the feed is read, when at least one folder exists. Paste and Return with nothing chosen adds to 未分類 (the fast path stays). Typing a name selects the closest candidate; a new name offers 「作って追加」 (decision 0037).
+- Opened from the 「購読元」 heading or the sidebar's ＋, a folder field with candidates (the same part as 「フォルダへ移動…」) appears once the feed is read, when at least one folder exists. Paste and Return with nothing chosen adds to 未分類 (the fast path stays). Typing a name selects the closest candidate; a new name offers 「作って追加」 (decision 0037).
 
 **Importing OPML**
 
@@ -297,7 +314,7 @@ A button translates the open article into another language, on the Mac, with the
 
 **Button and key**
 
-- A button 「翻訳」 (Translate) sits in the toolbar group at the top right, before 「元ページをブラウザで開く」. Its help text is 「翻訳する／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
+- A button 「翻訳」 (Translate) sits in the article band, before 「元ページをブラウザで開く」. Its help text is 「翻訳する／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
 - The same command is in the menu bar: 「表示 ▸ 翻訳 / 原文に戻す」, without a key.
 - `t` does the same, when no editable field is being typed in (3.1.5).
 - Pressing it translates the title and the body of the open article, in place. Pressing it again shows the original.
@@ -311,7 +328,7 @@ A button translates the open article into another language, on the Mac, with the
 
 **While it works and when it is done**
 
-- The status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」 with a small progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. Title and paragraphs change from the top as results arrive. The reading position is kept. Reduce Motion: no animation.
+- The status, as short text at the left of the article band (`[not built #196]`; today a row above the article text), says 「翻訳中…」 with a small progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. Title and paragraphs change from the top as results arrive. The reading position is kept. Reduce Motion: no animation.
 - When done, the row says what was done, for example 「英語 → 日本語」, with a link 「原文を表示」.
 - If the article is already in the target language, the row says 「すでに日本語です」 and nothing else happens.
 - A failure is one short sentence in the row, never an alert: the language pair is not supported; the download was not allowed; the language pack is missing and the Mac is offline. If one paragraph fails, its original text stays and the row says how many failed.
