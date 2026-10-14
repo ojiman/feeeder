@@ -45,9 +45,11 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
     /// The list filter's field is shown (`/` or the magnifier). Its text is `workspace.listFilter`.
     @State private var filterPresented = false
+    @State private var translation: TranslationController
 
     init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
          initialScope: ReaderWorkspaceScope = .all, initialNoteOpen: Bool = false, initialListShown: Bool = false, initialListFilter: String = "",
+         translationEngine: TranslationEngine = .system,
          notePasteboard: NSPasteboard = .general,
          chooseOPML: @escaping @MainActor () async -> URL? = OPMLFilePanel.chooseFile) {
         self.store = store; self.refresh = refresh
@@ -61,6 +63,7 @@ struct ReaderView: View {
         initialWorkspace.noteOpen = initialNoteOpen
         initialWorkspace.noteListShown = initialListShown
         initialWorkspace.listFilter = initialListFilter
+        _translation = State(initialValue: TranslationController(engine: translationEngine))
         _columnVisibility = State(initialValue: SidebarFold.folded(pageOpen: false, noteOpen: initialNoteOpen) ? .doubleColumn : .all)
         _workspace = State(initialValue: initialWorkspace)
     }
@@ -115,6 +118,8 @@ struct ReaderView: View {
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
             // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
             .onExitCommand { if originalPage.url == nil { closeNote() } }
+            .modifier(ArticleTranslationPresentation(controller: translation, articleID: selection, title: selectedArticle?.title,
+                content: displayedContent, keysEnabled: shortcutsEnabled, readerShown: originalPage.url == nil))
             .onKeyPress("/") { guard shortcutsEnabled else { return .ignored }; filterPresented = true; return .handled }
 
     }
@@ -169,6 +174,12 @@ struct ReaderView: View {
                 Button { perform(.toggleStar) } label: { Image(systemName: article?.starredAt == nil ? "star" : "star.fill") }
                     .help("Starを切り替える (s)").accessibilityLabel(article?.starredAt == nil ? "Starを付ける" : "Starを外す")
                     .disabled(article == nil)
+                // Translate the article in place, or show the original (specification 3.6). `translate` has no filled form.
+                let translated = translation.isOn(for: article?.id)
+                Button(action: toggleTranslation) { Image(systemName: translated ? "character.bubble.fill" : "character.bubble") }
+                    .help(originalPage.url != nil ? "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます" : "翻訳する／原文に戻す (t)")
+                    .accessibilityLabel(translated ? "原文を表示" : "翻訳")
+                    .disabled(article == nil || originalPage.url != nil || displayedContent?.articleID != article?.id)
                 Button(action: openExternal) { Image(systemName: "globe") }
                     .help("元ページをブラウザで開く (b)").accessibilityLabel("元ページをブラウザで開く")
                     .disabled(article?.originalURL.flatMap { ArticleURL.validated($0) } == nil)
@@ -357,6 +368,7 @@ struct ReaderView: View {
                 case "s": perform(.toggleStar)
                 case "n": toggleNote()
                 case "/": filterPresented = true
+                case "t": toggleTranslation()
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
@@ -426,7 +438,10 @@ struct ReaderView: View {
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
                 onReload: { Task { guard selection == article.id else { return }; await loading.load(articleID: article.id, refresh: true) } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
-                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward, pageMotion: originalPage.url == nil)
+                onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward, pageMotion: originalPage.url == nil,
+                translated: translation.shown(for: article.id),
+                translationState: translation.state.key?.articleID == article.id || translation.state.key == nil ? translation.state.state : .idle,
+                showOriginal: { translation.reset() })
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
@@ -517,6 +532,10 @@ struct ReaderView: View {
         // a change from false to true is what moves it (seen in CI on macOS 26.6).
         listFocused = false
         Task { @MainActor in listFocused = true }
+    }
+    private func toggleTranslation() {
+        guard originalPage.url == nil, let article = selectedArticle, let content = displayedContent, content.articleID == article.id else { return }
+        translation.toggle(title: article.title, content: content)
     }
     /// The layout button: shows or hides the list beside the open note.
     private func switchNoteLayout() {

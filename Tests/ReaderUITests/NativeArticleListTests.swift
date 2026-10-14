@@ -220,7 +220,7 @@ import ReaderCore
     }
     /// Decision 0049: `n` no longer sends a summary and the picker key `t` is long gone, so neither reaches the reader (a new meaning for
     /// `n`, opening the note, comes in a later change).
-    @Test func theNoteKeyRoutesAndTheOldPickerKeyAndModifiedKeysDoNot() throws {
+    @Test func theNoteAndTranslateKeysRouteAndModifiedKeysDoNot() throws {
         let table = NativeArticleList.Table()
         var handled: [String] = []
         table.keyHandler = { handled.append($0); return true }
@@ -232,7 +232,7 @@ import ReaderCore
         try press("t", keyCode: 17)
         try press("n", keyCode: 45)
         try press("n", keyCode: 45, flags: .command)
-        #expect(handled == ["n"])                                                   // `n` opens and closes the note; `t` and ⌘N do nothing here
+        #expect(handled == ["t", "n"])                                              // `t` translates (3.6), `n` opens the note; ⌘N does nothing here
     }
     @Test func backgroundInsertionAndReorderPreserveSelectedArticleAndTopOffset() {
         let original = (0..<40).map { _ in UUID() }

@@ -1,0 +1,135 @@
+import AppKit
+import SwiftUI
+import ReaderCore
+import Testing
+@testable import UnagiReader
+
+/// A fake engine: every text comes back as "訳:" and the text. The system's session cannot run in tests (no language packs in CI).
+@MainActor private func fakeEngine(decision: LanguageDecision.Outcome = .translate(source: "en"),
+                                   gate: AsyncStream<Void>? = nil) -> TranslationEngine {
+    TranslationEngine(decide: { _, _ in decision }, batch: { items in
+        AsyncThrowingStream { continuation in
+            Task {
+                if let gate { for await _ in gate { break } }
+                for item in items { continuation.yield(TranslationResponse(index: item.index, text: "訳:" + item.text)) }
+                continuation.finish()
+            }
+        }
+    })
+}
+
+// Checks PRD-18 (specification 7).
+/// Specification 3.6: a press translates the open article in place, a second press shows the original, another article shows its
+/// original, and nothing is translated that the person did not ask for.
+@Suite(.serialized) @MainActor struct TranslationTests {
+    private struct Harness {
+        let host: NSHostingView<ReaderView>
+        let window: NSWindow
+        let directory: URL
+    }
+    private func harness(engine: TranslationEngine) throws -> Harness {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let store = try ReaderStore(url: directory.appendingPathComponent("Reader.store"))
+        let entries = (0..<2).map { index in
+            ParsedEntry(sourceID: "synthetic-\(index)", title: "Synthetic story \(index)", url: URL(string: "http://127.0.0.1:1/article/\(index)"),
+                        summary: "A synthetic summary.", body: "First paragraph \(index).\n\nSecond paragraph \(index).", coverage: .feedProvided,
+                        publishedAt: .now.addingTimeInterval(Double(-index)))
+        }
+        _ = try store.importFeed(ParsedFeed(title: "Synthetic feed", sourceURL: URL(string: "http://127.0.0.1:1/feed")!, entries: entries, skippedEntries: 0), receivedAt: .now)
+        let reader = ReaderView(store: store, refresh: FeedRefreshController(store: store),
+            imageLoader: ReaderImageLoader(directory: directory.appendingPathComponent("Images")), translationEngine: engine)
+        let host = NSHostingView(rootView: reader)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 800), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false; window.toolbar = NSToolbar(identifier: "synthetic-translation")
+        window.contentView = host
+        window.orderFront(nil)
+        return Harness(host: host, window: window, directory: directory)
+    }
+    private func finish(_ h: Harness) { h.window.close(); try? FileManager.default.removeItem(at: h.directory) }
+    private func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
+        if let result = view as? T { return result }
+        return view.subviews.lazy.compactMap { find(type, in: $0) }.first
+    }
+    private func settle(_ h: Harness, line: Int = #line, until ready: () -> Bool) async throws {
+        for _ in 0..<250 {
+            h.host.layoutSubtreeIfNeeded()
+            if ready() { return }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(ready(), "shown: \(shown(h).prefix(200))", sourceLocation: SourceLocation(fileID: #fileID, filePath: #filePath, line: line, column: 1))
+    }
+    private func shown(_ h: Harness) -> String { find(ArticleTextView.self, in: h.host)?.string ?? "" }
+    private func open(_ row: Int, in h: Harness) async throws -> NativeArticleList.Table {
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 }
+        let table = try #require(find(NativeArticleList.Table.self, in: h.host))
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        try await settle(h) { shown(h).contains("Second paragraph \(row)") }
+        return table
+    }
+
+    @Test func tTranslatesTheArticleInPlaceAndAgainShowsTheOriginal() async throws {
+        let h = try harness(engine: fakeEngine())
+        defer { finish(h) }
+        let table = try await open(0, in: h)
+        #expect(table.keyHandler?("t") == true)
+        try await settle(h) { shown(h).contains("訳:Synthetic story 0") && shown(h).contains("訳:Second paragraph 0.") }
+        #expect(table.keyHandler?("t") == true)
+        try await settle(h) { shown(h).contains("Synthetic story 0") && !shown(h).contains("訳:") }
+    }
+
+    @Test func anotherArticleOpensInItsOriginalLanguage() async throws {
+        let h = try harness(engine: fakeEngine())
+        defer { finish(h) }
+        let table = try await open(0, in: h)
+        #expect(table.keyHandler?("t") == true)
+        try await settle(h) { shown(h).contains("訳:Synthetic story 0") }
+        #expect(table.keyHandler?("j") == true)
+        try await settle(h) { shown(h).contains("Synthetic story 1") }
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(!shown(h).contains("訳:"))                                                      // not sticky
+    }
+
+    @Test func movingAwayWhileTranslatingDropsTheLateAnswers() async throws {
+        let gate = AsyncStream<Void>.makeStream()
+        let h = try harness(engine: fakeEngine(gate: gate.stream))
+        defer { finish(h) }
+        let table = try await open(0, in: h)
+        #expect(table.keyHandler?("t") == true)
+        #expect(table.keyHandler?("j") == true)
+        try await settle(h) { shown(h).contains("Synthetic story 1") }
+        gate.continuation.finish()                                                             // the old answers arrive now
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(!shown(h).contains("訳:"))
+    }
+
+    @Test func anArticleAlreadyInTheTargetLanguageIsLeftAsItIs() async throws {
+        let h = try harness(engine: fakeEngine(decision: .alreadyInTarget))
+        defer { finish(h) }
+        let table = try await open(0, in: h)
+        #expect(table.keyHandler?("t") == true)
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(!shown(h).contains("訳:"))
+    }
+}
+
+/// The controller's own rules, without a window.
+@MainActor struct TranslationControllerTests {
+    private let content = ArticleContent(articleID: UUID(), text: "One.\n\nTwo.", summary: "", coverage: .feedProvided, originalURL: nil)
+
+    @Test func aPressTranslatesAndASecondPressShowsTheOriginal() async throws {
+        let controller = TranslationController(engine: fakeEngine())
+        controller.toggle(title: "Title", content: content)
+        #expect(controller.isOn(for: content.articleID))                                      // on at once, while the language is decided
+        for _ in 0..<100 where controller.state.state != .done(failed: 0, source: "en") { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(controller.shown(for: content.articleID)?.title == "訳:Title")
+        #expect(controller.shown(for: content.articleID)?.paragraphs.map(\.text) == ["訳:One.", "訳:Two."])
+        controller.toggle(title: "Title", content: content)
+        #expect(!controller.isOn(for: content.articleID) && controller.state.state == .idle)
+    }
+
+    @Test func theStatusRowNamesTheLanguagesInJapanese() {
+        #expect(TranslationStatusRow.pair(source: "en", target: "ja") == "英語 → 日本語")
+        #expect(TranslationStatusRow.pair(source: nil, target: "ja") == "→ 日本語")
+    }
+}

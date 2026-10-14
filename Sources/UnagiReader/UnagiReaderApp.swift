@@ -73,7 +73,7 @@ struct UnagiReaderApp: App {
 
         }
         .defaultSize(width: 1240, height: 810)
-        .commands { CommandGroup(replacing: .newItem) {}; OPMLCommands() }
+        .commands { CommandGroup(replacing: .newItem) {}; OPMLCommands(); TranslationCommands() }
         Settings {
             if let store { ReaderSettingsView(store: store, appearance: $appearance) }
         }

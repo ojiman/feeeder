@@ -107,7 +107,7 @@ struct NativeArticleList: NSViewRepresentable {
         }
         override func keyDown(with event: NSEvent) {
             if event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
-               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n", "/"].contains(key),
+               let key = event.charactersIgnoringModifiers, ["j", "k", "m", "b", "v", "s", "n", "/", "t"].contains(key),
                keyHandler?(key) == true { return }
             super.keyDown(with: event)
         }
