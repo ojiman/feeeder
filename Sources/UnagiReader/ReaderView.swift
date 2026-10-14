@@ -436,7 +436,8 @@ struct ReaderView: View {
                 })
                     .id([expectedID.uuidString, url.absoluteString]).transition(.move(edge: .trailing))
                     .offset(x: originalSlide)
-                    .padding(.top, ArticleBand.height)                     // below the article band, which holds its ✕ and host name
+                    .padding(.top, ArticleBand.compactHeight)              // right below the article band, which holds its ✕ and host name
+                    .ignoresSafeArea(.container, edges: .top)              // the title bar's safe area would add to the gap (#204)
             }
         }.clipped()
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { originalColumnWidth = $0 }

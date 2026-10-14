@@ -147,7 +147,7 @@ normal                original page (v)     note beside article   note with the 
 | sidebar | the window buttons | add subscription, refresh (as now) |
 | list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) |
 | article | the translation status as short text (3.6) | the note button, Star, translate, globe |
-| original page (in the article band, in place of the status) | ✕, the page's host name | |
+| original page (in the article band, in place of the status; the band is then only as high as its controls and the page starts right below it) | ✕, the page's host name | |
 | note | ✕, the layout button | previous, next, copy |
 
 - One style: monochrome symbols of one size and one hit area; colour only for a state (a filled Star, a filled translate). No links and no accent-coloured symbols in a band.
