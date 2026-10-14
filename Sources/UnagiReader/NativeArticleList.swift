@@ -101,6 +101,11 @@ struct NativeArticleList: NSViewRepresentable {
     @MainActor final class Table: NSTableView {
         var keyHandler: ((String) -> Bool)?
         var focusWhenAttached = false
+        override init(frame frameRect: NSRect) {
+            super.init(frame: frameRect)
+            allowsTypeSelect = false                                    // a letter that is not a shortcut must not jump to a row (#226)
+        }
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if focusWhenAttached { window?.makeFirstResponder(self) }
