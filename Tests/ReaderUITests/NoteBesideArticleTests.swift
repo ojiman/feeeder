@@ -241,7 +241,10 @@ extension SplitViewFoldTests {
             column.canCollapse = true
             column.isCollapsed = true                                                          // what a restored window state does
             // Back and usable: the width it had before the system folded it is not known, so it comes back at least at its smallest width.
-            try await settle(h) { !column.isCollapsed && list.bounds.width >= 280 - 1 && (x(list) ?? 0) > 100 }
+            // macOS 27 (the support floor) also puts it right of the sidebar. CI's macOS 26.6 (the build floor only) reports the list's
+            // content at x 0 here since the list's layout hold of #214; there it checks that the column is unfolded and wide enough.
+            let exact = ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 27, minorVersion: 0, patchVersion: 0))
+            try await settle(h) { !column.isCollapsed && list.bounds.width >= 280 - 1 && (!exact || (x(list) ?? 0) > 100) }
         }
 
         /// Decision 0057: the note's controls (✕, layout, previous, next, copy) sit in the note's own band at the top of the window.
