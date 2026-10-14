@@ -88,18 +88,42 @@ import ReaderCore
         needsDisplay = true
     }
 
+    /// While a column moves, the text keeps its wrap and is laid out once when the move ends (issue #214): laying the whole text out
+    /// again on every frame of the move made it stutter.
+    private static var heldUntil: CFTimeInterval = 0
+    static func holdLayout(for seconds: Double) { heldUntil = max(heldUntil, CACurrentMediaTime() + seconds) }
+    private var widthPending = false
+
     override func setFrameSize(_ newSize: NSSize) {
         let widthChanged = abs(newSize.width - frame.width) > 0.5
+        if widthChanged, !installing, !paragraphRanges.isEmpty, CACurrentMediaTime() < Self.heldUntil {
+            super.setFrameSize(newSize)
+            if !widthPending { widthPending = true; layOutWhenHeldEnds() }
+            return
+        }
         let previous = widthChanged && !installing && !paragraphRanges.isEmpty ? readingPosition() : nil
         super.setFrameSize(newSize)
-        if widthChanged {
-            let width = max(1, min(670, newSize.width - 84))
-            textContainer?.containerSize = NSSize(width: width, height: .greatestFiniteMagnitude)
-            textContainerInset = NSSize(width: max(42, (newSize.width - width) / 2), height: 44)
-            paragraphYs = []
-            layoutDocument()
-            if let previous { restore(anchor: previous.anchor, offset: previous.offset) }
+        if widthChanged { applyWidth(keeping: previous) }
+    }
+    private func layOutWhenHeldEnds() {
+        let wait = max(0, Self.heldUntil - CACurrentMediaTime()) + 0.01
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.widthPending else { return }
+                if CACurrentMediaTime() < Self.heldUntil { self.layOutWhenHeldEnds(); return }      // another move started
+                self.widthPending = false
+                // The layout is still the old one, so the reading position read now is the one the person had.
+                self.applyWidth(keeping: self.paragraphRanges.isEmpty ? nil : self.readingPosition())
+            }
         }
+    }
+    private func applyWidth(keeping previous: (anchor: String, offset: Double)?) {
+        let width = max(1, min(670, frame.width - 84))
+        textContainer?.containerSize = NSSize(width: width, height: .greatestFiniteMagnitude)
+        textContainerInset = NSSize(width: max(42, (frame.width - width) / 2), height: 44)
+        paragraphYs = []
+        layoutDocument()
+        if let previous { restore(anchor: previous.anchor, offset: previous.offset) }
     }
 
     private func layoutDocument() {

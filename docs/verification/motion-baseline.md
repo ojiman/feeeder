@@ -22,3 +22,5 @@ How to read it:
 - `j` / `k` selection latency (W1) in the same runs: 95th percentile 63 ms, within budget.
 
 To repeat: `UNAGI_READER_BENCHMARK_DIRECTORY=<new dir> swift test --filter BenchmarkFixtureTests`, `bash scripts/build-app.sh release`, then `open -n -W '.build/Unagi Reader.app' --args --data-directory <dir> --performance-output <file.json> --motion-benchmark`.
+
+After #214 (holding the list's and the article's layout during the note's moves; same conditions, two runs on `main` 6ffa773 + the change): note open 17 / 18 frames, hitches per move 3.9 / 3.4; layout switch 18 / 20 frames, 3.6 / 2.4; note close unchanged, 10 / 11 frames, 6.1 / 5.4.

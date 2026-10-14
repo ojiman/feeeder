@@ -45,6 +45,10 @@ struct ReaderView: View {
     @FocusState private var listFocused: Bool
     /// The list filter's field is shown (`/` or the magnifier). Its text is `workspace.listFilter`.
     @State private var filterPresented = false
+    /// The list's width, measured without redrawing the window (a box, not state; see `holdLayoutDuringMove`).
+    @State private var listWidth = ListWidthBox()
+    /// While the list folds or comes back, its content keeps this width and is clipped, instead of being laid out every frame (#214).
+    @State private var listHeldWidth: CGFloat?
     @State private var translation: TranslationController
 
     init(store: ReaderStore, refresh: FeedRefreshController, imageLoader: ReaderImageLoader,
@@ -146,7 +150,11 @@ struct ReaderView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
-            articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
+            articleList.id(scope)
+                .frame(width: listHeldWidth)
+                .frame(maxWidth: .infinity, alignment: .trailing).clipped()
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { if listHeldWidth == nil, $0 > 1 { listWidth.value = $0 } }
+                .background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
                 .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion))
         } detail: {
             originalColumn.frame(minWidth: 360)
@@ -545,8 +553,22 @@ struct ReaderView: View {
     }
     /// Opens or closes the note beside the article: the sidebar and the list fold away to the left and the note comes in from the right, as
     /// one move (decision 0049), the same as the original page. The list is folded by `ListColumnCollapse`, in the same time.
+    /// For one fold or return of the columns, the list's content and the article's text keep their layout and are laid out once at
+    /// the end (#214): laying them out at every width of the move made it stutter. Nothing to hold with Reduce Motion.
+    private func holdLayoutDuringMove() {
+        guard !reduceMotion else { return }
+        ArticleTextView.holdLayout(for: SidebarFold.motionDuration)
+        guard listWidth.value > 1 else { return }
+        listHeldWidth = listWidth.value
+        listWidth.release?.cancel()
+        listWidth.release = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(SidebarFold.motionDuration + 0.05))
+            if !Task.isCancelled { listHeldWidth = nil }
+        }
+    }
     private func toggleNote() {
         ReaderPerformance.motionBegan(noteOpen ? "note-close" : "note-open", duration: SidebarFold.motionDuration)
+        holdLayoutDuringMove()
         withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
             workspace.noteOpen.toggle()
             columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
@@ -568,6 +590,7 @@ struct ReaderView: View {
     /// The layout button: shows or hides the list beside the open note.
     private func switchNoteLayout() {
         ReaderPerformance.motionBegan("note-layout", duration: SidebarFold.motionDuration)
+        holdLayoutDuringMove()
         withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) { workspace.switchNoteLayout() }
     }
     /// The columns to show: the sidebar is folded while the original page or the note is open (decisions 0046 and 0049).
@@ -592,4 +615,10 @@ struct ReaderView: View {
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { saveError = error.localizedDescription }
     }
+}
+
+/// The list column's width, kept outside SwiftUI's state so that measuring it does not redraw the window.
+@MainActor final class ListWidthBox {
+    var value: CGFloat = 0
+    var release: Task<Void, Never>?
 }

@@ -121,6 +121,27 @@ import ReaderCore
         #expect(after.anchor == before.anchor && abs(after.offset - before.offset) < 1)
     }
 
+    /// Issue #214: while a column moves, width changes do not lay the text out again; it is laid out once when the move ends, at the
+    /// reading position it had.
+    @Test func widthChangesDuringAMoveLayOutOnceWhenItEnds() async throws {
+        let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
+        let paragraphs = (0..<80).map { "合成段落\($0)。" + String(repeating: "日本語の長い文章です。", count: 20) }
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", paragraphs: paragraphs, unavailable: nil)
+        view.restore(anchor: "paragraph-7", offset: 23.5)
+        let wrapBefore = try #require(view.textContainer).containerSize.width
+        ArticleTextView.holdLayout(for: 0.2)
+        for width in [650.0, 720.0, 800.0, 850.0] {
+            scroll.setFrameSize(NSSize(width: width, height: 400))
+            view.setFrameSize(NSSize(width: width, height: view.frame.height))
+        }
+        #expect(view.textContainer?.containerSize.width == wrapBefore)                         // held: the old wrap
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(view.textContainer?.containerSize.width != wrapBefore)                         // laid out once, for 850
+        let position = view.readingPosition()
+        #expect(position.anchor == "paragraph-7" && abs(position.offset - 23.5) < 1)
+    }
+
     @Test func displayStartPrecedesLayoutWithoutMarkingInvisibleBody() {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         var textAtStart: String?

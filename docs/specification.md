@@ -132,7 +132,7 @@ normal                original page (v)     note beside article   note with the 
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
 
-- **Motion.** Folding, returning and sliding are one movement of about 0.3 s, the system's split view motion, whatever the window width. With Reduce Motion nothing moves; the layout changes at once (decisions 0044, 0046, 0049).
+- **Motion.** Folding, returning and sliding are one movement of about 0.3 s, the system's split view motion, whatever the window width. With Reduce Motion nothing moves; the layout changes at once (decisions 0044, 0046, 0049). While the note opens, closes or switches its layout, the list and the article are not laid out again: the list keeps its width and is clipped, and the article's text takes its new line width when the move ends.
 - Opening or closing the note and switching its layout never change the chosen article or the scroll position.
 
 #### 3.1.4 Rules per area
