@@ -34,9 +34,19 @@ struct ListColumnCollapse: NSViewRepresentable {
         }
 
         /// The window can fold the list by itself after the first change: it restores the split view's saved state, which holds a folded
-        /// list when the app ended without quitting while the note was open (#195). The note starts closed, so the list is put back. This
-        /// view fills the list, so a fold resizes it; the check runs after that layout pass.
+        /// list when the app ended without quitting while the note was open (#195). The note starts closed, so the list is put back. The
+        /// item's `isCollapsed` is observed, and this view (which fills the list) is resized by a fold; either runs the check after the
+        /// current layout pass. On macOS 26.6 the resize alone did not come.
         private var moving = false
+        private var collapsing: NSKeyValueObservation?
+        private weak var watchedItem: NSSplitViewItem?
+        private func watch(_ item: NSSplitViewItem) {
+            guard watchedItem !== item else { return }
+            watchedItem = item
+            collapsing = item.observe(\.isCollapsed) { [weak self] _, _ in
+                DispatchQueue.main.async { MainActor.assumeIsolated { self?.keepWanted() } }
+            }
+        }
         override func setFrameSize(_ newSize: NSSize) {
             super.setFrameSize(newSize)
             guard !moving, wanted == false else { return }
@@ -68,6 +78,7 @@ struct ListColumnCollapse: NSViewRepresentable {
 
         private func update() {
             guard let wanted, let window, let item = listItem() else { return }
+            watch(item)
             let immediate = isFirst || !animated
             isFirst = false
             guard item.isCollapsed != wanted else { return }
