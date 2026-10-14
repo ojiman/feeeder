@@ -76,6 +76,9 @@ import Testing
     @Test func theFieldIsTheSystemSearchFieldOverTheList() async throws {
         let h = try harness(filter: "swift")
         defer { finish(h) }
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 }
+        #expect(find(NSSearchField.self, in: h.host) == nil)                                      // the filter is on, the field is closed
+        #expect(try #require(find(NativeArticleList.Table.self, in: h.host)).keyHandler?("/") == true)
         try await settle(h) { find(NSSearchField.self, in: h.host) != nil && find(NativeArticleList.Table.self, in: h.host) != nil }
         let field = try #require(find(NSSearchField.self, in: h.host)), table = try #require(find(NativeArticleList.Table.self, in: h.host))
         let fieldFrame = field.convert(field.bounds, to: nil), list = table.convert(table.bounds, to: nil)
@@ -88,14 +91,34 @@ import Testing
     @Test func clearingTheFieldWithItsCrossRestoresTheList() async throws {
         let h = try harness(filter: "swift")
         defer { finish(h) }
-        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 && find(NSSearchField.self, in: h.host) != nil }
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 }
+        #expect(try #require(find(NativeArticleList.Table.self, in: h.host)).keyHandler?("/") == true)
+        try await settle(h) { find(NSSearchField.self, in: h.host) != nil }
         let field = try #require(find(NSSearchField.self, in: h.host))
         field.stringValue = ""                                                                   // what the ✕ does, then it sends the action
         #expect(field.sendAction(field.action, to: field.target))
         try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
     }
 
-    /// Specification 3.1.4: an empty field that loses the keyboard turns back into the magnifier; a field with text stays.
+    /// Issue #206: a field with text that loses the keyboard also turns back into the magnifier, and the list stays narrowed.
+    @Test func aFieldWithTextLeftAloneClosesAndTheFilterStays() async throws {
+        let h = try harness(filter: "")
+        defer { finish(h) }
+        h.window.makeKeyAndOrderFront(nil)
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
+        let table = try #require(find(NativeArticleList.Table.self, in: h.host))
+        #expect(table.keyHandler?("/") == true)
+        try await settle(h) { find(NSSearchField.self, in: h.host)?.currentEditor() != nil }
+        let field = try #require(find(NSSearchField.self, in: h.host))
+        field.stringValue = "swift"
+        #expect(field.sendAction(field.action, to: field.target))
+        try await settle(h) { table.numberOfRows == 2 }
+        h.window.makeFirstResponder(table)                                                       // a click elsewhere
+        try await settle(h) { find(NSSearchField.self, in: h.host) == nil }
+        #expect(table.numberOfRows == 2)                                                         // the filter stays
+    }
+
+    /// Specification 3.1.4: an empty field that loses the keyboard turns back into the magnifier.
     @Test func anEmptyFieldLeftAloneTurnsBackIntoTheMagnifier() async throws {
         let h = try harness(filter: "")
         defer { finish(h) }
