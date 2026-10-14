@@ -185,8 +185,8 @@ public enum LanguageDecision {
     /// How much of the article is used to tell its language.
     public static let sampleLength = 600
 
-    public static func decide(sample: String, target: String, detect: (String) -> String?,
-                              supported: (String, String) async -> Bool) async -> Outcome {
+    public static func decide(sample: String, target: String, detect: @Sendable (String) -> String?,
+                              supported: @Sendable (String, String) async -> Bool) async -> Outcome {
         guard let source = detect(sample) else { return .translate(source: nil) }
         if sameLanguage(source, target) { return .alreadyInTarget }
         return await supported(source, target) ? .translate(source: source) : .unsupported

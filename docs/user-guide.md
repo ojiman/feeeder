@@ -62,6 +62,7 @@ The app refreshes at launch, when you come back to it, and every 30 minutes; the
 | `m` | Read / unread |
 | `s` | Star on / off |
 | `n` | Open or close the note (also the toolbar button and `⌥⌘I`) |
+| `t` | Translate the article into Japanese, on your Mac; again shows the original (also the toolbar button and 表示 ▸ 翻訳). The first time, macOS may ask to download the language |
 | `/` | Narrow the list: type words from the titles or summaries (also the magnifier next to the list title). `Esc` in the empty field closes it |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |

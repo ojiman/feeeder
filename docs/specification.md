@@ -193,7 +193,7 @@ normal                original page (v)     note beside article   note with the 
 | `v` | Open the original page in the app |
 | `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050) |
 | `/` | Open the list filter and put the cursor in it, when no editable field is being typed in |
-| `t` | Translate the open article / show the original, when no editable field is being typed in `[not built #153]` |
+| `t` | Translate the open article / show the original, when no editable field is being typed in |
 
 - `j`, `k`, `s` and `n` also work in the original page.
 - In text fields (the note editor too), during input-method composition and with modifier keys, typing and the standard actions come first.
@@ -297,14 +297,14 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 
 A button translates the open article into another language, on the Mac, with the system's Translation framework. How it is built, and why that framework and not Foundation Models, is in the [design](superpowers/plans/2026-10-12-translation-design.md).
 
-**Button and key** `[not built #153]`
+**Button and key**
 
-- A button 「翻訳」 (Translate) sits in the toolbar group at the top right, before 「元ページをブラウザで開く」. Its help text is 「翻訳する／原文に戻す (t)」; its icon is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
+- A button 「翻訳」 (Translate) sits in the toolbar group at the top right, before 「元ページをブラウザで開く」. Its help text is 「翻訳する／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
 - The same command is in the menu bar: 「表示 ▸ 翻訳 / 原文に戻す」, without a key.
 - `t` does the same, when no editable field is being typed in (3.1.5).
 - Pressing it translates the title and the body of the open article, in place. Pressing it again shows the original.
 
-**What is translated** `[not built #153]`
+**What is translated**
 
 - Only the article's reader text (the feed's text, or the full text after 「全文を取得」). The note, the list and the sidebar are never translated.
 - While the original page is open the button is disabled, with the help text 「元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます」.
@@ -312,7 +312,7 @@ A button translates the open article into another language, on the Mac, with the
 - Links in the translated text are plain text. The original is one press away.
 - Translation is not sticky: moving to another article shows that article in its original language and stops the running translation. Nothing is translated that the person did not ask for.
 
-**While it works and when it is done** `[not built #153]`
+**While it works and when it is done**
 
 - The status row above the article text (where 「本文を確認中」 shows) says 「翻訳中…」 with a small progress indicator (paragraphs done of all), or 「言語を準備しています…」 while the system downloads a language pack. Title and paragraphs change from the top as results arrive. The reading position is kept. Reduce Motion: no animation.
 - When done, the row says what was done, for example 「英語 → 日本語」, with a link 「原文を表示」.
@@ -410,7 +410,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
-| PRD-18 | Read an article in another language `[not built #153, #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); tests are named here when the feature is built |
+| PRD-18 | Read an article in another language `[not built #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the language menu: `[not built #154]` |
 
 ### 7.1 Conditions to ship 1.0
 
