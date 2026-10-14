@@ -14,11 +14,14 @@ struct ListColumnCollapse: NSViewRepresentable {
     var collapsed: Bool
     /// False for Reduce Motion: the column changes at once (so it does in a narrow window, see `SidebarFold.animatesListFold`).
     var animated: Bool
+    /// The window's room, read when the list comes back (never in `body`: a resize must not redraw the reader).
+    let space: WindowSpace
 
     func makeNSView(context: Context) -> Probe { Probe() }
-    func updateNSView(_ view: Probe, context: Context) { view.apply(collapsed: collapsed, animated: animated) }
+    func updateNSView(_ view: Probe, context: Context) { view.space = space; view.apply(collapsed: collapsed, animated: animated) }
 
     @MainActor final class Probe: NSView {
+        var space: WindowSpace?
         private var wanted: Bool?
         private var animated = true
         /// The first change (the window has just opened) is made at once.
@@ -39,8 +42,15 @@ struct ListColumnCollapse: NSViewRepresentable {
         private var moving = false
         override func setFrameSize(_ newSize: NSSize) {
             super.setFrameSize(newSize)
+            reportWidth(newSize.width)
             guard !moving, wanted == false else { return }
             DispatchQueue.main.async { [weak self] in self?.keepWanted() }
+        }
+        /// This view fills the list: its width is the list's. Only widths from the list's minimum up are reported (not while it folds or comes
+        /// back), and not inside the layout pass: the note's column reads it, and a change there during the layout looped (#222).
+        private func reportWidth(_ width: CGFloat) {
+            guard width >= NotePanelWidth.listMinimum, let space, abs(space.listWidth - width) > 0.5 else { return }
+            DispatchQueue.main.async { [weak space] in space?.listWidth = width }
         }
         private func keepWanted() {
             guard !moving, wanted == false, let window, let item = listItem(), item.isCollapsed else { return }
@@ -117,7 +127,9 @@ struct ListColumnCollapse: NSViewRepresentable {
         /// this tries again every 50 ms until the width is right, for at most 2 seconds. The width is that of this view, which fills the
         /// list (the column's own frame can reach under the sidebar).
         private func restoreWidth(of item: NSSplitViewItem) {
-            guard let saved = widthBeforeFold, saved > 0 else { return }
+            guard let remembered = widthBeforeFold, remembered > 0 else { return }
+            // Not wider than the room that is left beside the note: the article keeps its minimum, and the note does not have to shrink.
+            let saved = space.map { min(remembered, max(NotePanelWidth.listMinimum, $0.width - NotePanelWidth.articleMinimum - $0.noteWidth)) } ?? remembered
             restoring?.cancel()
             restoring = Task { @MainActor [weak self, weak item] in
                 for _ in 0..<40 {

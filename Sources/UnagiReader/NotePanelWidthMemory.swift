@@ -9,6 +9,8 @@ import ReaderCore
 struct NotePanelWidthMemory: ViewModifier {
     /// The widest the window allows now (`NotePanelWidth.maximum`): a width at this limit is the window's, not the person's.
     var limit: Double = NotePanelWidth.range.upperBound + 1
+    /// Where the panel's width goes for the list column, which must not come back wider than the room left beside the note.
+    var space: WindowSpace?
     /// The first width the layout gave this panel: only a change from it can be the person's drag.
     @State private var firstWidth: Double?
     @State private var width: Double?
@@ -18,6 +20,7 @@ struct NotePanelWidthMemory: ViewModifier {
             .onGeometryChange(for: Double.self, of: { Double($0.size.width) }) { newWidth in
                 if firstWidth == nil { firstWidth = newWidth }
                 width = newWidth
+                space?.noteWidth = newWidth
             }
             .task(id: width) {
                 // Keep the width after the person lets go: wait for the drag to settle, then save it once.

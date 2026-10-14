@@ -105,7 +105,9 @@ import Testing
         }
         let editor = try #require(editors(in: h.host).first)
         let width = editor.convert(editor.bounds, to: nil).width
-        #expect(abs(width - NotePanelWidth.load()) < 40, "the editor is \(width) pt wide; the panel should ask for \(NotePanelWidth.load()) pt")
+        // The window is 1,240 pt wide: the window's limit (the article's 360 pt and the list's 400 pt are kept, with a margin) is narrower than the setting.
+        let expected = min(NotePanelWidth.load(), NotePanelWidth.maximum(windowWidth: 1_240))
+        #expect(abs(width - expected) < 40, "the editor is \(width) pt wide; the panel should ask for \(expected) pt")
     }
 }
 

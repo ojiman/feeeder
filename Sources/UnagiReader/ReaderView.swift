@@ -149,13 +149,13 @@ struct ReaderView: View {
             sidebar.navigationSplitViewColumnWidth(min: 185, ideal: 215, max: 280)
         } content: {
             articleList.id(scope).background(AppPalette.surfaceColor).navigationSplitViewColumnWidth(min: 280, ideal: 400, max: 640)
-                .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion))
+                .background(ListColumnCollapse(collapsed: SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown), animated: !reduceMotion, space: windowSpace))
         } detail: {
             originalColumn.frame(minWidth: NotePanelWidth.articleMinimum)
                 .overlay(alignment: .top) { articleBand.ignoresSafeArea(.container, edges: .top) }
                 // The width goes on the panel's content. Put on the inspector itself it had no effect, and the panel stayed about 270 pt wide.
                 .inspector(isPresented: noteOpenBinding) {
-                    NoteInspectorColumn(space: windowSpace, listShown: workspace.noteListShown, startingWidth: startingPanelWidth) { limit in notePanel(limit: limit) }
+                    NoteInspectorColumn(space: windowSpace, startingWidth: startingPanelWidth) { limit in notePanel(limit: limit) }
                 }
         }
         .navigationSplitViewStyle(.balanced)
@@ -439,7 +439,7 @@ struct ReaderView: View {
                   onCopy: { _ = copyNote() },
                   onClose: closeNote,
                   listShown: workspace.noteListShown, onSwitchLayout: switchNoteLayout)
-            .modifier(NotePanelWidthMemory(limit: limit))
+            .modifier(NotePanelWidthMemory(limit: limit, space: windowSpace))
     }
 
     /// Not while Japanese text is being composed.
