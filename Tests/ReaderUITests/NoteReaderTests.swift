@@ -33,7 +33,7 @@ import Testing
         for button in candidates {
             let frame = button.convert(button.bounds, to: nil)
             guard frame.minX > width - 160, frame.width > 0 else { continue }     // the right end of the note's header
-            guard button is NSPopUpButton || frame.width <= 20 else { continue }
+            guard button is NSPopUpButton || frame.width <= 30 else { continue }        // the band's buttons (28 pt hit area)
             positioned.append((button, frame))
         }
         positioned.sort { $0.frame.minX < $1.frame.minX }

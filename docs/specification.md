@@ -127,7 +127,7 @@ normal                original page (v)     note beside article   note with the 
 | `Esc`, the ✕, `j` / `k`, a click in the list | original page → normal. The page slides out to the right and the sidebar returns, whichever way it was closed. With `j` / `k` or a click, the chosen article's text appears from under the page | |
 | `n`, `⌥⌘I`, the note button (in the article band) | normal → note beside the article. The sidebar and the list fold; the note comes in from the right. `n` works only when no editable field is being typed in. Opening writes nothing into the note (no summary, source or heading) | |
 | the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
-| the layout button (in the note band, beside the ✕; next to the note button in the article band until #198) | note beside the article ⇄ note with the list. The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
+| the layout button (in the note band, beside the ✕) | note beside the article ⇄ note with the list. The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
 | `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | |
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
@@ -137,18 +137,18 @@ normal                original page (v)     note beside article   note with the 
 
 #### 3.1.4 Rules per area
 
-**Bands** (decision 0057) `[not built #198]`
+**Bands** (decision 0057)
 
 - The window has no system toolbar and no visible title bar. Each column has its own band at the top of the window, as high as the window buttons' band (52 pt), in the column's colour, with no line under it. A band folds with its column. No column has a second row of controls below its band.
 - What each band holds, left to right:
 
-| Column | Left | Right | Issue |
-|---|---|---|---|
-| sidebar | the window buttons | add subscription, refresh (as now) | |
-| list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) | |
-| article | the translation status as short text (3.6) | the note button, Star, translate, globe (and the layout button until #198) | |
-| original page | ✕, the page's host name | | #198 |
-| note | ✕, the layout button | previous, next, copy | #198 |
+| Column | Left | Right |
+|---|---|---|
+| sidebar | the window buttons | add subscription, refresh (as now) |
+| list | | the filter's magnifier, which opens into the system's search field across the band (List filter, below) |
+| article | the translation status as short text (3.6) | the note button, Star, translate, globe |
+| original page (in the article band, in place of the status) | ✕, the page's host name | |
+| note | ✕, the layout button | previous, next, copy |
 
 - One style: monochrome symbols of one size and one hit area; colour only for a state (a filled Star, a filled translate). No links and no accent-coloured symbols in a band.
 - Dragging an empty part of a band moves the window; a double-click does what the system setting says.

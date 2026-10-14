@@ -39,7 +39,7 @@ Do this before you update a beta, or when the app cannot open the library and yo
 
 ### The screen
 
-The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button next to the note button at the top of the article brings the list back beside them, and hides it again. Appearance (system, light or dark) is in Settings.
+The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Appearance (system, light or dark) is in Settings.
 
 ### Subscriptions and folders
 
