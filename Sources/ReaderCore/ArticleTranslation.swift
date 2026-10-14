@@ -154,7 +154,7 @@ public typealias TranslationBatch = @Sendable ([TranslationPlan.Item]) -> AsyncT
         state = .preparing
     }
 
-    /// The article's text was replaced (「全文を取得」): a translation of the old text is dropped, and the original shows.
+    /// The article's text was replaced (a feed refresh): a translation of the old text is dropped, and the original shows.
     public func contentChanged(title: String, content: ArticleContent) {
         guard let key, TranslationPlan(title: title, content: content, target: key.target).key != key else { return }
         reset()

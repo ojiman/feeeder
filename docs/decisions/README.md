@@ -31,7 +31,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0030](0030-one-reading-surface.md) | One reading surface | valid |
 | [0031](0031-less-clutter.md) | Less clutter in the window | valid |
 | [0032](0032-simple-add-subscription.md) | A simple "add subscription" sheet | valid |
-| [0033](0033-rss-first.md) | RSS first: the feed's own text is shown | valid |
+| [0033](0033-rss-first.md) | RSS first: the feed's own text is shown | valid in part (points 3 and 4 replaced by 0056) |
 | [0034](0034-move-to-folder-chooser.md) | 「フォルダへ移動…」 is a chooser with a text field | valid |
 | [0036](0036-check-the-feed-as-you-type.md) | Check the feed while the address is typed | valid |
 | [0037](0037-choose-the-folder-when-adding.md) | Choose the folder when adding a subscription | valid |
@@ -51,6 +51,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0053](0053-plain-http-feeds-are-not-supported.md) | Plain `http://` feeds are not supported; the sentence when the https form fails | valid |
 | [0054](0054-translation-on-the-mac-not-stored.md) | Translation runs on the Mac with the system's framework, and is not stored | valid |
 | [0055](0055-a-keyword-filter-for-the-list.md) | A keyword filter for the article list | valid |
+| [0056](0056-the-feed-text-only.md) | The article shows the feed's text only: no full-text fetch, no coverage line | valid |
 
 ## Removed from the working tree
 

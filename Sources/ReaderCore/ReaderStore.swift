@@ -219,21 +219,8 @@ import SwiftData
         updateUnreadCounts(article, wasRead: wasRead)
     }
 
-    public func saveExtractedContent(articleID: UUID, result: ExtractionResult, at: Date) throws {
-        try reloadIfNeeded()
-        guard result.coverage == .extracted, !result.text.isEmpty,
-              let article = articles.first(where: { $0.id == articleID }), isContentAvailable(article, at: at) else { return }
-        let request = FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == articleID })
-        if let snapshot = try context.fetch(request).first {
-            snapshot.text = result.text; snapshot.coverageRaw = result.coverage.rawValue
-            snapshot.bodyFormatData = BodyParagraph.encode(result.bodyParagraphs)
-        }
-        else { context.insert(ContentSnapshot(articleID: articleID, text: result.text, coverage: result.coverage, bodyParagraphs: result.bodyParagraphs)) }
-        try save(); try reload()
-    }
-
     /// `discardExtractedBodies` once per library: the marker is a file in the library's folder, so a copy or a renamed folder of the library
-    /// keeps it, and bodies the person fetches later with 「全文を取得」 are not removed by a second run. Returns nil when it was done before;
+    /// keeps it. Returns nil when it was done before;
     /// a failure leaves no marker, so it is tried again at the next start.
     @discardableResult public func discardExtractedBodiesOnce(marker: URL) throws -> Int? {
         guard !FileManager.default.fileExists(atPath: marker.path) else { return nil }

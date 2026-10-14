@@ -127,7 +127,6 @@ struct TranslationHost: View {
 /// The row above the article text while a translation is made or shown (specification 3.6).
 struct TranslationStatusRow: View {
     let state: ArticleTranslation.State
-    let excerpt: Bool
     let showOriginal: () -> Void
 
     var body: some View {
@@ -152,7 +151,6 @@ struct TranslationStatusRow: View {
             AnyView(Group {
                 Text(Self.pair(source: source, target: TranslationTarget.appLanguage))
                 if failed > 0 { Text("\(failed)段落は原文のままです") }
-                if excerpt { Text("要約だけを翻訳しました。「全文を取得」で本文も翻訳できます") }
                 Button("原文を表示", action: showOriginal).buttonStyle(.link)
             })
         case .failed(let message): AnyView(Text(message))

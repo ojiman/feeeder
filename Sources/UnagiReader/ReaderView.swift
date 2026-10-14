@@ -431,12 +431,11 @@ struct ReaderView: View {
     @ViewBuilder private var detail: some View {
         if let article = selectedArticle {
             ArticleDetailView(article: article, content: displayedContent?.articleID == article.id ? displayedContent : nil,
-                expiry: selectedExpiry, canFetchPage: store.isContentAvailable(article, at: .now), loading: loading.loading, updateAvailable: loading.availableUpdate?.articleID == article.id,
+                expiry: selectedExpiry, updateAvailable: loading.availableUpdate?.articleID == article.id,
                 error: loading.error, initialAnchor: scrollMemory.state.scrollAnchors[article.id], initialOffset: scrollMemory.state.scrollOffsets[article.id] ?? 0,
                 onScroll: { anchor, offset in scrollMemory.state.recordScroll(articleID: article.id, anchor: anchor, offset: offset) },
                 onInteraction: { loading.recordInteraction(articleID: article.id) },
                 onUpdate: { perform { try loading.applyAvailableUpdate() } },
-                onReload: { Task { guard selection == article.id else { return }; await loading.load(articleID: article.id, refresh: true) } },
                 onDisplayBegin: { guard selection == article.id else { return }; ReaderPerformance.displayBegan(article.id) },
                 onDisplayed: { guard ReaderKeyboardCommands.acceptsDisplay(articleID: article.id, selectedID: selection, contentID: displayedContent?.articleID, originalVisible: originalPage.url != nil) else { return }; perform { try store.markDisplayed(articleID: article.id, at: .now) } }, imageLoader: imageLoader, pageForward: pageForward, pageMotion: originalPage.url == nil,
                 translated: translation.shown(for: article.id),

@@ -103,8 +103,7 @@ struct ReaderStoreTests {
             { try store.saveNote(text: "捨ててはいけない変更", at: at) },
             { try store.applyRetention(days: 7, at: at) },
             { try store.deleteContent(articleIDs: [article.id], at: at) },
-            { try store.markDisplayed(articleID: article.id, at: at) },
-            { try store.saveExtractedContent(articleID: article.id, result: ExtractionResult(text: "変更", coverage: .extracted, sourceURL: parsed.sourceURL), at: at) }
+            { try store.markDisplayed(articleID: article.id, at: at) }
         ]
         for change in changes { #expect(throws: (any Error).self) { try change() } }
         #expect(saveAttempts == attempts)

@@ -42,7 +42,7 @@ import ReaderCore
         if heroView !== view { heroView?.removeFromSuperview(); heroView = view; if let view { addSubview(view) } }
         positionHero()
     }
-    func install(title: String, publisher: String, date: String, coverage: String, paragraphs: [String], unavailable: String?, hero: Bool = false, bodyParagraphs: [BodyParagraph]? = nil) {
+    func install(title: String, publisher: String, date: String, paragraphs: [String], unavailable: String?, hero: Bool = false, bodyParagraphs: [BodyParagraph]? = nil) {
         if !paragraphs.isEmpty { onDisplayBegin?() }
         installing = true; defer { installing = false }
         let document = NSMutableAttributedString()
@@ -82,7 +82,6 @@ import ReaderCore
         }
         if !paragraphs.isEmpty { bodyRange = NSRange(location: start, length: document.length - start) }
         if let unavailable { append(unavailable, size: 16, secondary: true) }
-        append(coverage, size: 11, secondary: true, spacing: 0)
         textStorage?.setAttributedString(document)
         didDisplayBody = false
         layoutDocument()
@@ -190,7 +189,6 @@ struct NativeArticleText: NSViewRepresentable {
     let title: String
     let publisher: String
     let date: String
-    let coverage: String
     let paragraphs: [String]
     let unavailable: String?
     let initialAnchor: String?
@@ -248,7 +246,7 @@ struct NativeArticleText: NSViewRepresentable {
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let text = scroll.documentView as? ArticleTextView else { return }
-        let signature = [articleID.uuidString, title, publisher, date, coverage, unavailable ?? "", heroURL?.absoluteString ?? ""] + paragraphs
+        let signature = [articleID.uuidString, title, publisher, date, unavailable ?? "", heroURL?.absoluteString ?? ""] + paragraphs
         let changed = signature != context.coordinator.signature || bodyParagraphs != context.coordinator.bodyParagraphs
         if changed { text.recordScroll() }
         text.onScroll = onScroll; text.onInteraction = onInteraction; text.onDisplayBegin = onDisplayBegin; text.onDisplayed = onDisplayed
@@ -270,7 +268,7 @@ struct NativeArticleText: NSViewRepresentable {
         context.coordinator.restoring = true
         context.coordinator.signature = signature
         context.coordinator.bodyParagraphs = bodyParagraphs
-        text.install(title: title, publisher: publisher, date: date, coverage: coverage, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs)
+        text.install(title: title, publisher: publisher, date: date, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs)
         text.restore(anchor: initialAnchor, offset: initialOffset)
         context.coordinator.restoring = false
         context.coordinator.animatePage(in: scroll, articleID: articleID, forward: pageForward, reduceMotion: reduceMotion)

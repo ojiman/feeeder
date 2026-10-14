@@ -27,7 +27,7 @@ A smooth feel is part of the value. It is not polish added at the end.
 ## Promises
 
 1. **Your data stays on your Mac.** No account, no backend, no sync.
-2. **Honest about the input.** The app says whether it shows the full text, an extract or only the feed summary. It does not bypass paywalls, logins or robots rules.
+2. **The source's text, as the source gives it.** The app shows what the feed gives, and the original page is one key away. It does not fetch pages on its own, and it does not get around paywalls or logins.
 3. **Light over many.** We add a feature only if it makes the loop smoother. We keep the number of things a person must manage (folders, tags, goals, settings) as small as we can.
 
 ## Not in V1, on purpose

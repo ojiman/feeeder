@@ -11,19 +11,18 @@ How Unagi Reader is built, and the technical contracts a change must keep. What 
 | Article text | AppKit `NSTextView` (`NativeArticleText`) |
 | Original page | `WKWebView` (`OriginalPageView`) |
 | Note editor | AppKit `NSTextView` in an `NSViewRepresentable` (`NoteTextEditor`); SwiftUI's `TextEditor` cannot set display attributes |
-| Core | `Sources/ReaderCore`: SwiftData models, `ReaderStore`, feed parsing (`XMLParser`), extraction, retention. No UI |
-| Network | `URLSession` on the Mac. SwiftSoup 2.13.9, pinned exactly, for extraction |
+| Core | `Sources/ReaderCore`: SwiftData models, `ReaderStore`, feed parsing (`XMLParser`), retention. No UI |
+| Network | `URLSession` on the Mac. SwiftSoup 2.13.9, pinned exactly, to read the HTML in feeds (`ArticleMarkup`) |
 | Store | `Application Support/UnagiReader/Reader.store`. `--data-directory <path>` and `--seed-demo` start a synthetic library; a normal start never adds demo data |
 
 There is no backend, no account and no AI proxy. The app has no AI of its own ([decision 0049](decisions/0049-one-note-and-no-ai-of-its-own.md)); the note editor is a standard text view, so the system's Writing Tools appear on their own (`writingToolsBehavior` is not changed).
 
 ## 2. Input from the network is untrusted
 
-- Every URL is checked for its scheme; redirects are checked before they are followed. Extraction does not follow HTTP redirects.
+- Every URL is checked for its scheme; redirects are checked before they are followed.
 - The feed parser and `OPMLParser` refuse XML entity declarations (`<!ENTITY`). `OPMLParser` reads at most 5 MB, 2,000 outlines and 64 levels.
-- Extracted HTML is never run; `ArticleMarkup` turns RSS HTML, Atom XHTML and extracted text into paragraphs, UTF-16 link ranges (HTTP(S) only) and quote depth. A link is checked again when it is clicked.
-- Extraction (`ArticleExtractor`) takes the paragraphs of `article`, then `main`. `ExtractionQuality` rejects a result made mostly of short fragments (menus, numbers). It runs only when the person presses 「全文を取得」 ([decision 0033](decisions/0033-rss-first.md)).
-- Logins, robots rules (`RobotsPolicy`) and paywalls are never bypassed.
+- Feed HTML is never run; `ArticleMarkup` turns RSS HTML and Atom XHTML into paragraphs, UTF-16 link ranges (HTTP(S) only) and quote depth. A link is checked again when it is clicked.
+- The app never fetches an article's page for its text ([decision 0056](decisions/0056-the-feed-text-only.md)). Bodies extracted by earlier versions stay in the store with the coverage `extracted` and are shown like any body.
 
 ## 3. Store
 

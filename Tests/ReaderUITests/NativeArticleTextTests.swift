@@ -9,7 +9,7 @@ import ReaderCore
     @Test func pageMotionFollowsDirectionWithoutReplayingForContentUpdates() throws {
         let coordinator = NativeArticleText.Coordinator()
         let a = UUID(), b = UUID()
-        let native = NativeArticleText(articleID: a, title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: ["合成本文"], unavailable: nil, initialAnchor: nil, initialOffset: 0, reduceMotion: false, onScroll: { _, _ in }, onInteraction: {}, onDisplayBegin: {}, onDisplayed: {})
+        let native = NativeArticleText(articleID: a, title: "合成記事", publisher: "SYNTHETIC", date: "", paragraphs: ["合成本文"], unavailable: nil, initialAnchor: nil, initialOffset: 0, reduceMotion: false, onScroll: { _, _ in }, onInteraction: {}, onDisplayBegin: {}, onDisplayed: {})
         let host = NSHostingView(rootView: native)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host
@@ -52,13 +52,13 @@ import ReaderCore
         coordinator.animatePage(in: scroll, articleID: b, forward: true, reduceMotion: true)
         #expect(scroll.layer?.animation(forKey: "article-motion") == nil)
     }
-    @Test func contentCoverageAppearsOnlyAtTheEnd() {
+    /// Decision 0056: the article ends with its text (or the sentence that there is none), with no coverage line under it.
+    @Test func theArticleEndsWithItsTextAndNoCoverageLine() {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
-        for paragraphs in [["取得できた合成要約"], []] {
-            view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: paragraphs, unavailable: paragraphs.isEmpty ? "本文は利用できません。" : nil)
+        for (paragraphs, last) in [(["取得できた合成要約"], "取得できた合成要約"), ([], "本文は利用できません。")] {
+            view.install(title: "合成記事", publisher: "SYNTHETIC", date: "", paragraphs: paragraphs, unavailable: paragraphs.isEmpty ? "本文は利用できません。" : nil)
             #expect(view.string.hasPrefix("SYNTHETIC\n"))
-            #expect(view.string.components(separatedBy: "RSS要約のみ").count == 2)
-            #expect(view.string.hasSuffix("RSS要約のみ\n"))
+            #expect(view.string.hasSuffix(last + "\n"))
         }
     }
     @Test func namedBodyLinkIsClickableAndQuoteIsIndented() throws {
@@ -66,7 +66,7 @@ import ReaderCore
         let text = "合成🙂：詳細はこちら"
         let range = (text as NSString).range(of: "詳細はこちら")
         let paragraph = BodyParagraph(text: text, links: [BodyLink(location: range.location, length: range.length, url: "https://synthetic.example/detail#section")], quoteDepth: 1)
-        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: [text], unavailable: nil, bodyParagraphs: [paragraph])
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", paragraphs: [text], unavailable: nil, bodyParagraphs: [paragraph])
         let body = (view.string as NSString).range(of: text)
         let index = body.location + range.location
         let link = try #require(view.textStorage?.attribute(.link, at: index, effectiveRange: nil) as? URL)
@@ -79,7 +79,7 @@ import ReaderCore
         #expect(opened == link)
         #expect(view.textView(view, clickedOnLink: "file:///private/tmp/forbidden", at: index))
         #expect(opened == link)
-        view.install(title: "次の記事", publisher: "SYNTHETIC", date: "", coverage: "RSS", paragraphs: [text], unavailable: nil)
+        view.install(title: "次の記事", publisher: "SYNTHETIC", date: "", paragraphs: [text], unavailable: nil)
         let plain = (view.string as NSString).range(of: text)
         #expect(view.textStorage?.attribute(.link, at: plain.location + range.location, effectiveRange: nil) == nil)
     }
@@ -88,7 +88,7 @@ import ReaderCore
         let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
         let hero = NSImageView()
         view.configureHero(hero)
-        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: (0..<50).map { "段落 \($0)" }, unavailable: nil, hero: true)
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", paragraphs: (0..<50).map { "段落 \($0)" }, unavailable: nil, hero: true)
         view.restore(anchor: "paragraph-7", offset: 12)
         let before = view.readingPosition()
         hero.image = NSImage(size: NSSize(width: 500, height: 300))
@@ -108,7 +108,7 @@ import ReaderCore
         let scroll = NSScrollView(frame: view.frame)
         scroll.documentView = view
         let paragraphs = (0..<80).map { "合成段落\($0)。" + String(repeating: "日本語の長い文章です。", count: 20) }
-        view.install(title: "合成タイトル", publisher: "SYNTHETIC", date: "2026/10/05", coverage: "RSS要約のみ", paragraphs: paragraphs, unavailable: nil)
+        view.install(title: "合成タイトル", publisher: "SYNTHETIC", date: "2026/10/05", paragraphs: paragraphs, unavailable: nil)
         #expect(view.string.contains(paragraphs.last!))
         view.restore(anchor: "paragraph-7", offset: 23.5)
         let before = view.readingPosition()
@@ -127,7 +127,7 @@ import ReaderCore
         var displayed = 0
         view.onDisplayBegin = { textAtStart = view.string }
         view.onDisplayed = { displayed += 1 }
-        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: ["新しい合成本文"], unavailable: nil)
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", paragraphs: ["新しい合成本文"], unavailable: nil)
         #expect(textAtStart == "")
         #expect(view.string.contains("新しい合成本文"))
         #expect(displayed == 0)
@@ -137,7 +137,7 @@ import ReaderCore
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
         let paragraphs = (0..<80).map { "合成段落\($0)。" + String(repeating: "日本語の長い文章です。", count: 20) }
-        view.install(title: "合成", publisher: "SYNTHETIC", date: "", coverage: "RSS要約のみ", paragraphs: paragraphs, unavailable: nil)
+        view.install(title: "合成", publisher: "SYNTHETIC", date: "", paragraphs: paragraphs, unavailable: nil)
         view.restore(anchor: "paragraph-7", offset: 23.5)
         for _ in 0..<10 {
             for width in [850.0, 600.0] {
@@ -152,18 +152,18 @@ import ReaderCore
     @Test func headerOnlyViewportDoesNotCountBodyAsDisplayed() {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 100))
         let scroll = NSScrollView(frame: view.frame); scroll.documentView = view
-        view.install(title: String(repeating: "長い合成タイトル ", count: 20), publisher: "SYNTHETIC", date: "2026/10/05", coverage: "RSS要約のみ", paragraphs: ["取得できた合成要約。"], unavailable: nil)
+        view.install(title: String(repeating: "長い合成タイトル ", count: 20), publisher: "SYNTHETIC", date: "2026/10/05", paragraphs: ["取得できた合成要約。"], unavailable: nil)
         view.restore(anchor: nil, offset: 0)
         #expect(!view.hasVisibleBody)
         view.restore(anchor: "paragraph-0", offset: 0)
         #expect(view.hasVisibleBody)
-        view.install(title: "期限切れ", publisher: "SYNTHETIC", date: "", coverage: "本文なし", paragraphs: [], unavailable: "本文は利用できません。")
+        view.install(title: "期限切れ", publisher: "SYNTHETIC", date: "", paragraphs: [], unavailable: "本文は利用できません。")
         #expect(!view.hasVisibleBody)
     }
 
     @Test func theHeadlineIsCalmerThanBodyEmphasis() throws {
         let view = ArticleTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
-        view.install(title: "合成記事", publisher: "合成", date: "", coverage: "RSS要約のみ", paragraphs: ["合成本文"], unavailable: nil)
+        view.install(title: "合成記事", publisher: "合成", date: "", paragraphs: ["合成本文"], unavailable: nil)
         let index = ("合成\n" as NSString).length
         let font = try #require(view.textStorage?.attribute(.font, at: index, effectiveRange: nil) as? NSFont)
         #expect(font.pointSize == 26)
