@@ -1,6 +1,6 @@
 # 0055 A keyword filter for the article list
 
-- Status: valid (approved by the PdM when the PR that adds this record is merged)
+- Status: valid; the position of the magnifier is replaced by [0057](0057-each-column-has-its-own-band.md) (approved by the PdM when the PR that adds this record was merged)
 - Date: 2026-10-14
 - Decider: the owner (PdM), in issue #129 (comment of 2026-10-14). Where the icon sits and "feed text" = the feed summary are the agent's reading, listed below for the owner to confirm.
 
