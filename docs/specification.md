@@ -16,7 +16,7 @@ What V1 is and is not, as the person sees it. Why the product exists is in the [
 ## 2. Promises
 
 - The screen and the keys stay smooth; focus, the reading position, Japanese input and the system's accessibility are kept.
-- Whatever body text can be had is shown readably. When none can be had, the RSS summary and a link to the original page keep the reading going. The app says how much text it has (coverage, 3.0) and never promises the full text.
+- Whatever body text can be had is shown readably. When none can be had, the RSS summary and a link to the original page keep the reading going. The app shows the feed's text only and never promises the full text (decision 0056).
 - Read is history, Star is "come back to chew on this", and the note is the one place for the person's own words. They are independent.
 - Article text within the retention period and the note can be read offline. Nothing the person wrote is deleted by the app.
 - The app has no AI of its own (section 5).
@@ -53,10 +53,8 @@ These words mean the same thing in this specification, the user guide, the decis
 | Term | Meaning | Code |
 |---|---|---|
 | article (記事) | One item of a feed | `Article` |
-| body (本文) | The text to read: what the feed provided, or what 「全文を取得」 extracted | `ContentSnapshot`, `ArticleContent` |
+| body (本文) | The text to read: what the feed provided (a body an earlier version extracted from the page is kept and shown the same way) | `ContentSnapshot`, `ArticleContent` |
 | RSS summary (RSS要約) | The short description the feed gives an article | `Article.summary` |
-| coverage (カバー範囲) | How much text the app has: 「フィード提供本文」, 「抽出本文 · 全文保証なし」, 「RSS要約のみ」, 「本文は利用できません」 | `ContentCoverage` |
-| full-text fetch | The button 「全文を取得」 (「本文を再取得」 once fetched): extracts the body from the original page, only when pressed | `ArticleLoadingController`, `ArticleExtractor` |
 | read / unread (既読・未読) | An article becomes read, and its first read time is saved, when its body or RSS summary is actually shown in the article area | `Article.firstReadAt`, `ReaderStore.markDisplayed` |
 | Star | The mark "come back to chew on this" (3.2) | `Article.starredAt` |
 | retention period (保持期間) | Days the body and RSS summary are kept: 7, 30, 90 or 365 | `RetentionPolicy`, `ReaderSettings` |
@@ -172,8 +170,8 @@ normal                original page (v)     note beside article   note with the 
 
 - The title is 26 pt semibold. The buttons at the top: Star and the external browser (globe). Appearance (system / light / dark) is in Settings.
 - Opening an article shows the feed's body (or the RSS summary) as it is; it never fetches the original page or swaps the text (RSS first, decision 0033). For more, `v` (in the app) or `b` (the browser).
-- Only 「全文を取得」 (「本文を再取得」 once fetched) extracts the body from the original page. A result made mostly of short fragments (menus, numbers) is not taken as the body. On failure the current text stays and the failure is shown, with the RSS summary and the link to the original page. Paywalls, logins and robots rules are never bypassed.
-- Links and quotes of the feed's text and of the extracted text are kept. A link opens in the default browser. Quotes look different from the text. Coverage is shown once, quietly, at the end. A saved body without layout data is shown as plain text.
+- The app never takes text from the original page (decision 0056): no full-text fetch, and no line under the article that says how much text there is.
+- Links and quotes of the feed's text are kept. A link opens in the default browser. Quotes look different from the text. A saved body without layout data is shown as plain text.
 - The next article comes in from below, the previous from above, short and quick (following the list order). The text area does not change height when loading ends.
 - An article becomes read when its body or RSS summary is actually shown in the article area. Scrolling the list or fetching the body does not mark it read. Receiving or showing it again does not change the first read time.
 
@@ -306,9 +304,8 @@ A button translates the open article into another language, on the Mac, with the
 
 **What is translated**
 
-- Only the article's reader text (the feed's text, or the full text after 「全文を取得」). The note, the list and the sidebar are never translated.
+- Only the article's reader text (the feed's text). The note, the list and the sidebar are never translated.
 - While the original page is open the button is disabled, with the help text 「元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます」.
-- When the reader text is short (a feed excerpt), the status row says so and points to 「全文を取得」. The app does not fetch the page by itself.
 - Links in the translated text are plain text. The original is one press away.
 - Translation is not sticky: moving to another article shows that article in its original language and stops the running translation. Nothing is translated that the person did not ask for.
 
@@ -326,7 +323,7 @@ A button translates the open article into another language, on the Mac, with the
 
 **Core rules** (decision 0054)
 
-- A late answer for another article, another language, another press or a changed body is dropped. If 「全文を取得」 changed the body, the translation is dropped, the original shows and the button is off.
+- A late answer for another article, another language, another press or a changed body is dropped. If a feed refresh changed the body, the translation is dropped, the original shows and the button is off.
 - A translation is not stored: it is not in the library and not under the retention rules. It is kept in memory for a few recently translated articles and is gone when the app closes.
 - Translating never blocks the main thread, and starts only when the person presses.
 
@@ -380,7 +377,7 @@ The app has **no AI of its own** ([decision 0049](decisions/0049-one-note-and-no
 | Platform | backend, accounts, sync, server-side fetching or AI, shared notes, push notifications | [vision](vision.md) |
 | Subscriptions | nested folders, empty folders | 3.5 |
 | Note | more than one note; folders, levels, tags, search or goals for notes; daily or weekly notes; system sharing services | decisions 0019, 0049 |
-| Fetching | bypassing paywalls, subscriptions, logins, captchas or robots rules; a full-text guarantee | section 4 |
+| Fetching | taking text from the original page (decision 0056); bypassing paywalls, subscriptions, logins or captchas; a full-text guarantee | section 4 |
 | AI | an AI of the app's own (summary, draft help: a new decision is needed), keys or API calls in the app, AI off the Mac (Private Cloud Compute and the like), a dedicated link to one AI app (only 「Markdownをコピー」), sending or recording automatically, a guarantee of facts | decision 0049 |
 | Settings | an in-app language or time zone setting | — |
 | Old data | the prototype's Like and any migration of it (Star is a new mark) | decision 0001 |
@@ -395,7 +392,6 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 |---|---|---|---|
 | PRD-01 | Read smoothly, with subscriptions in order | The four areas, the four layouts, appearance, folders and unread counts, the keys and the note open and close as in 3.1. No wrong body, no visible stall, no scroll jump; input, input methods and VoiceOver are not disturbed. The budgets of 2.1 hold. The owner compares with Reeder Classic on a real Mac | real Mac (the owner, against Reeder Classic); parts in UI tests; 2.1 |
 | PRD-02 | Open an article from the unread list | Scrolling the list keeps articles unread. Showing the body or the RSS summary saves the first read time | unit tests, synthetic app |
-| PRD-03 | Read an article whose full-text fetch failed | Reading goes on; the summary, the coverage and the link to the original page are shown; no restriction is bypassed | unit tests, synthetic app |
 | PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver) |
 | PRD-05 | Give the note to another AI | 「Markdownをコピー」 copies the text exactly; the person pastes it into any AI. The app starts no app, makes no file, uses no network. Disabled for an empty note | unit tests, real Mac |
 | PRD-06 | (unused) | The app's own summary was removed by decision 0049; the number stays because other documents cite it | — |

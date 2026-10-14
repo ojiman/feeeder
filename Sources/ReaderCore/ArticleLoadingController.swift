@@ -4,37 +4,19 @@ import Observation
 @Observable @MainActor public final class ArticleLoadingController {
     public private(set) var displayed: ArticleContent?
     public private(set) var availableUpdate: ArticleContent?
-    public private(set) var loading = false
     public private(set) var error: String?
     private var state = ArticleLoadingState()
     private let store: ReaderStore
-    private let fetcher: ArticleFetcher
     @ObservationIgnored private let now: @MainActor () -> Date
-    public init(store: ReaderStore, fetcher: ArticleFetcher = ArticleFetcher(), now: @escaping @MainActor () -> Date = { .now }) {
-        self.store = store; self.fetcher = fetcher; self.now = now
+    public init(store: ReaderStore, now: @escaping @MainActor () -> Date = { .now }) {
+        self.store = store; self.now = now
     }
-    public func clear() { state = ArticleLoadingState(); displayed = nil; availableUpdate = nil; loading = false }
-    public func load(articleID: UUID, refresh: Bool = false) async {
-        let generation = state.begin(articleID: articleID)
+    public func clear() { state = ArticleLoadingState(); displayed = nil; availableUpdate = nil }
+    /// Shows what the feed gave. The original page is never fetched for the reader (decisions 0033 and 0056): it is read with `v` or `b`.
+    public func load(articleID: UUID) async {
+        state.begin(articleID: articleID)
         error = nil; availableUpdate = nil
         do { displayed = try store.content(articleID: articleID, at: now()) } catch { self.error = error.localizedDescription; displayed = nil }
-        // RSS first: opening an article shows what the feed gave and never fetches the page (nothing waits, nothing leaves the Mac).
-        // The page is fetched only when the person asks for the full text.
-        guard refresh,
-              let article = store.articles.first(where: { $0.id == articleID }), store.isContentAvailable(article, at: now()),
-              let url = article.originalURL.flatMap({ ArticleURL.validated($0) }) else { loading = false; return }
-        loading = true
-        let result = await fetcher.fetch(url: url)
-        guard !Task.isCancelled, state.accept(articleID: articleID, generation: generation) else { return }
-        loading = false
-        guard let result else {
-            error = displayed == nil ? "全文を取得できませんでした。" : "全文を取得できませんでした。今の本文を表示しています。"
-            return
-        }
-        do {
-            try store.saveExtractedContent(articleID: articleID, result: result, at: now())
-            refreshCachedContent()
-        } catch { self.error = error.localizedDescription }
     }
     public func recordInteraction(articleID: UUID) { state.recordInteraction(articleID: articleID) }
     public func refreshCachedContent() {

@@ -22,12 +22,6 @@ struct ArticleMarkupTests {
         let first = try #require(blocks.first)
         #expect(first.links.first?.length == ("合成🙂記事" as NSString).length)
     }
-    @Test func extractedContentPreservesLinksAndQuotesWithoutExecutingHTML() throws {
-        let data = Data("<article>\(Self.html)<p>合成記事の本文です。リンク先と引用の関係を保持します。</p></article>".utf8)
-        let result = try #require(try ArticleExtractor.extract(html: data, response: HTTPResponse(data: data, finalURL: Self.source, statusCode: 200, headers: [:])))
-        #expect(result.bodyParagraphs?.contains { $0.quoteDepth == 1 && !$0.links.isEmpty } == true)
-        #expect(result.bodyParagraphs?.map(\.text).joined(separator: "\n\n") == result.text)
-    }
     @Test func atomXHTMLRetainsAnchorAndRelativeBase() throws {
         let xml = "<feed xmlns='http://www.w3.org/2005/Atom'><entry><id>a</id><content type='xhtml' xml:base='https://synthetic.example/base/'><div xmlns='http://www.w3.org/1999/xhtml'><blockquote><p>日本語<a href='detail#section'>詳細🙂</a></p></blockquote></div></content></entry></feed>"
         let entry = try #require(try FeedParser.parse(Data(xml.utf8), sourceURL: Self.source).entries.first)
@@ -35,9 +29,10 @@ struct ArticleMarkupTests {
         #expect(entry.bodyParagraphs?.first?.quoteDepth == 1)
     }
     @Test func codeWithBlankLinesDoesNotShiftFollowingLinks() throws {
-        let data = Data("<article><pre>  if true {\n\n    print(1)\n  }</pre><p>本文です。<a href='/detail#section'>詳細はこちら</a>。日本語の合成記事でリンクの位置を確かめます。</p></article>".utf8)
-        let result = try #require(try ArticleExtractor.extract(html: data, response: HTTPResponse(data: data, finalURL: Self.source, statusCode: 200, headers: [:])))
-        let content = ArticleContent(articleID: UUID(), text: result.text, summary: "", coverage: result.coverage, originalURL: Self.source, bodyParagraphs: result.bodyParagraphs)
+        let html = "<pre>  if true {\n\n    print(1)\n  }</pre><p>本文です。<a href='/detail#section'>詳細はこちら</a>。日本語の合成記事でリンクの位置を確かめます。</p>"
+        let paragraphs = try #require(ArticleMarkup.parse(html, base: Self.source))
+        let content = ArticleContent(articleID: UUID(), text: paragraphs.map(\.text).joined(separator: "\n\n"), summary: "", coverage: .feedProvided,
+                                     originalURL: Self.source, bodyParagraphs: paragraphs)
         #expect(content.paragraphs == content.bodyParagraphs.map(\.text))
         #expect(content.paragraphs.first?.hasPrefix("  if true") == true)
         #expect(content.bodyParagraphs.last?.links.first?.url == "https://synthetic.example/detail#section")

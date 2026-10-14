@@ -1,6 +1,6 @@
 # Unagi Reader user guide
 
-How to start Unagi Reader, how it keeps your data, and how to use it. The app is Japanese only; a label is shown here in Japanese with its meaning, for example 「全文を取得」 (Get full text). If this guide and the app differ, the [specification](specification.md) decides; please tell us.
+How to start Unagi Reader, how it keeps your data, and how to use it. The app is Japanese only; a label is shown here in Japanese with its meaning, for example 「Markdownをコピー」 (Copy Markdown). If this guide and the app differ, the [specification](specification.md) decides; please tell us.
 
 ## 1. Start the app
 
@@ -70,7 +70,7 @@ The app refreshes at launch, when you come back to it, and every 30 minutes; the
 
 - Keys do not act while you type in a field or compose Japanese text. `j`, `k`, `s` and `n` also work on the original page.
 - An article becomes read when its text is shown, not when you scroll past it in the list.
-- The app shows the feed's own text (or its summary). 「全文を取得」 (Get full text) takes the text from the original page; parts of the page's menus may come with it. The end of the text says what you have: 「フィード提供本文」 (the feed's text), 「抽出本文 · 全文保証なし」 (extracted, may be incomplete) or 「RSS要約のみ」 (summary only). The app never gets around paywalls or logins.
+- The app shows the feed's own text (or its summary), as the feed gives it. For the whole article, open the original page with `v` (in the app) or `b` (your browser). The app never gets around paywalls or logins.
 - The in-app browser does not keep you signed in to sites.
 - `s` or the button at the top right stars an article; the Star list shows them again.
 

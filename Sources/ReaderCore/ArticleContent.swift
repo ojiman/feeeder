@@ -2,14 +2,6 @@ import Foundation
 
 public enum ContentCoverage: String, Sendable, Codable {
     case feedProvided, extracted, summaryOnly, unavailable
-    public var label: String {
-        switch self {
-        case .feedProvided: "フィード提供本文"
-        case .extracted: "抽出本文 · 全文保証なし"
-        case .summaryOnly: "RSS要約のみ"
-        case .unavailable: "本文は利用できません"
-        }
-    }
 }
 
 public struct ArticleContent: Sendable, Equatable {
