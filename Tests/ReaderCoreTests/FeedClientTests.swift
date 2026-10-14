@@ -62,7 +62,9 @@ import Testing
         await #expect(throws: (any Error).self) { try await client.fetch(url: url) }
     }
 
-    @Test(.timeLimit(.minutes(1))) func limitsParallelRefreshAndDiscardsUnsubscribedResponse() async throws {
+    // The limit catches a hang. In CI this suite shares one process with the hosted UI tests, which keep the main thread busy: the test
+    // took 46 s and 76 s there while it takes 0.08 s alone (#208).
+    @Test(.timeLimit(.minutes(3))) func limitsParallelRefreshAndDiscardsUnsubscribedResponse() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let store = try ReaderStore(url: library.url)
         for _ in 0..<5 { _ = try store.importFeed(FeedParser.parse(Data(FeedParserTests.rss.utf8), sourceURL: endpoint())) }
