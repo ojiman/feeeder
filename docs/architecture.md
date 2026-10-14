@@ -67,6 +67,8 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 
 - The window has no title bar and no system toolbar (`.windowStyle(.hiddenTitleBar)`; decision 0057). Each column draws its own band (`bandLayout()`: the controls on the window buttons' line, `BandDragArea` behind): `ArticleBand` (status and `BandButton`s) over the article column, `ListFilterBar` (the magnifier or the search field) in the list's band (taken away while the list is folded), `NotePanel`'s band (it ignores the top safe area, as the inspector keeps one), `BandDragArea` (a `WindowDragGesture`) on empty band space. A SwiftUI `.toolbar` must not come back: the system toolbar lies over the bands and takes their clicks. The menu bar holds the band's actions (`ReaderMenuCommands`, `TranslationCommands`).
 
+- Motions are measured with `--performance-output <file>`: `MotionMeter` records each named motion's frames with the window's display link (`motions` in the file), and `--motion-benchmark` plays every motion ten times and quits. The baseline is in [verification/motion-baseline.md](verification/motion-baseline.md).
+
 ### 4.2 The note panel
 
 - `NotePanel` is the inspector. Its width is set by `inspectorColumnWidth` on the panel's content (on the inspector itself it has no effect). `NotePanelWidth` holds the range, the default and the saved value in `UserDefaults`, clamped on save and load. The key changed with decision 0050 (`notePanelWidth.0050`); loading removes the old `notePanelWidth`, so an earlier width is dropped once.

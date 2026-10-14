@@ -119,6 +119,7 @@ struct ReaderView: View {
             // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
             .onExitCommand { if originalPage.url == nil { closeNote() } }
             .focusedSceneValue(\.readerActions, readerActions)
+            .task { if MotionBenchmark.requested { await MotionBenchmark.run(benchmarkActions) } }
             .modifier(ArticleTranslationPresentation(controller: translation, articleID: selection, title: selectedArticle?.title,
                 content: displayedContent, keysEnabled: shortcutsEnabled, readerShown: originalPage.url == nil))
             .onKeyPress("/") { guard shortcutsEnabled else { return .ignored }; filterPresented = true; return .handled }
@@ -341,7 +342,7 @@ struct ReaderView: View {
                 case "v": openOriginal()
                 case "s": perform(.toggleStar)
                 case "n": toggleNote()
-                case "/": filterPresented = true
+                case "/": ReaderPerformance.motionBegan("filter-open", duration: 0.25); filterPresented = true
                 case "t": toggleTranslation()
                 default: break
                 }
@@ -368,7 +369,8 @@ struct ReaderView: View {
             // A band folds with its column (decision 0057): the folded list's view still draws, so its controls are taken away.
             if !SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown) {
                 ListFilterBar(text: $workspace.listFilter, shown: filterShown,
-                              atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen), open: { filterPresented = true },
+                              atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen),
+                              open: { ReaderPerformance.motionBegan("filter-open", duration: 0.25); filterPresented = true },
                               close: { filterPresented = false; listFocused = true },
                               dismiss: { filterPresented = false }).ignoresSafeArea(.container, edges: .top)
             }
@@ -377,6 +379,16 @@ struct ReaderView: View {
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
     }
 
+    /// What `--motion-benchmark` plays: the same functions the keys call (issue #212).
+    private var benchmarkActions: MotionBenchmark.Actions {
+        MotionBenchmark.Actions(
+            selectFirst: { selectArticle(visibleArticleIDs.first) },
+            next: { move(1) }, previous: { move(-1) },
+            toggleNote: toggleNote, switchLayout: switchNoteLayout,
+            openPage: openOriginal, closePage: closeOriginal,
+            openFilter: { ReaderPerformance.motionBegan("filter-open", duration: 0.25); filterPresented = true },
+            closeFilter: { ReaderPerformance.motionBegan("filter-close", duration: 0.25); filterPresented = false })
+    }
     private var readerActions: ReaderActions {
         let article = selectedArticle
         return ReaderActions(noteOpen: noteOpen, toggleNote: toggleNote, starred: article?.starredAt != nil, canStar: article != nil,
@@ -477,6 +489,7 @@ struct ReaderView: View {
         guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }
         restoreListFocus = ReaderKeyboardCommands.listHasFocus(declared: listFocused, responder: NSApp.keyWindow?.firstResponder)
         // The page slides in and the sidebar folds as one move (decision 0046).
+        ReaderPerformance.motionBegan("page-open", duration: SidebarFold.motionDuration)
         withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
             _ = originalPage.open(articleID: article.id, url: url)
             columnVisibility = targetColumns(pageOpen: true)
@@ -494,6 +507,7 @@ struct ReaderView: View {
         guard originalPage.url != nil, !originalClosing else { return }
         guard !reduceMotion else { originalPage.close(); columnVisibility = targetColumns(pageOpen: false); done(); return }
         originalClosing = true
+        ReaderPerformance.motionBegan("page-close", duration: SidebarFold.motionDuration)
         // The page slides out and the sidebar comes back as one move, however the page was closed (decision 0046).
         withAnimation(.easeOut(duration: SidebarFold.motionDuration)) {
             originalSlide = originalColumnWidth
@@ -532,6 +546,7 @@ struct ReaderView: View {
     /// Opens or closes the note beside the article: the sidebar and the list fold away to the left and the note comes in from the right, as
     /// one move (decision 0049), the same as the original page. The list is folded by `ListColumnCollapse`, in the same time.
     private func toggleNote() {
+        ReaderPerformance.motionBegan(noteOpen ? "note-close" : "note-open", duration: SidebarFold.motionDuration)
         withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) {
             workspace.noteOpen.toggle()
             columnVisibility = targetColumns(pageOpen: originalPage.url != nil)
@@ -552,6 +567,7 @@ struct ReaderView: View {
     }
     /// The layout button: shows or hides the list beside the open note.
     private func switchNoteLayout() {
+        ReaderPerformance.motionBegan("note-layout", duration: SidebarFold.motionDuration)
         withAnimation(reduceMotion ? nil : .easeOut(duration: SidebarFold.motionDuration)) { workspace.switchNoteLayout() }
     }
     /// The columns to show: the sidebar is folded while the original page or the note is open (decisions 0046 and 0049).
@@ -566,7 +582,7 @@ struct ReaderView: View {
 
     private func move(_ offset: Int) {
         let next = ReaderNavigation.move(selection, by: offset, in: visibleArticleIDs)
-        if let next, next != selection { ReaderPerformance.selectionStarted(next) }
+        if let next, next != selection { ReaderPerformance.selectionStarted(next); ReaderPerformance.motionBegan("article-move", duration: 0.22) }
         selectArticle(next)
     }
     private func selectArticle(_ id: UUID?) {

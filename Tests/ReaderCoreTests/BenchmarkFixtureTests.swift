@@ -34,7 +34,7 @@ import Testing
             article.originalURL = originalBase?.appending(path: "\(index)").absoluteString ?? "http://127.0.0.1:18888/posts/extracted"
             article.imageURL = imageBase?.appending(path: "\(index).png").absoluteString
             context.insert(article)
-            context.insert(ContentSnapshot(articleID: article.id, text: text, coverage: .extracted, bodyParagraphs: formatted))
+            context.insert(ContentSnapshot(articleID: article.id, text: text, coverage: .feedProvided, bodyParagraphs: formatted))
             context.insert(FeedMembership(feedID: feed.id, articleID: article.id, sourceID: String(index)))
         }
         try context.save()
