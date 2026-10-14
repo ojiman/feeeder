@@ -370,13 +370,18 @@ struct ReaderView: View {
         }
         .overlay(alignment: .top) {
             // A band folds with its column (decision 0057): the folded list's view still draws, so its controls are taken away.
-            if !SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown) {
-                ListFilterBar(text: $workspace.listFilter, shown: filterShown,
-                              atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen),
-                              open: { ReaderPerformance.motionBegan("filter-open", duration: 0.25); filterPresented = true },
-                              close: { filterPresented = false; listFocused = true },
-                              dismiss: { filterPresented = false }).ignoresSafeArea(.container, edges: .top)
+            // The safe area is ignored by a container that stays: the modifier on the control itself, which comes and goes with the
+            // fold, made the layout loop until AppKit raised an exception in narrow windows (#222).
+            Group {
+                if !SidebarFold.listFolded(noteOpen: noteOpen, listShown: workspace.noteListShown) {
+                    ListFilterBar(text: $workspace.listFilter, shown: filterShown,
+                                  atLeftEdge: SidebarFold.folded(pageOpen: originalPage.url != nil, noteOpen: noteOpen),
+                                  open: { ReaderPerformance.motionBegan("filter-open", duration: 0.25); filterPresented = true },
+                                  close: { filterPresented = false; listFocused = true },
+                                  dismiss: { filterPresented = false })
+                }
             }
+            .ignoresSafeArea(.container, edges: .top)
         }
         .onKeyPress("j") { guard shortcutsEnabled else { return .ignored }; move(1); return .handled }
         .onKeyPress("k") { guard shortcutsEnabled else { return .ignored }; move(-1); return .handled }
