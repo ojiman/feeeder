@@ -80,7 +80,33 @@ import Testing
         let field = try #require(find(NSSearchField.self, in: h.host)), table = try #require(find(NativeArticleList.Table.self, in: h.host))
         let fieldFrame = field.convert(field.bounds, to: nil), list = table.convert(table.bounds, to: nil)
         #expect(fieldFrame.minX >= list.minX && fieldFrame.maxX <= list.maxX)
+        #expect(fieldFrame.minY >= 800 - ArticleBand.height)                                       // in the list's band (decision 0057)
         #expect(field.stringValue == "swift")
+    }
+
+    /// The field's ✕ clears it through the field's action, not a text change: the whole list comes back (seen in a synthetic run).
+    @Test func clearingTheFieldWithItsCrossRestoresTheList() async throws {
+        let h = try harness(filter: "swift")
+        defer { finish(h) }
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 2 && find(NSSearchField.self, in: h.host) != nil }
+        let field = try #require(find(NSSearchField.self, in: h.host))
+        field.stringValue = ""                                                                   // what the ✕ does, then it sends the action
+        #expect(field.sendAction(field.action, to: field.target))
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
+    }
+
+    /// Specification 3.1.4: an empty field that loses the keyboard turns back into the magnifier; a field with text stays.
+    @Test func anEmptyFieldLeftAloneTurnsBackIntoTheMagnifier() async throws {
+        let h = try harness(filter: "")
+        defer { finish(h) }
+        h.window.makeKeyAndOrderFront(nil)
+        try await settle(h) { find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
+        let table = try #require(find(NativeArticleList.Table.self, in: h.host))
+        #expect(find(NSSearchField.self, in: h.host) == nil)                                      // only the magnifier
+        #expect(table.keyHandler?("/") == true)
+        try await settle(h) { find(NSSearchField.self, in: h.host)?.currentEditor() != nil }
+        h.window.makeFirstResponder(table)                                                       // the keyboard goes elsewhere
+        try await settle(h) { find(NSSearchField.self, in: h.host) == nil }
     }
 
     /// While Japanese text is being composed in the field, the list does not change; it follows when the composition is committed.
