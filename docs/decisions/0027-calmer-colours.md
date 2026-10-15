@@ -2,20 +2,20 @@
 
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-11
-- Decider: the owner (PdM) found the orange harsh and the whites too white. He sent a screenshot of Claude Code as the example of text that is easy to read. The points marked "PO" are the Product Owner's.
+- Decider: the owner (PdM) found the orange harsh and the whites too white. The points marked "PO" are the Product Owner's.
 
 ## What was measured
 
-Pixel colours of the app and of Claude Code (dark mode, from screenshots):
+Pixel colours of Unagi Reader before the change (dark mode, from a screenshot):
 
-| | Unagi Reader (before) | Claude Code |
-|---|---|---|
-| Body text on its background | #DDDDDD on #1E1E1E (12:1) | #D6D6D5 on #151515 (12.6:1) |
-| Heading | 30 pt bold, #DDDDDD | body size, bold, #EDEDEC |
-| Sidebar item text | #FEFEFE (16:1) | #A6A7A4 (7.8:1) |
-| Colour accents | `systemOrange` (saturation 0.96) on the source name of every unread row, on the buttons; the system blue on the selected row | none: neutral grays only |
+| | Unagi Reader (before) |
+|---|---|
+| Body text on its background | #DDDDDD on #1E1E1E (12:1) |
+| Heading | 30 pt bold, #DDDDDD |
+| Sidebar item text | #FEFEFE (16:1) |
+| Colour accents | `systemOrange` (saturation 0.96) on the source name of every unread row, on the buttons; the system blue on the selected row |
 
-So the reading text was not too bright; it was equal to Claude Code's. What stood out was the pure white sidebar, the large bold heading, the loud orange and the blue selection.
+The pure white sidebar, the large bold heading, the loud orange and the blue selection stood out. Body text and its background stay unchanged; the decision below softens the surrounding elements.
 
 ## Decision
 

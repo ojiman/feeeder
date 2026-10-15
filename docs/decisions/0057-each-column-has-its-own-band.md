@@ -2,7 +2,7 @@
 
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-14
-- Decider: the owner (PdM), in the chat of 2026-10-14: the header felt inconsistent ("ガチャガチャしている"), Reeder and Claude Code's app were the references, and the owner asked for it "to reach Unagi's vision". The three rules are the agent's proposal, which the owner accepted.
+- Decider: the owner (PdM), in the chat of 2026-10-14: the header felt inconsistent ("ガチャガチャしている"), and the owner asked for it "to reach Unagi's vision". The three rules are the agent's proposal, which the owner accepted.
 - Replaces the placement parts of: [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) (the ✕ sat below the band), [0050](0050-the-note-screen-closes-like-the-original-page.md) point 4 (the layout button sat in the toolbar next to the note button), [0055](0055-a-keyword-filter-for-the-list.md) (the magnifier sat on the list title's line). Their behavior stays.
 
 ## Decision
@@ -16,7 +16,7 @@ What the person sees is in the specification, 3.1.4 "Bands".
 
 ## Why
 
-The owner's references (Reeder, Claude Code's app) put each column's controls in that column's top band; the app's own controls had grown wherever there was room, in four different styles. The system toolbar cannot do it: on 2026-10-14, in the real window (macOS 27.0.1), toolbar items attached to a column went to its leading edge, the note's items merged into the article's group, an item of a folded column stayed where the column was, and flexible spacers spread over the whole window. Without the system toolbar and with a hidden title bar, buttons drawn in a column's band showed and took real clicks, the window buttons stayed, and a drag on the empty band moved the window (the owner checked the drag by hand).
+The app's controls had grown wherever there was room, in four different styles. Putting each control in the top band of the column it acts on makes its scope clear and leaves the area below for reading and writing. The system toolbar cannot do it: on 2026-10-14, in the real window (macOS 27.0.1), toolbar items attached to a column went to its leading edge, the note's items merged into the article's group, an item of a folded column stayed where the column was, and flexible spacers spread over the whole window. Without the system toolbar and with a hidden title bar, buttons drawn in a column's band showed and took real clicks, the window buttons stayed, and a drag on the empty band moved the window (the owner checked the drag by hand).
 
 ## Cost
 
