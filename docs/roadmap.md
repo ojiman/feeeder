@@ -17,8 +17,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 
 **The checks that let an agent verify its own work.** Today the owner is the only one who can check the screens, and the list of unverified items keeps growing. These touch no screen and can run beside the beta work:
 
-1. [#133](https://github.com/ojiman/unagi-reader/issues/133) UI test runs that end without a result line.
-2. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
+1. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
 
 **Not scheduled.** OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
 

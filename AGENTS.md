@@ -23,7 +23,9 @@ Instructions for coding agents (Claude Code, Codex) and the person who reviews t
 ## Commands
 
 ```sh
-swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build          # local tests
+test_log=$(mktemp /private/tmp/unagi-reader-tests.XXXXXX)
+swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build > "$test_log" 2>&1 &&
+    bash scripts/check-test-log.sh "$test_log"                            # local tests; read "$test_log" for the output
 swift test --scratch-path /private/tmp/unagi-reader-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
 bash scripts/build-app.sh release                                        # ad hoc signed .build/Unagi Reader.app (debug is the default)
 bash scripts/fetch-ci-app.sh <PR number>                                  # a PR's CI-built app, without the quarantine attribute (needs gh)
@@ -95,6 +97,6 @@ The chat with the owner is in Japanese; everything else is in English (the owner
 - The CI compiler (Swift 6.3.3) crashed on an actor-isolated method reference passed as a `Binding` setter; use an explicit closure (PR #14).
 - The CI compiler gave up type-checking when `ReaderView`'s modifier chain grew (PR #96; local Swift 6.4 was fine). Add window-level modifiers outside the chain (a `ViewModifier` in the wrapper `body`, as `OPMLImportPresentation`).
 - A view that comes and goes with a column fold and carries `.ignoresSafeArea` itself made the layout loop until AppKit raised an exception, in narrow windows (#222, the filter bar). Put the modifier on a container that stays. A hosted test cannot show it; run the packaged app at about 1,170 pt, open the note and press the layout button.
-- A hosted UI test must not call `NSButton.performClick`: its nested event loop can stop the run loop, and the test process ends with exit code 0 and no summary line. Drive the app with the key handlers (`NativeArticleList.Table.keyHandler`). `scripts/check-test-log.sh` fails CI when the summary is missing. Run a changed UI suite several times.
+- A hosted UI test must not call `NSButton.performClick`: its nested event loop can stop the run loop, and the test process ends with exit code 0 and no summary line. Drive the app with the key handlers (`NativeArticleList.Table.keyHandler`). Use the checked local command above too: exit code 0 alone is not a pass. Write output directly to the log, not through `tee` (#186). Run a changed UI suite several times. Evidence and limits: [UI test completion](docs/verification/ui-test-completion.md).
 - Hosted tests that fold split view columns run one after another, under `SplitViewFoldTests` (`Tests/ReaderUITests/ReaderLayoutTests.swift`).
 - Three problems showed only in CI (PR #10 SwiftData rollback, PR #12 the packaged app's signature, PR #14 the compiler). Local success is necessary, not sufficient.
