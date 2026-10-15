@@ -14,10 +14,27 @@ import Testing
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
             if ready() { return }
-            pumpRunLoop(0.02)                                              // pump the run loop here instead of suspending
+            try await Task.sleep(for: .milliseconds(20))
         }
-        #expect(ready(), "Synthetic reader did not reach the expected state")
+        guard ready() else {
+            throw NSError(domain: "ReaderUITests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Synthetic reader did not reach the expected state"])
+        }
     }
+
+    @Test func aMissingRequiredViewStopsTheTest() async {
+        await #expect(throws: (any Error).self) {
+            try await settle(NSView()) { false }
+        }
+    }
+
+    @Test func theWaitLetsQueuedViewUpdatesRun() async throws {
+        let host = NSView()
+        host.isHidden = true
+        Task { @MainActor in host.isHidden = false }
+        try await settle(host) { !host.isHidden }
+    }
+
     fileprivate func containsText(_ text: String, in view: NSView) -> Bool {
         if let field = view as? NSTextView, field.string == text { return true }
         return view.subviews.contains { containsText(text, in: $0) }
@@ -134,6 +151,7 @@ import Testing
         defer { t.finish(h) }
         try await t.settle(h.host) { t.containsText("ノートの本文", in: h.host) && t.panelButtons(in: h).count >= 2 }
         let buttons = t.panelButtons(in: h)
+        try #require(buttons.count >= 2)
         let (previous, next) = (buttons[0], buttons[1])
         #expect(next.isEnabled)                                                           // nothing shown: next (and previous) open the first
         try step(h, "j")
