@@ -17,6 +17,12 @@ import ReaderCore
         window.contentView?.addSubview(table)
         #expect(window.firstResponder === table)
     }
+    /// A letter that is not a shortcut must not move the selection: the table's type-to-select jumped to a row whose text starts with it
+    /// (the owner's recording of `F`, issue #226).
+    @Test func aLetterThatIsNotAShortcutDoesNotMoveTheSelection() {
+        let table = NativeArticleList.Table(frame: NSRect(x: 0, y: 0, width: 320, height: 300))
+        #expect(!table.allowsTypeSelect)
+    }
     private func labels(in view: NSView) -> [NSTextField] {
         (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap { labels(in: $0) }
     }
