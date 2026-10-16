@@ -22,3 +22,5 @@ How to read it:
 - `j` / `k` selection latency (W1) in the same runs: 95th percentile 63 ms, within budget.
 
 To repeat: `UNAGI_READER_BENCHMARK_DIRECTORY=<new dir> swift test --filter BenchmarkFixtureTests`, `bash scripts/build-app.sh release`, then `open -n -W '.build/Unagi Reader.app' --args --data-directory <dir> --performance-output <file.json> --motion-benchmark`.
+
+The output now records `columnWidthsPoints` for `reading`, `noteOpen` and `noteWithList`: the measured sidebar, list, article and note widths in points, after each layout settles. A folded column is 0. Compare runs only when all four widths match in each corresponding layout; missing widths make the comparison incomplete. Saved window state can change them even between copies of the app (#217). The runs in the table above predate these fields, so their complete width conditions were not recorded.

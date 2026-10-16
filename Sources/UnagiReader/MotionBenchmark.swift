@@ -22,16 +22,46 @@ import AppKit
         func pause(_ seconds: Double) async { try? await Task.sleep(for: .seconds(seconds)) }
         await pause(3)                                                     // the window settles and the library is read
         act.selectFirst(); await pause(1)
+        recordWidths("reading")
         for _ in 0..<repeats { act.next(); await pause(0.6) }
         for _ in 0..<repeats { act.previous(); await pause(0.6) }
         for _ in 0..<repeats { act.toggleNote(); await pause(0.8); act.toggleNote(); await pause(0.8) }
         act.toggleNote(); await pause(0.8)
-        for _ in 0..<repeats { act.switchLayout(); await pause(0.8) }      // an even number: back to the note beside the article
+        recordWidths("noteOpen")
+        for index in 0..<repeats {                                       // an even number: back to the note beside the article
+            act.switchLayout(); await pause(0.8)
+            if index == 0 { recordWidths("noteWithList") }
+        }
         act.toggleNote(); await pause(0.8)                                 // the note closes, so the saved window state has the list
         for _ in 0..<repeats { act.openPage(); await pause(0.8); act.closePage(); await pause(0.8) }
         for _ in 0..<repeats { act.openFilter(); await pause(0.6); act.closeFilter(); await pause(0.6) }
         MotionMeter.shared.finish()
         ReaderPerformance.write()
         NSApp.terminate(nil)
+    }
+
+    private static func recordWidths(_ layout: String) {
+        guard let view = (NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible })?.contentView,
+              let widths = columnWidths(in: view) else {
+            NSLog("Unagi Reader motion benchmark could not read column widths for %@", layout)
+            return
+        }
+        ReaderPerformance.columnWidths[layout] = widths
+    }
+
+    /// Read settled AppKit panes, not ideal or saved widths. Collapsed panes can keep their old bounds.
+    static func columnWidths(in view: NSView) -> [String: Double]? {
+        func split(in view: NSView, count: Int) -> NSSplitViewController? {
+            if let split = view as? NSSplitView, let controller = split.delegate as? NSSplitViewController,
+               controller.splitViewItems.count == count { return controller }
+            return view.subviews.lazy.compactMap { split(in: $0, count: count) }.first
+        }
+        func width(_ item: NSSplitViewItem) -> Double { item.isCollapsed ? 0 : item.viewController.view.bounds.width }
+        guard let reader = split(in: view, count: 3) else { return nil }
+        let panes = reader.splitViewItems
+        let inspector = split(in: panes[2].viewController.view, count: 2)?.splitViewItems
+        return ["sidebar": width(panes[0]), "list": width(panes[1]),
+                "article": inspector.map { width($0[0]) } ?? width(panes[2]),
+                "note": inspector.map { width($0[1]) } ?? 0]
     }
 }

@@ -9,6 +9,7 @@ import ReaderCore
     private static var samples: [Double] = []
     private static var gaps: [Double] = []
     private static var lastHeartbeat: Double?
+    static var columnWidths: [String: [String: Double]] = [:]
     static var output: URL? {
         let args = ProcessInfo.processInfo.arguments
         guard let index = args.firstIndex(of: "--performance-output"), args.indices.contains(index + 1) else { return nil }
@@ -37,9 +38,10 @@ import ReaderCore
     }
     static func write() {
         guard let output else { return }
-        let values: [String: Any] = ["selectionMilliseconds": samples, "schedulingGapsOver100ms": gaps, "motions": MotionMeter.shared.records,
+        var values: [String: Any] = ["selectionMilliseconds": samples, "schedulingGapsOver100ms": gaps, "motions": MotionMeter.shared.records,
             "os": ProcessInfo.processInfo.operatingSystemVersionString,
             "displayRefreshRate": CGDisplayCopyDisplayMode(CGMainDisplayID())?.refreshRate ?? 0]
+        if !columnWidths.isEmpty { values["columnWidthsPoints"] = columnWidths }
         do {
             try FileManager.default.createDirectory(at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONSerialization.data(withJSONObject: values, options: .sortedKeys).write(to: output, options: .atomic)
