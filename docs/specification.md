@@ -77,7 +77,7 @@ These words mean the same thing in this specification, the user guide, the decis
 | 「Markdownをコピー」 (Copy Markdown) | Puts the note's text, unchanged, on the pasteboard (3.3) | `NotePanel`, `ReaderView.copyNote` |
 | list title | The scope's name and count above the list (3.1.4) | `ListHeader` |
 | ✕ | The button at the top left of the right column. It closes the original page, and the note | `OriginalPageView`, `NotePanel` |
-| Settings (設定) | The settings window: appearance and retention | `ReaderSettingsView` |
+| Settings (設定) | The settings window: 「外観」, 「ショートカット」 and 「保存」 (3.7) | `ReaderSettingsView` |
 
 **Word use**
 
@@ -185,7 +185,7 @@ normal                original page (v)     note beside article   note with the 
 
 **Article**
 
-- The title is 26 pt semibold. The buttons at the top: Star and the external browser (globe). Appearance (system / light / dark) is in Settings.
+- The title is 26 pt semibold. The buttons at the top: Star and the external browser (globe). The theme and the text size are in Settings (3.7).
 - Opening an article shows the feed's body (or the RSS summary) as it is; it never fetches the original page or swaps the text (RSS first, decision 0033). For more, `v` (in the app) or `b` (the browser).
 - The app never takes text from the original page (decision 0056): no full-text fetch, and no line under the article that says how much text there is.
 - Links and quotes of the feed's text are kept. A link opens in the default browser. Quotes look different from the text. A saved body without layout data is shown as plain text.
@@ -369,6 +369,47 @@ A button translates the open article into another language, on the Mac, with the
 
 Not built: translating the original page, an "always translate" choice per subscription, original and translation side by side, translated titles in the list, links kept in the translated text.
 
+### 3.7 Settings
+
+The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. Settings stay few: what is used often sits beside the content it acts on, not here.
+
+| Pane | Holds | Code |
+|---|---|---|
+| 「外観」 (Appearance) | the theme and the article's text size | `ReaderSettingsView`, `AppearancePicker` |
+| 「ショートカット」 (Shortcuts) `[not built #254]` | the keys, to read | |
+| 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
+
+- The window opens on the pane that was shown last. Every choice is kept across launches and applies at once.
+
+**Theme**
+
+| Tile | Look |
+|---|---|
+| 「システム」 | Light or dark, as macOS is set. It never selects Sepia |
+| 「ライト」 | Always light |
+| 「ダーク」 | Always dark |
+| 「セピア」 `[not built #255]` | A light look on a warm paper colour |
+
+- Each tile shows a small picture of the reader in that look instead of a description.
+- Sepia covers the whole window: the reading surfaces (list, article, note and their bands) take the paper colour, and the sidebar a slightly darker one. System controls are drawn light. `[not built #255]`
+- In Sepia, text, links, quotes, the selected row, the unread mark and read rows stay readable; body text has a contrast of at least 4.5:1. The palette values are in `AppPalette`. `[not built #255]`
+- The app does not claim that a look rests the eyes.
+
+**Text size** `[not built #253]`
+
+- 「文字サイズ」 in 「外観」 is a slider with five steps: 14, 16 (standard), 18, 20 and 22 pt.
+- It sets the article's body. The title (26 pt at standard) and the source and date lines scale by the same ratio, so the text keeps its shape.
+- The list, the sidebar and the note keep their sizes (decision 0028).
+- A change shows at once in the open article; the paragraph at the top of the article stays at the top.
+- Not now: `⌘+` / `⌘−` / `⌘0`, a size for the note or the list.
+
+**Shortcuts** `[not built #254]`
+
+- 「ショートカット」 lists the keys of 3.1.5 and the note's keys, to read, grouped as 「読む」 (reading), 「一覧」 (the list), 「元ページ」 (the original page) and 「ノート」 (the note). Each row shows the key, what it does, and where it does not work (for example 「文字の入力中は効きません」, not while typing).
+- Help ▸ 「ショートカット一覧」 opens Settings on this pane.
+- The list is made from the same definitions the key handlers use, so it shows what the app does.
+- Keys cannot be changed (the roadmap's "Not planned": key remapping).
+
 ## 4. How to decide
 
 Use the [vision](vision.md)'s questions first. Then, in this order:
@@ -417,7 +458,7 @@ The app has **no AI of its own** ([decision 0049](decisions/0049-one-note-and-no
 | Note | more than one note; folders, levels, tags, search or goals for notes; daily or weekly notes; system sharing services | decisions 0019, 0049 |
 | Fetching | taking text from the original page (decision 0056); bypassing paywalls, subscriptions, logins or captchas; a full-text guarantee | section 4 |
 | AI | an AI of the app's own (summary, draft help: a new decision is needed), keys or API calls in the app, AI off the Mac (Private Cloud Compute and the like), a dedicated link to one AI app (only 「Markdownをコピー」), sending or recording automatically, a guarantee of facts | decision 0049 |
-| Settings | an in-app language or time zone setting | — |
+| Settings | an in-app language or time zone setting; changing keys; a text size for the note or the list; themes other than the four of 3.7 | 3.7 |
 | Old data | the prototype's Like and any migration of it (Star is a new mark) | decision 0001 |
 
 Ideas for after V1, and the order of the work, are in the [roadmap](roadmap.md).
