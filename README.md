@@ -1,5 +1,8 @@
 # Unagi Reader
 
+[![CI](https://github.com/ojiman/unagi-reader/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ojiman/unagi-reader/actions/workflows/ci.yml?query=branch%3Amain)
+[![CodeQL](https://github.com/ojiman/unagi-reader/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/ojiman/unagi-reader/actions/workflows/github-code-scanning/codeql?query=branch%3Amain)
+
 A fast, keyboard-driven RSS reader for macOS that turns the few articles that matter into your own understanding.
 
 > **Status: beta, pre-release.** Requires macOS 27.0 or later. The app's interface is in Japanese only today. There are no prebuilt releases: you build the app from source.
@@ -59,7 +62,6 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 | [Roadmap](docs/roadmap.md) | The order of the work |
 | [Decision records](docs/decisions/README.md) | Why things are the way they are |
 | [AGENTS.md](AGENTS.md) | Development workflow, commands and boundaries |
-| [Security policy](SECURITY.md) | How to report a vulnerability |
 
 ## Development
 
@@ -69,6 +71,14 @@ git diff --check
 ```
 
 Tests use only synthetic RSS/HTML and temporary databases. The project is developed with AI coding agents under a single supervised writer; [AGENTS.md](AGENTS.md) describes the workflow and the checks.
+
+## Security
+
+CodeQL scans Swift, Python and GitHub Actions code for security issues. Dependabot checks for vulnerable dependencies and opens weekly update pull requests for Swift packages and GitHub Actions. Secret scanning and push protection help detect committed credentials and block pushes containing supported secrets.
+
+The badges above link to the checks on `main`. A successful run means the check completed; it does not guarantee that the app has no vulnerabilities. Technical trust boundaries are documented in the [architecture](docs/architecture.md#2-input-from-the-network-is-untrusted).
+
+Please report potential vulnerabilities privately through the [security policy](SECURITY.md).
 
 ## License
 
