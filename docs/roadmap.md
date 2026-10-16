@@ -19,7 +19,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 
 1. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
 
-**Not scheduled.** The Settings refresh ([#235](https://github.com/ojiman/unagi-reader/issues/235), specification 3.7), in this order: [#253](https://github.com/ojiman/unagi-reader/issues/253) the article's text size, [#254](https://github.com/ojiman/unagi-reader/issues/254) the shortcut list, [#255](https://github.com/ojiman/unagi-reader/issues/255) Sepia. OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
+**Not scheduled.** The Settings refresh ([#235](https://github.com/ojiman/unagi-reader/issues/235), specification 3.7), what is left: [#255](https://github.com/ojiman/unagi-reader/issues/255) Sepia. OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
 
 ## Candidates
 
