@@ -14,11 +14,13 @@ struct NotePanel: View {
     /// The note shows the list beside it (the layout button's state).
     let listShown: Bool
     let onSwitchLayout: () -> Void
+    /// How 「記事をノートに送る」 reaches the editor (specification 3.3).
+    let link: NoteEditorLink
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            NoteEditor(store: store)
+            NoteEditor(store: store, link: link)
         }
         .ignoresSafeArea(.container, edges: .top)                          // the band is at the top of the window, like the others
         .accessibilityElement(children: .contain).accessibilityLabel("ノート")

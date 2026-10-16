@@ -209,7 +209,7 @@ normal                original page (v)     note beside article   note with the 
 | `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050) |
 | `/` | Open the list filter and put the cursor in it, when no editable field is being typed in |
 | `t` | Translate the open article / show the original, when no editable field is being typed in |
-| `c` | Send the article to the note (3.3), when no editable field is being typed in `[not built #238]` |
+| `c` | Send the article to the note (3.3), when no editable field is being typed in |
 
 - `j`, `k`, `s` and `n` also work in the original page.
 - In text fields (the note editor too), during input-method composition and with modifier keys, typing and the standard actions come first.
@@ -257,7 +257,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 - Disabled when the note is empty or only whitespace.
 - The app starts no other app, makes no file, uses no network and shows no confirmation.
 
-**「記事をノートに送る」 (Send article to note)** `[not built #238]` ([decision 0059](decisions/0059-send-the-article-to-the-note.md))
+**「記事をノートに送る」 (Send article to note)** ([decision 0059](decisions/0059-send-the-article-to-the-note.md))
 
 - One command that puts the open article's source into the note. It is run by `c` (3.1.5) or by 「記事 ▸ 記事をノートに送る」 in the menu bar. There is no button in a band.
 - With no article chosen, it does nothing.
@@ -269,7 +269,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
   - With a translation shown (3.6) it inserts the line `[Title](URL)` only, never the translated text.
 - Where it goes: after the note's selection or caret, where the person last left it; at the end of the note if the note was never used. A selection in the note is not replaced. A line break is added before the text when the point is not at the start of a line, and after it unless one follows already. The note's caret then sits after the text, so the next one follows it.
 - The note closed: the note opens with the same motion as `n` (3.1.3), then the text is inserted at the end of the note. The article, the list selection and the reading position do not change.
-- The keyboard stays where it was; it does not move into the note, so `j` / `k` keep working.
+- The keyboard does not move into the note, so `j` / `k` keep working. With the note open it stays where it was; when a closed note opens, the list folds away and the article takes it, as with `n`.
 - It is one undo step of the note's own undo.
 - While Japanese text is being composed in the note, it does nothing and the composition is not disturbed.
 - A failed save is shown as with typing and never reported as done; the inserted text stays in the editor.
@@ -445,7 +445,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
 | PRD-18 | Read an article in another language `[not built #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the language menu: `[not built #154]` |
-| PRD-19 | Send an article to the note `[not built #238]` | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | tests of the inserted text, the line breaks and the missing title or URL (written with the build, which then names PRD-19 and drops the mark); real Mac (Japanese input, undo, VoiceOver, a long note) |
+| PRD-19 | Send an article to the note | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | unit tests (`NoteClipTests`); UI tests (`NoteInsertionTests`, `SendToNoteTests`); real Mac (Japanese input, undo, VoiceOver, a long note) |
 
 ### 7.1 Conditions to ship 1.0
 

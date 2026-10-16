@@ -8,6 +8,8 @@ struct ReaderActions {
     let starred: Bool
     let canStar: Bool
     let toggleStar: () -> Void
+    let canSendToNote: Bool
+    let sendToNote: () -> Void
     let canOpenBrowser: Bool
     let openBrowser: () -> Void
 }
@@ -33,6 +35,9 @@ struct ReaderMenuCommands: Commands {
         CommandMenu("記事") {
             Button(actions?.starred == true ? "Starを外す" : "Starを付ける") { actions?.toggleStar() }
                 .disabled(actions?.canStar != true)
+            // 「記事をノートに送る」 (specification 3.3); its key `c` is a reading key, not shown here, as with the others in this menu.
+            Button("記事をノートに送る") { actions?.sendToNote() }
+                .disabled(actions?.canSendToNote != true)
             Button("元ページをブラウザで開く") { actions?.openBrowser() }
                 .disabled(actions?.canOpenBrowser != true)
         }
