@@ -56,6 +56,8 @@ The app refreshes at launch, when you come back to it, and every 30 minutes; the
 
 ### Reading and keys
 
+The app also lists these keys in Settings ▸ 「ショートカット」 (Help ▸ 「ショートカット一覧」 opens it).
+
 | Key | Action |
 |---|---|
 | `j` / `k` | Next / previous article |

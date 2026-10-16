@@ -10,13 +10,16 @@ struct ReaderSettingsView: View {
     @State private var preview: DeletionPreview?
     @State private var error: String?
 
-    private enum Pane: String { case appearance, storage }
-    @AppStorage("settingsPane") private var pane = Pane.appearance.rawValue
+    enum Pane: String { case appearance, shortcuts, storage }
+    /// The pane shown last; Help ▸ 「ショートカット一覧」 sets it before it opens the window.
+    static let paneKey = "settingsPane"
+    @AppStorage(ReaderSettingsView.paneKey) private var pane = Pane.appearance.rawValue
     @AppStorage(ArticleTextSize.key) private var textSize = ArticleTextSize.standard
 
     var body: some View {
         TabView(selection: Binding(get: { Pane(rawValue: pane) ?? .appearance }, set: { pane = $0.rawValue })) {
             Tab("外観", systemImage: "circle.lefthalf.filled", value: Pane.appearance) { appearancePane }
+            Tab("ショートカット", systemImage: "keyboard", value: Pane.shortcuts) { ShortcutList() }
             Tab("保存", systemImage: "externaldrive", value: Pane.storage) { storage }
         }
         .tint(AppPalette.accentColor)

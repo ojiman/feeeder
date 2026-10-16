@@ -58,6 +58,43 @@ struct ArticleTextSizeSlider: View {
     }
 }
 
+/// 「ショートカット」: the reader's keys, to read (specification 3.7). The rows come from `ReaderShortcuts`, which the key handlers use too.
+struct ShortcutList: View {
+    var body: some View {
+        Form {
+            ForEach(ReaderShortcuts.Group.allCases, id: \.self) { group in
+                Section(group.rawValue) {
+                    ForEach(ReaderShortcuts.rows(in: group)) { row in ShortcutRow(row: row) }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(height: 460)
+    }
+}
+
+private struct ShortcutRow: View {
+    let row: ReaderShortcuts.Row
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            HStack(spacing: 4) {
+                ForEach(row.keys, id: \.self) { key in
+                    Text(key).font(.system(.callout, design: .monospaced).weight(.medium))
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 5))
+                }
+            }
+            .frame(width: 150, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.action)
+                if let limit = row.limit { Text(limit).font(.caption).foregroundStyle(.secondary) }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// A small picture of the reader in light or dark. The colours are fixed: a tile must look the same whatever the app uses now.
 private struct AppearanceThumbnail: View {
     let tag: String
