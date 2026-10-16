@@ -215,3 +215,75 @@ import Testing
         #expect(pasteboard.string(forType: .string) == note)
     }
 }
+
+/// 「記事をノートに送る」 from the list's key handler, as the app's `c` reaches it (specification 3.3). Checks PRD-19.
+@Suite(.serialized) @MainActor struct SendToNoteTests {
+    private let t = NoteReaderTests()
+
+    private func table(_ h: NoteReaderTests.Harness) throws -> NativeArticleList.Table {
+        try #require(t.find(NativeArticleList.Table.self, in: h.host))
+    }
+    private func choose(_ row: Int, in h: NoteReaderTests.Harness) async throws {
+        try await t.settle(h.host) { t.find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
+        try table(h).selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        try await t.settle(h.host) { t.find(ArticleTextView.self, in: h.host)?.string.contains("合成記事 \(row)") == true }
+    }
+    private func noteText(_ h: NoteReaderTests.Harness) -> String { h.store.note?.text ?? "" }
+
+    @Test func aClosedNoteOpensAndTakesTheLinkAtItsEnd() async throws {
+        let h = try t.harness(scope: { _ in .all }) { store in try store.saveNote(text: "メモ", at: .now) }
+        defer { t.finish(h) }
+        try await choose(0, in: h)
+        h.window.makeFirstResponder(try table(h))
+        #expect(try table(h).keyHandler?("c") == true)
+        try await t.settle(h.host) { noteText(h) != "メモ" }
+        #expect(noteText(h).hasPrefix("メモ\n[合成記事 0](") && noteText(h).hasSuffix(")\n"), "note: \(noteText(h).debugDescription)")
+        try await t.settle(h.host) { t.containsText(noteText(h), in: h.host) }              // the note panel is open and shows it
+        // The keyboard does not go into the note. The list folds away as the note opens, so the article takes it, as with `n`.
+        #expect(!(h.window.firstResponder is NoteTextView), "first responder: \(String(describing: h.window.firstResponder))")
+    }
+
+    @Test func anOpenNoteTakesOneLineEachTime() async throws {
+        let h = try t.harness(scope: { _ in .all }, noteOpen: true) { store in try store.saveNote(text: "メモ", at: .now) }
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.containsText("メモ", in: h.host) }
+        try await choose(1, in: h)
+        h.window.makeFirstResponder(try table(h))
+        #expect(try table(h).keyHandler?("c") == true)
+        try await t.settle(h.host) { noteText(h).contains("[合成記事 1](") }
+        #expect(h.window.firstResponder === (try table(h)))                                  // with the note open, the list keeps the keyboard
+        try await choose(2, in: h)
+        #expect(try table(h).keyHandler?("c") == true)
+        try await t.settle(h.host) { noteText(h).contains("[合成記事 2](") }
+        let lines = noteText(h).split(separator: "\n", omittingEmptySubsequences: false)
+        #expect(lines.count == 4 && lines[0] == "メモ" && lines[1].hasPrefix("[合成記事 1](") && lines[2].hasPrefix("[合成記事 2](") && lines[3].isEmpty,
+                "note: \(noteText(h).debugDescription)")
+    }
+
+    @Test func withNoArticleChosenNothingHappens() async throws {
+        let h = try t.harness(scope: { _ in .all }) { store in try store.saveNote(text: "メモ", at: .now) }
+        defer { t.finish(h) }
+        try await t.settle(h.host) { t.find(NativeArticleList.Table.self, in: h.host)?.numberOfRows == 4 }
+        #expect(try table(h).keyHandler?("c") == true)
+        pumpRunLoop(0.4)
+        #expect(noteText(h) == "メモ")
+        #expect(!t.containsText("メモ", in: h.host))                                        // the note did not open
+    }
+
+    @Test func theSelectionIsTheArticlesOnlyWhenTheArticleHasTheKeyboard() async throws {
+        let h = try t.harness(scope: { _ in .all }) { _ in }
+        defer { t.finish(h) }
+        try await choose(0, in: h)
+        let article = try #require(t.find(ArticleTextView.self, in: h.host))
+        let range = (article.string as NSString).range(of: "合成本文")
+        try #require(range.location != NSNotFound)
+        h.window.makeFirstResponder(article)
+        article.setSelectedRange(range)
+        #expect(ArticleTextView.selectedText(in: h.window) == "合成本文")
+        article.setSelectedRange(NSRange(location: range.location, length: 0))
+        #expect(ArticleTextView.selectedText(in: h.window) == nil)                         // a caret is not a selection
+        article.setSelectedRange(range)
+        h.window.makeFirstResponder(try table(h))
+        #expect(ArticleTextView.selectedText(in: h.window) == nil)                         // the list has the keyboard
+    }
+}
