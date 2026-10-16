@@ -2,7 +2,7 @@
 
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-11
-- Decider: the owner (PdM) asked for a turning refresh arrow, new articles that slide in from the top and push the old ones down, and the same motion for automatic refresh. The points marked "PO" are the Product Owner's.
+- Decider: the owner (PdM) described what feels good in the feed reader he uses (the arrow turns, new articles slide in from the top and push the old ones down, and automatic refresh moves the same way) and asked for it. The points marked "PO" are the Product Owner's.
 - Refines: the vision (the loop must never make the person wait; comfort is part of the value).
 
 ## Decision
