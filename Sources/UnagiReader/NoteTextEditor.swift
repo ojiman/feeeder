@@ -28,6 +28,55 @@ final class NoteTextView: NSTextView {
     override func pasteAsRichText(_ sender: Any?) { pasteAsPlainText(sender) }
 }
 
+/// The way into the note editor from outside, for 「記事をノートに送る」 (specification 3.3). The reader keeps one; the editor that is
+/// shown attaches itself. Text sent while no editor is shown waits, and goes at the end of the note when one is.
+@MainActor final class NoteEditorLink {
+    enum Result: Equatable {
+        case inserted
+        /// The text is in the editor, but the save failed; the editor shows that, as it does for typing.
+        case notSaved
+        /// Japanese text is being composed in the note: nothing was inserted.
+        case composing
+        /// The text view did not take the change (it was not editable): nothing was inserted.
+        case refused
+        case noEditor
+    }
+    fileprivate weak var coordinator: NoteTextEditor.Coordinator?
+    private var waiting: [String] = []
+
+    /// False while no editor is shown or text is being composed in it.
+    var canInsert: Bool { coordinator?.canInsert ?? false }
+
+    /// After the note's caret or selection, where the person left it; at the end of a note whose caret they never placed.
+    func insert(_ text: String) -> Result {
+        guard let coordinator else { return .noEditor }
+        return coordinator.insert(text, atEnd: false)
+    }
+
+    /// For a note that was closed and is being opened: at the end of the note, now if an editor is there, else when one is shown.
+    /// Nil while the text waits.
+    @discardableResult func insertWhenShown(_ text: String) -> Result? {
+        guard let coordinator else { waiting.append(text); return nil }
+        return coordinator.insert(text, atEnd: true)
+    }
+
+    fileprivate func attach(_ coordinator: NoteTextEditor.Coordinator) {
+        guard self.coordinator !== coordinator else { return }
+        self.coordinator = coordinator
+        guard !waiting.isEmpty else { return }
+        // After this pass of the view update: the editor first gets the store's text, which would otherwise be put back over the insertion.
+        // A run loop block, not the main queue, so it also runs inside a nested run of the loop (as in a hosted test).
+        RunLoop.main.perform(inModes: [.common]) { [weak self] in MainActor.assumeIsolated { self?.insertWaiting() } }
+    }
+
+    private func insertWaiting() {
+        guard let coordinator else { return }
+        let texts = waiting
+        waiting = []
+        for text in texts { _ = coordinator.insert(text, atEnd: true) }
+    }
+}
+
 /// The note editor: an AppKit text view (SwiftUI's `TextEditor` has no hook for display attributes of plain text). The saved text is
 /// exactly what is typed: no smart quotes, dashes, spaces or replacements, no list continuation; headings and list lines only get a look
 /// (`NoteEditorStyle`). Styling never touches the text and waits while Japanese text is being composed.
@@ -35,6 +84,8 @@ struct NoteTextEditor: NSViewRepresentable {
     let text: String
     /// Called once per edit by the person (typing, paste, undo, redo) with the whole text; returns whether it was saved.
     let onChange: (String) -> Bool
+    /// How 「記事をノートに送る」 reaches this editor.
+    var link: NoteEditorLink? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
 
@@ -65,6 +116,7 @@ struct NoteTextEditor: NSViewRepresentable {
         }
         textView.delegate = context.coordinator
         context.coordinator.attach(textView, shownText: text)
+        link?.attach(context.coordinator)
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true; scroll.autohidesScrollers = true; scroll.drawsBackground = false
         scroll.documentView = textView
@@ -73,6 +125,7 @@ struct NoteTextEditor: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.onChange = onChange
+        link?.attach(context.coordinator)
         guard let textView = scroll.documentView as? NSTextView else { return }
         context.coordinator.show(text, in: textView)
     }
@@ -94,6 +147,8 @@ struct NoteTextEditor: NSViewRepresentable {
         private var unsaved = false
         /// True while text that arrived from outside is being put in; that is not an edit by the person, so it is not saved back.
         private var applyingOutsideText = false
+        /// The person has placed the caret in this editor; until then 「記事をノートに送る」 goes at the end of the note.
+        private var caretPlaced = false
 
         init(onChange: @escaping (String) -> Bool) { self.onChange = onChange; agreedText = "" }
 
@@ -179,6 +234,7 @@ struct NoteTextEditor: NSViewRepresentable {
             save(textView.string)
         }
         func textViewDidChangeSelection(_ notification: Notification) {
+            if let textView = notification.object as? NSTextView, textView.window?.firstResponder === textView { caretPlaced = true }
             guard let textView = notification.object as? NSTextView, !textView.hasMarkedText(), skippedRange != nil || waitingText != nil else { return }
             settleAfterComposition(textView)
             if textView.string != agreedText { save(textView.string) }
@@ -191,6 +247,33 @@ struct NoteTextEditor: NSViewRepresentable {
                 return
             }
             NoteEditorStyle.apply(to: textStorage, around: editedRange)
+        }
+
+        var canInsert: Bool { textView.map { !$0.hasMarkedText() } ?? false }
+
+        /// 「記事をノートに送る」 (specification 3.3): the text goes after the caret or selection the person left (nothing is replaced), or at
+        /// the end of the note, with a line break before it when it does not start a line and one after it unless one follows already. It is
+        /// one undo step and is saved like typing. The keyboard does not move; the caret goes after the text, so the next one follows it.
+        func insert(_ text: String, atEnd: Bool) -> NoteEditorLink.Result {
+            guard let textView else { return .noEditor }
+            guard !textView.hasMarkedText() else { return .composing }
+            let current = textView.string as NSString
+            let point = atEnd || !caretPlaced ? current.length : min(NSMaxRange(textView.selectedRange()), current.length)
+            let isBreak: (unichar) -> Bool = { [0x0A, 0x0D, 0x2028, 0x2029].contains($0) }
+            var piece = text
+            if point > 0, !isBreak(current.character(at: point - 1)) { piece = "\n" + piece }
+            if point == current.length || !isBreak(current.character(at: point)) { piece += "\n" }
+            let range = NSRange(location: point, length: 0)
+            textView.breakUndoCoalescing()
+            guard textView.shouldChangeText(in: range, replacementString: piece) else { return .refused }
+            textView.textStorage?.replaceCharacters(in: range, with: NSAttributedString(string: piece, attributes: NoteEditorStyle.baseAttributes()))
+            textView.didChangeText()                                         // saves, through textDidChange
+            textView.breakUndoCoalescing()
+            let end = NSRange(location: point + (piece as NSString).length, length: 0)
+            textView.setSelectedRange(end)
+            textView.scrollRangeToVisible(end)
+            caretPlaced = true
+            return unsaved ? .notSaved : .inserted
         }
 
         /// After a composition ends: restyle what was skipped, then merge text that came from outside meanwhile. Only an append and the
