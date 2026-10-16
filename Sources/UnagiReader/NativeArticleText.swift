@@ -184,6 +184,19 @@ import ReaderCore
     }
 }
 
+extension ArticleTextView {
+    /// The text the person selected in the article, when the article has the keyboard (「記事をノートに送る」, specification 3.3).
+    /// Several selected pieces are joined by line breaks.
+    static func selectedText(in window: NSWindow?) -> String? {
+        guard let view = window?.firstResponder as? ArticleTextView else { return nil }
+        let source = view.string as NSString
+        let pieces = view.selectedRanges.map(\.rangeValue)
+            .filter { $0.length > 0 && NSMaxRange($0) <= source.length }
+            .map { source.substring(with: $0) }
+        return pieces.isEmpty ? nil : pieces.joined(separator: "\n")
+    }
+}
+
 struct NativeArticleText: NSViewRepresentable {
     let articleID: UUID
     let title: String

@@ -23,6 +23,8 @@ struct ReaderView: View {
     @State private var panelReopening = false
     @State private var saveError: String?
     @State private var noteActionMessage: String?
+    /// How 「記事をノートに送る」 reaches the note's editor (specification 3.3).
+    @State private var noteLink = NoteEditorLink()
     @State private var loading: ArticleLoadingController
     private var displayedContent: ArticleContent? { loading.displayed }
     /// Set while the "add subscription" sheet is open: the folder the new subscription goes to.
@@ -128,6 +130,7 @@ struct ReaderView: View {
             .modifier(ArticleTranslationPresentation(controller: translation, articleID: selection, title: selectedArticle?.title,
                 content: displayedContent, keysEnabled: shortcutsEnabled, readerShown: originalPage.url == nil))
             .onKeyPress("/") { guard shortcutsEnabled else { return .ignored }; filterPresented = true; return .handled }
+            .onKeyPress("c") { guard shortcutsEnabled, originalPage.url == nil else { return .ignored }; sendToNote(); return .handled }
 
     }
 
@@ -350,6 +353,7 @@ struct ReaderView: View {
                 case "n": toggleNote()
                 case "/": ReaderPerformance.motionBegan("filter-open", duration: 0.25); filterPresented = true
                 case "t": toggleTranslation()
+                case "c": sendToNote()
                 default: break
                 }
             }, imageLoader: imageLoader, iconURL: { article in
@@ -404,6 +408,7 @@ struct ReaderView: View {
         let article = selectedArticle
         return ReaderActions(noteOpen: noteOpen, toggleNote: toggleNote, starred: article?.starredAt != nil, canStar: article != nil,
                              toggleStar: { perform(.toggleStar) },
+                             canSendToNote: article != nil && originalPage.url == nil, sendToNote: sendToNote,
                              canOpenBrowser: article?.originalURL.flatMap { ArticleURL.validated($0) } != nil, openBrowser: openExternal)
     }
     /// The article column's band (decision 0057). The buttons are always there and disabled when they cannot act, so nothing moves.
@@ -441,7 +446,7 @@ struct ReaderView: View {
                   onNext: { guard panelMayMove else { return }; perform(.next) },
                   onCopy: { _ = copyNote() },
                   onClose: closeNote,
-                  listShown: workspace.noteListShown, onSwitchLayout: switchNoteLayout)
+                  listShown: workspace.noteListShown, onSwitchLayout: switchNoteLayout, link: noteLink)
             .modifier(NotePanelWidthMemory(limit: limit, space: windowSpace))
     }
 
@@ -571,6 +576,17 @@ struct ReaderView: View {
         // a change from false to true is what moves it (seen in CI on macOS 26.6).
         listFocused = false
         Task { @MainActor in listFocused = true }
+    }
+    /// 「記事をノートに送る」 (specification 3.3): the article's link, or the text selected in it as a quotation, into the note. A closed note
+    /// opens first and takes the text at its end. The keyboard does not go into the note. Not from the original page.
+    private func sendToNote() {
+        guard originalPage.url == nil, let article = selectedArticle else { return }
+        let selected = translation.isOn(for: article.id) ? nil : ArticleTextView.selectedText(in: NSApp.keyWindow)
+        let url = article.originalURL.flatMap { ArticleURL.link($0) }?.absoluteString
+        guard let text = NoteClip.text(title: article.title, url: url, selection: selected) else { return }
+        if noteOpen, noteLink.insert(text) != .noEditor { return }
+        if !noteOpen { toggleNote() }
+        noteLink.insertWhenShown(text)
     }
     private func toggleTranslation() {
         guard originalPage.url == nil, let article = selectedArticle, let content = displayedContent, content.articleID == article.id else { return }

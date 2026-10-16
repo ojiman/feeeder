@@ -77,7 +77,7 @@ These words mean the same thing in this specification, the user guide, the decis
 | 「Markdownをコピー」 (Copy Markdown) | Puts the note's text, unchanged, on the pasteboard (3.3) | `NotePanel`, `ReaderView.copyNote` |
 | list title | The scope's name and count above the list (3.1.4) | `ListHeader` |
 | ✕ | The button at the top left of the right column. It closes the original page, and the note | `OriginalPageView`, `NotePanel` |
-| Settings (設定) | The settings window: appearance and retention | `ReaderSettingsView` |
+| Settings (設定) | The settings window: 「外観」, 「ショートカット」 and 「保存」 (3.7) | `ReaderSettingsView` |
 
 **Word use**
 
@@ -185,7 +185,7 @@ normal                original page (v)     note beside article   note with the 
 
 **Article**
 
-- The title is 26 pt semibold. The buttons at the top: Star and the external browser (globe). Appearance (system / light / dark) is in Settings.
+- The title is 26 pt semibold. The buttons at the top: Star and the external browser (globe). The theme and the text size are in Settings (3.7).
 - Opening an article shows the feed's body (or the RSS summary) as it is; it never fetches the original page or swaps the text (RSS first, decision 0033). For more, `v` (in the app) or `b` (the browser).
 - The app never takes text from the original page (decision 0056): no full-text fetch, and no line under the article that says how much text there is.
 - Links and quotes of the feed's text are kept. A link opens in the default browser. Quotes look different from the text. A saved body without layout data is shown as plain text.
@@ -209,7 +209,7 @@ normal                original page (v)     note beside article   note with the 
 | `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050) |
 | `/` | Open the list filter and put the cursor in it, when no editable field is being typed in |
 | `t` | Translate the open article / show the original, when no editable field is being typed in |
-| `c` | Send the article to the note (3.3), when no editable field is being typed in `[not built #238]` |
+| `c` | Send the article to the note (3.3), when no editable field is being typed in |
 
 - `j`, `k`, `s` and `n` also work in the original page.
 - In text fields (the note editor too), during input-method composition and with modifier keys, typing and the standard actions come first.
@@ -257,7 +257,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 - Disabled when the note is empty or only whitespace.
 - The app starts no other app, makes no file, uses no network and shows no confirmation.
 
-**「記事をノートに送る」 (Send article to note)** `[not built #238]` ([decision 0059](decisions/0059-send-the-article-to-the-note.md))
+**「記事をノートに送る」 (Send article to note)** ([decision 0059](decisions/0059-send-the-article-to-the-note.md))
 
 - One command that puts the open article's source into the note. It is run by `c` (3.1.5) or by 「記事 ▸ 記事をノートに送る」 in the menu bar. There is no button in a band.
 - With no article chosen, it does nothing.
@@ -269,7 +269,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
   - With a translation shown (3.6) it inserts the line `[Title](URL)` only, never the translated text.
 - Where it goes: after the note's selection or caret, where the person last left it; at the end of the note if the note was never used. A selection in the note is not replaced. A line break is added before the text when the point is not at the start of a line, and after it unless one follows already. The note's caret then sits after the text, so the next one follows it.
 - The note closed: the note opens with the same motion as `n` (3.1.3), then the text is inserted at the end of the note. The article, the list selection and the reading position do not change.
-- The keyboard stays where it was; it does not move into the note, so `j` / `k` keep working.
+- The keyboard does not move into the note, so `j` / `k` keep working. With the note open it stays where it was; when a closed note opens, the list folds away and the article takes it, as with `n`.
 - It is one undo step of the note's own undo.
 - While Japanese text is being composed in the note, it does nothing and the composition is not disturbed.
 - A failed save is shown as with typing and never reported as done; the inserted text stays in the editor.
@@ -369,6 +369,47 @@ A button translates the open article into another language, on the Mac, with the
 
 Not built: translating the original page, an "always translate" choice per subscription, original and translation side by side, translated titles in the list, links kept in the translated text.
 
+### 3.7 Settings
+
+The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. Settings stay few: what is used often sits beside the content it acts on, not here.
+
+| Pane | Holds | Code |
+|---|---|---|
+| 「外観」 (Appearance) | the theme and the article's text size | `ReaderSettingsView`, `AppearancePicker` |
+| 「ショートカット」 (Shortcuts) `[not built #254]` | the keys, to read | |
+| 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
+
+- The window opens on the pane that was shown last. Every choice is kept across launches and applies at once.
+
+**Theme**
+
+| Tile | Look |
+|---|---|
+| 「システム」 | Light or dark, as macOS is set. It never selects Sepia |
+| 「ライト」 | Always light |
+| 「ダーク」 | Always dark |
+| 「セピア」 `[not built #255]` | A light look on a warm paper colour |
+
+- Each tile shows a small picture of the reader in that look instead of a description.
+- Sepia covers the whole window: the reading surfaces (list, article, note and their bands) take the paper colour, and the sidebar a slightly darker one. System controls are drawn light. `[not built #255]`
+- In Sepia, text, links, quotes, the selected row, the unread mark and read rows stay readable; body text has a contrast of at least 4.5:1. The palette values are in `AppPalette`. `[not built #255]`
+- The app does not claim that a look rests the eyes.
+
+**Text size** `[not built #253]`
+
+- 「文字サイズ」 in 「外観」 is a slider with five steps: 14, 16 (standard), 18, 20 and 22 pt.
+- It sets the article's body. The title (26 pt at standard) and the source and date lines scale by the same ratio, so the text keeps its shape.
+- The list, the sidebar and the note keep their sizes (decision 0028).
+- A change shows at once in the open article; the paragraph at the top of the article stays at the top.
+- Not now: `⌘+` / `⌘−` / `⌘0`, a size for the note or the list.
+
+**Shortcuts** `[not built #254]`
+
+- 「ショートカット」 lists the keys of 3.1.5 and the note's keys, to read, grouped as 「読む」 (reading), 「一覧」 (the list), 「元ページ」 (the original page) and 「ノート」 (the note). Each row shows the key, what it does, and where it does not work (for example 「文字の入力中は効きません」, not while typing).
+- Help ▸ 「ショートカット一覧」 opens Settings on this pane.
+- The list is made from the same definitions the key handlers use, so it shows what the app does.
+- Keys cannot be changed (the roadmap's "Not planned": key remapping).
+
 ## 4. How to decide
 
 Use the [vision](vision.md)'s questions first. Then, in this order:
@@ -417,7 +458,7 @@ The app has **no AI of its own** ([decision 0049](decisions/0049-one-note-and-no
 | Note | more than one note; folders, levels, tags, search or goals for notes; daily or weekly notes; system sharing services | decisions 0019, 0049 |
 | Fetching | taking text from the original page (decision 0056); bypassing paywalls, subscriptions, logins or captchas; a full-text guarantee | section 4 |
 | AI | an AI of the app's own (summary, draft help: a new decision is needed), keys or API calls in the app, AI off the Mac (Private Cloud Compute and the like), a dedicated link to one AI app (only 「Markdownをコピー」), sending or recording automatically, a guarantee of facts | decision 0049 |
-| Settings | an in-app language or time zone setting | — |
+| Settings | an in-app language or time zone setting; changing keys; a text size for the note or the list; themes other than the four of 3.7 | 3.7 |
 | Old data | the prototype's Like and any migration of it (Star is a new mark) | decision 0001 |
 
 Ideas for after V1, and the order of the work, are in the [roadmap](roadmap.md).
@@ -445,7 +486,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
 | PRD-18 | Read an article in another language `[not built #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the language menu: `[not built #154]` |
-| PRD-19 | Send an article to the note `[not built #238]` | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | tests of the inserted text, the line breaks and the missing title or URL (written with the build, which then names PRD-19 and drops the mark); real Mac (Japanese input, undo, VoiceOver, a long note) |
+| PRD-19 | Send an article to the note | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | unit tests (`NoteClipTests`); UI tests (`NoteInsertionTests`, `SendToNoteTests`); real Mac (Japanese input, undo, VoiceOver, a long note) |
 
 ### 7.1 Conditions to ship 1.0
 

@@ -62,6 +62,7 @@ The app refreshes at launch, when you come back to it, and every 30 minutes; the
 | `m` | Read / unread |
 | `s` | Star on / off |
 | `n` | Open or close the note (also the note button at the top of the article and `⌥⌘I`) |
+| `c` | Send the article to the note: its title and link, or the text you selected in the article as a quotation (also 記事 ▸ 記事をノートに送る) |
 | `t` | Translate the article into Japanese, on your Mac; again shows the original (also the button at the top of the article and 表示 ▸ 翻訳). The first time, macOS may ask to download the language |
 | `/` | Narrow the list: type words from the titles or summaries (also the magnifier at the top right of the list). The field stays while it has text; empty, a click elsewhere closes it |
 | `b` | Open the original page in your browser |
@@ -82,6 +83,7 @@ There is one note and nothing to manage: no list, no names, no delete.
 - It is plain Markdown in your own words, saved as you type, exactly as typed. A line starting with `#` is shown as a heading; a line starting with `-`, `*`, `+` or `1.` as a list item. Only the look changes, never the saved text. Paste adds plain text only.
 - `j` / `k` change the article while the note stays open (not while you type in the note). While you write, `⌥⌘↓` and `⌥⌘↑` change the article, and so do the two arrows above the note.
 - Drag the panel's edge to change its width; the width is kept.
+- `c` (or 記事 ▸ 記事をノートに送る) puts the article into the note where you left the caret: its title and link as `[Title](URL)`, or the text you selected in the article as a quotation with that link. A closed note opens and takes it at its end. One undo removes it. Nothing else ever writes into the note.
 - 「Markdownをコピー」 (Copy Markdown) at the top of the note copies its exact text. It is disabled for an empty note.
 
 ## 4. AI
