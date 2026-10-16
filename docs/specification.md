@@ -8,7 +8,6 @@ What V1 is and is not, as the person sees it. Why the product exists is in the [
 ## 1. Purpose and scope
 
 - The value, the user and the questions to ask when in doubt are in the [vision](vision.md): read → note → understand, in one app, with no waiting.
-- The reading baseline is Reeder Classic 5.5.1: a smooth three-column reader, a calm dark look, Vim-style keys.
 - V1 runs on the person's own Mac. No backend, no account, no sync.
 - A new library starts empty; there is no migration from the prototype ([decision 0001](decisions/0001-fresh-library-no-prototype-migration.md)).
 - Data between beta versions is not guaranteed; saves and restarts within one version are. From 1.0, data is kept across updates (7.1). If the library cannot be opened, the app shows an error and never deletes or recreates it (how SwiftData behaves with an incompatible store is not verified). Beta release notes state this limit ([decision 0003](decisions/0003-beta-data-compatibility.md)).
@@ -164,7 +163,7 @@ normal                original page (v)     note beside article   note with the 
 
 **List**
 
-- The list title (scope name and count) sits below the list's band, at 17 pt (as in Reeder; decision 0048).
+- The list title (scope name and count) sits below the list's band, at 17 pt (decision 0048).
 - A row: source name on the left and publication time on the right of the top line; title, summary and article image below. The title is the largest (14 pt); the summary (11 pt) and the source name and time (10 pt) are smaller, because the title and the favicon decide interest.
 - The column's edge can be dragged wider.
 - The reading surfaces (list, article, note) are one dark colour, with no separate grey bars or lines in the bands; only the sidebar is slightly lighter.
@@ -408,7 +407,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 
 | ID | Scenario | Passes when | Where it is checked |
 |---|---|---|---|
-| PRD-01 | Read smoothly, with subscriptions in order | The four areas, the four layouts, appearance, folders and unread counts, the keys and the note open and close as in 3.1. No wrong body, no visible stall, no scroll jump; input, input methods and VoiceOver are not disturbed. The budgets of 2.1 hold. The owner compares with Reeder Classic on a real Mac | real Mac (the owner, against Reeder Classic); parts in UI tests; 2.1 |
+| PRD-01 | Read smoothly, with subscriptions in order | The four areas, the four layouts, appearance, folders and unread counts, the keys and the note open and close as in 3.1. No wrong body, no visible stall, no scroll jump; input, input methods and VoiceOver are not disturbed. The budgets of 2.1 hold | real Mac (the owner); parts in UI tests; 2.1 |
 | PRD-02 | Open an article from the unread list | Scrolling the list keeps articles unread. Showing the body or the RSS summary saves the first read time | unit tests, synthetic app |
 | PRD-04 | Write in the note | `n`, the button or `⌥⌘I` opens the note with the same motion as `v`: the article on the left, the note on the right. The layout button adds the list (three columns). `j` / `k` move between articles with the note open; `Esc` or the ✕ closes it and returns to the screen before. Works without AI; still there after a restart, offline, after unsubscribing and after the body expires. Japanese input is not disturbed | UI tests, real Mac (Japanese input, VoiceOver) |
 | PRD-05 | Give the note to another AI | 「Markdownをコピー」 copies the text exactly; the person pastes it into any AI. The app starts no app, makes no file, uses no network. Disabled for an empty note | unit tests, real Mac |

@@ -6,7 +6,7 @@ enum SidebarRenaming: Equatable {
     case feed(UUID)
 }
 
-/// The name of a sidebar row, edited in place. Return finishes, Esc cancels, and moving away finishes (as in the Finder).
+/// The name of a sidebar row, edited in place. Return finishes, Esc cancels, and moving away finishes.
 /// `onFinish` gets the typed text, or nil for Esc; `NameEdit.result` decides whether there is anything to save.
 struct InlineNameField: View {
     let initial: String
@@ -36,7 +36,7 @@ struct InlineNameField: View {
     }
 }
 
-/// Return on the selected row of the sidebar starts renaming it (as in the Finder). The window receives the key the sidebar
+/// Return on the selected row of the sidebar starts renaming it. The window receives the key the sidebar
 /// did not use (as it does for j and k), and `begin` checks that the sidebar is where the keyboard is. It is a modifier of its own,
 /// applied from outside the window's long chain (the CI compiler gives up on a longer chain).
 struct RenameOnReturn: ViewModifier {

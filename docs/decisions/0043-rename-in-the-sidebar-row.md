@@ -7,7 +7,7 @@
 
 ## Decision
 
-1. **A note's or a subscription's name is edited in its sidebar row.** The name becomes a text field in the row, with all of it selected. Return finishes; Esc cancels; moving away (a click on another row) finishes, as in the Finder. An empty name, or a name that did not change, saves nothing (`NameEdit.result`). The field starts empty for an untitled note: 「新規ノート」 is a label, not a name.
+1. **A note's or a subscription's name is edited in its sidebar row.** The name becomes a text field in the row, with all of it selected. Return finishes; Esc cancels; moving away (a click on another row) finishes. An empty name, or a name that did not change, saves nothing (`NameEdit.result`). The field starts empty for an untitled note: 「新規ノート」 is a label, not a name.
 2. **Two ways in, the same words in both menus:** the context menu item 「名前を変更」 (no dots: it starts the edit at once; the dots meant that more input is asked), and Return while the keyboard is in the sidebar and a note or a subscription is selected. The context menus now read alike: a subscription has 「この購読を更新」, 「名前を変更」, 「フォルダへ移動…」, 「購読を解除…」; a note has 「名前を変更」, 「削除…」.
 3. **The edit sheet of a subscription and the rename alert of a note are gone** (less code, one way). The add sheet only adds.
 4. **A note's name is still its first line** (0019, 0035): renaming rewrites it, and the note moves to the top as the most recently edited.

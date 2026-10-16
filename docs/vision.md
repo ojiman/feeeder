@@ -8,7 +8,7 @@ Find the few articles that matter in a flood of articles, and turn them into you
 
 ## Who it is for
 
-Engineers in 2026 who read many feeds every day. They know Reeder Classic, and a smooth reader is the baseline for them.
+Engineers in 2026 who read many feeds every day.
 
 ## The problem
 
@@ -43,4 +43,4 @@ Goals and learning plans. Tags and automatic sorting. An AI of the app's own. Sy
 
 ## About this page
 
-The owner (the PdM) wrote the value and the target user on 2026-10-11, after dogfooding. On 2026-10-13 the owner changed the note, the AI and the promises for one note and no AI of its own. On 2026-10-14 the owner corrected one line, which had said "three-column" ([decision 0052](decisions/0052-the-reading-screen-is-four-areas.md)). It changes only by the owner's instruction, with a decision record. See [decision 0019](decisions/0019-v1-simplification-notes.md), [0049](decisions/0049-one-note-and-no-ai-of-its-own.md) and [0050](decisions/0050-the-note-screen-closes-like-the-original-page.md).
+The owner (the PdM) wrote the value and the target user on 2026-10-11, after dogfooding. On 2026-10-13 the owner changed the note, the AI and the promises for one note and no AI of its own. On 2026-10-14 the owner corrected one line, which had said "three-column" ([decision 0052](decisions/0052-the-reading-screen-is-four-areas.md)). On 2026-10-16 the owner made the target-user description stand on its own ([decision 0058](decisions/0058-unagi-reader-defines-its-own-requirements.md)). It changes only by the owner's instruction, with a decision record. See [decision 0019](decisions/0019-v1-simplification-notes.md), [0049](decisions/0049-one-note-and-no-ai-of-its-own.md) and [0050](decisions/0050-the-note-screen-closes-like-the-original-page.md).

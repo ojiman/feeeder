@@ -41,7 +41,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0041](0041-import-opml.md) | Import subscriptions from an OPML file | valid |
 | [0043](0043-rename-in-the-sidebar-row.md) | Rename in the sidebar row | valid for subscriptions |
 | [0044](0044-original-page-slides-out.md) | The original page slides out when it closes | valid |
-| [0046](0046-sidebar-folds-like-reeder.md) | The sidebar folds like Reeder's | valid for the original page (point 4: 0047; note parts: 0049, 0050) |
+| [0046](0046-fold-the-sidebar-for-the-original-page-and-note.md) | Fold the sidebar for the original page and the note | valid for the original page (point 4: 0047; note parts: 0049, 0050) |
 | [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) | The way back is a ✕ at the top left of the right column | valid for the original page (note parts: 0049, 0050; the ✕ in the band: 0057) |
 | [0048](0048-the-list-title-sits-below-the-band.md) | The list title sits below the toolbar band, level with the ✕ | valid (the ✕ moves into the band: 0057) |
 | [0049](0049-one-note-and-no-ai-of-its-own.md) | One note, written beside the article; no hand-off and no AI of its own | valid |
@@ -53,6 +53,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0055](0055-a-keyword-filter-for-the-list.md) | A keyword filter for the article list | valid (the magnifier's place: 0057) |
 | [0056](0056-the-feed-text-only.md) | The article shows the feed's text only: no full-text fetch, no coverage line | valid |
 | [0057](0057-each-column-has-its-own-band.md) | Each column has its own band; no system toolbar | valid |
+| [0058](0058-unagi-reader-defines-its-own-requirements.md) | Unagi Reader defines its own requirements | valid |
 
 ## Removed from the working tree
 
