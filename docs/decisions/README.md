@@ -44,7 +44,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0046](0046-fold-the-sidebar-for-the-original-page-and-note.md) | Fold the sidebar for the original page and the note | valid for the original page (point 4: 0047; note parts: 0049, 0050) |
 | [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) | The way back is a ✕ at the top left of the right column | valid for the original page (note parts: 0049, 0050; the ✕ in the band: 0057) |
 | [0048](0048-the-list-title-sits-below-the-band.md) | The list title sits below the toolbar band, level with the ✕ | valid (the ✕ moves into the band: 0057) |
-| [0049](0049-one-note-and-no-ai-of-its-own.md) | One note, written beside the article; no hand-off and no AI of its own | valid |
+| [0049](0049-one-note-and-no-ai-of-its-own.md) | One note, written beside the article; no hand-off and no AI of its own | valid (points 3 and 9 in part: 0059) |
 | [0050](0050-the-note-screen-closes-like-the-original-page.md) | The note screen closes like the original page; a layout button; a wider note | valid (point 4's place: 0057) |
 | [0051](0051-app-name-and-eel-icon.md) | App bundle filename matches Unagi Reader; orange eel icon | valid |
 | [0052](0052-the-reading-screen-is-four-areas.md) | The vision describes the screen as four areas, not "three columns" | valid |
@@ -54,6 +54,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0056](0056-the-feed-text-only.md) | The article shows the feed's text only: no full-text fetch, no coverage line | valid |
 | [0057](0057-each-column-has-its-own-band.md) | Each column has its own band; no system toolbar | valid |
 | [0058](0058-unagi-reader-defines-its-own-requirements.md) | Unagi Reader defines its own requirements | valid |
+| [0059](0059-send-the-article-to-the-note.md) | Send the article to the note: an insertion the person asks for; no AI summary | valid |
 
 ## Removed from the working tree
 
