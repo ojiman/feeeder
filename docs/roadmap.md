@@ -19,7 +19,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 
 1. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
 
-**Not scheduled.** OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
+**Not scheduled.** Enhancement issues with no place in the order; whoever has room can take them. Sending an article to the note ([#238](https://github.com/ojiman/unagi-reader/issues/238), specification 3.3) is the one the owner wants first, ahead of the Settings refresh ([#235](https://github.com/ojiman/unagi-reader/issues/235)). OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)).
 
 ## Candidates
 
