@@ -7,7 +7,7 @@
 
 ## Decision
 
-Describe Unagi Reader through its own purpose, concrete behavior and quality requirements. Acceptance is judged against the specification's scenarios and budgets. The target user remains an engineer who reads many feeds every day. In older records, remove product names while retaining the recorded requests, observations and verification limits. Do not add a new reason to a dated record. Historical observations are not new acceptance criteria or verification of the app.
+Describe Unagi Reader through its own purpose, concrete behavior and quality requirements. Acceptance is judged against the specification's scenarios and budgets. The target user remains an engineer who reads many feeds every day. In older records, remove the design comparisons' product names while retaining the recorded requests, observations and verification limits. Do not add a new reason to a dated record. Historical observations are not new acceptance criteria or verification of the app.
 
 ## Not in this change
 

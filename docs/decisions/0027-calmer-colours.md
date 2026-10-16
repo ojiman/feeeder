@@ -6,7 +6,7 @@
 
 ## What was measured
 
-Pixel colours in two dark-mode screenshots: Unagi Reader before the change, and the screenshot supplied by the owner. The second column records that supplied image, not Unagi Reader.
+Pixel colours in two dark-mode screenshots: Unagi Reader before the change, and the screenshot supplied by the owner. The values under "Owner-supplied screenshot" describe that image, not Unagi Reader.
 
 | | Unagi Reader (before) | Owner-supplied screenshot |
 |---|---|---|

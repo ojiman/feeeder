@@ -32,7 +32,7 @@ No code. The implementation follows in small pull requests: the fold mechanism a
 
 ## Not verified
 
-The motion of the app at its real speed is not verified; the supplied recording was read frame by frame only. Not known yet: the feel of repeated `j` with a page open (the sidebar goes in and out each time), Reduce Motion, VoiceOver, and the macOS 27.0 support floor.
+The app's motion at its real speed, and how closely the system's fold matches the recorded motion, are not verified; the supplied recording was read frame by frame only. Not known yet: the feel of repeated `j` with a page open (the sidebar goes in and out each time), Reduce Motion, VoiceOver, and the macOS 27.0 support floor.
 
 ## Sources
 
