@@ -395,7 +395,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 - In Sepia, text, links, quotes, the selected row, the unread mark and read rows stay readable; body text has a contrast of at least 4.5:1. The palette values are in `AppPalette`. `[not built #255]`
 - The app does not claim that a look rests the eyes.
 
-**Text size** `[not built #253]`
+**Text size**
 
 - 「文字サイズ」 in 「外観」 is a slider with five steps: 14, 16 (standard), 18, 20 and 22 pt.
 - It sets the article's body. The title (26 pt at standard) and the source and date lines scale by the same ratio, so the text keeps its shape.

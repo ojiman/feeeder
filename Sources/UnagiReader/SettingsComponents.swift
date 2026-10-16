@@ -1,4 +1,5 @@
 import SwiftUI
+import ReaderCore
 
 /// Three tiles that show what each appearance looks like, instead of describing it in words.
 struct AppearancePicker: View {
@@ -31,6 +32,29 @@ struct AppearancePicker: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
+    }
+}
+
+/// 「文字サイズ」: the article's text size in five steps (specification 3.7). The size is shown in points beside the slider.
+struct ArticleTextSizeSlider: View {
+    @Binding var size: Double
+
+    var body: some View {
+        let step = Binding(get: { ArticleTextSize.step(size) }, set: { size = ArticleTextSize.step($0) })
+        LabeledContent("文字サイズ") {
+            HStack(spacing: 10) {
+                Slider(value: step, in: ArticleTextSize.steps.first!...ArticleTextSize.steps.last!, step: 2) {
+                    Text("文字サイズ")
+                } minimumValueLabel: {
+                    Text("あ").font(.system(size: 11))
+                } maximumValueLabel: {
+                    Text("あ").font(.system(size: 17))
+                }
+                .labelsHidden()
+                Text("\(Int(step.wrappedValue)) pt").monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .trailing)
+            }
+        }
+        .help("記事の本文の大きさです。見出しも同じ割合で変わります。一覧とノートは変わりません。")
     }
 }
 

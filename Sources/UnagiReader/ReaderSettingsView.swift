@@ -12,6 +12,7 @@ struct ReaderSettingsView: View {
 
     private enum Pane: String { case appearance, storage }
     @AppStorage("settingsPane") private var pane = Pane.appearance.rawValue
+    @AppStorage(ArticleTextSize.key) private var textSize = ArticleTextSize.standard
 
     var body: some View {
         TabView(selection: Binding(get: { Pane(rawValue: pane) ?? .appearance }, set: { pane = $0.rawValue })) {
@@ -52,6 +53,7 @@ struct ReaderSettingsView: View {
     private var appearancePane: some View {
         Form {
             Section { AppearancePicker(selection: $appearance) }
+            Section { ArticleTextSizeSlider(size: $textSize) }
         }
         .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
     }
