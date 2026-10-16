@@ -2,7 +2,7 @@
 
 What V1 is and is not, as the person sees it. Why the product exists is in the [vision](vision.md); how it is built is in the [architecture](architecture.md); why each rule is so is in the [decision records](decisions/README.md). How to write this file: [spec-style.md](spec-style.md). What is not written here is not a requirement.
 
-- **Approval.** The owner approves this text as a whole in #144. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
+- **Approval.** The owner approved this V1 specification on 2026-10-17 with no scope changes (#144). The language menu in 3.6 (#154) is planned for completion by V1. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
 - **Status marks.** A rule that is not built yet ends with `[not built #issue]`. A rule with no mark is built.
 
 ## 1. Purpose and scope
