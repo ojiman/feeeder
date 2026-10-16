@@ -39,6 +39,7 @@ xcodebuild test -project UITests/UISmoke.xcodeproj -scheme UISmoke \
     -test-timeouts-enabled YES -maximum-test-execution-time-allowance 120 \
     -derivedDataPath "$run/build" -resultBundlePath "$results/ui-smoke.xcresult" \
     "UNAGI_UI_SMOKE_APP=$app" "UNAGI_UI_SMOKE_FEED=$feed" > "$results/ui-smoke.log" 2>&1 || {
+        grep -E 'error:|Test Case .*failed' "$results/ui-smoke.log" >&2 || true
         tail -80 "$results/ui-smoke.log" >&2; exit 1;
     }
 xcrun xcresulttool get test-results summary --path "$results/ui-smoke.xcresult" --compact > "$results/ui-smoke-summary.json"

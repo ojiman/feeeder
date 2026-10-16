@@ -107,7 +107,7 @@ jobs:
           done
       - name: Build the app for UI smoke tests
         run: |
-          { time bash scripts/build-app.sh; } > "$CI_RESULTS/ui-smoke-app-build.log" 2>&1 || {
+          { time bash scripts/build-app.sh release; } > "$CI_RESULTS/ui-smoke-app-build.log" 2>&1 || {
             cat "$CI_RESULTS/ui-smoke-app-build.log"
             exit 1
           }
