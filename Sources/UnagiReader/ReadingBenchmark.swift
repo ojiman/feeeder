@@ -63,7 +63,7 @@ import ReaderCore
     static func run(store: ReaderStore, refresh: FeedRefreshController) async {
         do {
             guard ReaderPerformance.output != nil, store.feeds.count == 100, store.articles.count == 10_000,
-                  store.feeds.allSatisfy({ $0.sourceURL?.hasPrefix("https://synthetic.example/feeds/") == true }) else {
+                  store.feeds.enumerated().allSatisfy({ $0.element.title == String(format: "合成購読 %03d", $0.offset) && $0.element.sourceURL == nil }) else {
                 throw Failure(message: "Expected --performance-output and the 100-feed, 10,000-article synthetic fixture.")
             }
             try await Task.sleep(for: .seconds(1))
@@ -100,11 +100,18 @@ import ReaderCore
             }
             guard store.note?.text == original + typed else { throw Failure(message: "Synthetic typing was not saved exactly.") }
             ReaderPerformance.beginPhase(nil)
+            // The canonical fixture has no feed URLs. Keep ordinary startup, then prepare only the explicit refresh.
+            for (index, feed) in store.feeds.enumerated() { feed.sourceURL = "https://synthetic.example/feeds/\(index)" }
+            if let first = store.feeds.first { try store.recordFetch(first, etag: nil, lastModified: nil, at: .now) }
             ReaderPerformance.beginPhase("refresh")
             let started = Date.now
             await refresh.refresh()
             guard refresh.errors.isEmpty, store.feeds.allSatisfy({ ($0.lastFetchedAt ?? .distantPast) >= started }),
                   store.articles.count == 10_000 else { throw Failure(message: "The synthetic refresh did not finish every feed.") }
+            // Include the screen work queued by the last reload, not just the synchronous store calls.
+            try await Task.sleep(for: .seconds(1))
+            content.layoutSubtreeIfNeeded()
+            try await Task.sleep(for: .milliseconds(20))
             ReaderPerformance.beginPhase(nil)
             completed = true
         } catch {

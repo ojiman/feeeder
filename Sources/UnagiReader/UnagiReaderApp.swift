@@ -50,13 +50,9 @@ struct UnagiReaderApp: App {
             }
             .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
-                    purgeContent()
-                    if !ReadingBenchmark.requested { Task { await refresh?.refresh() } }
-                }
+                if phase == .active { purgeContent(); Task { await refresh?.refresh() } }
             }
             .task {
-                guard !ReadingBenchmark.requested else { return }          // the replay starts its synthetic refresh in its own measured phase
                 await refresh?.refresh()
                 while !Task.isCancelled {
                     do { try await Task.sleep(for: .seconds(1800)) } catch { break }

@@ -36,7 +36,10 @@ import Darwin
         write()
     }
     /// A motion starts (issue #212): `MotionMeter` records its frames when the output is on.
-    static func motionBegan(_ name: String, duration: Double) { MotionMeter.shared.began(name, duration: duration) }
+    static func motionBegan(_ name: String, duration: Double) {
+        guard !ReadingBenchmark.requested else { return }                  // frame-time sampling is outside the reading budgets
+        MotionMeter.shared.began(name, duration: duration)
+    }
     struct Launch {
         private(set) var milliseconds: Double?
         mutating func drawn(rows: Int, visible: Bool, processStart: Date?, at now: Date) {
@@ -60,6 +63,7 @@ import Darwin
         phase = name
         lastHeartbeat = ProcessInfo.processInfo.systemUptime
         if let name { phaseGaps[name] = []; phaseHeartbeats[name] = 0 }
+        write()
     }
     static func schedulingGap(previous: Double?, now: Double) -> Double? {
         guard let previous, now - previous > 0.12 else { return nil }
