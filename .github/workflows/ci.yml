@@ -94,6 +94,16 @@ jobs:
       # A test process can end early with exit code 0 and no summary line; `swift test` then looks like a pass.
       - name: Check that the test run finished
         run: bash scripts/check-test-log.sh "$CI_RESULTS/tests.log"
+      - name: Compare the filter timing without other tests (issue 230 diagnosis)
+        if: always()
+        run: |
+          for sample in 1 2 3; do
+            status=0
+            swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --skip-build --disable-keychain --disable-netrc --filter 'ArticleFilterStoreTests/tenThousandArticlesAreNarrowedQuickly' > "$CI_RESULTS/filter-$sample.log" 2>&1 || status=$?
+            cat "$CI_RESULTS/filter-$sample.log"
+            test "$status" -eq 0
+            bash scripts/check-test-log.sh "$CI_RESULTS/filter-$sample.log"
+          done
       - name: Save logs and artifacts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

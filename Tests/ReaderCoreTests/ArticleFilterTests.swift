@@ -80,6 +80,7 @@ struct ArticleFilterTests {
         let start = ContinuousClock.now
         let found = store.filteredIDs(all, matching: "目印")
         let elapsed = ContinuousClock.now - start
+        print("10,000-article cached filter: \(elapsed)")
         #expect(found.count == (0..<10_000).filter { $0 % 97 == 0 }.count)
         #expect(elapsed < .milliseconds(50), "took \(elapsed)")
     }
