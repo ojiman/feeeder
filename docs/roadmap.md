@@ -26,7 +26,6 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 Ideas: no order, no issue. When the owner decides to build one, it moves to Next with an issue; when it is dropped, to Not planned.
 
 - The same size scale for the note editor (needs a real Japanese input check).
-- A summary inserted into the note, redone to Apple's Human Interface Guidelines (needs a new decision; 0049 removed the old one).
 - A draft helper from an AI outside the Mac, with the person's own key (needs a new decision).
 - A language setting and a time zone setting (a language setting is needed before a public release).
 - More styling in the note editor: tables, check lists, a preview.
