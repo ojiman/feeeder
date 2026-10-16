@@ -267,10 +267,11 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
   - A title with `[` or `]` gets a backslash before each. With no title the line is the URL; with no URL it is the title.
   - A title on several lines becomes one line. A URL with a space or an unbalanced parenthesis is written inside `<` and `>`. Empty lines at either end of the selection are left out.
   - With a translation shown (3.6) it inserts the line `[Title](URL)` only, never the translated text.
-- Where it goes: after the note's selection or caret, where the person last left it; at the end of the note if the note was never used. A selection in the note is not replaced. A line break is added before the text when the point is not at the start of a line, and after it unless one follows already. The note's caret then sits after the text, so the next one follows it.
+- Where it goes: after the note's selection or caret, where the person last left it; at the end of the note if the note was never used. A selection in the note is not replaced. The text is a paragraph of its own: an empty line separates it from text before and after it, none is added at the start of the note, and there are never two empty lines. The note's caret then sits after it, so the next one follows as another paragraph.
 - The note closed: the note opens with the same motion as `n` (3.1.3), then the text is inserted at the end of the note. The article, the list selection and the reading position do not change.
 - The keyboard does not move into the note, so `j` / `k` keep working. With the note open it stays where it was; when a closed note opens, the list folds away and the article takes it, as with `n`.
 - It is one undo step of the note's own undo.
+- Where the text went is shown with the system's find indicator (a short highlight): at once when the note is open; when a closed note opens, after it has come in. VoiceOver says 「ノートに送りました」. Nothing is shown when nothing was inserted.
 - While Japanese text is being composed in the note, it does nothing and the composition is not disturbed.
 - A failed save is shown as with typing and never reported as done; the inserted text stays in the editor.
 - The same article sent twice is inserted twice. No record, link or mark is kept about the article.

@@ -85,7 +85,7 @@ There is one note and nothing to manage: no list, no names, no delete.
 - It is plain Markdown in your own words, saved as you type, exactly as typed. A line starting with `#` is shown as a heading; a line starting with `-`, `*`, `+` or `1.` as a list item. Only the look changes, never the saved text. Paste adds plain text only.
 - `j` / `k` change the article while the note stays open (not while you type in the note). While you write, `⌥⌘↓` and `⌥⌘↑` change the article, and so do the two arrows above the note.
 - Drag the panel's edge to change its width; the width is kept.
-- `c` (or 記事 ▸ 記事をノートに送る) puts the article into the note where you left the caret: its title and link as `[Title](URL)`, or the text you selected in the article as a quotation with that link. A closed note opens and takes it at its end. One undo removes it. Nothing else ever writes into the note.
+- `c` (or 記事 ▸ 記事をノートに送る) puts the article into the note where you left the caret: its title and link as `[Title](URL)`, or the text you selected in the article as a quotation with that link. Each one is a paragraph of its own, and a short highlight shows where it went. A closed note opens and takes it at its end. One undo removes it. Nothing else ever writes into the note.
 - 「Markdownをコピー」 (Copy Markdown) at the top of the note copies its exact text. It is disabled for an empty note.
 
 ## 4. AI

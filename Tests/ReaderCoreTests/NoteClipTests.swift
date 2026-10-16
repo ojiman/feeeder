@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import ReaderCore
 
@@ -58,5 +59,46 @@ struct NoteClipTests {
         #expect(NoteClip.text(title: "T", url: "https://example.com/a)", selection: nil) == "[T](<https://example.com/a)>)")
         #expect(NoteClip.text(title: "T", url: "https://en.wikipedia.org/wiki/Swift_(language)", selection: nil)
                 == "[T](https://en.wikipedia.org/wiki/Swift_(language))")
+    }
+
+    // The paragraph around the inserted text (specification 3.3), "|" marking the point.
+    private func insert(_ text: String, into marked: String) -> String {
+        let point = (marked as NSString).range(of: "|").location
+        let note = marked.replacingOccurrences(of: "|", with: "")
+        let result = NoteClip.paragraph(text, in: note, at: point)
+        #expect((result.piece as NSString).substring(from: result.offset).hasPrefix(text))
+        return (note as NSString).replacingCharacters(in: NSRange(location: point, length: 0), with: result.piece)
+    }
+
+    @Test func atTheStartOfAnEmptyNoteThereIsNoEmptyLineBefore() {
+        #expect(insert("[A](u)", into: "|") == "[A](u)\n")
+        #expect(insert("[A](u)", into: "|メモ") == "[A](u)\n\nメモ")
+    }
+
+    @Test func atTheEndAnEmptyLineSeparatesItFromTheTextAbove() {
+        #expect(insert("[A](u)", into: "メモ|") == "メモ\n\n[A](u)\n")
+        #expect(insert("[A](u)", into: "メモ\n|") == "メモ\n\n[A](u)\n")
+        #expect(insert("[A](u)", into: "メモ\n\n|") == "メモ\n\n[A](u)\n")                    // never two empty lines
+    }
+
+    @Test func sendingTwiceGivesTwoParagraphs() {
+        let first = "メモ\n\n[A](u)\n"
+        #expect(insert("[B](v)", into: first + "|") == "メモ\n\n[A](u)\n\n[B](v)\n")
+    }
+
+    @Test func inTheMiddleItIsSeparatedOnBothSides() {
+        #expect(insert("[A](u)", into: "前|後") == "前\n\n[A](u)\n\n後")
+        #expect(insert("[A](u)", into: "前|\n後") == "前\n\n[A](u)\n\n後")
+        #expect(insert("[A](u)", into: "前\n|後") == "前\n\n[A](u)\n\n後")
+        #expect(insert("[A](u)", into: "前\n\n|\n\n後") == "前\n\n[A](u)\n\n後")                 // it takes the empty line it was put on
+        #expect(insert("[A](u)", into: "前\n\n|後") == "前\n\n[A](u)\n\n後")
+        #expect(insert("[A](u)", into: "前|\n\n後") == "前\n\n[A](u)\n\n後")
+    }
+
+    @Test func crlfAndOtherLineBreaksCountAsOne() {
+        #expect(insert("X", into: "前\r\n|後") == "前\r\n\nX\n\n後")
+        #expect(insert("X", into: "前\r\n\r\n|") == "前\r\n\r\nX\n")
+        #expect(insert("X", into: "前|\r\n後") == "前\n\nX\n\r\n後")
+        #expect(insert("X", into: "前\u{2029}|") == "前\u{2029}\nX\n")
     }
 }

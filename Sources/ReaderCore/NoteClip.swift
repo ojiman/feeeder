@@ -13,6 +13,35 @@ public enum NoteClip {
         return (lines.map { $0.isEmpty ? ">" : "> " + $0 } + ["> — " + source]).joined(separator: "\n")
     }
 
+    /// The text with the line breaks that make it a paragraph of its own at `point` (UTF-16) of `note` (specification 3.3): an empty
+    /// line before it and after it when there is text there, none at the start of the note, never two empty lines. `offset` is where the
+    /// text itself starts in `piece`.
+    public static func paragraph(_ text: String, in note: String, at point: Int) -> (piece: String, offset: Int) {
+        let units = Array(note.utf16)
+        let p = min(max(point, 0), units.count)
+        func isBreak(_ index: Int) -> Bool { [0x0A, 0x0D, 0x2028, 0x2029].contains(units[index]) }
+        /// The start of the line break that ends just before `end`, so `\r\n` counts as one.
+        func breakStart(endingAt end: Int) -> Int { end >= 2 && units[end - 1] == 0x0A && units[end - 2] == 0x0D ? end - 2 : end - 1 }
+        /// The end of the line break that starts at `start`.
+        func breakEnd(startingAt start: Int) -> Int { units[start] == 0x0D && start + 1 < units.count && units[start + 1] == 0x0A ? start + 2 : start + 1 }
+
+        let before: String
+        if p == 0 { before = "" }
+        else if !isBreak(p - 1) { before = "\n\n" }                         // in the middle or at the end of a line
+        else {
+            let previous = breakStart(endingAt: p)                           // at the start of a line: is the line above empty?
+            before = previous == 0 || isBreak(previous - 1) ? "" : "\n"
+        }
+        let after: String
+        if p == units.count { after = "\n" }
+        else if !isBreak(p) { after = "\n\n" }
+        else {
+            let next = breakEnd(startingAt: p)                               // a line break follows: is the line below empty?
+            after = next == units.count || isBreak(next) ? "" : "\n"
+        }
+        return (before + text + after, (before as NSString).length)
+    }
+
     /// `[Title](URL)`; the URL alone without a title, the title alone without a URL.
     static func sourceLine(title: String?, url: String?) -> String? {
         let title = title.map(oneLine).flatMap { $0.isEmpty ? nil : escaped($0) }

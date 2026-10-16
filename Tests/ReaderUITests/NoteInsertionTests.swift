@@ -50,9 +50,9 @@ import ReaderCore
     @Test func aNoteNeverUsedTakesTheTextAtItsEnd() throws {
         let r = try rig("メモ"); defer { r.window.close() }
         #expect(r.link.insert("[A](https://example.com/a)") == .inserted)
-        #expect(r.view.string == "メモ\n[A](https://example.com/a)\n")
+        #expect(r.view.string == "メモ\n\n[A](https://example.com/a)\n")
         #expect(r.link.insert("[B](https://example.com/b)") == .inserted)          // the next one goes after it
-        #expect(r.view.string == "メモ\n[A](https://example.com/a)\n[B](https://example.com/b)\n")
+        #expect(r.view.string == "メモ\n\n[A](https://example.com/a)\n\n[B](https://example.com/b)\n")   // two paragraphs
     }
 
     @Test func anEmptyNoteGetsTheTextAndALineEnd() throws {
@@ -65,29 +65,29 @@ import ReaderCore
         let r = try rig("一行目\n二行目"); defer { r.window.close() }
         leaveCaret(NSRange(location: 3, length: 0), in: r)                          // the end of the first line
         #expect(r.link.insert("X") == .inserted)
-        #expect(r.view.string == "一行目\nX\n二行目")                                  // a line break follows already: no empty line
-        #expect(r.view.selectedRange() == NSRange(location: 5, length: 0))            // the caret after the text
+        #expect(r.view.string == "一行目\n\nX\n\n二行目")                             // a paragraph of its own
+        #expect(r.view.selectedRange() == NSRange(location: 7, length: 0))            // the caret after the text
     }
 
-    @Test func atTheStartOfALineNoBreakGoesBefore() throws {
-        let r = try rig("一行目\n二行目"); defer { r.window.close() }
-        leaveCaret(NSRange(location: 4, length: 0), in: r)
+    @Test func atTheStartOfALineTheEmptyLinesAreNotDoubled() throws {
+        let r = try rig("一行目\n\n二行目"); defer { r.window.close() }
+        leaveCaret(NSRange(location: 5, length: 0), in: r)                          // the start of the second paragraph
         #expect(r.link.insert("X") == .inserted)
-        #expect(r.view.string == "一行目\nX\n二行目")
+        #expect(r.view.string == "一行目\n\nX\n\n二行目")
     }
 
     @Test func aSelectionInTheNoteIsNotReplaced() throws {
         let r = try rig("hello world"); defer { r.window.close() }
         leaveCaret(NSRange(location: 0, length: 5), in: r)
         #expect(r.link.insert("X") == .inserted)
-        #expect(r.view.string == "hello\nX\n world")
+        #expect(r.view.string == "hello\n\nX\n\n world")
     }
 
     @Test func everyKindOfLineBreakCountsAsTheStartOfALine() throws {
         for text in ["a\r", "a\u{2028}", "a\u{2029}"] {
             let r = try rig(text); defer { r.window.close() }
             #expect(r.link.insert("X") == .inserted)
-            #expect(r.view.string == text + "X\n")
+            #expect(r.view.string == text + "\nX\n")                                    // an empty line, not two
         }
     }
 
@@ -98,12 +98,12 @@ import ReaderCore
         r.window.makeFirstResponder(r.other)
         pumpRunLoop(0.05)                                                           // the key press is another event, as in the app
         #expect(r.link.insert("X") == .inserted)
-        #expect(r.sink.changes == ["メモです", "メモです\nX\n"])
+        #expect(r.sink.changes == ["メモです", "メモです\n\nX\n"])
         r.view.undoManager?.undo()
         #expect(r.view.string == "メモです", "after undo: \(r.view.string.debugDescription)")
         #expect(r.sink.changes.last == "メモです")
         r.view.undoManager?.redo()
-        #expect(r.view.string == "メモです\nX\n")
+        #expect(r.view.string == "メモです\n\nX\n")
     }
 
     @Test func theKeyboardStaysWhereItWas() throws {
@@ -132,7 +132,7 @@ import ReaderCore
         let r = try rig("メモ"); defer { r.window.close() }
         r.sink.saves = false
         #expect(r.link.insert("X") == .notSaved)
-        #expect(r.view.string == "メモ\nX\n")
+        #expect(r.view.string == "メモ\n\nX\n")
     }
 
     @Test func withNoEditorShownNothingIsInsertedAndTheCallerIsTold() {
@@ -147,16 +147,52 @@ import ReaderCore
         let r = try rig("メモ", link: link); defer { r.window.close() }
         #expect(r.view.string == "メモ")                                              // not in the middle of the view's update
         pumpRunLoop(0.05)
-        #expect(r.view.string == "メモ\nX\n", "shown: \(r.view.string.debugDescription)")
-        #expect(r.sink.changes == ["メモ\nX\n"])
+        #expect(r.view.string == "メモ\n\nX\n", "shown: \(r.view.string.debugDescription)")
+        #expect(r.sink.changes == ["メモ\n\nX\n"])
         #expect(r.link.insert("Y") == .inserted)                                    // once only
-        #expect(r.view.string == "メモ\nX\nY\n")
+        #expect(r.view.string == "メモ\n\nX\n\nY\n")
     }
 
     @Test func anEditorThatIsAlreadyThereTakesWaitingTextAtOnceAtTheEnd() throws {
         let r = try rig("一行目\n二行目"); defer { r.window.close() }
         leaveCaret(NSRange(location: 3, length: 0), in: r)
         r.link.insertWhenShown("X")                                                  // the note was closed: the end, not the caret
-        #expect(r.view.string == "一行目\n二行目\nX\n")
+        #expect(r.view.string == "一行目\n二行目\n\nX\n")
+    }
+
+    // Where the text went is shown (specification 3.3).
+    @Test func anInsertionIsShownWhereTheTextWent() throws {
+        let r = try rig("メモ"); defer { r.window.close() }
+        var shown: [String] = []
+        r.link.showInserted = { view, range in shown.append((view.string as NSString).substring(with: range)) }
+        #expect(r.link.insert("[A](u)") == .inserted)
+        #expect(shown == ["[A](u)"])                                                // the text itself, not the empty lines
+    }
+
+    @Test func nothingIsShownWhenNothingWasInserted() throws {
+        let r = try rig("メモ"); defer { r.window.close() }
+        var shown = 0
+        r.link.showInserted = { _, _ in shown += 1 }
+        r.window.makeFirstResponder(r.view)
+        r.view.setSelectedRange(NSRange(location: 2, length: 0))
+        r.view.setMarkedText("に", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: 2, length: 0))
+        #expect(r.link.insert("X") == .composing)
+        r.view.unmarkText()
+        r.sink.saves = false
+        #expect(r.link.insert("X") == .notSaved)                                     // the alert says it; no highlight
+        #expect(shown == 0)
+    }
+
+    @Test func forANoteThatOpensItIsShownAfterTheNoteHasComeIn() throws {
+        let link = NoteEditorLink()
+        var shown: [String] = []
+        link.showInserted = { view, range in shown.append((view.string as NSString).substring(with: range)) }
+        link.insertWhenShown("X")
+        let r = try rig("メモ", link: link); defer { r.window.close() }
+        pumpRunLoop(0.05)
+        #expect(r.view.string == "メモ\n\nX\n")
+        #expect(shown.isEmpty)                                                       // not during the opening motion
+        pumpRunLoop(NoteEditorLink.openingTime + 0.2)
+        #expect(shown == ["X"])
     }
 }

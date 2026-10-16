@@ -44,20 +44,44 @@ final class NoteTextView: NSTextView {
     fileprivate weak var coordinator: NoteTextEditor.Coordinator?
     private var waiting: [String] = []
 
+    /// Shows where the text went, with the system's find indicator, and tells VoiceOver (specification 3.3). Replaced in tests.
+    var showInserted: (NSTextView, NSRange) -> Void = { view, range in
+        view.showFindIndicator(for: range)
+        NSAccessibility.post(element: view, notification: .announcementRequested,
+                             userInfo: [.announcement: "ノートに送りました", .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+    }
+
     /// False while no editor is shown or text is being composed in it.
     var canInsert: Bool { coordinator?.canInsert ?? false }
 
     /// After the note's caret or selection, where the person left it; at the end of a note whose caret they never placed.
     func insert(_ text: String) -> Result {
         guard let coordinator else { return .noEditor }
-        return coordinator.insert(text, atEnd: false)
+        let (result, range) = coordinator.insert(text, atEnd: false)
+        if result == .inserted, let range { show(range, in: coordinator, after: 0) }
+        return result
     }
 
     /// For a note that was closed and is being opened: at the end of the note, now if an editor is there, else when one is shown.
     /// Nil while the text waits.
     @discardableResult func insertWhenShown(_ text: String) -> Result? {
         guard let coordinator else { waiting.append(text); return nil }
-        return coordinator.insert(text, atEnd: true)
+        let (result, range) = coordinator.insert(text, atEnd: true)
+        if result == .inserted, let range { show(range, in: coordinator, after: Self.openingTime) }
+        return result
+    }
+
+    /// The note's opening motion, and a little more: the indicator is shown once the note has come in.
+    static let openingTime = SidebarFold.motionDuration + 0.05
+
+    /// A run loop timer, so it also fires inside a nested run of the loop (as in a hosted test).
+    private func show(_ range: NSRange, in coordinator: NoteTextEditor.Coordinator, after delay: TimeInterval) {
+        let showNow: @MainActor () -> Void = { [weak self, weak coordinator] in
+            guard let self, let view = coordinator?.textView, NSMaxRange(range) <= (view.string as NSString).length else { return }
+            self.showInserted(view, range)
+        }
+        guard delay > 0 else { showNow(); return }
+        Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in MainActor.assumeIsolated { showNow() } }
     }
 
     fileprivate func attach(_ coordinator: NoteTextEditor.Coordinator) {
@@ -73,7 +97,10 @@ final class NoteTextView: NSTextView {
         guard let coordinator else { return }
         let texts = waiting
         waiting = []
-        for text in texts { _ = coordinator.insert(text, atEnd: true) }
+        for text in texts {
+            let (result, range) = coordinator.insert(text, atEnd: true)
+            if result == .inserted, let range { show(range, in: coordinator, after: Self.openingTime) }
+        }
     }
 }
 
@@ -252,20 +279,17 @@ struct NoteTextEditor: NSViewRepresentable {
         var canInsert: Bool { textView.map { !$0.hasMarkedText() } ?? false }
 
         /// 「記事をノートに送る」 (specification 3.3): the text goes after the caret or selection the person left (nothing is replaced), or at
-        /// the end of the note, with a line break before it when it does not start a line and one after it unless one follows already. It is
-        /// one undo step and is saved like typing. The keyboard does not move; the caret goes after the text, so the next one follows it.
-        func insert(_ text: String, atEnd: Bool) -> NoteEditorLink.Result {
-            guard let textView else { return .noEditor }
-            guard !textView.hasMarkedText() else { return .composing }
+        /// the end of the note, as a paragraph of its own (`NoteClip.paragraph`). It is one undo step and is saved like typing. The keyboard
+        /// does not move; the caret goes after the text, so the next one follows it. Also returns where the text itself went.
+        func insert(_ text: String, atEnd: Bool) -> (NoteEditorLink.Result, NSRange?) {
+            guard let textView else { return (.noEditor, nil) }
+            guard !textView.hasMarkedText() else { return (.composing, nil) }
             let current = textView.string as NSString
             let point = atEnd || !caretPlaced ? current.length : min(NSMaxRange(textView.selectedRange()), current.length)
-            let isBreak: (unichar) -> Bool = { [0x0A, 0x0D, 0x2028, 0x2029].contains($0) }
-            var piece = text
-            if point > 0, !isBreak(current.character(at: point - 1)) { piece = "\n" + piece }
-            if point == current.length || !isBreak(current.character(at: point)) { piece += "\n" }
+            let (piece, offset) = NoteClip.paragraph(text, in: textView.string, at: point)
             let range = NSRange(location: point, length: 0)
             textView.breakUndoCoalescing()
-            guard textView.shouldChangeText(in: range, replacementString: piece) else { return .refused }
+            guard textView.shouldChangeText(in: range, replacementString: piece) else { return (.refused, nil) }
             textView.textStorage?.replaceCharacters(in: range, with: NSAttributedString(string: piece, attributes: NoteEditorStyle.baseAttributes()))
             textView.didChangeText()                                         // saves, through textDidChange
             textView.breakUndoCoalescing()
@@ -273,7 +297,7 @@ struct NoteTextEditor: NSViewRepresentable {
             textView.setSelectedRange(end)
             textView.scrollRangeToVisible(end)
             caretPlaced = true
-            return unsaved ? .notSaved : .inserted
+            return (unsaved ? .notSaved : .inserted, NSRange(location: point + offset, length: (text as NSString).length))
         }
 
         /// After a composition ends: restyle what was skipped, then merge text that came from outside meanwhile. Only an append and the
