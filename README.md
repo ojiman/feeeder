@@ -1,7 +1,7 @@
 # Unagi Reader
 
 [![CI](https://github.com/ojiman/unagi-reader/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ojiman/unagi-reader/actions/workflows/ci.yml?query=branch%3Amain)
-[![CodeQL](https://github.com/ojiman/unagi-reader/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/ojiman/unagi-reader/actions/workflows/github-code-scanning/codeql?query=branch%3Amain)
+[![CodeQL](https://github.com/ojiman/unagi-reader/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/ojiman/unagi-reader/actions/workflows/codeql.yml?query=branch%3Amain)
 
 A fast, keyboard-driven RSS reader for macOS that turns the few articles that matter into your own understanding.
 
@@ -74,7 +74,7 @@ Tests use only synthetic RSS/HTML and temporary databases. The project is develo
 
 ## Security
 
-CodeQL scans Swift, Python and GitHub Actions code for security issues. Dependabot checks for vulnerable dependencies and opens weekly update pull requests for Swift packages and GitHub Actions. Secret scanning and push protection help detect committed credentials and block pushes containing supported secrets.
+CodeQL scans Swift, Python and GitHub Actions code for security issues. A pull request is scanned for Python and GitHub Actions; Swift is scanned on `main` and every week, because its build takes about 20 minutes. Dependabot checks for vulnerable dependencies and opens weekly update pull requests for Swift packages and GitHub Actions. Secret scanning and push protection help detect committed credentials and block pushes containing supported secrets.
 
 The badges above link to the checks on `main`. A successful run means the check completed; it does not guarantee that the app has no vulnerabilities. Technical trust boundaries are documented in the [architecture](docs/architecture.md#2-input-from-the-network-is-untrusted).
 
