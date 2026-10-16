@@ -21,6 +21,8 @@ struct ArticleDetailView: View {
     /// The translated title and paragraphs to show in place of the original (specification 3.6). The status is in the article band.
     var translated: TranslatedArticle? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Settings ▸ 「外観」 ▸ 「文字サイズ」 (specification 3.7).
+    @AppStorage(ArticleTextSize.key) private var textSize = ArticleTextSize.standard
 
     private var available: Bool { content?.articleID == article.id && (expiry ?? .distantPast) > .now }
     private var date: String { article.publishedAt == .distantPast ? "公開日時不明" : article.publishedAt.formatted(.dateTime.year().month().day()) }
@@ -38,7 +40,8 @@ struct ArticleDetailView: View {
                 unavailable: available ? nil : (article.contentDeletedAt != nil ? "本文とRSS要約は削除済みです。" : "本文を利用できません。"),
                 initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion || !pageMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
                 imageLoader: imageLoader, heroURL: available ? article.imageURL.flatMap { ArticleURL.validated($0) } : nil,
-                bodyParagraphs: available ? (translated?.paragraphs ?? content!.bodyParagraphs) : nil, pageForward: pageForward)
+                bodyParagraphs: available ? (translated?.paragraphs ?? content!.bodyParagraphs) : nil, pageForward: pageForward,
+                textScale: CGFloat(ArticleTextSize.scale(textSize)))
         }.background(AppPalette.surfaceColor)
     }
 }

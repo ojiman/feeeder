@@ -39,7 +39,7 @@ Do this before you update a beta, or when the app cannot open the library and yo
 
 ### The screen
 
-The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Appearance (system, light or dark) is in Settings.
+The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Settings ▸ 「外観」 has the appearance (system, light or dark) and 「文字サイズ」, the article's text size in five steps from 14 to 22 pt; the title follows it, the list and the note keep theirs.
 
 ### Subscriptions and folders
 
