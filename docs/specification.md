@@ -265,6 +265,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
   - No text selected in the article: one line, `[Title](URL)`.
   - Text selected in the article: the selection with `> ` at the start of each line, then the line `> — [Title](URL)`.
   - A title with `[` or `]` gets a backslash before each. With no title the line is the URL; with no URL it is the title.
+  - A title on several lines becomes one line. A URL with a space or an unbalanced parenthesis is written inside `<` and `>`. Empty lines at either end of the selection are left out.
   - With a translation shown (3.6) it inserts the line `[Title](URL)` only, never the translated text.
 - Where it goes: after the note's selection or caret, where the person last left it; at the end of the note if the note was never used. A selection in the note is not replaced. A line break is added before the text when the point is not at the start of a line, and after it.
 - The note closed: the note opens with the same motion as `n` (3.1.3), then the text is inserted at the end of the note. The article, the list selection and the reading position do not change.
