@@ -9,6 +9,7 @@ struct AppearancePicker: View {
         ("system", "システム", "Macの外観設定に従います"),
         ("light", "ライト", "常に明るい外観にします"),
         ("dark", "ダーク", "常に暗い外観にします"),
+        ("sepia", "セピア", "紙のような色の、明るい外観にします"),
     ]
 
     var body: some View {
@@ -95,17 +96,20 @@ private struct ShortcutRow: View {
     }
 }
 
-/// A small picture of the reader in light or dark. The colours are fixed: a tile must look the same whatever the app uses now.
+/// A small picture of the reader in light, dark or Sepia. The colours are fixed: a tile must look the same whatever the app uses now.
 private struct AppearanceThumbnail: View {
     let tag: String
     private let light = (back: Color(white: 0.97), bar: Color(white: 0.80), line: Color(white: 0.88))
     private let dark = (back: Color(white: 0.12), bar: Color(white: 0.34), line: Color(white: 0.22))
+    private let sepia = (back: Color(nsColor: AppPalette.paper), bar: Color(red: 0.62, green: 0.55, blue: 0.45),
+                         line: Color(nsColor: AppPalette.sidebarPaper))
 
     var body: some View {
         ZStack {
             switch tag {
             case "light": page(light)
             case "dark": page(dark)
+            case "sepia": page(sepia)
             default:
                 ZStack {
                     page(light)

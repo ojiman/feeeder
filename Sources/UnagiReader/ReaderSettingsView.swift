@@ -24,7 +24,7 @@ struct ReaderSettingsView: View {
         }
         .tint(AppPalette.accentColor)
         .frame(width: 540)
-        .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
+        .preferredColorScheme(ReaderTheme(stored: appearance).colorScheme)
         .onAppear { days = store.retentionDays }
         .onChange(of: days) { _, value in
             guard value != store.retentionDays else { return }

@@ -222,6 +222,7 @@ struct NativeArticleText: NSViewRepresentable {
     @MainActor final class Coordinator {
         var signature: [String] = []
         var textScale: CGFloat = 1
+        var sepia = ThemeState.shared.sepia
         var bodyParagraphs: [BodyParagraph]?
         nonisolated(unsafe) var observer: NSObjectProtocol?
         var restoring = false
@@ -263,6 +264,11 @@ struct NativeArticleText: NSViewRepresentable {
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let text = scroll.documentView as? ArticleTextView else { return }
+        // The surface's colour depends on the theme (Sepia); reading it here redraws the article when it changes.
+        if context.coordinator.sepia != ThemeState.shared.sepia {
+            context.coordinator.sepia = ThemeState.shared.sepia
+            scroll.needsDisplay = true; text.needsDisplay = true
+        }
         let signature = [articleID.uuidString, title, publisher, date, unavailable ?? "", heroURL?.absoluteString ?? "", "\(textScale)"] + paragraphs
         // Only the size changed: the paragraph at the top stays at the top (specification 3.7).
         let kept = context.coordinator.signature.first == articleID.uuidString && context.coordinator.textScale != textScale

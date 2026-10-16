@@ -388,11 +388,11 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 | 「システム」 | Light or dark, as macOS is set. It never selects Sepia |
 | 「ライト」 | Always light |
 | 「ダーク」 | Always dark |
-| 「セピア」 `[not built #255]` | A light look on a warm paper colour |
+| 「セピア」 | A light look on a warm paper colour |
 
 - Each tile shows a small picture of the reader in that look instead of a description.
-- Sepia covers the whole window: the reading surfaces (list, article, note and their bands) take the paper colour, and the sidebar a slightly darker one. System controls are drawn light. `[not built #255]`
-- In Sepia, text, links, quotes, the selected row, the unread mark and read rows stay readable; body text has a contrast of at least 4.5:1. The palette values are in `AppPalette`. `[not built #255]`
+- Sepia covers the whole window: the reading surfaces (list, article, note and their bands) take the paper colour (#F4ECD8), and the sidebar a slightly darker one (#EADFC7). System controls and text are drawn light, with the light look's text colours, the selected row and the accent.
+- In Sepia, body text has a contrast of about 13:1 on the paper (at least 4.5:1), and the secondary text of read rows and source lines is within 10% of its contrast on white. The values are in `SepiaPalette` and `AppPalette`.
 - The app does not claim that a look rests the eyes.
 
 **Text size**

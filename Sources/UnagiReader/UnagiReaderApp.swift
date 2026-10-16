@@ -46,7 +46,8 @@ struct UnagiReaderApp: App {
                         .frame(width: 600, height: 400)
                 }
             }
-            .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
+            .preferredColorScheme(ReaderTheme(stored: appearance).colorScheme)
+            .onChange(of: appearance) { _, new in ThemeState.shared.sepia = ReaderTheme(stored: new) == .sepia }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { purgeContent(); Task { await refresh?.refresh() } }
             }
