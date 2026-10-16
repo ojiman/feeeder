@@ -88,21 +88,22 @@ jobs:
         run: |
           # Written to a file, not through a pipe to `tee`: a run lost the end lines of fast tests on the pipe (#186).
           status=0
-          { time swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --force-resolved-versions --disable-keychain --disable-netrc; } > "$CI_RESULTS/tests.log" 2>&1 || status=$?
+          { time swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --force-resolved-versions --disable-keychain --disable-netrc --skip 'ArticleFilterStoreTests/tenThousandArticlesAreNarrowedQuickly'; } > "$CI_RESULTS/tests.log" 2>&1 || status=$?
           cat "$CI_RESULTS/tests.log"
           exit "$status"
       # A test process can end early with exit code 0 and no summary line; `swift test` then looks like a pass.
       - name: Check that the test run finished
         run: bash scripts/check-test-log.sh "$CI_RESULTS/tests.log"
-      - name: Compare the filter timing without other tests (issue 230 diagnosis)
-        if: always()
+      - name: Measure the cached filter without competing tests
         run: |
+          # Every sample must pass the same 50 ms limit. These are independent runs, not retries.
           for sample in 1 2 3; do
             status=0
             swift test --scratch-path "$RUNNER_TEMP/unagi-reader-ci-build" --skip-build --disable-keychain --disable-netrc --filter 'ArticleFilterStoreTests/tenThousandArticlesAreNarrowedQuickly' > "$CI_RESULTS/filter-$sample.log" 2>&1 || status=$?
             cat "$CI_RESULTS/filter-$sample.log"
             test "$status" -eq 0
             bash scripts/check-test-log.sh "$CI_RESULTS/filter-$sample.log"
+            grep -q '^✔ Test tenThousandArticlesAreNarrowedQuickly() passed after ' "$CI_RESULTS/filter-$sample.log"
           done
       - name: Save logs and artifacts
         if: always()

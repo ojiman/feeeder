@@ -60,7 +60,7 @@ struct ArticleFilterTests {
         #expect(store.filteredIDs(all, matching: "old").isEmpty)
     }
 
-    /// Budget W1 (2.1): typing never waits. 10,000 articles are narrowed in well under a frame once the cache is filled.
+    /// A cached filter stays below 50 ms for 10,000 articles. CI measures it apart from the other tests.
     @Test func tenThousandArticlesAreNarrowedQuickly() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
         let configuration = ModelConfiguration("Reader", schema: ReaderStore.schema, url: library.url, cloudKitDatabase: .none)
