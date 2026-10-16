@@ -48,5 +48,6 @@ import Testing
         #expect(store.unreadCount == 9_999 && store.feedUnreadCounts[article.feedID] == 99)
         #expect(try store.content(articleID: article.id, at: now)?.text == text)
         #expect(try store.content(articleID: article.id, at: now)?.bodyParagraphs == formatted)
+        if destination != nil { try Data("BenchmarkFixtureTests\n".utf8).write(to: directory.appending(path: ".reading-benchmark")) }
     }
 }

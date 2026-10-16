@@ -20,13 +20,15 @@ struct UnagiReaderApp: App {
             } else {
                 directory = URL.applicationSupportDirectory.appending(path: AppIdentity.dataFolderName, directoryHint: .isDirectory)
             }
+            if ReadingBenchmark.requested { try ReadingBenchmark.validateFixture(at: directory, explicit: args.contains("--data-directory")) }
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let store = try ReaderStore(url: directory.appending(path: "Reader.store"), seedDemo: args.contains("--seed-demo"))
             // Once per library: remove the bodies an earlier version took from the original pages by itself (decision 0033). The marker is a
             // file in the library's folder; a failure leaves no marker, so it is tried again at the next start.
             _ = try? store.discardExtractedBodiesOnce(marker: directory.appending(path: ".extracted-bodies-discarded-v1"))
             _store = State(initialValue: store)
-            _refresh = State(initialValue: FeedRefreshController(store: store))
+            let client = ReadingBenchmark.requested ? FeedClient(http: ReadingBenchmark.SyntheticHTTP()) : FeedClient()
+            _refresh = State(initialValue: FeedRefreshController(store: store, client: client))
             // The copies of the note that the hand-off to Claude made are not deleted by anything now (decision 0049).
             do { try LegacyHandoffFolder.remove(in: directory) } catch { _lifecycleError = State(initialValue: error.localizedDescription) }
             let cache = args.contains("--data-directory") ? directory.appending(path: "Cache/Images") : URL.cachesDirectory.appending(path: "\(AppIdentity.dataFolderName)/Images")

@@ -22,13 +22,13 @@ What V1 is and is not, as the person sees it. Why the product exists is in the [
 
 ### 2.1 No waiting: budgets
 
-The vision promises that reading and typing never wait. These are the budgets a change must not break. They are targets: none is measured on the current build yet. `[not measured #164]`
+The vision promises that reading and typing never wait. These are the budgets a change must not break. The latest recorded measurements and their limits are in the [reading budget record](verification/reading-budgets.md); measuring a budget does not mean it passed.
 
 | ID | Budget | How it is measured |
 |---|---|---|
-| W1 | `j` / `k` to the start of the next article's display: 95th percentile ≤ 100 ms, maximum ≤ 200 ms | Release build, `--performance-output <file>` (`selectionMilliseconds`), the synthetic library of `BenchmarkFixtureTests` (100 subscriptions, 10,000 articles). An older build measured about 40 ms at the 95th percentile (PR #14) |
+| W1 | `j` / `k` to the start of the next article's display: 95th percentile ≤ 100 ms, maximum ≤ 200 ms | Release build, `--reading-benchmark --performance-output <file>` (`selectionMilliseconds`), the synthetic library of `BenchmarkFixtureTests` (100 subscriptions, 10,000 articles) |
 | W2 | No main-thread stall over 100 ms while reading with keys, while typing in the note, or while a refresh runs | The same run: `schedulingGapsOver100ms` is empty |
-| W3 | Launch to a list with articles: ≤ 1 s with the same library | Not instrumented yet |
+| W3 | Launch to a list with articles: ≤ 1 s with the same library | The same run: `launchMilliseconds`, from the kernel's process start time to the first visible list draw with rows |
 
 ## 3. Reading and the note
 

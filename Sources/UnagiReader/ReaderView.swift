@@ -123,7 +123,10 @@ struct ReaderView: View {
             // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
             .onExitCommand { if originalPage.url == nil { closeNote() } }
             .focusedSceneValue(\.readerActions, readerActions)
-            .task { if MotionBenchmark.requested { await MotionBenchmark.run(benchmarkActions) } }
+            .task {
+                if ReadingBenchmark.requested { await ReadingBenchmark.run(store: store, refresh: refresh) }
+                else if MotionBenchmark.requested { await MotionBenchmark.run(benchmarkActions) }
+            }
             .modifier(ArticleTranslationPresentation(controller: translation, articleID: selection, title: selectedArticle?.title,
                 content: displayedContent, keysEnabled: shortcutsEnabled, readerShown: originalPage.url == nil))
             .onKeyPress("/") { guard shortcutsEnabled else { return .ignored }; filterPresented = true; return .handled }

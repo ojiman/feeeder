@@ -111,6 +111,10 @@ struct NativeArticleList: NSViewRepresentable {
             allowsTypeSelect = false                                    // a letter that is not a shortcut must not jump to a row (#226)
         }
         required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+        override func draw(_ dirtyRect: NSRect) {
+            super.draw(dirtyRect)
+            ReaderPerformance.listDrawn(rows: numberOfRows, visible: window?.isVisible == true && !visibleRect.isEmpty)
+        }
         /// Every row again, after the theme changed the surface's colour.
         func redrawAll() {
             needsDisplay = true
