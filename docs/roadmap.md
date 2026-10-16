@@ -10,7 +10,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 
 1. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), the core and the button are done (decision 0054); then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu (the bands of decision 0057 are done).
 2. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
-3. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Do it last: translation changes it, and it is already in English, so the approved text is the final text.
+3. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app.
 4. **Other conditions:** the owner decides how the beta is signed and published ([findings](superpowers/plans/2026-10-14-beta-distribution.md), section 6); [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI (the owner put it in the milestone; it lets an agent check the screens).
 
 ## Next
@@ -38,6 +38,7 @@ The conditions in [specification 7.1](specification.md). A prune of the document
 
 ## Done
 
+- V1 specification approved by the owner on 2026-10-17 ([#144](https://github.com/ojiman/unagi-reader/issues/144)); see the [specification](specification.md).
 - V1 simplification (decision 0019), stages S1 to S5; parts later removed by decision 0049. Rename to Unagi Reader (0023).
 - One note, no AI of its own (decision 0049): [#115](https://github.com/ojiman/unagi-reader/pull/115), [#116](https://github.com/ojiman/unagi-reader/pull/116), [#118](https://github.com/ojiman/unagi-reader/pull/118), [#119](https://github.com/ojiman/unagi-reader/pull/119), [#122](https://github.com/ojiman/unagi-reader/pull/122).
 - Layout and motion (0044, 0046 to 0048), subscriptions (0036 to 0041, 0043, 0053), name and icon (0051).
