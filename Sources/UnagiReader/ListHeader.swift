@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The title of the article list: the name of the feed, folder or note, and how many articles it holds, at the top of the middle column,
-/// below the toolbar band (as in Reeder).
+/// below the toolbar band.
 ///
 /// It is drawn here instead of as the window's navigation title. The system lets that title run along the whole toolbar, so a long
 /// feed name left its column and ran over the article pane. Here the name stays inside the column and ends with an ellipsis when the

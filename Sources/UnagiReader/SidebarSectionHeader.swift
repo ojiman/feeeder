@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The header of a sidebar section with a small + at its right end that appears when the pointer is over the header (like the
-/// sidebars of Mail and Notes). The button is always in the accessibility tree, so VoiceOver and the keyboard can use it.
+/// The header of a sidebar section with a small + at its right end that appears when the pointer is over the header.
+/// The button is always in the accessibility tree, so VoiceOver and the keyboard can use it.
 struct SidebarSectionHeader: View {
     let title: String
     let help: String
