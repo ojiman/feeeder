@@ -15,10 +15,6 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 
 ## Next
 
-**The checks that let an agent verify its own work.** Today the owner is the only one who can check the screens, and the list of unverified items keeps growing. These touch no screen and can run beside the beta work:
-
-1. [#164](https://github.com/ojiman/unagi-reader/issues/164) measure the no-waiting budgets (specification 2.1).
-
 **Not scheduled.** Enhancement issues with no place in the order; whoever has room can take them. Sending an article to the note ([#238](https://github.com/ojiman/unagi-reader/issues/238), specification 3.3) is the one the owner wants first, ahead of the Settings refresh ([#235](https://github.com/ojiman/unagi-reader/issues/235)). OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)).
 
 ## Candidates
