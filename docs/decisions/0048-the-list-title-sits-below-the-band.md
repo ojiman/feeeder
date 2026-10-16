@@ -2,12 +2,12 @@
 
 - Status: valid; the ✕ it was level with moves into the band, see [0057](0057-each-column-has-its-own-band.md) (approved by the PdM when the PR that adds this record was merged)
 - Date: 2026-10-12
-- Decider: the owner (PdM) saw that the ✕ of the right column sits lower than the list title 「すべての記事」, asked to lower the title to the ✕'s height, and showed Reeder's middle column (the toolbar band with the actions, the title block below it). The owner also plans a keyword filter in the middle column, which will go into the band as an icon, as in Reeder. This change is the layout only. The details below are the Product Owner's.
+- Decider: the owner (PdM) saw that the ✕ of the right column sits lower than the list title 「すべての記事」, asked to lower the title to the ✕'s height, and showed a reference app's middle column (the toolbar band with the actions, the title block below it). The owner also plans a keyword filter in the middle column, which will go into the band as an icon, as in that reference. This change is the layout only. The details below are the Product Owner's.
 - Refines: [0047](0047-the-way-back-is-a-cross-in-the-right-column.md) point 4 (the title no longer needs to keep clear of the window buttons).
 
 ## Decision
 
-1. **The title block (the name, and 「N件の記事」 under it) moves out of the toolbar band to just below it.** The band keeps the window buttons (and, later, the actions of this column). The title is larger (17 pt, semibold), as in Reeder; the count stays 11 pt.
+1. **The title block (the name, and 「N件の記事」 under it) moves out of the toolbar band to just below it.** The band keeps the window buttons (and, later, the actions of this column). The title is larger (17 pt, semibold); the count stays 11 pt.
 2. **The first line of the title is level with the ✕ of the right column** (the ✕ of the original page and of the note screen). The distance of the ✕'s centre from the band (16 pt) was measured in the running app and is one constant (`ListHeader.crossCentre`); a test checks that the title's first line is within 4 pt of it and that nothing is drawn in the band.
 3. **The list leaves room for the block** (`headerInset`, added to the toolbar's own inset of the scroll view), and the block has the surface colour, so rows that scroll up do not show through it.
 4. **The way for the keyword filter:** the band of the middle column is free for its icon, and the block below the band does not move when it comes. The filter itself is a separate change.

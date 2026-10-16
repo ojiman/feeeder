@@ -6,7 +6,7 @@
 
 ## Decision
 
-The headers of the sidebar sections 「ノート」 and 「購読元」 show a small + at their right end while the pointer is over the header (like the sidebars of Mail and Notes). It creates a new note, or opens the form for a new source. The + at the top left of the sidebar and the row 「新しいノート」 stay. The + is always in the accessibility tree as a control, and the header also has it as an action named like the control (VoiceOver actions).
+The headers of the sidebar sections 「ノート」 and 「購読元」 show a small + at their right end while the pointer is over the header. It creates a new note, or opens the form for a new source. The + at the top left of the sidebar and the row 「新しいノート」 stay. The + is always in the accessibility tree as a control, and the header also has it as an action named like the control (VoiceOver actions).
 
 ## Not verified
 

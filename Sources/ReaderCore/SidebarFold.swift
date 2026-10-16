@@ -1,6 +1,6 @@
 import Foundation
 
-/// When the left panels fold away (decisions 0046 and 0049, after Reeder).
+/// When the left panels fold away (decisions 0046 and 0049).
 public enum SidebarFold {
     /// The fold, and the slide of the original page or of the note that goes with it, are one move of this many seconds.
     public static let motionDuration: Double = 0.3
