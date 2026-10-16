@@ -5,6 +5,9 @@ public struct HTTPResponse: Sendable {
     public let finalURL: URL
     public let statusCode: Int
     public let headers: [String: String]
+    public init(data: Data, finalURL: URL, statusCode: Int, headers: [String: String]) {
+        self.data = data; self.finalURL = finalURL; self.statusCode = statusCode; self.headers = headers
+    }
 }
 
 public enum HTTPError: LocalizedError {

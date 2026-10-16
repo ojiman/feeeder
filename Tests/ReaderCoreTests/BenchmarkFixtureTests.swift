@@ -20,7 +20,8 @@ import Testing
         let imageBase = ProcessInfo.processInfo.environment["UNAGI_READER_BENCHMARK_IMAGE_BASE"].flatMap(URL.init(string:))
         let originalBase = ProcessInfo.processInfo.environment["UNAGI_READER_BENCHMARK_ORIGINAL_BASE"].flatMap(URL.init(string:))
         let feeds = (0..<100).map { Feed(title: String(format: "合成購読 %03d", $0), symbol: "dot.radiowaves.left.and.right") }
-        for feed in feeds {
+        for (index, feed) in feeds.enumerated() {
+            if destination != nil { feed.sourceURL = "https://synthetic.example/feeds/\(index)" }
             feed.iconURL = imageBase?.appending(path: "favicon.png").absoluteString
             context.insert(feed)
         }
@@ -48,5 +49,6 @@ import Testing
         #expect(store.unreadCount == 9_999 && store.feedUnreadCounts[article.feedID] == 99)
         #expect(try store.content(articleID: article.id, at: now)?.text == text)
         #expect(try store.content(articleID: article.id, at: now)?.bodyParagraphs == formatted)
+        if destination != nil { try Data("BenchmarkFixtureTests\n".utf8).write(to: directory.appending(path: ".reading-benchmark")) }
     }
 }

@@ -1,6 +1,7 @@
 import AppKit
 import os
 import ReaderCore
+import Darwin
 
 // Opt-in local diagnostics for synthetic acceptance runs. No article IDs, text or URLs are logged.
 @MainActor enum ReaderPerformance {
@@ -9,6 +10,11 @@ import ReaderCore
     private static var samples: [Double] = []
     private static var gaps: [Double] = []
     private static var lastHeartbeat: Double?
+    private static var phase: String?
+    private static var phaseGaps: [String: [Double]] = [:]
+    private static var phaseHeartbeats: [String: Int] = [:]
+    private static var launch = Launch()
+    static var selectionCount: Int { samples.count }
     static var columnWidths: [String: [String: Double]] = [:]
     static var output: URL? {
         let args = ProcessInfo.processInfo.arguments
@@ -31,10 +37,43 @@ import ReaderCore
     }
     /// A motion starts (issue #212): `MotionMeter` records its frames when the output is on.
     static func motionBegan(_ name: String, duration: Double) { MotionMeter.shared.began(name, duration: duration) }
+    struct Launch {
+        private(set) var milliseconds: Double?
+        mutating func drawn(rows: Int, visible: Bool, processStart: Date?, at now: Date) {
+            guard milliseconds == nil, rows > 0, visible, let processStart, now >= processStart else { return }
+            milliseconds = now.timeIntervalSince(processStart) * 1000
+        }
+    }
+    static func processStart() -> Date? {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard proc_pidinfo(getpid(), PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
+        return Date(timeIntervalSince1970: Double(info.pbi_start_tvsec) + Double(info.pbi_start_tvusec) / 1_000_000)
+    }
+    static func listDrawn(rows: Int, visible: Bool) {
+        guard output != nil, launch.milliseconds == nil else { return }
+        launch.drawn(rows: rows, visible: visible, processStart: processStart(), at: .now)
+        write()
+    }
+    static func beginPhase(_ name: String?) {
+        heartbeat()                                                       // include any final synchronous work of the preceding phase
+        phase = name
+        lastHeartbeat = ProcessInfo.processInfo.systemUptime
+        if let name { phaseGaps[name] = []; phaseHeartbeats[name] = 0 }
+    }
+    static func schedulingGap(previous: Double?, now: Double) -> Double? {
+        guard let previous, now - previous > 0.12 else { return nil }
+        return (now - previous - 0.02) * 1000
+    }
     static func heartbeat() {
         let now = ProcessInfo.processInfo.systemUptime
-        if let prior = lastHeartbeat, now - prior > 0.12 { gaps.append((now - prior - 0.02) * 1000) }
-        lastHeartbeat = now
+        defer { lastHeartbeat = now }
+        if ReadingBenchmark.requested && phase == nil { return }
+        if let phase { phaseHeartbeats[phase, default: 0] += 1 }
+        if let gap = schedulingGap(previous: lastHeartbeat, now: now) {
+            gaps.append(gap)
+            if let phase { phaseGaps[phase, default: []].append(gap) }
+        }
     }
     static func write() {
         guard let output else { return }
@@ -42,6 +81,12 @@ import ReaderCore
             "os": ProcessInfo.processInfo.operatingSystemVersionString,
             "displayRefreshRate": CGDisplayCopyDisplayMode(CGMainDisplayID())?.refreshRate ?? 0]
         if !columnWidths.isEmpty { values["columnWidthsPoints"] = columnWidths }
+        if let milliseconds = launch.milliseconds { values["launchMilliseconds"] = milliseconds }
+        if !phaseGaps.isEmpty { values["phaseGapsOver100ms"] = phaseGaps; values["phaseHeartbeatCounts"] = phaseHeartbeats }
+        if ReadingBenchmark.requested {
+            values["readingBenchmarkComplete"] = ReadingBenchmark.completed
+            if let failure = ReadingBenchmark.failure { values["readingBenchmarkError"] = failure }
+        }
         do {
             try FileManager.default.createDirectory(at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONSerialization.data(withJSONObject: values, options: .sortedKeys).write(to: output, options: .atomic)
