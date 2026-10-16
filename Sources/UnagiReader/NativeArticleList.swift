@@ -63,6 +63,11 @@ struct NativeArticleList: NSViewRepresentable {
         return scroll
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
+        // The surface's colour depends on the theme (Sepia); reading it here redraws the list when it changes.
+        if context.coordinator.sepia != ThemeState.shared.sepia {
+            context.coordinator.sepia = ThemeState.shared.sepia
+            scroll.needsDisplay = true; context.coordinator.table?.redrawAll()
+        }
         if scroll.additionalSafeAreaInsets.top != headerInset { scroll.additionalSafeAreaInsets = NSEdgeInsets(top: headerInset, left: 0, bottom: 0, right: 0) }
         context.coordinator.update(self)
     }
@@ -106,6 +111,11 @@ struct NativeArticleList: NSViewRepresentable {
             allowsTypeSelect = false                                    // a letter that is not a shortcut must not jump to a row (#226)
         }
         required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+        /// Every row again, after the theme changed the surface's colour.
+        func redrawAll() {
+            needsDisplay = true
+            enumerateAvailableRowViews { row, _ in row.needsDisplay = true; row.subviews.forEach { $0.needsDisplay = true } }
+        }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if focusWhenAttached { window?.makeFirstResponder(self) }
@@ -120,6 +130,7 @@ struct NativeArticleList: NSViewRepresentable {
 
     @MainActor final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         var parent: NativeArticleList
+        var sepia = ThemeState.shared.sepia
         weak var table: Table?
         weak var scroll: NSScrollView?
         var observer: NSObjectProtocol?
