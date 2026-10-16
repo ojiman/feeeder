@@ -23,17 +23,20 @@ Instructions for coding agents (Claude Code, Codex) and the person who reviews t
 ## Commands
 
 ```sh
-swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build          # local tests
+test_log=$(mktemp /private/tmp/unagi-reader-tests.XXXXXX)
+swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build > "$test_log" 2>&1 &&
+    bash scripts/check-test-log.sh "$test_log"                            # local tests; read "$test_log" for the output
 swift test --scratch-path /private/tmp/unagi-reader-ci-build --force-resolved-versions --disable-keychain --disable-netrc   # as CI runs them
 bash scripts/build-app.sh release                                        # ad hoc signed .build/Unagi Reader.app (debug is the default)
 bash scripts/fetch-ci-app.sh <PR number>                                  # a PR's CI-built app, without the quarantine attribute (needs gh)
-open -n '.build/Unagi Reader.app' --args --data-directory /private/tmp/unagi-reader-demo --seed-demo   # a synthetic run in a NEW instance
+bash scripts/make-synthetic-copy.sh                                      # copies the built app with a synthetic bundle ID; prints the launch command
+bash scripts/test-make-synthetic-copy.sh                                 # copy, path refusal and failure checks (no app is launched)
 git diff --check
 python3 scripts/check_docs.py                                          # links, decision numbers and statuses, PRD tags (--online: closed issues in marks and the roadmap)
 bash scripts/test-check-docs.sh
 ```
 
-- **The synthetic run needs `open -n`.** Without it, `open` can reuse a running Unagi Reader and drop `--args`, and you would be working on the person's library. Before touching anything, check that the process has the temporary `--data-directory` (`pgrep -fl UnagiReader`) and that the window shows the synthetic subscriptions.
+- **For a synthetic run, use the command printed by `make-synthetic-copy.sh`.** It takes the built app (or an app path as its first argument), makes a temporary copy with its own bundle ID and a new data directory, and does not launch it. An optional second argument names a new data directory; the real library and its symlink aliases are refused. The printed command needs `open -n`: without it, `open` can reuse a running Unagi Reader and drop `--args`. Before touching anything, check that the process has the temporary `--data-directory` (`pgrep -fl UnagiReader`) and that the window shows the synthetic subscriptions.
 - **Opt-in store checks** (not in CI during the beta): `bash scripts/prepare-v1-store-fixture.sh <new dir>`, then `UNAGI_READER_V1_FIXTURE_DIR=<dir> swift test …`. The other fixtures are in architecture 3.
 - **CI** (macOS 26 / Xcode 26.6 / Swift 6.3.3) has three jobs. `regression` runs the tests for any change to code. `release` (optimized build, ad hoc signature, packaged app) runs on a PR only when it changes `Package.swift`, `Package.resolved`, `ThirdPartyNotices.md`, `scripts/build-app.sh`, `Assets/*` or `.github/workflows/*`, and always on `main` and manual runs. `check` is the one required status: it runs the documents check, skips the macOS jobs for a PR of only `docs/**` or Markdown, and otherwise passes only when every due job passed (`scripts/ci-gate.sh`). A PR run usually has no packaged app; run the workflow by hand or build locally.
 - **The local Mac** (macOS 27 / Swift 6.4) is the only place the support floor macOS 27.0 is exercised ([decision 0007](docs/decisions/0007-support-floor-macos-27.md)). Do not use APIs that need the macOS 27 SDK.
@@ -95,6 +98,6 @@ The chat with the owner is in Japanese; everything else is in English (the owner
 - The CI compiler (Swift 6.3.3) crashed on an actor-isolated method reference passed as a `Binding` setter; use an explicit closure (PR #14).
 - The CI compiler gave up type-checking when `ReaderView`'s modifier chain grew (PR #96; local Swift 6.4 was fine). Add window-level modifiers outside the chain (a `ViewModifier` in the wrapper `body`, as `OPMLImportPresentation`).
 - A view that comes and goes with a column fold and carries `.ignoresSafeArea` itself made the layout loop until AppKit raised an exception, in narrow windows (#222, the filter bar). Put the modifier on a container that stays. A hosted test cannot show it; run the packaged app at about 1,170 pt, open the note and press the layout button.
-- A hosted UI test must not call `NSButton.performClick`: its nested event loop can stop the run loop, and the test process ends with exit code 0 and no summary line. Drive the app with the key handlers (`NativeArticleList.Table.keyHandler`). `scripts/check-test-log.sh` fails CI when the summary is missing. Run a changed UI suite several times.
+- A hosted UI test must not call `NSButton.performClick`: its nested event loop can stop the run loop, and the test process ends with exit code 0 and no summary line. Drive the app with the key handlers (`NativeArticleList.Table.keyHandler`). Use the checked local command above too: exit code 0 alone is not a pass. Write output directly to the log, not through `tee` (#186). Run a changed UI suite several times. Evidence and limits: [UI test completion](docs/verification/ui-test-completion.md).
 - Hosted tests that fold split view columns run one after another, under `SplitViewFoldTests` (`Tests/ReaderUITests/ReaderLayoutTests.swift`).
 - Three problems showed only in CI (PR #10 SwiftData rollback, PR #12 the packaged app's signature, PR #14 the compiler). Local success is necessary, not sufficient.
