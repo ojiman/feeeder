@@ -1,4 +1,5 @@
 import SwiftUI
+import ReaderCore
 
 /// Three tiles that show what each appearance looks like, instead of describing it in words.
 struct AppearancePicker: View {
@@ -8,6 +9,7 @@ struct AppearancePicker: View {
         ("system", "システム", "Macの外観設定に従います"),
         ("light", "ライト", "常に明るい外観にします"),
         ("dark", "ダーク", "常に暗い外観にします"),
+        ("sepia", "セピア", "紙のような色の、明るい外観にします"),
     ]
 
     var body: some View {
@@ -34,17 +36,80 @@ struct AppearancePicker: View {
     }
 }
 
-/// A small picture of the reader in light or dark. The colours are fixed: a tile must look the same whatever the app uses now.
+/// 「文字サイズ」: the article's text size in five steps (specification 3.7). The size is shown in points beside the slider.
+struct ArticleTextSizeSlider: View {
+    @Binding var size: Double
+
+    var body: some View {
+        let step = Binding(get: { ArticleTextSize.step(size) }, set: { size = ArticleTextSize.step($0) })
+        LabeledContent("文字サイズ") {
+            HStack(spacing: 10) {
+                Slider(value: step, in: ArticleTextSize.steps.first!...ArticleTextSize.steps.last!, step: 2) {
+                    Text("文字サイズ")
+                } minimumValueLabel: {
+                    Text("あ").font(.system(size: 11))
+                } maximumValueLabel: {
+                    Text("あ").font(.system(size: 17))
+                }
+                .labelsHidden()
+                Text("\(Int(step.wrappedValue)) pt").monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .trailing)
+            }
+        }
+        .help("記事の本文の大きさです。見出しも同じ割合で変わります。一覧とノートは変わりません。")
+    }
+}
+
+/// 「ショートカット」: the reader's keys, to read (specification 3.7). The rows come from `ReaderShortcuts`, which the key handlers use too.
+struct ShortcutList: View {
+    var body: some View {
+        Form {
+            ForEach(ReaderShortcuts.Group.allCases, id: \.self) { group in
+                Section(group.rawValue) {
+                    ForEach(ReaderShortcuts.rows(in: group)) { row in ShortcutRow(row: row) }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(height: 460)
+    }
+}
+
+private struct ShortcutRow: View {
+    let row: ReaderShortcuts.Row
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            HStack(spacing: 4) {
+                ForEach(row.keys, id: \.self) { key in
+                    Text(key).font(.system(.callout, design: .monospaced).weight(.medium))
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 5))
+                }
+            }
+            .frame(width: 150, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.action)
+                if let limit = row.limit { Text(limit).font(.caption).foregroundStyle(.secondary) }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A small picture of the reader in light, dark or Sepia. The colours are fixed: a tile must look the same whatever the app uses now.
 private struct AppearanceThumbnail: View {
     let tag: String
     private let light = (back: Color(white: 0.97), bar: Color(white: 0.80), line: Color(white: 0.88))
     private let dark = (back: Color(white: 0.12), bar: Color(white: 0.34), line: Color(white: 0.22))
+    private let sepia = (back: Color(nsColor: AppPalette.paper), bar: Color(red: 0.62, green: 0.55, blue: 0.45),
+                         line: Color(nsColor: AppPalette.sidebarPaper))
 
     var body: some View {
         ZStack {
             switch tag {
             case "light": page(light)
             case "dark": page(dark)
+            case "sepia": page(sepia)
             default:
                 ZStack {
                     page(light)

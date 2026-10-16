@@ -376,7 +376,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 | Pane | Holds | Code |
 |---|---|---|
 | 「外観」 (Appearance) | the theme and the article's text size | `ReaderSettingsView`, `AppearancePicker` |
-| 「ショートカット」 (Shortcuts) `[not built #254]` | the keys, to read | |
+| 「ショートカット」 (Shortcuts) | the keys, to read | `ShortcutList`, `ReaderShortcuts` |
 | 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
 
 - The window opens on the pane that was shown last. Every choice is kept across launches and applies at once.
@@ -388,14 +388,14 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 | 「システム」 | Light or dark, as macOS is set. It never selects Sepia |
 | 「ライト」 | Always light |
 | 「ダーク」 | Always dark |
-| 「セピア」 `[not built #255]` | A light look on a warm paper colour |
+| 「セピア」 | A light look on a warm paper colour |
 
 - Each tile shows a small picture of the reader in that look instead of a description.
-- Sepia covers the whole window: the reading surfaces (list, article, note and their bands) take the paper colour, and the sidebar a slightly darker one. System controls are drawn light. `[not built #255]`
-- In Sepia, text, links, quotes, the selected row, the unread mark and read rows stay readable; body text has a contrast of at least 4.5:1. The palette values are in `AppPalette`. `[not built #255]`
+- Sepia covers the whole window: the reading surfaces (list, article, note and their bands) take the paper colour (#F4ECD8), and the sidebar a slightly darker one (#EADFC7). System controls and text are drawn light, with the light look's text colours, the selected row and the accent.
+- In Sepia, body text has a contrast of about 13:1 on the paper (at least 4.5:1), and the secondary text of read rows and source lines is within 10% of its contrast on white. The values are in `SepiaPalette` and `AppPalette`.
 - The app does not claim that a look rests the eyes.
 
-**Text size** `[not built #253]`
+**Text size**
 
 - 「文字サイズ」 in 「外観」 is a slider with five steps: 14, 16 (standard), 18, 20 and 22 pt.
 - It sets the article's body. The title (26 pt at standard) and the source and date lines scale by the same ratio, so the text keeps its shape.
@@ -403,7 +403,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 - A change shows at once in the open article; the paragraph at the top of the article stays at the top.
 - Not now: `⌘+` / `⌘−` / `⌘0`, a size for the note or the list.
 
-**Shortcuts** `[not built #254]`
+**Shortcuts**
 
 - 「ショートカット」 lists the keys of 3.1.5 and the note's keys, to read, grouped as 「読む」 (reading), 「一覧」 (the list), 「元ページ」 (the original page) and 「ノート」 (the note). Each row shows the key, what it does, and where it does not work (for example 「文字の入力中は効きません」, not while typing).
 - Help ▸ 「ショートカット一覧」 opens Settings on this pane.

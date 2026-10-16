@@ -260,6 +260,7 @@ struct ReaderView: View {
             }
         }
         .listStyle(.sidebar)
+        .modifier(SidebarPaper())
         .navigationTitle("Unagi Reader")
         .toolbar(removing: .sidebarToggle)
         .background(SidebarTitlebarControls(refreshing: refresh.refreshing,

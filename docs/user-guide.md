@@ -39,7 +39,7 @@ Do this before you update a beta, or when the app cannot open the library and yo
 
 ### The screen
 
-The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Appearance (system, light or dark) is in Settings.
+The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Settings ▸ 「外観」 has the appearance (system, light, dark or sepia, a light look on a warm paper colour) and 「文字サイズ」, the article's text size in five steps from 14 to 22 pt; the title follows it, the list and the note keep theirs.
 
 ### Subscriptions and folders
 
@@ -55,6 +55,8 @@ The window has four areas: the sidebar, the list, the article and the note. Norm
 The app refreshes at launch, when you come back to it, and every 30 minutes; the refresh button at the top of the sidebar refreshes by hand, and its arrow turns while it works. New articles slide in at the top of the list; if you have scrolled down, the list stays where you are. If a download fails, the saved articles can still be read.
 
 ### Reading and keys
+
+The app also lists these keys in Settings ▸ 「ショートカット」 (Help ▸ 「ショートカット一覧」 opens it).
 
 | Key | Action |
 |---|---|

@@ -15,14 +15,13 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 
 ## Next
 
-**Not scheduled.** The Settings refresh ([#235](https://github.com/ojiman/unagi-reader/issues/235), specification 3.7), in this order: [#253](https://github.com/ojiman/unagi-reader/issues/253) the article's text size, [#254](https://github.com/ojiman/unagi-reader/issues/254) the shortcut list, [#255](https://github.com/ojiman/unagi-reader/issues/255) Sepia. OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
+**Not scheduled.** OPML export ([#130](https://github.com/ojiman/unagi-reader/issues/130)) is an enhancement issue with no place in the order; whoever has room can take it.
 
 ## Candidates
 
 Ideas: no order, no issue. When the owner decides to build one, it moves to Next with an issue; when it is dropped, to Not planned.
 
 - The same size scale for the note editor (needs a real Japanese input check).
-- A summary inserted into the note, redone to Apple's Human Interface Guidelines (needs a new decision; 0049 removed the old one).
 - A draft helper from an AI outside the Mac, with the person's own key (needs a new decision).
 - A language setting and a time zone setting (a language setting is needed before a public release).
 - More styling in the note editor: tables, check lists, a preview.

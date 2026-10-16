@@ -42,13 +42,14 @@ import ReaderCore
         if heroView !== view { heroView?.removeFromSuperview(); heroView = view; if let view { addSubview(view) } }
         positionHero()
     }
-    func install(title: String, publisher: String, date: String, paragraphs: [String], unavailable: String?, hero: Bool = false, bodyParagraphs: [BodyParagraph]? = nil) {
+    /// `scale` is the article's text size against the standard one (specification 3.7): every size and spacing of the text follows it.
+    func install(title: String, publisher: String, date: String, paragraphs: [String], unavailable: String?, hero: Bool = false, bodyParagraphs: [BodyParagraph]? = nil, scale: CGFloat = 1) {
         if !paragraphs.isEmpty { onDisplayBegin?() }
         installing = true; defer { installing = false }
         let document = NSMutableAttributedString()
         func append(_ text: String, size: CGFloat, weight: NSFont.Weight = .regular, secondary: Bool = false, spacing: CGFloat = 22) {
-            let style = NSMutableParagraphStyle(); style.lineSpacing = size == 16 ? 8 : 5; style.paragraphSpacing = spacing
-            document.append(NSAttributedString(string: text + "\n", attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: secondary ? NSColor.secondaryLabelColor : NSColor.labelColor, .paragraphStyle: style]))
+            let style = NSMutableParagraphStyle(); style.lineSpacing = (size == 16 ? 8 : 5) * scale; style.paragraphSpacing = spacing * scale
+            document.append(NSAttributedString(string: text + "\n", attributes: [.font: NSFont.systemFont(ofSize: size * scale, weight: weight), .foregroundColor: secondary ? NSColor.secondaryLabelColor : NSColor.labelColor, .paragraphStyle: style]))
         }
         append(publisher, size: 11, weight: .medium, secondary: true)
         append(title, size: 26, weight: .semibold)
@@ -69,7 +70,7 @@ import ReaderCore
             let block = blocks[index]
             if block.quoteDepth > 0 {
                 let indent = CGFloat(min(block.quoteDepth, 3)) * 20
-                let style = NSMutableParagraphStyle(); style.lineSpacing = 8; style.paragraphSpacing = 22
+                let style = NSMutableParagraphStyle(); style.lineSpacing = 8 * scale; style.paragraphSpacing = 22 * scale
                 style.headIndent = indent; style.firstLineHeadIndent = indent
                 document.addAttributes([.paragraphStyle: style, .foregroundColor: NSColor.secondaryLabelColor], range: range)
                 quoteRanges.append((range, indent))
@@ -215,9 +216,13 @@ struct NativeArticleText: NSViewRepresentable {
     var heroURL: URL? = nil
     var bodyParagraphs: [BodyParagraph]? = nil
     var pageForward = true
+    /// The article's text size against the standard one (specification 3.7).
+    var textScale: CGFloat = 1
 
     @MainActor final class Coordinator {
         var signature: [String] = []
+        var textScale: CGFloat = 1
+        var sepia = ThemeState.shared.sepia
         var bodyParagraphs: [BodyParagraph]?
         nonisolated(unsafe) var observer: NSObjectProtocol?
         var restoring = false
@@ -259,7 +264,16 @@ struct NativeArticleText: NSViewRepresentable {
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let text = scroll.documentView as? ArticleTextView else { return }
-        let signature = [articleID.uuidString, title, publisher, date, unavailable ?? "", heroURL?.absoluteString ?? ""] + paragraphs
+        // The surface's colour depends on the theme (Sepia); reading it here redraws the article when it changes.
+        if context.coordinator.sepia != ThemeState.shared.sepia {
+            context.coordinator.sepia = ThemeState.shared.sepia
+            scroll.needsDisplay = true; text.needsDisplay = true
+        }
+        let signature = [articleID.uuidString, title, publisher, date, unavailable ?? "", heroURL?.absoluteString ?? "", "\(textScale)"] + paragraphs
+        // Only the size changed: the paragraph at the top stays at the top (specification 3.7).
+        let kept = context.coordinator.signature.first == articleID.uuidString && context.coordinator.textScale != textScale
+            ? text.readingPosition() : nil
+        let ratio = Double(textScale / context.coordinator.textScale)
         let changed = signature != context.coordinator.signature || bodyParagraphs != context.coordinator.bodyParagraphs
         if changed { text.recordScroll() }
         text.onScroll = onScroll; text.onInteraction = onInteraction; text.onDisplayBegin = onDisplayBegin; text.onDisplayed = onDisplayed
@@ -281,8 +295,10 @@ struct NativeArticleText: NSViewRepresentable {
         context.coordinator.restoring = true
         context.coordinator.signature = signature
         context.coordinator.bodyParagraphs = bodyParagraphs
-        text.install(title: title, publisher: publisher, date: date, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs)
-        text.restore(anchor: initialAnchor, offset: initialOffset)
+        context.coordinator.textScale = textScale
+        text.install(title: title, publisher: publisher, date: date, paragraphs: paragraphs, unavailable: unavailable, hero: heroURL != nil, bodyParagraphs: bodyParagraphs, scale: textScale)
+        if let kept { text.restore(anchor: kept.anchor, offset: kept.offset * ratio); text.recordScroll() }
+        else { text.restore(anchor: initialAnchor, offset: initialOffset) }
         context.coordinator.restoring = false
         context.coordinator.animatePage(in: scroll, articleID: articleID, forward: pageForward, reduceMotion: reduceMotion)
     }
