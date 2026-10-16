@@ -43,3 +43,17 @@ struct ReaderMenuCommands: Commands {
         }
     }
 }
+
+/// Help ▸ 「ショートカット一覧」: opens Settings on the shortcut list (specification 3.7).
+struct ShortcutHelpCommands: Commands {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some Commands {
+        CommandGroup(after: .help) {
+            Button("ショートカット一覧") {
+                UserDefaults.standard.set(ReaderSettingsView.Pane.shortcuts.rawValue, forKey: ReaderSettingsView.paneKey)
+                openSettings()
+            }
+        }
+    }
+}

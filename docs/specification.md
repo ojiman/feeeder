@@ -376,7 +376,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 | Pane | Holds | Code |
 |---|---|---|
 | 「外観」 (Appearance) | the theme and the article's text size | `ReaderSettingsView`, `AppearancePicker` |
-| 「ショートカット」 (Shortcuts) `[not built #254]` | the keys, to read | |
+| 「ショートカット」 (Shortcuts) | the keys, to read | `ShortcutList`, `ReaderShortcuts` |
 | 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
 
 - The window opens on the pane that was shown last. Every choice is kept across launches and applies at once.
@@ -403,7 +403,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 - A change shows at once in the open article; the paragraph at the top of the article stays at the top.
 - Not now: `⌘+` / `⌘−` / `⌘0`, a size for the note or the list.
 
-**Shortcuts** `[not built #254]`
+**Shortcuts**
 
 - 「ショートカット」 lists the keys of 3.1.5 and the note's keys, to read, grouped as 「読む」 (reading), 「一覧」 (the list), 「元ページ」 (the original page) and 「ノート」 (the note). Each row shows the key, what it does, and where it does not work (for example 「文字の入力中は効きません」, not while typing).
 - Help ▸ 「ショートカット一覧」 opens Settings on this pane.
