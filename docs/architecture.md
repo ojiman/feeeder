@@ -103,7 +103,8 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 
 ## 5. Build and CI
 
-The toolchains, the CI jobs and when each one runs are in [AGENTS.md](../AGENTS.md#commands). Two facts shape the code:
+The toolchains, the CI jobs and when each one runs are in [AGENTS.md](../AGENTS.md#commands). The build and test contracts:
 
 - CI builds on macOS 26.6 (the build floor); the support floor macOS 27.0 is checked only on the local Mac ([decision 0007](decisions/0007-support-floor-macos-27.md)). Do not use APIs that need the macOS 27 SDK.
+- Real-app UI smoke tests use a separate XCUITest target in `UITests/UISmoke.xcodeproj`, driven by `scripts/run-ui-smoke.sh`. They run after the in-process tests in `regression`; a failed, partial or skipped suite fails that job. The app itself stays a Swift package.
 - `release` makes an ad hoc signed app and checks the signature after a ZIP round trip. There is no Developer ID signing, notarization or automatic release.

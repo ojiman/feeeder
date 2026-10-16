@@ -11,7 +11,7 @@ Everything that must be done before the beta is an issue in the milestone [Beta]
 1. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), the core and the button are done (decision 0054); then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the language menu (the bands of decision 0057 are done).
 2. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
 3. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app; [#144](https://github.com/ojiman/unagi-reader/issues/144) the owner approves the specification. Do it last: translation changes it, and it is already in English, so the approved text is the final text.
-4. **Other conditions:** the owner decides how the beta is signed and published ([findings](superpowers/plans/2026-10-14-beta-distribution.md), section 6); [#158](https://github.com/ojiman/unagi-reader/issues/158) UI smoke tests in CI (the owner put it in the milestone; it lets an agent check the screens).
+4. **Other conditions:** the owner decides how the beta is signed and published ([findings](superpowers/plans/2026-10-14-beta-distribution.md), section 6).
 
 ## Next
 

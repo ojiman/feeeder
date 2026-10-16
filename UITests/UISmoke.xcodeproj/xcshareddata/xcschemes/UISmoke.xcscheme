@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme LastUpgradeVersion="2660" version="1.3">
+  <BuildAction parallelizeBuildables="NO" buildImplicitDependencies="YES">
+    <BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="NO" buildForProfiling="NO" buildForArchiving="NO" buildForAnalyzing="YES">
+      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000005" BuildableName="UISmoke.xctest" BlueprintName="UISmoke" ReferencedContainer="container:UISmoke.xcodeproj"/>
+    </BuildActionEntry></BuildActionEntries>
+  </BuildAction>
+  <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.PosixSpawn" shouldUseLaunchSchemeArgsEnv="NO">
+    <MacroExpansion><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000005" BuildableName="UISmoke.xctest" BlueprintName="UISmoke" ReferencedContainer="container:UISmoke.xcodeproj"/></MacroExpansion>
+    <Testables><TestableReference skipped="NO" parallelizable="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000005" BuildableName="UISmoke.xctest" BlueprintName="UISmoke" ReferencedContainer="container:UISmoke.xcodeproj"/></TestableReference></Testables>
+    <EnvironmentVariables><EnvironmentVariable key="UNAGI_UI_SMOKE_APP" value="$(UNAGI_UI_SMOKE_APP)" isEnabled="YES"/><EnvironmentVariable key="UNAGI_UI_SMOKE_FEED" value="$(UNAGI_UI_SMOKE_FEED)" isEnabled="YES"/></EnvironmentVariables>
+  </TestAction>
+</Scheme>
