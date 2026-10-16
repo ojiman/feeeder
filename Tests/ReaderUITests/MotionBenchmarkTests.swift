@@ -14,7 +14,10 @@ import Testing
         let article = inspector.splitViewItems[0].viewController.view
         let note = inspector.splitViewItems[1].viewController.view
         sidebar.setFrameSize(NSSize(width: 211, height: 600))
-        list.setFrameSize(NSSize(width: 383, height: 600))
+        // SwiftUI's outer list view can reach under the sidebar; its inner probe fills only the list.
+        list.setFrameSize(NSSize(width: 594, height: 600))
+        let listContent = ListColumnCollapse.Probe(frame: NSRect(x: 211, y: 0, width: 383, height: 600))
+        list.addSubview(listContent)
         article.setFrameSize(NSSize(width: 569, height: 600))
         note.setFrameSize(NSSize(width: 250, height: 600))
 

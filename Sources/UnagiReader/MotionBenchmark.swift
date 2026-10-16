@@ -56,11 +56,17 @@ import AppKit
                controller.splitViewItems.count == count { return controller }
             return view.subviews.lazy.compactMap { split(in: $0, count: count) }.first
         }
+        func listContent(in view: NSView) -> ListColumnCollapse.Probe? {
+            if let probe = view as? ListColumnCollapse.Probe { return probe }
+            return view.subviews.lazy.compactMap { listContent(in: $0) }.first
+        }
         func width(_ item: NSSplitViewItem) -> Double { item.isCollapsed ? 0 : item.viewController.view.bounds.width }
         guard let reader = split(in: view, count: 3) else { return nil }
         let panes = reader.splitViewItems
+        guard let list = listContent(in: panes[1].viewController.view) else { return nil }
         let inspector = split(in: panes[2].viewController.view, count: 2)?.splitViewItems
-        return ["sidebar": width(panes[0]), "list": width(panes[1]),
+        // The outer list view can reach under the sidebar; the existing probe fills just the list.
+        return ["sidebar": width(panes[0]), "list": panes[1].isCollapsed ? 0 : list.bounds.width,
                 "article": inspector.map { width($0[0]) } ?? width(panes[2]),
                 "note": inspector.map { width($0[1]) } ?? 0]
     }
