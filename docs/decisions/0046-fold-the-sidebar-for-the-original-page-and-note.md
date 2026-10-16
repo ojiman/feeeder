@@ -2,12 +2,18 @@
 
 - Status: valid for the original page. Point 4 (the way back) is replaced by [0047](0047-the-way-back-is-a-cross-in-the-right-column.md); the note-screen parts by [0049](0049-one-note-and-no-ai-of-its-own.md) and [0050](0050-the-note-screen-closes-like-the-original-page.md).
 - Date: 2026-10-12
-- Decider: the owner (PdM) asked to fold the left panel when the original page opens and when a note is shown, overriding the specification's existing layout rule. The owner answered the open points in chat; the details below are the Product Owner's.
+- Decider: the owner (PdM) asked to use the left-panel fold shown in the supplied screen recording, even though it differed from the specification's existing layout rule. The owner answered the open points in chat; the details below are the Product Owner's.
 - Refines: [0044](0044-original-page-slides-out.md) (the page's motion: 0.22 s becomes 0.3 s), and the note screen's fold rule in specification 3.3 (the 1,300 pt rule).
 
 ## Background
 
-The owner wanted more room for the original page and the note, while keeping a clear way back to choosing subscriptions.
+The owner shared a screen recording (about 18 seconds) and asked for the same fold of the left panel in two places: on the note screen, and on the RSS screen when `v` opens the original page. The following observations describe that recording, not a verified run of Unagi Reader. In the recording, pressing `v`:
+
+- The sidebar slides out to the left and the list follows it to the window's left edge. The list keeps its width. The whole move takes about 0.35 s (frames at 20 per second).
+- The article column is covered and the original page comes in from the right. The page uses the width of the article column and the sidebar together.
+- A "<" (back) appears at the top left, next to the window buttons.
+- Closing is the reverse: the page slides out to the right and the sidebar slides back in.
+- The sidebar folds in a wide window too: it does not depend on the window's width.
 
 Until now the specification said the opposite for the page: "the page opens inside the right column and keeps the width of the left and middle columns". The owner's reason for the change: after reading the page the person goes back to hopping between articles, and then it must be easy to pick another subscription.
 
@@ -26,9 +32,9 @@ No code. The implementation follows in small pull requests: the fold mechanism a
 
 ## Not verified
 
-The motion of the app at its real speed is not verified. Not known yet: the feel of repeated `j` with a page open (the sidebar goes in and out each time), Reduce Motion, VoiceOver, and the macOS 27.0 support floor.
+The motion of the app at its real speed is not verified; the supplied recording was read frame by frame only. Not known yet: the feel of repeated `j` with a page open (the sidebar goes in and out each time), Reduce Motion, VoiceOver, and the macOS 27.0 support floor.
 
 ## Sources
 
-- The owner's messages in chat on 2026-10-12.
+- The owner's recording and messages in chat on 2026-10-12.
 - Specification 3.1 and 3.3; decision 0044.

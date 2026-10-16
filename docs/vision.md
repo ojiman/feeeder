@@ -8,7 +8,7 @@ Find the few articles that matter in a flood of articles, and turn them into you
 
 ## Who it is for
 
-Engineers in 2026 who read many feeds every day. They expect a smooth reader that keeps up with their reading.
+Engineers in 2026 who read many feeds every day.
 
 ## The problem
 

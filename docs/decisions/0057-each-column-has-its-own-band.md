@@ -16,7 +16,7 @@ What the person sees is in the specification, 3.1.4 "Bands".
 
 ## Why
 
-The app's controls had grown wherever there was room, in four different styles. Putting each control in the top band of the column it acts on makes its scope clear and leaves the area below for reading and writing. The system toolbar cannot do it: on 2026-10-14, in the real window (macOS 27.0.1), toolbar items attached to a column went to its leading edge, the note's items merged into the article's group, an item of a folded column stayed where the column was, and flexible spacers spread over the whole window. Without the system toolbar and with a hidden title bar, buttons drawn in a column's band showed and took real clicks, the window buttons stayed, and a drag on the empty band moved the window (the owner checked the drag by hand).
+The app's controls had grown wherever there was room, in four different styles. The system toolbar cannot do it: on 2026-10-14, in the real window (macOS 27.0.1), toolbar items attached to a column went to its leading edge, the note's items merged into the article's group, an item of a folded column stayed where the column was, and flexible spacers spread over the whole window. Without the system toolbar and with a hidden title bar, buttons drawn in a column's band showed and took real clicks, the window buttons stayed, and a drag on the empty band moved the window (the owner checked the drag by hand).
 
 ## Cost
 
