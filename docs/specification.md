@@ -158,6 +158,7 @@ normal                original page (v)     note beside article   note with the 
 
 - Choose the scope from Feeds (all articles, unread, Star) and 「購読元」 (folders and subscriptions). Each subscription shows its site icon. The 「購読元」 section can be collapsed.
 - Each folder stays open or closed as the person left it, also after a restart; at the first launch all are closed, and a folder made again after it disappeared starts closed.
+- The rows and their scroll bar start below the sidebar's band: scrolled rows stop at its lower edge and never pass under the window buttons.
 - At the top right, right-aligned: add subscription, then refresh. While a refresh runs, the refresh arrow itself turns (not with Reduce Motion) and the button stays enabled (pressing it again does nothing).
 - A small orange ＋ appears at the right end of the 「購読元」 heading on mouse-over and adds a subscription. The heading stays in place however long the list is.
 - No Hide Sidebar button and no folder-management button.
