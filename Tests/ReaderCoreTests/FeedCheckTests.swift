@@ -120,10 +120,16 @@ import Testing
     @Test func anEditDuringTheWaitCancelsTheOldCheckBeforeItFetches() async {
         let gate = SlowGate()
         let fetched = Recorder<FeedCheckRequest>()
-        let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in await gate.wait() })
+        let finishedWaits = Recorder<Bool>()
+        let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in
+            await gate.wait()
+            finishedWaits.add(Task.isCancelled)
+        })
         checker.update(source: "https://example.com/old", delay: .milliseconds(800)); await settle(checker)
         checker.update(source: "https://example.com/new", delay: .milliseconds(800)); await settle(checker)
         await gate.open(); await settle(checker)                                  // both waits end; only the newest may fetch
+        #expect(finishedWaits.values.count == 2)
+        #expect(finishedWaits.values.filter { $0 }.count == 1)
         #expect(fetched.values == [.url(URL(string: "https://example.com/new")!)])
     }
     @Test func theStateSaysWhatReturnAndAnAnswerShouldDo() {
@@ -271,13 +277,17 @@ final class Recorder<Value: Sendable>: @unchecked Sendable {
     var values: [Value] { lock.withLock { items } }
 }
 
-/// Holds one caller until the test opens it.
+/// Holds all callers, including cancelled ones, until the test opens it.
 actor SlowGate {
-    private var continuation: CheckedContinuation<Void, Never>?
+    private var continuations: [CheckedContinuation<Void, Never>] = []
     private var isOpen = false
     func wait() async {
         guard !isOpen else { return }
-        await withCheckedContinuation { continuation = $0 }
+        await withCheckedContinuation { continuations.append($0) }
     }
-    func open() { isOpen = true; continuation?.resume(); continuation = nil }
+    func open() {
+        isOpen = true
+        for continuation in continuations { continuation.resume() }
+        continuations.removeAll()
+    }
 }
