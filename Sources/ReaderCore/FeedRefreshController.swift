@@ -34,11 +34,12 @@ import Observation
                 fetching += 1
                 group.addTask { .fetched(request, await Result { try await client.fetch(url: request.url, etag: request.etag, lastModified: request.modified) }) }
             }
+            var applied = false
             @MainActor func applyPending() {
                 guard !pending.isEmpty, !Task.isCancelled else { return }
                 let failed = store.applyRefreshes(pending, at: at)
                 for item in pending { errors[item.feedID] = failed[item.feedID]?.localizedDescription }
-                pending = []
+                pending = []; applied = true
             }
             for _ in 0..<3 { if let request = iterator.next() { enqueue(request) } }
             while let event = await group.next() {
@@ -64,8 +65,8 @@ import Observation
                     applyPending()
                 }
                 if fetching == 0 { applyPending(); group.cancelAll() }          // the last fetch ended: no need to wait
-                // A finished fetch makes `next()` return without suspending; let the window have a turn between batches.
-                await Task.yield()
+                // A finished fetch makes `next()` return without suspending; after a batch, let the window have a turn.
+                if applied { applied = false; await Task.yield() }
             }
         }
         errors = errors.filter { id, _ in store.feeds.contains { $0.id == id } }

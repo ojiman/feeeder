@@ -104,14 +104,15 @@ import Testing
         let failed = try #require(library.store.feeds.first { $0.sourceURL == "https://f1.example/feed" })
         #expect(Set(refresh.errors.keys) == [failed.id] && library.store.articles.count == 2 * 3)
     }
-    @Test(.timeLimit(.minutes(1))) func aSlowFeedDoesNotHoldBackTheArticlesOfAFastOne() async throws {
+    @Test(.timeLimit(.minutes(5))) func aSlowFeedDoesNotHoldBackTheArticlesOfAFastOne() async throws {
         let counter = Counter()
         let library = try library(feeds: 2, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
         let stub = StubFeeds(held: "f1.example")
         let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: stub))
         let running = Task { await refresh.refresh(feedIDs: library.ids) }
         // f1 waits until it is released, so f0's articles can only come from a batch applied without it. No wall-clock budget:
-        // other main-actor tests of the same run can hold the main actor for seconds; the time limit ends a run that hangs.
+        // other main-actor tests of the same run hold the main actor (in CI the hosted UI tests delayed small suites by 85 s);
+        // the time limit only ends a run that hangs.
         while library.store.articles.isEmpty { try await Task.sleep(for: .milliseconds(20)) }
         #expect(library.store.articles.count == 3 && refresh.refreshing)
         await stub.release()
