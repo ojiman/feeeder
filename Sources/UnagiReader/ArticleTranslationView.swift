@@ -20,7 +20,8 @@ struct TranslationEngine {
 @Observable @MainActor final class TranslationController {
     let state = ArticleTranslation()
     private(set) var target = "en"
-    @ObservationIgnored private var supportedTargets: [String]?
+    private var supportedTargets: [String]?
+    var targetReady: Bool { supportedTargets != nil }
 
     func setTarget(_ target: String, supported: [String]) {
         let supportChanged = supportedTargets.map { $0.contains(target) != supported.contains(target) } ?? !supported.contains(target)
@@ -43,6 +44,7 @@ struct TranslationEngine {
 
     /// Translates the article, or shows the original again when it is on.
     func toggle(title: String, content: ArticleContent) {
+        guard targetReady else { return }
         if isOn(for: content.articleID) { reset(); return }
         reset()
         let target = self.target
@@ -215,8 +217,10 @@ struct ArticleTranslationPresentation: ViewModifier {
     let readerShown: Bool
     @AppStorage(TranslationTarget.key) private var storedTarget = ""
     @State private var supportedTargets: [String] = []
+    @State private var targetsLoaded = false
 
     private func updateTarget() {
+        guard targetsLoaded else { return }
         controller.setTarget(TranslationTarget.resolve(stored: storedTarget, preferred: TranslationLanguages.preferred,
                                                        supported: supportedTargets), supported: supportedTargets)
     }
@@ -224,7 +228,7 @@ struct ArticleTranslationPresentation: ViewModifier {
     private var command: TranslationCommand {
         TranslationCommand(isOn: controller.isOn(for: articleID), enabled: canTranslate, action: toggle)
     }
-    private var canTranslate: Bool { readerShown && articleID != nil && content?.articleID == articleID }
+    private var canTranslate: Bool { controller.targetReady && readerShown && articleID != nil && content?.articleID == articleID }
     private func toggle() {
         guard canTranslate, let title, let content else { return }
         controller.toggle(title: title, content: content)
@@ -233,7 +237,7 @@ struct ArticleTranslationPresentation: ViewModifier {
     func body(content view: Content) -> some View {
         view
             .background(TranslationHost(controller: controller))
-            .task { supportedTargets = await controller.availableTargets(); updateTarget() }
+            .task { supportedTargets = await controller.availableTargets(); targetsLoaded = true; updateTarget() }
             .onChange(of: storedTarget) { _, _ in updateTarget() }
             .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in updateTarget() }
             .focusedSceneValue(\.translateArticle, command)

@@ -119,6 +119,7 @@ import Testing
 
     @Test func aPressTranslatesAndASecondPressShowsTheOriginal() async throws {
         let controller = TranslationController(engine: fakeEngine())
+        controller.setTarget("ja", supported: ["en", "ja"])
         controller.toggle(title: "Title", content: content)
         #expect(controller.isOn(for: content.articleID))                                      // on at once, while the language is decided
         for _ in 0..<100 where controller.state.state != .done(failed: 0, source: "en") { try await Task.sleep(for: .milliseconds(10)) }
@@ -193,17 +194,16 @@ import Testing
 }
 
 @MainActor struct TranslationAvailabilityTests {
-    @Test func discoveringSupportForTheCurrentTargetDoesNotCancelAPress() async throws {
-        let gate = AsyncStream<Void>.makeStream()
-        let controller = TranslationController(engine: fakeEngine(gate: gate.stream))
+    @Test func aPressBeforeTheSavedTargetIsResolvedCannotUsePlaceholderEnglish() async throws {
+        let controller = TranslationController(engine: fakeEngine())
         let content = ArticleContent(articleID: UUID(), text: "Synthetic.", summary: "", coverage: .feedProvided, originalURL: nil)
         controller.toggle(title: "Title", content: content)
-        for _ in 0..<100 where controller.state.key == nil { try await Task.sleep(for: .milliseconds(10)) }
-        #expect(controller.state.key?.target == "en")
-        controller.setTarget("en", supported: ["en", "ja"])
-        #expect(controller.isOn(for: content.articleID))
-        gate.continuation.finish()
+        #expect(!controller.isOn(for: content.articleID))
+        #expect(controller.state.state == .idle)
+        controller.setTarget("ja", supported: ["en", "ja"])
+        controller.toggle(title: "Title", content: content)
         for _ in 0..<100 where controller.state.state != .done(failed: 0, source: "en") { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(controller.state.key?.target == "ja")
         #expect(controller.state.shown?.title == "訳:Title")
     }
 }

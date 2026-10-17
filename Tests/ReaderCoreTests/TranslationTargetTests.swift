@@ -21,4 +21,8 @@ struct TranslationTargetTests {
         #expect(TranslationTarget.resolve(stored: "ko", preferred: ["en"], supported: ["en", "ja"]) == "ko")
         #expect(TranslationTarget.resolve(stored: "ja", preferred: ["en"], supported: ["en", "ja"]) == "ja")
     }
+    @Test func defaultsPreferAnUnqualifiedLanguageOverArbitraryRegionalVariants() {
+        #expect(TranslationTarget.resolve(stored: "", preferred: ["en-JP"], supported: ["en-IN", "en", "ja"]) == "en")
+        #expect(TranslationTarget.resolve(stored: "", preferred: ["xx"], supported: ["ja", "en-US"]) == "en-US")
+    }
 }

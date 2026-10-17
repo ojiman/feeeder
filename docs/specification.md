@@ -336,7 +336,7 @@ A button translates the open article into another language, on the Mac, with the
 
 **Button and key**
 
-- A button 「翻訳」 (Translate) sits in the article band, before 「元ページをブラウザで開く」. Its help names the target, for example 「日本語に翻訳／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
+- A button 「翻訳」 (Translate) sits in the article band, before 「元ページをブラウザで開く」. Its help names the target, for example 「日本語に翻訳／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open or while the target is being resolved (the toolbar does not change height).
 - The same command is in the menu bar: 「表示 ▸ 翻訳 / 原文に戻す」, without a key.
 - `t` does the same, when no editable field is being typed in (3.1.5).
 - Pressing it translates the title and the body of the open article, in place. Pressing it again shows the original.
