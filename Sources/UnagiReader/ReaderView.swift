@@ -260,6 +260,7 @@ struct ReaderView: View {
             }
         }
         .listStyle(.sidebar)
+        .onChange(of: folders) { old, new in folderExpansion.forget(Set(old).subtracting(new)) }
         .modifier(SidebarPaper())
         .navigationTitle("Unagi Reader")
         .toolbar(removing: .sidebarToggle)
