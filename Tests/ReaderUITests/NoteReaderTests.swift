@@ -237,13 +237,13 @@ import Testing
         h.window.makeFirstResponder(try table(h))
         #expect(try table(h).keyHandler?("c") == true)
         try await t.settle(h.host) { noteText(h) != "メモ" }
-        #expect(noteText(h).hasPrefix("メモ\n[合成記事 0](") && noteText(h).hasSuffix(")\n"), "note: \(noteText(h).debugDescription)")
+        #expect(noteText(h).hasPrefix("メモ\n\n[合成記事 0](") && noteText(h).hasSuffix(")\n"), "note: \(noteText(h).debugDescription)")
         try await t.settle(h.host) { t.containsText(noteText(h), in: h.host) }              // the note panel is open and shows it
         // The keyboard does not go into the note. The list folds away as the note opens, so the article takes it, as with `n`.
         #expect(!(h.window.firstResponder is NoteTextView), "first responder: \(String(describing: h.window.firstResponder))")
     }
 
-    @Test func anOpenNoteTakesOneLineEachTime() async throws {
+    @Test func anOpenNoteTakesOneParagraphEachTime() async throws {
         let h = try t.harness(scope: { _ in .all }, noteOpen: true) { store in try store.saveNote(text: "メモ", at: .now) }
         defer { t.finish(h) }
         try await t.settle(h.host) { t.containsText("メモ", in: h.host) }
@@ -255,8 +255,9 @@ import Testing
         try await choose(2, in: h)
         #expect(try table(h).keyHandler?("c") == true)
         try await t.settle(h.host) { noteText(h).contains("[合成記事 2](") }
-        let lines = noteText(h).split(separator: "\n", omittingEmptySubsequences: false)
-        #expect(lines.count == 4 && lines[0] == "メモ" && lines[1].hasPrefix("[合成記事 1](") && lines[2].hasPrefix("[合成記事 2](") && lines[3].isEmpty,
+        let paragraphs = noteText(h).components(separatedBy: "\n\n")
+        #expect(paragraphs.count == 3 && paragraphs[0] == "メモ" && paragraphs[1].hasPrefix("[合成記事 1](") && paragraphs[2].hasPrefix("[合成記事 2](")
+                && paragraphs[2].hasSuffix(")\n") && !paragraphs[1].contains("\n"),
                 "note: \(noteText(h).debugDescription)")
     }
 
