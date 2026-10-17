@@ -44,6 +44,7 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 ### 3.2 Indexes and late results
 
 - `ReaderStore` keeps indexes of articles, subscriptions, unread, Star and folders; lists hold ID arrays, not all models.
+- A refresh applies fetched feeds in batches (#131): `FeedRefreshController.batchSize` feeds, or what came in within its `batchDelay` (0.5 s; tests pass a long one so batches do not depend on timing), or what is left when the last fetch ends, with one save and one reload, and `EntryIndex` lookups instead of scans. A batch that fails is rolled back and applied feed by feed, so only a feed that cannot be saved shows an error. Longest main-actor stall of a first refresh (release, 25 entries per feed, stubbed): 72 ms at 42 feeds, 201 ms at 200. The full `reload()` per batch is still linear in the library.
 - A late fetch or render is checked against the article ID and a generation number, so it never changes another article or its read state. After the person acts, the same article's body is not replaced on its own.
 - Translation (`ArticleTranslation`, ReaderCore; `TranslationController` and `TranslationHost` in the app) follows the same rule. A press gives a job with a generation; the app runs it with the system's session, which exists only inside a view's `translationTask`. A press, a reset or a changed body drops the answers of an older job. Results stay in memory only (a small cache keyed by article, body and target) and are never written to the store.
 

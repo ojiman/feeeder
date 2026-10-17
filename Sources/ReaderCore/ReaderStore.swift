@@ -144,65 +144,56 @@ import SwiftData
 
     @discardableResult public func importFeed(_ parsed: ParsedFeed, receivedAt: Date = .now, folder: String? = nil) throws -> Feed {
         try reloadIfNeeded()
+        var index = EntryIndex(articles: articles, memberships: memberships)
+        do {
+            let feed = try merge(parsed, receivedAt: receivedAt, folder: folder, index: &index)
+            try save()
+            try reload()
+            return feed
+        } catch { rollback(); throw error }
+    }
+
+    /// Adds or updates the feed and its entries in the context, without saving. The feeds of one refresh batch share `index`.
+    func merge(_ parsed: ParsedFeed, receivedAt: Date, folder: String?, index: inout EntryIndex) throws -> Feed {
         let feed = feeds.first { $0.sourceURL == parsed.sourceURL.absoluteString } ?? Feed(title: parsed.title, symbol: "dot.radiowaves.left.and.right")
         context.insert(feed)
         feed.sourceURL = parsed.sourceURL.absoluteString
         feed.siteURL = parsed.siteURL?.absoluteString ?? feed.siteURL
         feed.iconURL = parsed.iconURL?.absoluteString ?? feed.iconURL
         if !feed.customTitle { feed.title = parsed.title }
-        do {
-            if let folder { feed.folder = SingleLineText.name(folder) }
-            // Looked up once per call, not scanned per entry (#131): the first refresh after an OPML import adds many feeds to a growing library.
-            // The first article with an identity wins, as the scans did; the maps follow every change made below.
-            var articleByID: [UUID: Article] = [:], articleByIdentity: [String: Article] = [:]
-            for article in articles {
-                articleByID[article.id] = article
-                if let key = article.identityKey, articleByIdentity[key] == nil { articleByIdentity[key] = article }
-            }
-            var priorArticleID: [String: UUID] = [:], memberOf: Set<UUID> = []
-            for membership in memberships where membership.feedID == feed.id {
-                if priorArticleID[membership.sourceID] == nil { priorArticleID[membership.sourceID] = membership.articleID }
-                memberOf.insert(membership.articleID)
-            }
-            for entry in parsed.entries {
-                let identity = entry.url?.absoluteString ?? (parsed.sourceURL.absoluteString + "|" + entry.sourceID)
-                let existing = articleByIdentity[identity] ?? priorArticleID[entry.sourceID].flatMap { articleByID[$0] }
-                let article = existing ?? Article(feedID: feed.id, title: entry.title, summary: entry.summary,
-                                                  publisher: entry.url?.host ?? "掲載サイト不明", publishedAt: entry.publishedAt ?? .distantPast, receivedAt: receivedAt)
-                if existing == nil { context.insert(article); articleByID[article.id] = article }
-                let oldIdentity = article.identityKey
-                if let url = entry.url {
-                    article.identityKey = identity
-                    article.originalURL = url.absoluteString
-                } else if article.identityKey == nil { article.identityKey = identity }
-                if article.identityKey != oldIdentity {
-                    if let oldIdentity, articleByIdentity[oldIdentity]?.id == article.id { articleByIdentity[oldIdentity] = nil }
-                    if let key = article.identityKey, articleByIdentity[key] == nil { articleByIdentity[key] = article }
+        if let folder { feed.folder = SingleLineText.name(folder) }
+        for entry in parsed.entries {
+            let identity = entry.url?.absoluteString ?? (parsed.sourceURL.absoluteString + "|" + entry.sourceID)
+            let existing = index.article(identity: identity, feedID: feed.id, sourceID: entry.sourceID)
+            let article = existing ?? Article(feedID: feed.id, title: entry.title, summary: entry.summary,
+                                              publisher: entry.url?.host ?? "掲載サイト不明", publishedAt: entry.publishedAt ?? .distantPast, receivedAt: receivedAt)
+            if existing == nil { context.insert(article); index.add(article) }
+            let oldIdentity = article.identityKey
+            if let url = entry.url {
+                article.identityKey = identity
+                article.originalURL = url.absoluteString
+            } else if article.identityKey == nil { article.identityKey = identity }
+            index.update(article, from: oldIdentity)
+            article.title = entry.title
+            let available = isContentAvailable(article, at: receivedAt)
+            if available { article.summary = entry.summary; article.imageURL = entry.imageURL?.absoluteString ?? article.imageURL }
+            else { _ = try removeContent(articleIDs: [article.id], at: receivedAt) }
+            if let date = entry.publishedAt { article.publishedAt = date }
+            // A second feed must not overwrite a saved article with a shorter excerpt.
+            let id = article.id
+            if available, let snapshot = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })).first {
+                if !entry.body.isEmpty &&
+                    snapshot.coverageRaw != ContentCoverage.extracted.rawValue &&
+                    (article.feedID == feed.id || entry.body.count > snapshot.text.count) {
+                    snapshot.text = entry.body; snapshot.coverageRaw = entry.coverage.rawValue
+                    snapshot.bodyFormatData = BodyParagraph.encode(entry.bodyParagraphs)
                 }
-                article.title = entry.title
-                let available = isContentAvailable(article, at: receivedAt)
-                if available { article.summary = entry.summary; article.imageURL = entry.imageURL?.absoluteString ?? article.imageURL }
-                else { _ = try removeContent(articleIDs: [article.id], at: receivedAt) }
-                if let date = entry.publishedAt { article.publishedAt = date }
-                // A second feed must not overwrite a saved article with a shorter excerpt.
-                let id = article.id
-                if available, let snapshot = try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { $0.articleID == id })).first {
-                    if !entry.body.isEmpty &&
-                        snapshot.coverageRaw != ContentCoverage.extracted.rawValue &&
-                        (article.feedID == feed.id || entry.body.count > snapshot.text.count) {
-                        snapshot.text = entry.body; snapshot.coverageRaw = entry.coverage.rawValue
-                        snapshot.bodyFormatData = BodyParagraph.encode(entry.bodyParagraphs)
-                    }
-                } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body, coverage: entry.coverage, bodyParagraphs: entry.bodyParagraphs)) }
-                if memberOf.insert(id).inserted {
-                    context.insert(FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID))
-                    if priorArticleID[entry.sourceID] == nil { priorArticleID[entry.sourceID] = id }
-                }
+            } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body, coverage: entry.coverage, bodyParagraphs: entry.bodyParagraphs)) }
+            if index.join(feedID: feed.id, articleID: id, sourceID: entry.sourceID) {
+                context.insert(FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID))
             }
-            try save()
-            try reload()
-            return feed
-        } catch { rollback(); throw error }
+        }
+        return feed
     }
 
     public func updateSubscription(_ feed: Feed, title: String, folder: String) throws {
@@ -290,7 +281,7 @@ import SwiftData
         catch { rollback(); throw error }
     }
 
-    private func rollback() {
+    func rollback() {
         context.rollback()
         // ContentRetentionTests.failedSaveRollsBackAndDoesNotNotify reproduces
         // changed registered models after a failed save on macOS 26.6.2 / Xcode 26.6.
@@ -310,5 +301,38 @@ public enum ReaderNavigation {
         guard !ids.isEmpty else { return nil }
         guard let selected, let index = ids.firstIndex(of: selected) else { return ids.first }
         return ids[min(max(0, index + offset), ids.count - 1)]
+    }
+}
+
+/// Where an entry's article is, looked up instead of scanned (#131): built once from the library, then kept up to date by every
+/// change of the same import or refresh batch. The first article with an identity wins, as the scans did.
+struct EntryIndex {
+    private var articleByID: [UUID: Article] = [:]
+    private var articleByIdentity: [String: Article] = [:]
+    private var priorArticleID: [UUID: [String: UUID]] = [:]
+    private var members: [UUID: Set<UUID>] = [:]
+
+    init(articles: [Article], memberships: [FeedMembership]) {
+        for article in articles {
+            articleByID[article.id] = article
+            if let key = article.identityKey, articleByIdentity[key] == nil { articleByIdentity[key] = article }
+        }
+        for membership in memberships { _ = join(feedID: membership.feedID, articleID: membership.articleID, sourceID: membership.sourceID) }
+    }
+    /// The article with this identity, or the one this feed last had under the same source ID.
+    func article(identity: String, feedID: UUID, sourceID: String) -> Article? {
+        articleByIdentity[identity] ?? priorArticleID[feedID]?[sourceID].flatMap { articleByID[$0] }
+    }
+    mutating func add(_ article: Article) { articleByID[article.id] = article }
+    mutating func update(_ article: Article, from oldIdentity: String?) {
+        guard article.identityKey != oldIdentity else { return }
+        if let oldIdentity, articleByIdentity[oldIdentity]?.id == article.id { articleByIdentity[oldIdentity] = nil }
+        if let key = article.identityKey, articleByIdentity[key] == nil { articleByIdentity[key] = article }
+    }
+    /// True when the feed did not have the article yet.
+    mutating func join(feedID: UUID, articleID: UUID, sourceID: String) -> Bool {
+        guard members[feedID, default: []].insert(articleID).inserted else { return false }
+        if priorArticleID[feedID, default: [:]][sourceID] == nil { priorArticleID[feedID, default: [:]][sourceID] = articleID }
+        return true
     }
 }
