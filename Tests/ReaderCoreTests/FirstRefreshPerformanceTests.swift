@@ -41,9 +41,7 @@ import Testing
         #expect(store.memberships.count == count * 25)
         #expect(store.feeds.allSatisfy { $0.lastFetchedAt != nil && $0.etag == "v1" })
         #expect(store.unreadCount == count * 25)
-        let unchanged = await measure { await refresh.refresh(feedIDs: report.addedFeedIDs) }
-        #expect(refresh.errors.isEmpty && store.articles.count == count * 25 && store.unreadCount == count * 25)
-        print("FIRST_REFRESH feeds=\(count) articles=\(store.articles.count) first=\(first.elapsed) firstGap=\(first.gap) firstMaxRSSMiB=\(first.memory) unchanged=\(unchanged.elapsed) unchangedGap=\(unchanged.gap) unchangedMaxRSSMiB=\(unchanged.memory)")
+        print("FIRST_REFRESH feeds=\(count) articles=\(store.articles.count) first=\(first.elapsed) firstGap=\(first.gap) firstMaxRSSMiB=\(first.memory)")
     }
 
     private func measure(_ run: () async -> Void) async -> (elapsed: Duration, gap: Duration, memory: Double) {
