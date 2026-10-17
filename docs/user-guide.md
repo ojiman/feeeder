@@ -71,7 +71,7 @@ The app also lists these keys in Settings ▸ 「ショートカット」 (Help 
 | `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |
 | `Esc` | Back to reading: closes the original page, or the note. With both open, it closes the one you are in; press it again for the other |
 
-- Keys do not act while you type in a field or compose Japanese text. `j`, `k`, `s` and `n` also work on the original page.
+- Single-letter reading keys and `/` do not act while you type in a field or compose Japanese text. In the note, `Esc` first cancels composition. `j`, `k`, `s` and `n` also work on the original page, outside its text fields.
 - An article becomes read when its body or RSS summary is shown, not when you scroll past it in the list. If neither is available, selecting it does not mark it read.
 - The app shows the feed's own text (or its summary), as the feed gives it. For the whole article, open the original page with `v` (in the app) or `b` (your browser). The app never gets around paywalls or logins.
 - The in-app browser does not keep you signed in to sites.
