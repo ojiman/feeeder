@@ -239,7 +239,7 @@ struct ReaderView: View {
     private var sidebar: some View {
         let grouped = Dictionary(grouping: store.feeds, by: \.folder)
         let folders = grouped.keys.filter { !$0.isEmpty }.sorted()
-        return List(selection: $scope) {
+        let list = List(selection: $scope) {
             Section("Feeds") {
                 sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
                 sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
@@ -260,6 +260,12 @@ struct ReaderView: View {
             }
         }
         .listStyle(.sidebar)
+        // The sidebar's band belongs to the window buttons and the two buttons (decision 0057): the rows scroll below it, and so does
+        // the scroll bar. The list's own frame starts under the band, as the safe area of a column reports 0 (see `ListHeader`).
+        return VStack(spacing: 0) {
+            Color.clear.frame(height: ListHeader.bandHeight).contentShape(Rectangle()).gesture(WindowDragGesture())
+            list
+        }
         .modifier(SidebarPaper())
         .navigationTitle("Unagi Reader")
         .toolbar(removing: .sidebarToggle)
