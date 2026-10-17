@@ -20,4 +20,9 @@ public enum ReaderShortcutPolicy {
     public static func permits(textInput: Bool, markedText: Bool, sheet: Bool, originalPage: Bool) -> Bool {
         !textInput && !markedText && !sheet && !originalPage
     }
+    /// Whether the window-level `Esc` closes the note: always, except when the keyboard is inside the original page, which has its own `Esc`
+    /// (a field of the page keeps it). This holds with the original page open too, so the note is never left without a key (decision 0050).
+    public static func escapeClosesNote(noteOpen: Bool, keyboardInOriginalPage: Bool) -> Bool {
+        noteOpen && !keyboardInOriginalPage
+    }
 }

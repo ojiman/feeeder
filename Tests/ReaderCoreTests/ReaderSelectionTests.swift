@@ -53,4 +53,10 @@ struct ReaderSelectionTests {
         #expect(!ReaderShortcutPolicy.permits(textInput: false, markedText: false, sheet: false, originalPage: true))
         #expect(ReaderShortcutPolicy.permits(textInput: false, markedText: false, sheet: false, originalPage: false))
     }
+    // PRD-04: with the original page and the note both open, Esc closes the note unless the keyboard is in the page (its own Esc).
+    @Test func escapeClosesTheNoteExceptFromInsideTheOriginalPage() {
+        #expect(ReaderShortcutPolicy.escapeClosesNote(noteOpen: true, keyboardInOriginalPage: false))    // the article, the list, or the note's editor with the page open
+        #expect(!ReaderShortcutPolicy.escapeClosesNote(noteOpen: true, keyboardInOriginalPage: true))    // a page field keeps its own Esc
+        #expect(!ReaderShortcutPolicy.escapeClosesNote(noteOpen: false, keyboardInOriginalPage: false))  // nothing to close
+    }
 }

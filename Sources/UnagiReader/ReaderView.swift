@@ -120,8 +120,11 @@ struct ReaderView: View {
         windowContent
             .modifier(OPMLImportPresentation(flow: opml))
             .modifier(RenameOnReturn(begin: beginRenamingSelection))
-            // `Esc` from the article, the list or the note's editor closes the note (decision 0050). The original page has its own.
-            .onExitCommand { if originalPage.url == nil { closeNote() } }
+            // `Esc` from the article, the list or the note's editor closes the note, also while the original page is open beside it (decision 0050).
+            // The original page has its own `Esc` (`closeOriginal`), and a field of the page keeps it.
+            .onExitCommand {
+                if ReaderShortcutPolicy.escapeClosesNote(noteOpen: noteOpen, keyboardInOriginalPage: ReaderKeyboardCommands.isInOriginalPage(NSApp.keyWindow?.firstResponder)) { closeNote() }
+            }
             .focusedSceneValue(\.readerActions, readerActions)
             .task {
                 if ReadingBenchmark.requested { await ReadingBenchmark.run(store: store, refresh: refresh) }
