@@ -39,7 +39,7 @@ Do this before you update a beta, or when the app cannot open the library and yo
 
 ### The screen
 
-The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Settings ▸ 「外観」 has the appearance (system, light, dark or sepia, a light look on a warm paper colour) and 「文字サイズ」, the article's text size in five steps from 14 to 22 pt; the title follows it, the list and the note keep theirs.
+The window has four areas: the sidebar, the list, the article and the note. Normally you see the first three. `v` shows the original page (the sidebar folds away and the page takes its place). `n` shows the note beside the article (the sidebar and the list fold away); the layout button at the top left of the note, next to its ✕, brings the list back beside them, and hides it again. Settings ▸ 「一般」 has the appearance (system, light, dark or sepia, a light look on a warm paper colour) and 「文字サイズ」, the article's text size in five steps from 14 to 22 pt; the title follows it, the list and the note keep theirs.
 
 ### Subscriptions and folders
 
@@ -65,7 +65,7 @@ The app also lists these keys in Settings ▸ 「ショートカット」 (Help 
 | `s` | Star on / off |
 | `n` | Open or close the note (also the note button at the top of the article and `⌥⌘I`) |
 | `c` | Send the article to the note: its title and link, or the text you selected in the article as a quotation (also 記事 ▸ 記事をノートに送る) |
-| `t` | Translate the article into the target in Settings ▸ 「言語」 ▸ 「記事翻訳」, on your Mac; again shows the original (also the button at the top of the article and 表示 ▸ 翻訳). The first time, macOS may ask to download the language |
+| `t` | Translate the article into the target in Settings ▸ 「記事」 ▸ 「記事翻訳」, on your Mac; again shows the original (also the button at the top of the article and 表示 ▸ 翻訳). The first time, macOS may ask to download the language |
 | `/` | Narrow the list: type words from the titles or summaries (also the magnifier at the top right of the list). The field stays while it has text; empty, a click elsewhere closes it |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |
@@ -90,7 +90,7 @@ There is one note and nothing to manage: no list, no names, no delete.
 
 ### Language settings
 
-Settings ▸ Language (「言語」) has two independent choices. App Language (「表示言語」) offers Match System, English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Spanish and Brazilian Portuguese. It shares macOS's per-app choice in System Settings ▸ General ▸ Language & Region ▸ Applications. It applies at the next launch; quit and open the app when ready. Match System follows your Mac's preferred languages, with English as the fallback. It never translates your subscriptions, articles or note. Labels quoted in this guide are the Japanese labels.
+The two language choices are independent: App Language (「表示言語」) is in Settings ▸ General (「一般」), and Article Translation (「記事翻訳」) is in Settings ▸ Articles (「記事」). App Language (「表示言語」) offers Match System, English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Spanish and Brazilian Portuguese. It shares macOS's per-app choice in System Settings ▸ General ▸ Language & Region ▸ Applications. It applies at the next launch; quit and open the app when ready. Match System follows your Mac's preferred languages, with English as the fallback. It never translates your subscriptions, articles or note. Labels quoted in this guide are the Japanese labels.
 
 The Simplified Chinese, Traditional Chinese, Korean, Spanish and Brazilian Portuguese translations were prepared with AI and have not been reviewed by a person. If wording is wrong, [open an issue](https://github.com/ojiman/unagi-reader/issues/new) with the language, screen, current wording and suggested wording.
 
@@ -107,7 +107,7 @@ The app has no AI of its own. It does not summarize, suggest or write, and it ne
 
 - Article texts and summaries: 30 days by default; 7, 30, 90 or 365 days in Settings. For an unread article the days count from when it arrived, for a read one from when you first read it. A Star does not extend them.
 - When the text expires, the title, the link and the Star stay.
-- Shortening the period, or deleting all texts at once, asks you first.
+- Shortening the period asks you first.
 - **The note is never deleted by the app.**
 
 ## 6. For developers

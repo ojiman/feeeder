@@ -33,13 +33,13 @@ extension ReaderStore {
         article.contentDeletedAt == nil &&
         RetentionPolicy(days: retentionDays).expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt) > at
     }
-    public func previewDeletion(days: Int?, allContent: Bool, at: Date) throws -> DeletionPreview {
+    public func previewDeletion(days: Int?, at: Date) throws -> DeletionPreview {
         try reloadIfNeeded()
         let policy = RetentionPolicy(days: days ?? retentionDays)
         let snapshots = try context.fetch(FetchDescriptor<ContentSnapshot>())
         let selected = articles.filter { article in
             let hasText = !article.summary.isEmpty || snapshots.contains { $0.articleID == article.id && !$0.text.isEmpty }
-            return hasText && (allContent || article.contentDeletedAt != nil ||
+            return hasText && (article.contentDeletedAt != nil ||
                 policy.expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt) <= at)
         }
         let ids = Set(selected.map(\.id))
@@ -52,8 +52,8 @@ extension ReaderStore {
         try reloadIfNeeded()
         guard RetentionPolicy.choices.contains(days) else { throw RetentionError.invalidDays }
         // Purge under both policies: extending retention must not revive already-expired bytes.
-        let old = try previewDeletion(days: nil, allContent: false, at: at)
-        let proposed = try previewDeletion(days: days, allContent: false, at: at)
+        let old = try previewDeletion(days: nil, at: at)
+        let proposed = try previewDeletion(days: days, at: at)
         let settings = try context.fetch(FetchDescriptor<ReaderSettings>()).first!
         let changed = settings.retentionDays != days
         let removed = try removeContent(articleIDs: Array(Set(old.articleIDs + proposed.articleIDs)), at: at)
@@ -69,7 +69,7 @@ extension ReaderStore {
         try reload()
     }
     public func purgeExpired(at: Date) throws {
-        let preview = try previewDeletion(days: nil, allContent: false, at: at)
+        let preview = try previewDeletion(days: nil, at: at)
         try deleteContent(articleIDs: preview.articleIDs, at: at)
     }
     public func availableContentExpiries(at: Date, articleIDs: [UUID]? = nil) throws -> [UUID: Date] {

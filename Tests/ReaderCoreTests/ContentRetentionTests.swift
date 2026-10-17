@@ -30,7 +30,7 @@ import SwiftData
         _ = try store.importFeed(parsed(), receivedAt: start)
         let id = try #require(store.articles.first).id
         let later = start.addingTimeInterval(10 * day)
-        let preview = try store.previewDeletion(days: 7, allContent: false, at: later)
+        let preview = try store.previewDeletion(days: 7, at: later)
         #expect(preview.articleIDs == [id] && preview.bodyCount == 1 && preview.summaryCount == 1 && preview.estimatedBytes > 0)
         #expect(store.retentionDays == 30)
         #expect(try store.content(articleID: id, at: later) != nil)
