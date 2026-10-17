@@ -3,18 +3,19 @@
 - Status: approved when it was merged (2026-10-12). It is deleted when the last translation PR (#154) is merged. What the person sees is in the [specification](../../specification.md) 3.6; this file keeps the engine choice, the parts and the order of work.
 - Date: 2026-10-12
 - Owner's request: a translate button at the top right; press it and the article is translated into a language of the person's choice. The owner suggested Foundation Models.
+- Revision (2026-10-17): [decision 0060](../../decisions/0060-language-settings-and-ui-localization.md) replaces the article language menu and app-language target default with Settings and independent system-derived defaults. The dated decisions and HIG check below remain historical evidence.
 - Reading order: [vision](../../vision.md), the specification 3.6, this design. A decision record (the next free number) is added by the first implementation PR.
 
 ## 1. What it is
 
-A button in the article toolbar. Pressing it translates the open article (title and body) into the target language, in place, on the Mac. Pressing it again shows the original. The language can be changed from the same button.
+A button in the article toolbar. Pressing it translates the open article (title and body) into the target language, in place, on the Mac. Pressing it again shows the original. The target is chosen in Settings (specification 3.6); the button has one action.
 
 ## 2. Does it fit the vision?
 
 | Question (from the vision) | Answer |
 |---|---|
 | Does it make the loop smoother? | Yes, for the target reader: an engineer who reads English feeds every day can read a hard article in the same window, without copying text to another app. |
-| Does it add something to manage? | One button and one remembered choice (the target language). No setting page, no per-feed list. |
+| Does it add something to manage? | One button and one remembered target in Settings; no per-feed list (decision 0060). |
 | Can it make the reader wait? | Not without a button: translation starts only when pressed. It shows the first paragraphs as soon as they are ready, and it stops when the person moves to another article. |
 | Can text leave the Mac without a button? | No. Translation runs on the Mac. The only network use is the system downloading a language pack, which the system asks the person to allow. |
 | Does it work with AI off? | Yes. The Translation framework does not need Apple Intelligence. |
@@ -46,9 +47,10 @@ Sources: Apple's documentation for [TranslationSession](https://developer.apple.
 
 ## 4. What the person sees
 
-It is in the specification, section 3.6 (the button, the key `t`, the status row, the language menu, the failure sentences). Two reasons that the specification does not repeat:
+It is in the specification, section 3.6 (the button, the key `t`, the status row, the Settings target and the failure sentences). The current default and language choice replace the original design under decision 0060.
 
-- **The default target is the language of the app, not the first system language.** The owner keeps the system in English because it suits software work, and still wants to read in Japanese. When a language setting for the app arrives, the default follows it.
+One reason that the specification does not repeat:
+
 - **Only the reader text is translated, not the original page.** There is no public way to translate a page inside the app's web view; it would need our own code that reads the text nodes of the page, translates them and writes them back, which breaks on dynamic pages and is out of proportion for this version. The reader text is also the better place to read a translation: it is clean, and 「全文を取得」 gives it the whole article.
 
 ## 5. How it works
@@ -71,7 +73,7 @@ Parts (names are proposals):
 | `LanguageDecision` | ReaderCore | Pure. With the detected language and the target: translate, "already in the target language", or "unsupported". Detection uses `NLLanguageRecognizer` on the title and the start of the body. If the language cannot be told, the source is left empty and the framework detects it. |
 | `TranslationHost` | UnagiReader | A zero-size SwiftUI view in the background of the article area with `.translationTask(configuration)`. The only place that touches `TranslationSession`. It translates with `translate(batch:)` so that results arrive as they are ready, and calls `cancel()` when the generation changes. |
 | Display | `ArticleDetailView` / `NativeArticleText` | Receives the translated title and paragraphs as `BodyParagraph` values in the same order, so layout, images and the scroll anchor (by paragraph index) work as they do now. |
-| Button, key, menu | `ReaderView` | The toolbar item, the key `t`, and the language menu. Added from outside the window's long modifier chain (see AGENTS.md known gotchas). |
+| Button, key, menu | `ReaderView` | The article button, the key `t`, and the menu-bar translate/original command. The target is chosen in Settings (specification 3.6). Added from outside the window's long modifier chain (see AGENTS.md known gotchas). |
 
 Why the session is created in a view: Apple documents two ways to get a `TranslationSession`. The direct initializer `init(installedSource:target:)` has no UI but throws when a language is not installed, and it is available only from macOS 26.4; the SwiftUI `translationTask` shows the system download request and is available from macOS 15. The app uses `translationTask`, because the first use of a language pair needs that request. (A later change may use the direct initializer for pairs that are already installed.)
 
@@ -119,7 +121,7 @@ The system's download request; a real translation of a long article and how fast
 
 1. **T1. The core.** `TranslationPlan`, `ArticleTranslation`, `LanguageDecision`, the cache, with a fake translator and the unit tests. Decision record (next free number). No UI.
 2. **T2. The button.** The toolbar item, the key `t`, `TranslationHost` with `translationTask`, the status row, the display of translated paragraphs, the default language. First end-to-end use on a real Mac (the owner tries it).
-3. **T3. The language menu.** The menu with a primary action, the remembered choice.
+3. **T3. The translation target in Settings** (#154). The 「記事翻訳」 choice and its default of specification 3.6 and 3.7 (decision 0060); one article action. UI localization is separate (#271, #272) and not part of this design.
    T2 also adds the menu bar command and the accessibility labels (section 12).
 4. **Later, only if real use asks for it** (not planned): links kept through `AttributedString`; an "always translate" choice per subscription; showing the original and the translation together, paragraph by paragraph (useful for learning); translated titles in the article list; skipping code paragraphs; Foundation Models for "explain in simple words".
 
