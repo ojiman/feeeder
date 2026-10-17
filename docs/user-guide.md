@@ -65,7 +65,7 @@ The app also lists these keys in Settings ▸ 「ショートカット」 (Help 
 | `s` | Star on / off |
 | `n` | Open or close the note (also the note button at the top of the article and `⌥⌘I`) |
 | `c` | Send the article to the note: its title and link, or the text you selected in the article as a quotation (also 記事 ▸ 記事をノートに送る) |
-| `t` | Translate the article into Japanese, on your Mac; again shows the original (also the button at the top of the article and 表示 ▸ 翻訳). The first time, macOS may ask to download the language |
+| `t` | Translate the article into the target in Settings ▸ 「言語」 ▸ 「記事翻訳」, on your Mac; again shows the original (also the button at the top of the article and 表示 ▸ 翻訳). The first time, macOS may ask to download the language |
 | `/` | Narrow the list: type words from the titles or summaries (also the magnifier at the top right of the list). The field stays while it has text; empty, a click elsewhere closes it |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |
@@ -105,3 +105,5 @@ The app has no AI of its own. It does not summarize, suggest or write, and it ne
 ## 6. For developers
 
 Commands, tests, CI and the rules for contributors are in [AGENTS.md](../AGENTS.md); how the app is built is in the [architecture](architecture.md).
+
+Choose 「システムに合わせる」 in 「記事翻訳」 to follow the Mac's preferred languages, or choose a fixed target. A change returns the open article to its original; press `t` to translate into the new target. An article already in the target language stays in its original with a short status message.

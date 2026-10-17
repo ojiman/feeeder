@@ -18,6 +18,7 @@ struct ArticleBand: View {
     static let contentTop: CGFloat = 28
 
     let status: ArticleTranslation.State
+    var translationTarget = "ja"
     let showOriginal: () -> Void
     let buttons: [BandButton]
     /// The column starts at the window's left edge, under the window buttons.
@@ -32,7 +33,7 @@ struct ArticleBand: View {
                 BandButton(id: "close-original", symbol: "xmark", help: "記事に戻る (Esc)", label: "記事に戻る", action: closeOriginal)
                 Text(originalHost).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             } else {
-                TranslationStatusRow(state: status, showOriginal: showOriginal)
+                TranslationStatusRow(state: status, target: translationTarget, showOriginal: showOriginal)
             }
             Spacer(minLength: 8)
             ForEach(buttons) { $0 }

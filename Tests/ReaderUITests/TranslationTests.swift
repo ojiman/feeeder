@@ -15,7 +15,7 @@ import Testing
                 continuation.finish()
             }
         }
-    })
+    }, languages: { ["en", "ja"] })
 }
 
 // Checks PRD-18 (specification 7).
@@ -131,5 +131,79 @@ import Testing
     @Test func theStatusRowNamesTheLanguagesInJapanese() {
         #expect(TranslationStatusRow.pair(source: "en", target: "ja") == "英語 → 日本語")
         #expect(TranslationStatusRow.pair(source: nil, target: "ja") == "→ 日本語")
+    }
+}
+
+// Checks PRD-18: the chosen target, not the UI language, controls translation.
+@MainActor struct TranslationTargetControllerTests {
+    private let content = ArticleContent(articleID: UUID(), text: "One. Two.", summary: "", coverage: .feedProvided, originalURL: nil)
+    @Test func changingTargetReturnsToOriginalWithoutStartingAnotherTranslation() async throws {
+        let controller = TranslationController(engine: fakeEngine())
+        controller.setTarget("ja", supported: ["ja", "en"])
+        controller.toggle(title: "Title", content: content)
+        for _ in 0..<100 where controller.state.shown == nil || controller.state.state != .done(failed: 0, source: "en") {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(controller.state.shown != nil)
+        controller.setTarget("en", supported: ["ja", "en"])
+        #expect(controller.target == "en")
+        #expect(controller.state.shown == nil && controller.state.state == .idle)
+        #expect(!controller.isOn(for: content.articleID))
+    }
+    @Test func changingTargetDropsLateBatchAnswers() async throws {
+        let gate = AsyncStream<Void>.makeStream()
+        let controller = TranslationController(engine: fakeEngine(gate: gate.stream))
+        controller.setTarget("ja", supported: ["ja", "en"])
+        controller.toggle(title: "Title", content: content)
+        for _ in 0..<100 where controller.state.key == nil { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(controller.state.key?.target == "ja")
+        controller.setTarget("en", supported: ["ja", "en"])
+        gate.continuation.finish()
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(controller.state.shown == nil && controller.state.state == .idle)
+    }
+    @Test func removedManualTargetShowsUnsupportedWithoutTranslating() {
+        let controller = TranslationController(engine: fakeEngine())
+        controller.setTarget("ko", supported: ["ja", "en"])
+        controller.toggle(title: "Title", content: content)
+        #expect(controller.target == "ko")
+        #expect(controller.state.state == .unsupported)
+        #expect(controller.state.shown == nil)
+    }
+}
+
+@MainActor struct TranslationDetectionCancellationTests {
+    @Test func aTargetChangeDiscardsTheOldLanguageDecision() async throws {
+        let gate = AsyncStream<Void>.makeStream()
+        let engine = TranslationEngine(decide: { _, _ in
+            for await _ in gate.stream { break }
+            return .translate(source: "en")
+        }, batch: nil)
+        let controller = TranslationController(engine: engine)
+        let content = ArticleContent(articleID: UUID(), text: "Synthetic.", summary: "", coverage: .feedProvided, originalURL: nil)
+        controller.setTarget("ja", supported: ["ja", "en"])
+        controller.toggle(title: "Title", content: content)
+        #expect(controller.isOn(for: content.articleID))
+        controller.setTarget("en", supported: ["ja", "en"])
+        gate.continuation.finish()
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(controller.state.state == .idle && controller.configuration == nil)
+        #expect(!controller.isOn(for: content.articleID))
+    }
+}
+
+@MainActor struct TranslationAvailabilityTests {
+    @Test func discoveringSupportForTheCurrentTargetDoesNotCancelAPress() async throws {
+        let gate = AsyncStream<Void>.makeStream()
+        let controller = TranslationController(engine: fakeEngine(gate: gate.stream))
+        let content = ArticleContent(articleID: UUID(), text: "Synthetic.", summary: "", coverage: .feedProvided, originalURL: nil)
+        controller.toggle(title: "Title", content: content)
+        for _ in 0..<100 where controller.state.key == nil { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(controller.state.key?.target == "en")
+        controller.setTarget("en", supported: ["en", "ja"])
+        #expect(controller.isOn(for: content.articleID))
+        gate.continuation.finish()
+        for _ in 0..<100 where controller.state.state != .done(failed: 0, source: "en") { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(controller.state.shown?.title == "訳:Title")
     }
 }

@@ -332,11 +332,11 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 
 ### 3.6 Translation
 
-A button translates the open article into another language, on the Mac, with the system's Translation framework. How it is built, and why that framework and not Foundation Models, is in the [design](superpowers/plans/2026-10-12-translation-design.md).
+A button translates the open article into another language, on the Mac, with the system's Translation framework. It uses the system session and in-memory state described in [architecture 3.2](architecture.md#32-indexes-and-late-results); the policy is in decision 0054.
 
 **Button and key**
 
-- A button 「翻訳」 (Translate) sits in the article band, before 「元ページをブラウザで開く」. Its help text is 「翻訳する／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
+- A button 「翻訳」 (Translate) sits in the article band, before 「元ページをブラウザで開く」. Its help names the target, for example 「日本語に翻訳／原文に戻す (t)」; its icon (`character.bubble`; the system's `translate` has no filled form) is filled while a translation is shown. It is always there and is disabled when no article is open (the toolbar does not change height).
 - The same command is in the menu bar: 「表示 ▸ 翻訳 / 原文に戻す」, without a key.
 - `t` does the same, when no editable field is being typed in (3.1.5).
 - Pressing it translates the title and the body of the open article, in place. Pressing it again shows the original.
@@ -355,7 +355,7 @@ A button translates the open article into another language, on the Mac, with the
 - If the article is already in the target language, the status says so, for example 「すでに日本語です」, and nothing else happens.
 - A failure is one short sentence in the row, never an alert: the language pair is not supported; the download was not allowed; the language pack is missing and the Mac is offline. If one paragraph fails, its original text stays and the row says how many failed.
 
-**Language** `[not built #154]`
+**Language**
 
 - The target is 「記事翻訳」 (Article Translation) in Settings ▸ 「言語」 (3.7). Its first item is 「システムに合わせる」 (Match System); then every target language the system reports, with localized names.
 - Match System uses the first of the Mac's preferred languages that the system can translate into, compared by language and script (region ignored), or English if none can. It follows later changes of the Mac's preferences.
@@ -385,7 +385,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has four panes. S
 | Pane | Holds | Code |
 |---|---|---|
 | 「外観」 (Appearance) | the theme and the article's text size | `ReaderSettingsView`, `AppearancePicker` |
-| 「言語」 (Language) `[not built #154]` | the article's translation target (3.6) and the display language | `ReaderSettingsView` |
+| 「言語」 (Language) | the article's translation target (3.6) and the display language | `ReaderSettingsView` |
 | 「ショートカット」 (Shortcuts) | the keys, to read | `ShortcutList`, `ReaderShortcuts` |
 | 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
 
@@ -395,7 +395,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has four panes. S
 
 | Setting | Choices | Match System |
 |---|---|---|
-| 「記事翻訳」 (Article Translation) `[not built #154]` | 「システムに合わせる」 (Match System), then the system's translation languages | the first of the Mac's preferred languages the system can translate into, or English (3.6) |
+| 「記事翻訳」 (Article Translation) | 「システムに合わせる」 (Match System), then the system's translation languages | the first of the Mac's preferred languages the system can translate into, or English (3.6) |
 | 「表示言語」 (App Language) `[not built #271]` | 「システムに合わせる」 (Match System), English, Japanese, and with #272 Simplified Chinese, Traditional Chinese, Korean, Spanish, Brazilian Portuguese | chosen the way macOS chooses an app's language from the Mac's preferred languages (for example `zh-TW` gives Traditional Chinese), or English |
 
 - The two choices are independent; a manual choice in either is remembered across launches until Match System is chosen again. `[not built #271]`
@@ -508,7 +508,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
-| PRD-18 | Read an article in another language `[not built #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the Settings target, Match System, the remembered choice, target help and a target change while a translation is shown: `[not built #154]` |
+| PRD-18 | Read an article in another language | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the Settings target, Match System, the remembered choice, target help and a target change while a translation is shown: |
 | PRD-19 | Send an article to the note | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | unit tests (`NoteClipTests`); UI tests (`NoteInsertionTests`, `SendToNoteTests`); real Mac (Japanese input, undo, VoiceOver, a long note) |
 | PRD-20 | Choose the app language `[not built #271]` | As in 3.7: Match System and the bundled display languages are offered (all seven with #272 `[not built #272]`); Match System follows the Mac preferences or falls back to English; a choice applies at the next launch and matches System Settings; a manual choice survives restart; untranslated UI text falls back to English; article and note text stay unchanged; article translation keeps its own target | real Mac (menus, Settings, errors, shortcuts, accessibility labels and text expansion in each language; English and Japanese wording reviewed by the owner); synthetic settings and fallback tests to be added with #271 |
 
