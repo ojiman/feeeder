@@ -52,7 +52,7 @@ The window has four areas: the sidebar, the list, the article and the note. Norm
 
 ### Refresh
 
-The app refreshes at launch, when you come back to it, and every 30 minutes; the refresh button at the top of the sidebar refreshes by hand, and its arrow turns while it works. New articles slide in at the top of the list; if you have scrolled down, the list stays where you are. If a download fails, the saved articles can still be read.
+The app refreshes at launch, when you come back to it, and every 30 minutes; the refresh button at the top of the sidebar refreshes by hand, and its arrow turns while it works. New articles slide into the list where they belong; if you have scrolled down, the list stays where you are. If a download fails, the saved articles can still be read.
 
 ### Reading and keys
 
