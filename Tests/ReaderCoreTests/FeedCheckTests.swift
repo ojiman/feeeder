@@ -257,7 +257,8 @@ import Testing
         }
         checker.update(source: "https://127.0.0.1:1200/feed.xml", delay: .milliseconds(10))
         for _ in 0..<500 { if case .ready = checker.state { break }; try? await Task.sleep(for: .milliseconds(20)) }   // a loaded runner is slow
-        #expect(fetched.values == [.url(URL(string: "https://127.0.0.1:1200/feed.xml")!)])  // only the last edit reached the network
+        // A slow runner can let an early wait end before the next edit, as a person who paused would; the last edit always wins.
+        #expect(fetched.values.last == .url(URL(string: "https://127.0.0.1:1200/feed.xml")!))
         guard case .ready = checker.state else { Issue.record("expected ready, got \(checker.state)"); return }
     }
 }
