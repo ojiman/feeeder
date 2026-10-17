@@ -2622,49 +2622,49 @@
         }
       }
     },
-    "Could not import the OPML file.": {
+    "Could not import the OPML file": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not import the OPML file."
+            "value": "Could not import the OPML file"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "OPMLを取り込めませんでした。"
+            "value": "OPMLを取り込めませんでした"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法导入 OPML 文件。"
+            "value": "无法导入 OPML 文件"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "無法匯入 OPML 檔案。"
+            "value": "無法匯入 OPML 檔案"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "OPML 파일을 가져올 수 없습니다."
+            "value": "OPML 파일을 가져올 수 없습니다"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se pudo importar el archivo OPML."
+            "value": "No se pudo importar el archivo OPML"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não foi possível importar o arquivo OPML."
+            "value": "Não foi possível importar o arquivo OPML"
           }
         }
       }
@@ -3468,53 +3468,6 @@
         }
       }
     },
-    "Existing subscriptions skipped: %lld.": {
-      "comment": "OPML import report",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Existing subscriptions skipped: %lld."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すでに購読している%lld件は取り込みませんでした。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已跳过现有订阅：%lld 个。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已略過現有訂閱：%lld 個。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이미 구독 중이어서 건너뛴 항목: %lld개."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suscripciones existentes omitidas: %lld."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Assinaturas existentes ignoradas: %lld."
-          }
-        }
-      }
-    },
     "Feed": {
       "comment": "Sources/ReaderCore/FeedParser.swift",
       "localizations": {
@@ -4075,53 +4028,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nome da pasta"
-          }
-        }
-      }
-    },
-    "HTTP URLs changed to HTTPS: %lld.": {
-      "comment": "Sources/ReaderCore/OPMLImporter.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HTTP URLs changed to HTTPS: %lld."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "http:// の%lld件は https:// に変えました。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已将 HTTP 地址改为 HTTPS：%lld 个。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已將 HTTP 網址改為 HTTPS：%lld 個。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HTTPS로 변경한 HTTP URL: %lld개."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URL HTTP cambiadas a HTTPS: %lld."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URLs HTTP alteradas para HTTPS: %lld."
           }
         }
       }
@@ -5019,96 +4925,96 @@
         }
       }
     },
-    "No new subscriptions.": {
+    "No new subscriptions": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No new subscriptions."
+            "value": "No new subscriptions"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "新しい購読はありませんでした。"
+            "value": "新しい購読はありませんでした"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有新订阅。"
+            "value": "没有新订阅"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "沒有新訂閱。"
+            "value": "沒有新訂閱"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "새 구독이 없습니다."
+            "value": "새 구독이 없습니다"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No hay suscripciones nuevas."
+            "value": "No hay suscripciones nuevas"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nenhuma assinatura nova."
+            "value": "Nenhuma assinatura nova"
           }
         }
       }
     },
-    "No subscriptions were found in this file.": {
+    "No subscriptions were found in this file": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No subscriptions were found in this file."
+            "value": "No subscriptions were found in this file"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このファイルに購読は見つかりませんでした。"
+            "value": "このファイルに購読は見つかりませんでした"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此文件中没有订阅。"
+            "value": "此文件中没有订阅"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "此檔案中沒有訂閱。"
+            "value": "此檔案中沒有訂閱"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 파일에서 구독을 찾을 수 없습니다."
+            "value": "이 파일에서 구독을 찾을 수 없습니다"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se han encontrado suscripciones en este archivo."
+            "value": "No se han encontrado suscripciones en este archivo"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nenhuma assinatura foi encontrada neste arquivo."
+            "value": "Nenhuma assinatura foi encontrada neste arquivo"
           }
         }
       }
@@ -7416,49 +7322,49 @@
         }
       }
     },
-    "Subscriptions added: %lld.": {
+    "Subscriptions added: %lld": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Subscriptions added: %lld."
+            "value": "Subscriptions added: %lld"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld件の購読を追加しました。"
+            "value": "%lld件の購読を追加しました"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已添加订阅：%lld 个。"
+            "value": "已添加订阅：%lld 个"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "已加入訂閱：%lld 個。"
+            "value": "已加入訂閱：%lld 個"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "추가한 구독: %lld개."
+            "value": "추가한 구독: %lld개"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suscripciones añadidas: %lld."
+            "value": "Suscripciones añadidas: %lld"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Assinaturas adicionadas: %lld."
+            "value": "Assinaturas adicionadas: %lld"
           }
         }
       }
@@ -9437,53 +9343,6 @@
         }
       }
     },
-    "Unreadable URLs skipped: %lld.": {
-      "comment": "OPML import report",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unreadable URLs skipped: %lld."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "読めないアドレス%lld件は取り込みませんでした。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已跳过无法读取的地址：%lld 个。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已略過無法讀取的網址：%lld 個。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽을 수 없어 건너뛴 URL: %lld개."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URL ilegibles omitidas: %lld."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "URLs ilegíveis ignoradas: %lld."
-          }
-        }
-      }
-    },
     "Unsubscribe…": {
       "comment": "Sources/UnagiReader/ReaderView.swift",
       "localizations": {
@@ -9950,6 +9809,147 @@
           "stringUnit": {
             "state": "translated",
             "value": "n fica indisponível ao digitar"
+          }
+        }
+      }
+    },
+    "• Already subscribed: %lld": {
+      "comment": "OPML import report",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Already subscribed: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "・登録済み: %lld件"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 已订阅：%lld 个"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 已訂閱：%lld 個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 이미 구독 중: %lld개"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Suscripciones existentes: %lld"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Assinaturas existentes: %lld"
+          }
+        }
+      }
+    },
+    "• Changed to HTTPS: %lld": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Changed to HTTPS: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "・通信安全化: %lld件"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 已改用 HTTPS：%lld 个"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 已改用 HTTPS：%lld 個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• HTTPS로 변경: %lld개"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Cambiadas a HTTPS: %lld"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Alteradas para HTTPS: %lld"
+          }
+        }
+      }
+    },
+    "• Failed: %lld": {
+      "comment": "OPML import report",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Failed: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "・失敗: %lld件"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 失败：%lld 个"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 失敗：%lld 個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• 실패: %lld개"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Fallos: %lld"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Falhas: %lld"
           }
         }
       }

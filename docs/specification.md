@@ -157,6 +157,8 @@ normal                original page (v)     note beside article   note with the 
 **Sidebar**
 
 - Choose the scope from Feeds (all articles, unread, Star) and 「購読元」 (folders and subscriptions). Each subscription shows its site icon. The 「購読元」 section can be collapsed.
+- Each folder stays open or closed as the person left it, also after a restart; at the first launch all are closed, and a folder made again after it disappeared starts closed.
+- The rows and their scroll bar start below the sidebar's band: scrolled rows stop at its lower edge and never pass under the window buttons.
 - At the top right, right-aligned: add subscription, then refresh. While a refresh runs, the refresh arrow itself turns (not with Reduce Motion) and the button stays enabled (pressing it again does nothing).
 - A small orange ＋ appears at the right end of the 「購読元」 heading on mouse-over and adds a subscription. The heading stays in place however long the list is.
 - No Hide Sidebar button and no folder-management button.
@@ -321,7 +323,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 **Importing OPML**
 
 - File ▸ 「OPMLを取り込む…」. No shortcut.
-- Subscriptions are added at once in one save; articles arrive afterwards. Folders are one level: deeper levels go into the top folder. Existing subscriptions are neither added again nor moved. The result is one short sentence (decision 0041).
+- Subscriptions are added at once in one save; articles arrive afterwards. Folders are one level: deeper levels go into the top folder. Existing subscriptions are neither added again nor moved. The result is an alert (decision 0041). Its title is the result: 「N件の購読を追加しました」, or 「新しい購読はありませんでした」 when nothing was added (「このファイルに購読は見つかりませんでした」 for an empty file). Below it, one line for each of these that is not zero, and nothing when all went well: 「・登録済み: N件」 (already subscribed, left as they are), 「・通信安全化: N件」 (plain `http://` addresses changed to `https://`), 「・失敗: N件」 (addresses that could not be used). A file that cannot be read gives the title 「OPMLを取り込めませんでした」 and the reason below it.
 
 **Managing subscriptions**
 
@@ -501,11 +503,11 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-08 | Set retention and deletion | The periods, the confirmations and "the note is never deleted automatically" of 3.3 hold. An expired body never looks readable | unit tests |
 | PRD-09 | Read Stars again | The key and the button change the same state; the Star list can be read in order. Star, title and URL survive a restart and the body's expiry. Star and note are independent | unit tests, synthetic app |
 | PRD-10 | (unused) | Sending a summary to a note was removed by decision 0049 | — |
-| PRD-11 | Read many articles | Folders, counts without duplicates, icons and article images work; a late, failed or offline image never changes the row height, the selection or the position | UI tests, real Mac |
+| PRD-11 | Read many articles | Folders (open or closed as left, also after a restart), counts without duplicates, icons and article images work; a late, failed or offline image never changes the row height, the selection or the position | UI tests, real Mac |
 | PRD-12 | (unused) | Removed by decision 0019 (unsorted Stars, theme suggestions) | — |
 | PRD-13 | A Mac without AI | With Writing Tools unavailable, the note can be written, edited and copied, and the app uses no network for AI | real Mac (Writing Tools off) |
 | PRD-14 | Add a subscription from a URL | As in 3.5: the check runs when typing stops; 「追加」 only when the feed was read; a site URL finds its feed; `http://` is checked as `https://`, and a feed only on http says that http is not supported; each failure has its sentence; an existing subscription is not added; the folder field appears only when it should | unit tests, synthetic app, real Mac (Japanese input, #136) |
-| PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
+| PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is a short title and a line for each thing that was not plain success | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
 | PRD-18 | Read an article in another language | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the Settings target, Match System, the remembered choice, target help and a target change while a translation is shown: |

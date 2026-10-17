@@ -173,7 +173,7 @@ import Testing
         defer { try? FileManager.default.removeItem(at: opml) }
         reloadSwitch.failing = true
         let report = await OPMLImporter(store: store).importFile(at: opml)
-        #expect(report.title == "Subscriptions added: 1." && report.message == "The list could not be refreshed. Reopen the app." && report.addedFeedIDs.isEmpty)
+        #expect(report.title == "Subscriptions added: 1" && report.message == "The list could not be refreshed. Reopen the app." && report.addedFeedIDs.isEmpty)
     }
     @Test func importingNothingChangesNothing() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
@@ -199,12 +199,12 @@ import Testing
         """))
         defer { try? FileManager.default.removeItem(at: url) }
         let report = await OPMLImporter(store: store).importFile(at: url)
-        #expect(report.title == "Subscriptions added: 2." && report.addedFeedIDs.count == 2)                   // the result is the title
-        #expect(report.message == "Unreadable URLs skipped: 1.")                                // only what is not plain success; the repeated A is one feed, not "already subscribed"
+        #expect(report.title == "Subscriptions added: 2" && report.addedFeedIDs.count == 2)                   // the result is the title
+        #expect(report.message == "• Failed: 1")                                // only what is not plain success; the repeated A is one feed, not "already subscribed"
         let clean = OPMLImporter.report(added: [UUID()], alreadySubscribed: 0, unusable: 0)
-        #expect(clean.title == "Subscriptions added: 1." && clean.message.isEmpty)                            // all well: nothing more to say
+        #expect(clean.title == "Subscriptions added: 1" && clean.message.isEmpty)                            // all well: nothing more to say
         let mixed = OPMLImporter.report(added: [UUID()], alreadySubscribed: 2, unusable: 1, upgraded: 9)
-        #expect(mixed.message == "Existing subscriptions skipped: 2.\nUnreadable URLs skipped: 1.\nHTTP URLs changed to HTTPS: 9.")
+        #expect(mixed.message == "• Already subscribed: 2\n• Changed to HTTPS: 9\n• Failed: 1")
         #expect(store.feeds.count == 2 && Set(store.feeds.map(\.folder)) == ["Tech"])
     }
     @Test func theReportSaysWhatHappenedWhenNothingWasAdded() async throws {
@@ -215,9 +215,9 @@ import Testing
         defer { try? FileManager.default.removeItem(at: first); try? FileManager.default.removeItem(at: empty) }
         _ = await OPMLImporter(store: store).importFile(at: first)
         let again = await OPMLImporter(store: store).importFile(at: first)
-        #expect(again.addedFeedIDs.isEmpty && again.title == "No new subscriptions." && again.message == "Existing subscriptions skipped: 1.")
+        #expect(again.addedFeedIDs.isEmpty && again.title == "No new subscriptions" && again.message == "• Already subscribed: 1")
         let none = await OPMLImporter(store: store).importFile(at: empty)
-        #expect(none.addedFeedIDs.isEmpty && none.title == "No subscriptions were found in this file." && none.message.isEmpty)
+        #expect(none.addedFeedIDs.isEmpty && none.title == "No subscriptions were found in this file" && none.message.isEmpty)
     }
     @Test func onlyARegularFileIsReadAndAtMostTheLimit() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
@@ -247,9 +247,9 @@ import Testing
         let rss = try file("<rss><channel><title>x</title></channel></rss>")
         defer { try? FileManager.default.removeItem(at: rss) }
         let notOPML = await importer.importFile(at: rss)
-        #expect(notOPML.title == "Could not import the OPML file." && notOPML.message == "This is not an OPML file." && notOPML.addedFeedIDs.isEmpty)
+        #expect(notOPML.title == "Could not import the OPML file" && notOPML.message == "This is not an OPML file." && notOPML.addedFeedIDs.isEmpty)
         let missing = await importer.importFile(at: FileManager.default.temporaryDirectory.appending(path: "no-such-" + UUID().uuidString + ".opml"))
-        #expect(missing.title == "Could not import the OPML file." && !missing.message.isEmpty)
+        #expect(missing.title == "Could not import the OPML file" && !missing.message.isEmpty)
         let huge = FileManager.default.temporaryDirectory.appending(path: "opml-huge-" + UUID().uuidString + ".opml")
         try Data(repeating: 32, count: OPMLParser.maximumBytes + 1).write(to: huge)
         defer { try? FileManager.default.removeItem(at: huge) }
@@ -273,7 +273,7 @@ import Testing
         defer { try? FileManager.default.removeItem(at: opml) }
         let flow = flow(store, urls: [URL(string: address)!], choose: { opml })
         await flow.start()
-        #expect(flow.report?.title == "Subscriptions added: 1.")
+        #expect(flow.report?.title == "Subscriptions added: 1")
         let added = try #require(store.feeds.first)
         #expect(added.folder == "Tech" && added.lastFetchedAt != nil && !store.articles.isEmpty)       // the articles came, so the person is not left with empty rows
         flow.dismissReport()
