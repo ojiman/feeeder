@@ -51,13 +51,17 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
     /// What an answer means to a person who already pressed Return and is waiting.
     public enum WaitingAction: Equatable { case add(CheckedFeed), keepWaiting, giveUp }
     public private(set) var state = State.idle
-    private let fetch: @Sendable (FeedCheckRequest) async throws -> CheckedFeed
-    private let sleep: @Sendable (Duration) async throws -> Void
+    // Nil means the real fetch and the real wait, called directly in the task. The real wait written as a closure in a default
+    // argument of `init` aborted the app in `swift_task_dealloc` when the check was cancelled during it (CI toolchain Swift 6.3.3,
+    // Debug; #266). The real fetch had the same form, so it is called directly too.
+    private let fetch: (@Sendable (FeedCheckRequest) async throws -> CheckedFeed)?
+    private let sleep: (@Sendable (Duration) async throws -> Void)?
     private var task: Task<Void, Never>?
     private var generation = 0
 
-    public init(fetch: @escaping @Sendable (FeedCheckRequest) async throws -> CheckedFeed = { try await FeedChecker.fetch($0) },
-                sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
+    /// Tests replace the network and the wait; the app passes nothing.
+    public init(fetch: (@Sendable (FeedCheckRequest) async throws -> CheckedFeed)? = nil,
+                sleep: (@Sendable (Duration) async throws -> Void)? = nil) {
         self.fetch = fetch; self.sleep = sleep
     }
 
@@ -77,11 +81,14 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
         guard request != nil || hint != nil else { return }
         task = Task { [fetch, sleep] in
             do {
-                if delay > .zero { try await sleep(delay) }
+                if delay > .zero {
+                    if let sleep { try await sleep(delay) } else { try await Task.sleep(for: delay) }
+                }
                 guard mine == generation else { return }
                 guard let request else { state = .failed(hint ?? ""); return }
                 state = .checking
-                let feed = try await fetch(request)
+                let feed: CheckedFeed
+                if let fetch { feed = try await fetch(request) } else { feed = try await Self.fetch(request) }
                 guard mine == generation, !Task.isCancelled else { return }
                 state = .ready(feed)
             } catch {

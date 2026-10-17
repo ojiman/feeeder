@@ -948,19 +948,19 @@
         }
       }
     },
-    "Could not import the OPML file.": {
+    "Could not import the OPML file": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not import the OPML file."
+            "value": "Could not import the OPML file"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "OPMLを取り込めませんでした。"
+            "value": "OPMLを取り込めませんでした"
           }
         }
       }
@@ -1254,23 +1254,6 @@
         }
       }
     },
-    "Existing subscriptions skipped: %lld.": {
-      "comment": "OPML import report",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Existing subscriptions skipped: %lld."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "すでに購読している%lld件は取り込みませんでした。"
-          }
-        }
-      }
-    },
     "Feed": {
       "comment": "Sources/ReaderCore/FeedParser.swift",
       "localizations": {
@@ -1471,23 +1454,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "フォルダ名"
-          }
-        }
-      }
-    },
-    "HTTP URLs changed to HTTPS: %lld.": {
-      "comment": "Sources/ReaderCore/OPMLImporter.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HTTP URLs changed to HTTPS: %lld."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "http:// の%lld件は https:// に変えました。"
           }
         }
       }
@@ -1815,36 +1781,36 @@
         }
       }
     },
-    "No new subscriptions.": {
+    "No new subscriptions": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No new subscriptions."
+            "value": "No new subscriptions"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "新しい購読はありませんでした。"
+            "value": "新しい購読はありませんでした"
           }
         }
       }
     },
-    "No subscriptions were found in this file.": {
+    "No subscriptions were found in this file": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No subscriptions were found in this file."
+            "value": "No subscriptions were found in this file"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このファイルに購読は見つかりませんでした。"
+            "value": "このファイルに購読は見つかりませんでした"
           }
         }
       }
@@ -2682,19 +2648,19 @@
         }
       }
     },
-    "Subscriptions added: %lld.": {
+    "Subscriptions added: %lld": {
       "comment": "Sources/ReaderCore/OPMLImporter.swift",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Subscriptions added: %lld."
+            "value": "Subscriptions added: %lld"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld件の購読を追加しました。"
+            "value": "%lld件の購読を追加しました"
           }
         }
       }
@@ -3413,23 +3379,6 @@
         }
       }
     },
-    "Unreadable URLs skipped: %lld.": {
-      "comment": "OPML import report",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unreadable URLs skipped: %lld."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "読めないアドレス%lld件は取り込みませんでした。"
-          }
-        }
-      }
-    },
     "Unsubscribe…": {
       "comment": "Sources/UnagiReader/ReaderView.swift",
       "localizations": {
@@ -3596,6 +3545,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "n は文字の入力中は効きません"
+          }
+        }
+      }
+    },
+    "• Already subscribed: %lld": {
+      "comment": "OPML import report",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Already subscribed: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "・登録済み: %lld件"
+          }
+        }
+      }
+    },
+    "• Changed to HTTPS: %lld": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Changed to HTTPS: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "・通信安全化: %lld件"
+          }
+        }
+      }
+    },
+    "• Failed: %lld": {
+      "comment": "OPML import report",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Failed: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "・失敗: %lld件"
           }
         }
       }
