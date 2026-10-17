@@ -107,13 +107,28 @@ import Carbon
         XCTAssertTrue(app.outlines.staticTexts["Smoke local feed"].exists)
     }
 
-    // Checks PRD-15 and the sidebar context menu with real events.
-    func testSidebarContextMenuAndOPMLMenu() {
-        app.outlines.staticTexts["開発ノート"].rightClick()
-        XCTAssertTrue(app.menuItems["名前を変更"].exists)
-        XCTAssertTrue(app.menuItems["名前を変更"].isEnabled)
-        // shortcut: editing the name is omitted after repeated focus failures; restore it with #265.
-        app.windows.firstMatch.typeKey(.escape, modifierFlags: [])
+    // Checks PRD-16 and PRD-15 with real events. 「名前を変更」 from the context menu puts the keyboard in the name field at once
+    // (decision 0043): the person types without clicking it. Several renames, from an unselected and a selected row, because the
+    // focus was lost only sometimes (#265).
+    func testRenameAndOPMLMenu() {
+        var current = "開発ノート"
+        for round in 1...4 {
+            let row = app.outlines.staticTexts[current]
+            XCTAssertTrue(row.waitForExistence(timeout: 5))
+            if round > 2 { row.click() }                                       // rounds 3 and 4: the subscription is selected first
+            row.rightClick()
+            app.menuItems["名前を変更"].click()
+            let name = app.textFields["名前"]
+            XCTAssertTrue(name.waitForExistence(timeout: 5))
+            let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: name)
+            XCTAssertEqual(XCTWaiter.wait(for: [focused], timeout: 5), .completed, "round \(round): the name field has no keyboard focus")
+            let renamed = "Smoke renamed \(round)"
+            app.typeText(renamed)                                              // the whole old name is selected, so typing replaces it
+            app.typeKey(.return, modifierFlags: [])
+            XCTAssertTrue(app.outlines.staticTexts[renamed].waitForExistence(timeout: 5), "round \(round)")
+            XCTAssertFalse(app.outlines.staticTexts[current].exists)
+            current = renamed
+        }
         let englishFile = app.menuBars.menuBarItems["File"]
         let file = englishFile.exists ? englishFile : app.menuBars.menuBarItems["ファイル"]
         file.click()
