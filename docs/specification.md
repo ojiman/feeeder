@@ -2,7 +2,7 @@
 
 What V1 is and is not, as the person sees it. Why the product exists is in the [vision](vision.md); how it is built is in the [architecture](architecture.md); why each rule is so is in the [decision records](decisions/README.md). How to write this file: [spec-style.md](spec-style.md). What is not written here is not a requirement.
 
-- **Approval.** The owner approved this V1 specification on 2026-10-17 with no scope changes (#144). The language settings in 3.6 and 3.7 (#154, #271, #272), revised by the owner later that day (decision 0060), are planned for completion by V1. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
+- **Approval.** The owner approved this V1 specification on 2026-10-17 with no scope changes (#144). The language settings in 3.6 and 3.7 (#154, #271, #272), revised by the owner later that day (decision 0060), are part of V1. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
 - **Status marks.** A rule that is not built yet ends with `[not built #issue]`. A rule with no mark is built.
 
 ## 1. Purpose and scope
@@ -396,13 +396,13 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has four panes. S
 | Setting | Choices | Match System |
 |---|---|---|
 | 「記事翻訳」 (Article Translation) | 「システムに合わせる」 (Match System), then the system's translation languages | the first of the Mac's preferred languages the system can translate into, or English (3.6) |
-| 「表示言語」 (App Language) | 「システムに合わせる」 (Match System), English, Japanese, and with #272 Simplified Chinese, Traditional Chinese, Korean, Spanish, Brazilian Portuguese | chosen the way macOS chooses an app's language from the Mac's preferred languages (for example `zh-TW` gives Traditional Chinese), or English |
+| 「表示言語」 (App Language) | 「システムに合わせる」 (Match System), English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Spanish, Brazilian Portuguese | chosen the way macOS chooses an app's language from the Mac's preferred languages (for example `zh-TW` gives Traditional Chinese), or English |
 
 - The two choices are independent; a manual choice in either is remembered across launches until Match System is chosen again.
 - The display language changes the app's own labels, menus, help, errors, status, shortcut descriptions and accessibility text, never the person's subscriptions, articles or note.
 - The display language is the app's language in System Settings ▸ General ▸ Language & Region ▸ Applications: a change in either shows in the other. It applies at the next launch; below the choice, 「次回の起動から反映されます」 (applies at the next launch). The app does not restart itself.
 - Only languages with bundled translations are offered; a missing UI translation falls back to English.
-- The user guide names the display languages that were prepared with AI and not reviewed by a person, and says how to report a wrong translation (decision 0060). `[not built #272]`
+- The user guide names the display languages that were prepared with AI and not reviewed by a person, and says how to report a wrong translation (decision 0060).
 
 **Theme**
 
@@ -510,7 +510,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
 | PRD-18 | Read an article in another language | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the Settings target, Match System, the remembered choice, target help and a target change while a translation is shown: |
 | PRD-19 | Send an article to the note | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | unit tests (`NoteClipTests`); UI tests (`NoteInsertionTests`, `SendToNoteTests`); real Mac (Japanese input, undo, VoiceOver, a long note) |
-| PRD-20 | Choose the app language | As in 3.7: Match System and the bundled display languages are offered (all seven with #272 `[not built #272]`); Match System follows the Mac preferences or falls back to English; a choice applies at the next launch and matches System Settings; a manual choice survives restart; untranslated UI text falls back to English; article and note text stay unchanged; article translation keeps its own target | real Mac (menus, Settings, errors, shortcuts, accessibility labels and text expansion in each language; English and Japanese wording reviewed by the owner); `AppLanguageTests`, `CatalogTests` (temporary preferences, native matching, compiled resources and fallback) |
+| PRD-20 | Choose the app language | As in 3.7: Match System and the bundled display languages are offered (all seven); Match System follows the Mac preferences or falls back to English; a choice applies at the next launch and matches System Settings; a manual choice survives restart; untranslated UI text falls back to English; article and note text stay unchanged; article translation keeps its own target | real Mac (menus, Settings, errors, shortcuts, accessibility labels and text expansion in each language; English and Japanese wording reviewed by the owner); `AppLanguageTests`, `CatalogTests` (temporary preferences, native matching, compiled resources and fallback) |
 
 ### 7.1 Conditions to ship 1.0
 
