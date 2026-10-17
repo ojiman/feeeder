@@ -1,6 +1,6 @@
 # 0005 V1の製品判断4件（タイムゾーン・保持・Claude連携・ソース公開）
 
-- Status: valid in part. Point 3 (Claude Desktop hand-off) is replaced by [0049](0049-one-note-and-no-ai-of-its-own.md); the week ranges of point 1 went with the daily and weekly notes. Points 2 and 4 stand.
+- Status: valid in part. Point 1's exclusion of an in-app display-language setting is replaced by [0060](0060-language-settings-and-ui-localization.md). Point 3 (Claude Desktop hand-off) is replaced by [0049](0049-one-note-and-no-ai-of-its-own.md); the week ranges of point 1 went with the daily and weekly notes. Points 2 and 4 stand.
 - 日付: 2026-10-04（PR #2のマージ、日本時間）
 - 決定者: 本人（PdM）
 

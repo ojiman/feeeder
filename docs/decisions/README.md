@@ -17,7 +17,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0001](0001-fresh-library-no-prototype-migration.md) | V1 starts with an empty library; no prototype migration | valid |
 | [0002](0002-single-supervised-writer.md) | One supervised implementation writer at a time | valid |
 | [0003](0003-beta-data-compatibility.md) | No data compatibility between betas; guaranteed from 1.0 | valid |
-| [0005](0005-v1-product-decisions-2026-10-04.md) | V1 product decisions: retention, source publication | valid in part (hand-off replaced by 0049) |
+| [0005](0005-v1-product-decisions-2026-10-04.md) | V1 product decisions: retention, source publication | valid in part (hand-off: 0049; display-language setting: 0060) |
 | [0006](0006-original-page-and-sidebar-behavior.md) | Article selection and the sidebar while the original page is open | valid |
 | [0007](0007-support-floor-macos-27.md) | Support floor macOS 27.0; the build floor stays 26.6 | valid |
 | [0019](0019-v1-simplification-notes.md) | V1 simplification: notes replace themes | valid in part (points 2, 3, 5, 6, 8 replaced by 0049) |
@@ -55,6 +55,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0057](0057-each-column-has-its-own-band.md) | Each column has its own band; no system toolbar | valid |
 | [0058](0058-unagi-reader-defines-its-own-requirements.md) | Unagi Reader defines its own requirements | valid |
 | [0059](0059-send-the-article-to-the-note.md) | Send the article to the note: an insertion the person asks for; no AI summary | valid |
+| [0060](0060-language-settings-and-ui-localization.md) | Language settings, independent defaults and AI-prepared UI localization | valid (not built, #154) |
 
 ## Removed from the working tree
 

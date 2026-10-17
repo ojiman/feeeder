@@ -2,7 +2,7 @@
 
 What V1 is and is not, as the person sees it. Why the product exists is in the [vision](vision.md); how it is built is in the [architecture](architecture.md); why each rule is so is in the [decision records](decisions/README.md). How to write this file: [spec-style.md](spec-style.md). What is not written here is not a requirement.
 
-- **Approval.** The owner approved this V1 specification on 2026-10-17 with no scope changes (#144). The language menu in 3.6 (#154) is planned for completion by V1. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
+- **Approval.** The owner approved this V1 specification on 2026-10-17 with no scope changes (#144). The language settings in 3.6 and 3.7 (#154), revised by the owner later that day, are planned for completion by V1. Approving the specification is not accepting the product: that is a separate demo on a real Mac (PRD-07).
 - **Status marks.** A rule that is not built yet ends with `[not built #issue]`. A rule with no mark is built.
 
 ## 1. Purpose and scope
@@ -84,7 +84,7 @@ These words mean the same thing in this specification, the user guide, the decis
 - Say 「元ページ」 (original page), never 「原文」.
 - Say 「一覧」 (list) for the article list; 「リスト」 only for a Markdown list.
 - 「購読」 is one subscription; 「購読元」 is the section heading and the name of the subscription an article came from.
-- Quote screen labels exactly; the app's labels are Japanese.
+- Quote screen labels exactly; this specification gives the Japanese labels. Planned display languages are in 3.7.
 
 ### 3.1 The screen and reading
 
@@ -357,8 +357,15 @@ A button translates the open article into another language, on the Mac, with the
 
 **Language** `[not built #154]`
 
-- The button is a menu with a main action: a click translates (or goes back); the menu lists the languages the system reports, with a check on the current one. It has no other items.
-- The first target is the language of the app (Japanese), not the first system language. A choice made in the menu is remembered across launches.
+- Settings has 「記事翻訳」 (Article Translation), beside the display-language setting of 3.7; it lists every target language the system reports, with localized names.
+- The first target is the first supported match in the Mac's preferred languages, or English if none matches; it is chosen independently of the app's display language.
+- A manual choice is remembered across launches; changing the display language never changes it.
+- The article button, `t` and the menu-bar command translate into that target or return to the original; the article button has no language menu.
+- The button's help names the target, for example 「日本語に翻訳／原文に戻す (t)」.
+- The button stays enabled when the article is already in the target language; a press shows the same-language status above without translating.
+- Changing the target starts no translation; work for the old target is dropped and the next press uses the new target.
+
+The reason for the Settings choice and the independent defaults is in [decision 0060](decisions/0060-language-settings-and-ui-localization.md).
 
 **Core rules** (decision 0054)
 
@@ -381,6 +388,20 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has three panes. 
 | 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
 
 - The window opens on the pane that was shown last. Every choice is kept across launches and applies at once.
+
+**Language** `[not built #154]`
+
+The display language changes the app's own labels, menus, help, errors, shortcut descriptions and accessibility text, not the person's subscriptions, articles or note.
+
+| Setting | Choices | First value |
+|---|---|---|
+| 「表示言語」 (App Language) | English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Spanish, Brazilian Portuguese | the first matching language in the Mac's preferred languages, or English if none matches |
+| 「記事翻訳」 (Article Translation) | the system's translation languages (3.6) | independent of the display language (3.6) |
+
+- The two settings sit together; a manual choice in either is remembered across launches.
+- Only display languages with bundled translations are offered; a missing UI translation falls back to English.
+- The owner reviews English and Japanese; the other five are provided as AI-generated translations without a claim of human review.
+- Translation errors found after release are corrected as they are identified; preparing these UI resources adds no AI or translation service to the running app.
 
 **Theme**
 
@@ -459,7 +480,7 @@ The app has **no AI of its own** ([decision 0049](decisions/0049-one-note-and-no
 | Note | more than one note; folders, levels, tags, search or goals for notes; daily or weekly notes; system sharing services | decisions 0019, 0049 |
 | Fetching | taking text from the original page (decision 0056); bypassing paywalls, subscriptions, logins or captchas; a full-text guarantee | section 4 |
 | AI | an AI of the app's own (summary, draft help: a new decision is needed), keys or API calls in the app, AI off the Mac (Private Cloud Compute and the like), a dedicated link to one AI app (only 「Markdownをコピー」), sending or recording automatically, a guarantee of facts | decision 0049 |
-| Settings | an in-app language or time zone setting; changing keys; a text size for the note or the list; themes other than the four of 3.7 | 3.7 |
+| Settings | an in-app time zone setting; changing keys; a text size for the note or the list; themes other than the four of 3.7 | 3.7 |
 | Old data | the prototype's Like and any migration of it (Star is a new mark) | decision 0001 |
 
 Ideas for after V1, and the order of the work, are in the [roadmap](roadmap.md).
@@ -486,8 +507,9 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-15 | Move from another reader with OPML | File ▸ 「OPMLを取り込む…」: subscriptions appear at once, articles arrive later, folders are one level, existing subscriptions do not change, the result is one short sentence | unit tests, real Mac (the menu, a real OPML file, #136) |
 | PRD-16 | Manage subscriptions | Right-click: refresh, rename (in the row; Return on the selected row too), move to a folder, unsubscribe. Moving works with the chooser and with drag and drop | unit tests, real Mac (right-click, Return, drag, #136) |
 | PRD-17 | Narrow the list with a keyword | As in 3.1.4: `/` or the icon opens the filter; typing narrows the list to the articles of the scope whose title or feed summary contains it; clearing restores it; it stays across scopes and not across launches; `j` / `k` walk the filtered list; composing Japanese does not change the list | `ArticleFilterTests`, `ArticleFilterStoreTests`, `ReaderWorkspaceTests`, `ListFilterTests`; real Mac (the owner, with a library of several thousand articles; a real input method) |
-| PRD-18 | Read an article in another language `[not built #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the language menu: `[not built #154]` |
+| PRD-18 | Read an article in another language `[not built #154]` | As in 3.6: `t` or the button translates the open article and shows the progress and the result row; again shows the original; moving to another article shows the original; the text of the note, the list and the sidebar does not change; no text leaves the Mac | real Mac (the owner: a long English article into Japanese, a language pack download, a Mac without Apple Intelligence, VoiceOver); `ArticleTranslationTests`, `LanguageDecisionTests`, `TranslationTests`, `TranslationControllerTests` (a fake translator); the Settings target, system defaults, independent remembered choices and target help: `[not built #154]` |
 | PRD-19 | Send an article to the note | As in 3.3: `c` or 「記事 ▸ 記事をノートに送る」 inserts `[Title](URL)`, or the selection as a quotation with its source link, after the note's caret (at the end of a note never used), opening a closed note first; the keyboard stays where it was; one undo removes it; nothing is inserted while Japanese text is being composed; a failed save is shown; sending twice inserts twice; nothing else in the note changes | unit tests (`NoteClipTests`); UI tests (`NoteInsertionTests`, `SendToNoteTests`); real Mac (Japanese input, undo, VoiceOver, a long note) |
+| PRD-20 | Choose the app language `[not built #154]` | As in 3.7: all seven display languages are offered; the default matches the Mac preferences or falls back to English; a manual choice survives restart; untranslated UI text falls back to English; article and note text stay unchanged; article translation keeps its own target | real Mac (menus, Settings, errors, shortcuts, accessibility labels and text expansion in each language; English and Japanese wording reviewed by the owner); synthetic settings and fallback tests to be added with #154 |
 
 ### 7.1 Conditions to ship 1.0
 
