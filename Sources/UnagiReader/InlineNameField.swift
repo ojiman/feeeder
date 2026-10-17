@@ -21,7 +21,15 @@ struct InlineNameField: View {
         TextField("名前", text: $text.singleLine())
             .textFieldStyle(.plain).focused($focused)
             .accessibilityLabel("名前")
-            .onAppear { text = initial; focused = true }
+            .onAppear { text = initial }
+            // The context menu that started the edit may still be closing, and AppKit then gives the keyboard back to the sidebar.
+            // One request on appearance could lose to that, leaving the field without the keyboard (#265): ask again until it has it.
+            .task {
+                for _ in 0..<20 where !focused {
+                    focused = true
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
+            }
             .onSubmit { finish(text) }
             .onKeyPress(.escape) { finish(nil); return .handled }
             .onChange(of: focused) { _, isFocused in
