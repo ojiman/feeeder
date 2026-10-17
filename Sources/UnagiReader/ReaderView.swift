@@ -260,6 +260,7 @@ struct ReaderView: View {
             }
         }
         .listStyle(.sidebar)
+        .onChange(of: folders) { old, new in folderExpansion.forget(Set(old).subtracting(new)) }
         // The sidebar's band belongs to the window buttons and the two buttons (decision 0057): the rows scroll below it, and so does
         // the scroll bar. The list's own frame starts under the band, as the safe area of a column reports 0 (see `ListHeader`).
         return VStack(spacing: 0) {

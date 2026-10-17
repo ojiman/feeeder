@@ -157,6 +157,7 @@ normal                original page (v)     note beside article   note with the 
 **Sidebar**
 
 - Choose the scope from Feeds (all articles, unread, Star) and 「購読元」 (folders and subscriptions). Each subscription shows its site icon. The 「購読元」 section can be collapsed.
+- Each folder stays open or closed as the person left it, also after a restart; at the first launch all are closed, and a folder made again after it disappeared starts closed.
 - The rows and their scroll bar start below the sidebar's band: scrolled rows stop at its lower edge and never pass under the window buttons.
 - At the top right, right-aligned: add subscription, then refresh. While a refresh runs, the refresh arrow itself turns (not with Reduce Motion) and the button stays enabled (pressing it again does nothing).
 - A small orange ＋ appears at the right end of the 「購読元」 heading on mouse-over and adds a subscription. The heading stays in place however long the list is.
@@ -502,7 +503,7 @@ These are the conditions for passing, not a list of what has passed. "Where it i
 | PRD-08 | Set retention and deletion | The periods, the confirmations and "the note is never deleted automatically" of 3.3 hold. An expired body never looks readable | unit tests |
 | PRD-09 | Read Stars again | The key and the button change the same state; the Star list can be read in order. Star, title and URL survive a restart and the body's expiry. Star and note are independent | unit tests, synthetic app |
 | PRD-10 | (unused) | Sending a summary to a note was removed by decision 0049 | — |
-| PRD-11 | Read many articles | Folders, counts without duplicates, icons and article images work; a late, failed or offline image never changes the row height, the selection or the position | UI tests, real Mac |
+| PRD-11 | Read many articles | Folders (open or closed as left, also after a restart), counts without duplicates, icons and article images work; a late, failed or offline image never changes the row height, the selection or the position | UI tests, real Mac |
 | PRD-12 | (unused) | Removed by decision 0019 (unsorted Stars, theme suggestions) | — |
 | PRD-13 | A Mac without AI | With Writing Tools unavailable, the note can be written, edited and copied, and the app uses no network for AI | real Mac (Writing Tools off) |
 | PRD-14 | Add a subscription from a URL | As in 3.5: the check runs when typing stops; 「追加」 only when the feed was read; a site URL finds its feed; `http://` is checked as `https://`, and a feed only on http says that http is not supported; each failure has its sentence; an existing subscription is not added; the folder field appears only when it should | unit tests, synthetic app, real Mac (Japanese input, #136) |
