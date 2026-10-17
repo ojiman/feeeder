@@ -9,6 +9,12 @@ on:
     branches: [main]
     paths-ignore: ['docs/**', '**.md']
   workflow_dispatch:
+    inputs:
+      configuration:
+        description: The app build the UI smoke tests drive (debug builds its own; release uses the release job's app)
+        type: choice
+        options: [release, debug]
+        default: release
 
 permissions:
   contents: read
@@ -160,6 +166,50 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  # Real-app XCUITest smoke tests (#158). Not for pull requests and not part of `check`: a failure marks only this job.
+  # A person or agent can run the workflow by hand on a branch before merging a change to the screens.
+  ui-smoke:
+    name: ui-smoke
+    needs: release
+    if: github.event_name != 'pull_request' && needs.release.result == 'success'
+    runs-on: macos-26
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      CI_RESULTS: ${{ github.workspace }}/ci-results
+      CONFIGURATION: ${{ inputs.configuration || 'release' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Get the app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$CI_RESULTS"
+          if [ "$CONFIGURATION" = debug ]; then
+            { time bash scripts/build-app.sh; } > "$CI_RESULTS/ui-smoke-app-build.log" 2>&1 || { cat "$CI_RESULTS/ui-smoke-app-build.log"; exit 1; }
+          else
+            # The release job's packaged app: no second Release build.
+            gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "unagi-reader-release-$GITHUB_SHA" --dir "$RUNNER_TEMP/release"
+            mkdir -p .build
+            ditto -x -k "$RUNNER_TEMP/release/UnagiReader-adhoc.zip" .build
+          fi
+          echo "configuration: $CONFIGURATION" | tee "$CI_RESULTS/ui-smoke-configuration.txt"
+      - name: Run real-app UI smoke tests
+        run: bash scripts/run-ui-smoke.sh
+      - name: Save logs and artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: unagi-reader-ui-smoke-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.CI_RESULTS }}/
+          if-no-files-found: warn
+          retention-days: 7
+
   # The one status that the ruleset requires. It always runs. It fails when the tests fail, when the release build
   # fails where it was due, or when a job that was due was skipped or cancelled.
   check:
@@ -180,6 +230,8 @@ jobs:
         run: bash scripts/test-ci-gate.sh
       - name: Test the test-log check script
         run: bash scripts/test-check-test-log.sh
+      - name: Test the UI smoke support
+        run: bash scripts/test-run-ui-smoke.sh
       - name: Test the documents check
         run: bash scripts/test-check-docs.sh
       - name: Check the documents (links, decision numbers, status marks and issues in the roadmap)
