@@ -27,7 +27,7 @@ The test is opt-in so a normal CI run does not acquire another wall-clock thresh
 
 ## Other checks and limits
 
-- Local Debug run on the runtime tree above: 171 UI tests and a 292-test core summary, with the opt-in performance test disabled; the 10,000-article filter timing test was separated as in CI. Both test runs finished and passed `check-test-log.sh`; no `SWIFT TASK CONTINUATION MISUSE` diagnostic appeared.
+- Local Debug run on the runtime tree above: 171 UI tests and a 292-test core summary, with the opt-in performance test disabled and three upgrade fixtures unset; the 10,000-article filter timing test was separated as in CI. Both test runs finished and passed `check-test-log.sh`; no `SWIFT TASK CONTINUATION MISUSE` diagnostic appeared.
 - Release targeted run: 17 tests in three suites passed the log guard, including the enabled performance replay, retention and refresh-batch tests. The isolated Release replay passed separately.
 - A second reviewer read the fixed runtime commit using `docs/review-checklist.md`, traced all removal callers, index freshness, batching and recovery, and found no actionable issue. The reviewer did not run tests and did not have enforced read-only isolation.
 - macOS 26.6 / Swift 6.3.3 is left to PR CI. No real library, schema migration, network request, packaging change or new dependency. Japanese input, VoiceOver, Reduce Motion and long use were not checked.
