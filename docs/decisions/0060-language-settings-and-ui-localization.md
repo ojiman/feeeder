@@ -1,10 +1,10 @@
 # 0060 Language settings and UI localization
 
-- Status: valid (approved by the owner; not built, #154, #271, #272)
+- Status: valid (approved by the owner; target built; UI not built, #271, #272)
 - Date: 2026-10-17
 - Decider: the owner (PdM), in the chat about #154. The owner left the open points of the review of PR #269 (the target change while a translation is shown, when the display language applies, how languages are matched, Match System, how the work is split, disclosure) to the agent, to be decided by the vision; they are confirmed when that PR is merged.
 - Replaces in part: [0005](0005-v1-product-decisions-2026-10-04.md), point 1's exclusion of an in-app display-language setting. Time zones are unchanged.
-- Revises: the target-language choice in the [translation design](../superpowers/plans/2026-10-12-translation-design.md); [0054](0054-translation-on-the-mac-not-stored.md)'s on-device and storage rules stand.
+- Revises: the target-language choice in the [translation design](https://github.com/ojiman/unagi-reader/blob/78b5dc5cbfb625bcbc89f54409da3ff3056e0bca/docs/superpowers/plans/2026-10-12-translation-design.md); [0054](0054-translation-on-the-mac-not-stored.md)'s on-device and storage rules stand.
 
 ## Decision
 

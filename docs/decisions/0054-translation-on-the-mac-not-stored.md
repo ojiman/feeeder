@@ -2,7 +2,7 @@
 
 - Status: valid (approved by the PdM when the PR that adds this record is merged)
 - Date: 2026-10-14
-- Decider: the owner (PdM), in the answers of 2026-10-12 recorded in the [translation design](../superpowers/plans/2026-10-12-translation-design.md) (section 11). Written down by the agent with the first translation PR (#152), as the design asked.
+- Decider: the owner (PdM), in the answers of 2026-10-12 recorded in the [translation design](https://github.com/ojiman/unagi-reader/blob/78b5dc5cbfb625bcbc89f54409da3ff3056e0bca/docs/superpowers/plans/2026-10-12-translation-design.md) (section 11). Written down by the agent with the first translation PR (#152), as the design asked.
 - Refines: [0049](0049-one-note-and-no-ai-of-its-own.md) (no AI of its own) and [0019](0019-v1-simplification-notes.md) (retention).
 
 ## Decision

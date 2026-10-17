@@ -2,16 +2,12 @@ import SwiftUI
 @preconcurrency import Translation   // the session is used only inside one `translationTask` call (`TranslationController.translate(with:)`)
 import ReaderCore
 
-/// The language the app translates into: the language of the app, not the first system language (specification 3.6).
-enum TranslationTarget {
-    static let appLanguage = "ja"
-}
-
 /// How the app decides and translates. `.system` uses the Translation framework on the Mac; tests give a fake.
 struct TranslationEngine {
     var decide: @MainActor (_ sample: String, _ target: String) async -> LanguageDecision.Outcome
     /// nil: the system's session, which exists only inside `TranslationHost`'s `translationTask`.
     var batch: TranslationBatch?
+    var languages: @MainActor () async -> [String] = { await TranslationLanguages.available() }
 
     @MainActor static let system = TranslationEngine(decide: { sample, target in
         await LanguageDecision.decide(sample: sample, target: target, detect: LanguageDecision.detect) { source, target in
@@ -23,6 +19,16 @@ struct TranslationEngine {
 /// Links a press (the button, `t`, the menu bar) to `ArticleTranslation` and to the system's session.
 @Observable @MainActor final class TranslationController {
     let state = ArticleTranslation()
+    private(set) var target = "en"
+    private var supportedTargets: [String]?
+    var targetReady: Bool { supportedTargets != nil }
+
+    func setTarget(_ target: String, supported: [String]) {
+        let supportChanged = supportedTargets.map { $0.contains(target) != supported.contains(target) } ?? !supported.contains(target)
+        if self.target != target || supportChanged { reset() }
+        self.target = target
+        supportedTargets = supported
+    }
     /// The session's configuration: a new one starts `TranslationHost`'s task; nil stops it.
     private(set) var configuration: TranslationSession.Configuration?
     @ObservationIgnored private var job: ArticleTranslation.Job?
@@ -30,6 +36,7 @@ struct TranslationEngine {
     @ObservationIgnored private let engine: TranslationEngine
 
     init(engine: TranslationEngine) { self.engine = engine }
+    func availableTargets() async -> [String] { await engine.languages() }
 
     /// Whether this article's translation is shown or being made (the button is filled).
     func isOn(for articleID: UUID?) -> Bool { articleID != nil && (state.key?.articleID == articleID || deciding != nil) }
@@ -37,9 +44,14 @@ struct TranslationEngine {
 
     /// Translates the article, or shows the original again when it is on.
     func toggle(title: String, content: ArticleContent) {
+        guard targetReady else { return }
         if isOn(for: content.articleID) { reset(); return }
         reset()
-        let target = TranslationTarget.appLanguage
+        let target = self.target
+        if let supportedTargets, !supportedTargets.contains(target) {
+            _ = state.press(title: title, content: content, target: target, decision: .unsupported)
+            return
+        }
         let sample = LanguageDecision.sample(title: title, paragraphs: content.paragraphs)
         let decide = engine.decide
         deciding = Task { [weak self] in
@@ -127,6 +139,7 @@ struct TranslationHost: View {
 /// The translation status: short text at the left of the article band (specification 3.6, decision 0057).
 struct TranslationStatusRow: View {
     let state: ArticleTranslation.State
+    var target = "ja"
     let showOriginal: () -> Void
 
     var body: some View {
@@ -144,12 +157,12 @@ struct TranslationStatusRow: View {
         case .translating(let done, let total): AnyView(Text("翻訳中 \(done)/\(total)").monospacedDigit())
         case .done(let failed, let source):
             AnyView(Group {
-                Text(Self.pair(source: source, target: TranslationTarget.appLanguage))
+                Text(Self.pair(source: source, target: target))
                 if failed > 0 { Text("\(failed)段落は原文のままです") }
                 Button("原文を表示", action: showOriginal).buttonStyle(.link)
             })
         case .failed(let message): AnyView(Text(message))
-        case .alreadyInTarget: AnyView(Text("すでに\(Self.name(TranslationTarget.appLanguage))です"))
+        case .alreadyInTarget: AnyView(Text("すでに\(Self.name(target))です"))
         case .unsupported: AnyView(Text("この言語の組み合わせは翻訳できません。"))
         }
     }
@@ -160,7 +173,7 @@ struct TranslationStatusRow: View {
         return "\(name(source)) → \(name(target))"
     }
     static func name(_ language: String) -> String {
-        Locale(identifier: TranslationTarget.appLanguage).localizedString(forLanguageCode: language) ?? language
+        TranslationLanguages.name(language)
     }
 }
 
@@ -202,11 +215,20 @@ struct ArticleTranslationPresentation: ViewModifier {
     let keysEnabled: Bool
     /// The original page is closed.
     let readerShown: Bool
+    @AppStorage(TranslationTarget.key) private var storedTarget = ""
+    @State private var supportedTargets: [String] = []
+    @State private var targetsLoaded = false
+
+    private func updateTarget() {
+        guard targetsLoaded else { return }
+        controller.setTarget(TranslationTarget.resolve(stored: storedTarget, preferred: TranslationLanguages.preferred,
+                                                       supported: supportedTargets), supported: supportedTargets)
+    }
 
     private var command: TranslationCommand {
         TranslationCommand(isOn: controller.isOn(for: articleID), enabled: canTranslate, action: toggle)
     }
-    private var canTranslate: Bool { readerShown && articleID != nil && content?.articleID == articleID }
+    private var canTranslate: Bool { controller.targetReady && readerShown && articleID != nil && content?.articleID == articleID }
     private func toggle() {
         guard canTranslate, let title, let content else { return }
         controller.toggle(title: title, content: content)
@@ -215,6 +237,9 @@ struct ArticleTranslationPresentation: ViewModifier {
     func body(content view: Content) -> some View {
         view
             .background(TranslationHost(controller: controller))
+            .task { supportedTargets = await controller.availableTargets(); targetsLoaded = true; updateTarget() }
+            .onChange(of: storedTarget) { _, _ in updateTarget() }
+            .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in updateTarget() }
             .focusedSceneValue(\.translateArticle, command)
             .onKeyPress("t") { guard keysEnabled, canTranslate else { return .ignored }; toggle(); return .handled }
             .onChange(of: articleID) { _, _ in controller.reset() }

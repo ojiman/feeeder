@@ -10,7 +10,7 @@ struct ReaderSettingsView: View {
     @State private var preview: DeletionPreview?
     @State private var error: String?
 
-    enum Pane: String { case appearance, shortcuts, storage }
+    enum Pane: String { case appearance, language, shortcuts, storage }
     /// The pane shown last; Help ▸ 「ショートカット一覧」 sets it before it opens the window.
     static let paneKey = "settingsPane"
     @AppStorage(ReaderSettingsView.paneKey) private var pane = Pane.appearance.rawValue
@@ -19,6 +19,7 @@ struct ReaderSettingsView: View {
     var body: some View {
         TabView(selection: Binding(get: { Pane(rawValue: pane) ?? .appearance }, set: { pane = $0.rawValue })) {
             Tab("外観", systemImage: "circle.lefthalf.filled", value: Pane.appearance) { appearancePane }
+            Tab("言語", systemImage: "globe", value: Pane.language) { TranslationLanguageSettings() }
             Tab("ショートカット", systemImage: "keyboard", value: Pane.shortcuts) { ShortcutList() }
             Tab("保存", systemImage: "externaldrive", value: Pane.storage) { storage }
         }
@@ -88,5 +89,24 @@ struct ReaderSettingsView: View {
     private func cancel() { preview = nil; pendingDays = nil; deletingAll = false; days = store.retentionDays }
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { self.error = error.localizedDescription; days = store.retentionDays }
+    }
+}
+
+struct TranslationLanguageSettings: View {
+    @AppStorage(TranslationTarget.key) private var target = ""
+    @State private var languages: [String] = []
+
+    var body: some View {
+        Form {
+            Picker("記事翻訳", selection: $target) {
+                Text("システムに合わせる").tag("")
+                ForEach(languages.sorted { TranslationLanguages.name($0).localizedStandardCompare(TranslationLanguages.name($1)) == .orderedAscending }, id: \.self) {
+                    Text(TranslationLanguages.name($0)).tag($0)
+                }
+                if !target.isEmpty && !languages.contains(target) { Text(TranslationLanguages.name(target)).tag(target) }
+            }
+        }
+        .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
+        .task { languages = await TranslationLanguages.available() }
     }
 }

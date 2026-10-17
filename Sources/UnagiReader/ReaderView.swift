@@ -425,6 +425,7 @@ struct ReaderView: View {
         let translated = translation.isOn(for: article?.id)
         return ArticleBand(
             status: translation.state.key?.articleID == article?.id || translation.state.key == nil ? translation.state.state : .idle,
+            translationTarget: translation.target,
             showOriginal: { translation.reset() },
             buttons: [
                 BandButton(id: "note", symbol: "note.text", help: "ノートを開く／閉じる (⌥⌘I)",
@@ -433,9 +434,9 @@ struct ReaderView: View {
                            label: article?.starredAt == nil ? "Starを付ける" : "Starを外す", enabled: article != nil) { perform(.toggleStar) },
                 // `translate` has no filled form (specification 3.6).
                 BandButton(id: "translate", symbol: translated ? "character.bubble.fill" : "character.bubble",
-                           help: originalPage.url != nil ? "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます" : "翻訳する／原文に戻す (t)",
+                           help: originalPage.url != nil ? "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます" : "\(TranslationLanguages.name(translation.target))に翻訳／原文に戻す (t)",
                            label: translated ? "原文を表示" : "翻訳",
-                           enabled: article != nil && originalPage.url == nil && displayedContent?.articleID == article?.id, action: toggleTranslation),
+                           enabled: translation.targetReady && article != nil && originalPage.url == nil && displayedContent?.articleID == article?.id, action: toggleTranslation),
                 BandButton(id: "browser", symbol: "globe", help: "元ページをブラウザで開く (b)", label: "元ページをブラウザで開く",
                            enabled: article?.originalURL.flatMap { ArticleURL.validated($0) } != nil, action: openExternal),
             ],
