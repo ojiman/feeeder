@@ -69,7 +69,7 @@ The app also lists these keys in Settings ▸ 「ショートカット」 (Help 
 | `/` | Narrow the list: type words from the titles or summaries (also the magnifier at the top right of the list). The field stays while it has text; empty, a click elsewhere closes it |
 | `b` | Open the original page in your browser |
 | `v` | Open the original page in the app. The ✕ at its top left, `Esc` or choosing another article closes it |
-| `Esc` | Back to reading: closes the original page, or the note |
+| `Esc` | Back to reading: closes the original page, or the note. With both open, it closes the one you are in; press it again for the other |
 
 - Keys do not act while you type in a field or compose Japanese text. `j`, `k`, `s` and `n` also work on the original page.
 - An article becomes read when its text is shown, not when you scroll past it in the list.

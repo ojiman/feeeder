@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import ReaderCore
 
 enum ReaderCommand: String {
@@ -20,6 +21,13 @@ enum ReaderCommand: String {
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         if let view = responder as? NSTextView { return view.isEditable }
         return responder is NSTextField
+    }
+    /// The keyboard is in the original page: its web view (the page's own fields included) or the failure pane.
+    static func isInOriginalPage(_ responder: NSResponder?) -> Bool {
+        if responder is OriginalFailureHostingView<AnyView> { return true }
+        var view = responder as? NSView
+        while let current = view { if current is OriginalReaderWebView { return true }; view = current.superview }
+        return false
     }
     static func hasMarkedText(_ responder: NSResponder?) -> Bool {
         (responder as? NSTextInputClient)?.hasMarkedText() == true

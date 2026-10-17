@@ -172,4 +172,16 @@ import Testing
         let reader = NSTextView(); reader.isEditable = false
         #expect(ReaderShortcutPolicy.permits(textInput: ReaderKeyboardCommands.isTextInput(reader), markedText: ReaderKeyboardCommands.hasMarkedText(reader), sheet: false, originalPage: false))
     }
+    // PRD-04: Esc from the note must not be taken for the original page's own Esc.
+    @Test func onlyTheOriginalPageCountsAsBeingInTheOriginalPage() {
+        let web = OriginalReaderWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let inner = NSView(); web.addSubview(inner)
+        let note = NSTextView(); note.isEditable = true
+        #expect(ReaderKeyboardCommands.isInOriginalPage(web))
+        #expect(ReaderKeyboardCommands.isInOriginalPage(inner))          // the web view's own content view
+        #expect(ReaderKeyboardCommands.isInOriginalPage(OriginalFailureHostingView(rootView: AnyView(Text("合成ネットワーク失敗")))))
+        #expect(!ReaderKeyboardCommands.isInOriginalPage(note))
+        #expect(!ReaderKeyboardCommands.isInOriginalPage(NSTableView()))
+        #expect(!ReaderKeyboardCommands.isInOriginalPage(nil))
+    }
 }

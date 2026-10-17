@@ -128,6 +128,7 @@ normal                original page (v)     note beside article   note with the 
 | the same action again | Closes the note and returns to the screen before (scope, chosen article, reading position), with the reverse motion | |
 | the layout button (in the note band, beside the ✕) | note beside the article ⇄ note with the list. The chosen article, the scroll position and the note's text do not change. Two layouts only; no key | |
 | `Esc`, the note's ✕ (top left of the right column, where the original page's ✕ is) | Closes the note and shows the same article in the normal layout, with the list selection on it. While Japanese text is being composed, `Esc` cancels the composition first | |
+| `Esc` with the original page and the note both open (the note opened with `n` while the page is shown) | Closes what has the keyboard: in the note, the list or the article, the note closes and the page stays; in the page, the page closes and the note stays (a field of the page keeps its own `Esc`). A second `Esc` closes the other | |
 | `j` / `k` (focus in the article or the list) | Next / previous article with the note still open. In the note editor they type letters | |
 | `⌥⌘↑` / `⌥⌘↓`, the arrows above the note | Change only the article, with the note still open | |
 
@@ -208,7 +209,7 @@ normal                original page (v)     note beside article   note with the 
 | `m` | Read / unread |
 | `b` | Open the original page in the default browser |
 | `v` | Open the original page in the app |
-| `Esc` | Close the original page or the note and return to the same article at its reading position. While Japanese text is being composed, it cancels the composition first (decision 0050) |
+| `Esc` | Close the original page or the note and return to the same article at its reading position; with both open, the one that has the keyboard (3.1.3). While Japanese text is being composed, it cancels the composition first (decision 0050) |
 | `/` | Open the list filter and put the cursor in it, when no editable field is being typed in |
 | `t` | Translate the open article / show the original, when no editable field is being typed in |
 | `c` | Send the article to the note (3.3), when no editable field is being typed in |
