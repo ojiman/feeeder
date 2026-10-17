@@ -33,8 +33,6 @@ Goals and learning plans; AI suggestions of notes; AI editing of the note; sync 
 
 ## Before 1.0
 
-[#272](https://github.com/ojiman/unagi-reader/issues/272) five more UI languages, after #271 (specification 3.7; decision 0060).
-
 The conditions in [specification 7.1](specification.md). A prune of the documents before the release (the second pass was done on 2026-10-14).
 
 ## Done

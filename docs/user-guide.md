@@ -90,7 +90,9 @@ There is one note and nothing to manage: no list, no names, no delete.
 
 ### Language settings
 
-Settings ▸ Language (「言語」) has two independent choices. App Language (「表示言語」) offers Match System, English and Japanese. It shares macOS's per-app choice in System Settings ▸ General ▸ Language & Region ▸ Applications. It applies at the next launch; quit and open the app when ready. Match System follows your Mac's preferred languages, with English as the fallback. It never translates your subscriptions, articles or note. Labels quoted in this guide are the Japanese labels.
+Settings ▸ Language (「言語」) has two independent choices. App Language (「表示言語」) offers Match System, English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Spanish and Brazilian Portuguese. It shares macOS's per-app choice in System Settings ▸ General ▸ Language & Region ▸ Applications. It applies at the next launch; quit and open the app when ready. Match System follows your Mac's preferred languages, with English as the fallback. It never translates your subscriptions, articles or note. Labels quoted in this guide are the Japanese labels.
+
+The Simplified Chinese, Traditional Chinese, Korean, Spanish and Brazilian Portuguese translations were prepared with AI and have not been reviewed by a person. If wording is wrong, [open an issue](https://github.com/ojiman/unagi-reader/issues/new) with the language, screen, current wording and suggested wording.
 
 Choose 「システムに合わせる」 in 「記事翻訳」 to follow the Mac's preferred languages, or choose a fixed target. A change returns the open article to its original; press `t` to translate into the new target. An article already in the target language stays in its original with a short status message.
 
