@@ -801,7 +801,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "すでに購読しています：%@"
+            "value": "すでに購読しています: %@"
           }
         },
         "zh-Hans": {
@@ -3527,7 +3527,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フィードのURL"
+            "value": "フィードURL"
           }
         },
         "zh-Hans": {
@@ -3950,7 +3950,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フォルダ（任意）"
+            "value": "フォルダ(任意)"
           }
         },
         "zh-Hans": {
@@ -5548,7 +5548,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ページが見つかりません（%lld）。URLを確認してください。"
+            "value": "ページが見つかりません(%lld)。URLを確認してください。"
           }
         },
         "zh-Hans": {
@@ -5877,7 +5877,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "公開日時：%@"
+            "value": "公開日時: %@"
           }
         },
         "zh-Hans": {
@@ -5955,53 +5955,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "RSS 1.0 / RSS 2.0 / Atom · até 2 MB"
-          }
-        }
-      }
-    },
-    "Read with room to think.": {
-      "comment": "Sources/UnagiReader/ReaderView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Read with room to think."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "読むことに、余白を。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "从容阅读，留白思考。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "從容閱讀，留白思考。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "생각할 여유를 주는 읽기."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lee con espacio para pensar."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Leia com espaço para pensar."
           }
         }
       }
@@ -6723,7 +6676,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "記事をノートに送る（記事で選んだ文は引用になります）"
+            "value": "記事をノートに送る(記事で選んだ文は引用になります)"
           }
         },
         "zh-Hans": {
@@ -7240,7 +7193,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "購読するURL：%@"
+            "value": "購読するURL: %@"
           }
         },
         "zh-Hans": {
@@ -7710,7 +7663,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "データが大きすぎます（2MBまで）。"
+            "value": "データが大きすぎます(2MBまで)。"
           }
         },
         "zh-Hans": {
@@ -7898,7 +7851,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "階層が深すぎます（%lld段まで）。"
+            "value": "階層が深すぎます(%lld段まで)。"
           }
         },
         "zh-Hans": {
@@ -7945,7 +7898,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ファイルが大きすぎます（5MBまで）。"
+            "value": "ファイルが大きすぎます(5MBまで)。"
           }
         },
         "zh-Hans": {
@@ -8368,7 +8321,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "サーバーがエラーを返しました（%lld）。"
+            "value": "サーバーがエラーを返しました(%lld)。"
           }
         },
         "zh-Hans": {
@@ -8415,7 +8368,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "サーバーがエラーを返しました（%lld）。保存済みの記事は引き続き読めます。"
+            "value": "サーバーがエラーを返しました(%lld)。保存済みの記事は引き続き読めます。"
           }
         },
         "zh-Hans": {
@@ -8462,7 +8415,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "サーバーがエラーを返しました（%lld）。時間をおいて試してください。"
+            "value": "サーバーがエラーを返しました(%lld)。時間をおいて試してください。"
           }
         },
         "zh-Hans": {
@@ -8509,7 +8462,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "購読が多すぎます（%lld件まで）。ファイルを分けてください。"
+            "value": "購読が多すぎます(%lld件まで)。ファイルを分けてください。"
           }
         },
         "zh-Hans": {
@@ -8556,7 +8509,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このURLは読めません（%lld）。ログインが必要かもしれません。"
+            "value": "このURLは読めません(%lld)。ログインが必要かもしれません。"
           }
         },
         "zh-Hans": {
