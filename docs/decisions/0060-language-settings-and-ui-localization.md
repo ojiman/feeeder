@@ -37,4 +37,4 @@ The initial UI languages widen access while limiting the first translation and l
 
 ## Not included
 
-No new translation engine, runtime AI service, automatic article translation, original-page translation or claim of reviewed quality in all languages. Axiom has not been installed or verified in this project by this documentation change. Product acceptance and release permission are unchanged. Whether #271 and #272 belong to the Beta is the owner's decision; until then they are before 1.0.
+No new translation engine, runtime AI service, automatic article translation, original-page translation or claim of reviewed quality in all languages. Axiom has not been installed or verified in this project by this documentation change. Product acceptance and release permission are unchanged. #154 and #271 are in the Beta, because some beta participants do not read Japanese (the owner, 2026-10-17); #272 is before 1.0.

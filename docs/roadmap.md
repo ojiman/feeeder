@@ -8,7 +8,7 @@ The **order** of the work to the beta and 1.0, and why. The units of work are [G
 
 Everything that must be done before the beta is an issue in the milestone [Beta](https://github.com/ojiman/unagi-reader/milestone/1). It is closed to new issues; only the owner adds to it. **The beta is done when every issue in it is closed.**
 
-1. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), the core and the button are done (decision 0054); then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the translation target in Settings (specification 3.6; decision 0060).
+1. **Translation** ([design](superpowers/plans/2026-10-12-translation-design.md)), the core and the button are done (decision 0054); then [#154](https://github.com/ojiman/unagi-reader/issues/154) T3 the translation target in Settings (specification 3.6; decision 0060); then [#271](https://github.com/ojiman/unagi-reader/issues/271) the English source, Japanese and the display-language setting (specification 3.7), because some beta participants do not read Japanese (the owner, 2026-10-17).
 2. **Real-device check by the owner:** [#136](https://github.com/ojiman/unagi-reader/issues/136), [#145](https://github.com/ojiman/unagi-reader/issues/145), and a dogfooding week. Bugs found here come before any polish.
 3. **Preparation:** [#142](https://github.com/ojiman/unagi-reader/issues/142) a fresh acceptance run; [#143](https://github.com/ojiman/unagi-reader/issues/143) the user guide matches the app.
 4. **Other conditions:** the owner decides how the beta is signed and published ([findings](superpowers/plans/2026-10-14-beta-distribution.md), section 6).
@@ -34,7 +34,7 @@ Goals and learning plans; AI suggestions of notes; AI editing of the note; sync 
 
 ## Before 1.0
 
-UI localization: [#271](https://github.com/ojiman/unagi-reader/issues/271) the English source, Japanese and the display-language setting, then [#272](https://github.com/ojiman/unagi-reader/issues/272) five more languages (specification 3.7; decision 0060). Not in the Beta unless the owner adds them.
+[#272](https://github.com/ojiman/unagi-reader/issues/272) five more UI languages, after #271 (specification 3.7; decision 0060).
 
 The conditions in [specification 7.1](specification.md). A prune of the documents before the release (the second pass was done on 2026-10-14).
 
