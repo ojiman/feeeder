@@ -170,7 +170,7 @@ normal                original page (v)     note beside article   note with the 
 - The column's edge can be dragged wider.
 - The reading surfaces (list, article, note) are one dark colour, with no separate grey bars or lines in the bands; only the sidebar is slightly lighter.
 - One calm orange accent, only for the unread mark, the add and refresh buttons and the note's list markers. The selected row is a quiet grey, not the system blue.
-- When a refresh brings new articles and the list is at the top, they slide in from the top and push the rows down (at most 20 per refresh; not with Reduce Motion). When the list is not at the top, the article being read does not move. Manual and automatic refreshes behave the same.
+- When a refresh brings new articles and the list is at the top, each new row slides in at its place in the order and pushes the rows below it down, with no limit on the number (the system's table motion, as in Mail). With Reduce Motion the new rows fade in instead. When the list is not at the top, the article being read does not move; new rows inside the visible part fade in. The selected article stays selected. Manual and automatic refreshes behave the same. `[not built #284]`
 - Publication time: the time for today, date and time for earlier days, the year too for other years. An unknown time is 「—」; the received time is never used instead.
 - Unread: the source name in the accent colour and brighter text. Read: the whole row a calm grey. A long source name ends in 「…」. The selected row keeps readable contrast.
 
