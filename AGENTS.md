@@ -59,7 +59,7 @@ bash scripts/test-check-docs.sh
 
 Several writers may work at once ([decision 0062](docs/decisions/0062-several-writers-under-review.md)); these rules keep that safe.
 
-- **Each writer has its own issue, branch and worktree.** The owner reviews and merges; a writer does not merge its own PR.
+- **Each writer has its own issue, branch and worktree.** The owner reviews and merges. A writer merges only when the owner has said so for that PR, in the chat or on the PR; the rule below still applies. Dependabot's PRs are never merged by a writer (Boundaries).
 - **No second PR on files an open PR touches.** At most three writers' PRs are open at once (Dependabot's are not counted).
 - **A measurement or a real-app test runs alone on the Mac**, with no other build or test running. A number measured beside another run is not recorded.
 - **The `main` ruleset needs a PR, `check` and an up-to-date branch.** After another PR merges, bring your branch up to date and wait for `check` again before the owner merges.

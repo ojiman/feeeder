@@ -13,7 +13,7 @@ What 0002 protected stays: no unattended workers, and a reviewer reads a fixed c
 
 ## Decision
 
-1. **Several writers may work at the same time** (today Claude Code and Codex), each on its own issue, branch and worktree. The label `codex` marks an issue that Codex writes; any other issue is Claude Code's. The owner reviews and merges; a writer does not merge its own pull request.
+1. **Several writers may work at the same time** (today Claude Code and Codex), each on its own issue, branch and worktree. The label `codex` marks an issue that Codex writes; any other issue is Claude Code's. The owner reviews and merges. A writer merges a pull request only when the owner has said so for that pull request, in the chat or on the pull request; the ruleset (point 6) still applies.
 2. **Two writers never change the same files at once.** No second pull request on files an open one touches. `ReaderView.swift` and the store (`ReaderStore`, retention, the models) are one at a time each (labels `area:reader-view` and `area:store`). `area:no-screen` says only that no screen is touched.
 3. **At most three writers' pull requests are open at once.** The owner's review is the limit, not the writers. Lower the number when reviews wait.
 4. **Measurements and real-app tests run one at a time on the Mac**, with no other build or test running. A number measured while something else ran is not recorded.
