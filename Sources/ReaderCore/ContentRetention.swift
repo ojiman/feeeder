@@ -36,17 +36,28 @@ extension ReaderStore {
     public func previewDeletion(days: Int?, at: Date) throws -> DeletionPreview {
         try reloadIfNeeded()
         let policy = RetentionPolicy(days: days ?? retentionDays)
-        let snapshots = try context.fetch(FetchDescriptor<ContentSnapshot>())
-        let selected = articles.filter { article in
-            let hasText = !article.summary.isEmpty || snapshots.contains { $0.articleID == article.id && !$0.text.isEmpty }
-            return hasText && (article.contentDeletedAt != nil ||
-                policy.expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt) <= at)
+        let candidates = articles.filter { article in
+            article.contentDeletedAt != nil ||
+                policy.expiresAt(receivedAt: article.firstReceivedAt, firstReadAt: article.firstReadAt) <= at
         }
+        // Only the candidates' bodies are read (#250): every launch runs this, and most libraries have few or none.
+        let snapshots = try snapshots(articleIDs: candidates.map(\.id))
+        let withBody = Set(snapshots.filter { !$0.text.isEmpty }.map(\.articleID))
+        let selected = candidates.filter { !$0.summary.isEmpty || withBody.contains($0.id) }
         let ids = Set(selected.map(\.id))
         let bodies = snapshots.filter { ids.contains($0.articleID) && !$0.text.isEmpty }
         let summaries = selected.filter { !$0.summary.isEmpty }
         return DeletionPreview(articleIDs: selected.map(\.id), bodyCount: bodies.count, summaryCount: summaries.count,
                                estimatedBytes: bodies.reduce(0) { $0 + $1.text.utf8.count } + summaries.reduce(0) { $0 + $1.summary.utf8.count })
+    }
+    /// The snapshots of these articles, fetched by ID in groups so one query never holds too many values.
+    private func snapshots(articleIDs: [UUID]) throws -> [ContentSnapshot] {
+        var result: [ContentSnapshot] = []
+        for start in stride(from: 0, to: articleIDs.count, by: 1_000) {
+            let group = Array(articleIDs[start..<min(start + 1_000, articleIDs.count)])
+            result += try context.fetch(FetchDescriptor<ContentSnapshot>(predicate: #Predicate { group.contains($0.articleID) }))
+        }
+        return result
     }
     public func applyRetention(days: Int, at: Date) throws {
         try reloadIfNeeded()
