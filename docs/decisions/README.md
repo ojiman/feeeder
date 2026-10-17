@@ -15,7 +15,6 @@ A decision record says who decided what, when and why. It is not where the curre
 | Number | Decision | Status |
 |---|---|---|
 | [0001](0001-fresh-library-no-prototype-migration.md) | V1 starts with an empty library; no prototype migration | valid |
-| [0002](0002-single-supervised-writer.md) | One supervised implementation writer at a time | valid |
 | [0003](0003-beta-data-compatibility.md) | No data compatibility between betas; guaranteed from 1.0 | valid |
 | [0005](0005-v1-product-decisions-2026-10-04.md) | V1 product decisions: retention, source publication | valid in part (hand-off: 0049; display-language setting: 0060) |
 | [0006](0006-original-page-and-sidebar-behavior.md) | Article selection and the sidebar while the original page is open | valid |
@@ -57,7 +56,8 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0059](0059-send-the-article-to-the-note.md) | Send the article to the note: an insertion the person asks for; no AI summary | valid |
 | [0060](0060-language-settings-and-ui-localization.md) | Language settings, independent defaults and AI-prepared UI localization | valid (built; product acceptance is separate) |
 | [0061](0061-no-deleting-all-bodies-at-once.md) | No action deletes all article bodies at once | valid (built; no action deletes all bodies at once) |
+| [0062](0062-several-writers-under-review.md) | Several writers at once, each on its own issue, under the owner's review | valid |
 
 ## Removed from the working tree
 
-Wholly replaced records are in Git history only: 0004, 0008, 0010, 0011, 0013, 0014, 0016, 0018 (first prune, 2026-10); 0009, 0012, 0015, 0017, 0020, 0021, 0022, 0035, 0042 (replaced by 0049) and 0045 (a proposal that 0049 made moot) (second prune, 2026-10-14). Their numbers are not reused.
+Wholly replaced records are in Git history only: 0004, 0008, 0010, 0011, 0013, 0014, 0016, 0018 (first prune, 2026-10); 0009, 0012, 0015, 0017, 0020, 0021, 0022, 0035, 0042 (replaced by 0049) and 0045 (a proposal that 0049 made moot) (second prune, 2026-10-14); 0002 (replaced by 0062, 2026-10-18). Their numbers are not reused.

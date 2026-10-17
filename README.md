@@ -72,7 +72,7 @@ swift test --scratch-path /private/tmp/unagi-reader-dogfooding-build
 git diff --check
 ```
 
-Tests use only synthetic RSS/HTML and temporary databases. The project is developed with AI coding agents under a single supervised writer; [AGENTS.md](AGENTS.md) describes the workflow and the checks.
+Tests use only synthetic RSS/HTML and temporary databases. The project is developed with two AI coding agents, Claude Code and Codex, each on its own issue and pull request under the owner's review; [AGENTS.md](AGENTS.md) describes the workflow and the checks.
 
 ## Security
 

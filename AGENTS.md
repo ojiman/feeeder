@@ -47,13 +47,22 @@ bash scripts/test-check-docs.sh
 ## How work is tracked
 
 - **The roadmap** is the order, short, with links. **An issue** is a unit of work someone can start today and know when it is done: Problem, Acceptance Criteria, Constraints, Out of scope. A bug, tech debt or a question for the owner is an issue at once. **An idea** is one line in the roadmap's candidates. Work in none of these is not tracked: open an issue instead of leaving a note in a chat or a PR.
-- **One issue, one pull request, `Fixes #n`.** Say that you take it. Before you start, look at the open PRs that touch the same files. An issue with an open question for the owner waits for the answer.
+- **One issue, one pull request, `Fixes #n`.** Say that you take it. An issue with an open question for the owner waits for the answer.
 - **PR titles start with the kind:** `feat:`, `fix:`, `refactor:`, `test:`, `docs:` or `ci:`.
 - **A bug found on the way** becomes a new issue, not a bigger PR. A **security hole** does not: do not put details in a public issue ([SECURITY.md](SECURITY.md)); tell the owner, who reports it as a private advisory.
-- **Labels say what can run beside what.** `area:no-screen` touches no screen and can run beside anything. `area:reader-view` touches `ReaderView.swift` and its long modifier chain: one at a time. `no-spec` marks an enhancement that needs no specification entry.
-- **Where PRs collide:** `ReaderView.swift`, the end of the decision index, and decision numbers (take the next free number when you open the PR; renumber if `main` moved).
+- **Labels say who writes and what can run beside what.** `codex` marks an issue that Codex writes; any other issue is Claude Code's. `area:no-screen` touches no screen: it can run beside screen work. `area:reader-view` touches `ReaderView.swift` and its long modifier chain: one at a time. `area:store` touches `ReaderStore`, retention or the models: one at a time. `no-spec` marks an enhancement that needs no specification entry.
+- **Where PRs collide:** `ReaderView.swift`, the store, the end of the decision index, and decision numbers (take the next free number when you open the PR; renumber if `main` moved).
 - **The milestone Beta** is closed to new issues; only the owner adds to it.
 - **A plan** for work of several PRs goes to `docs/superpowers/plans/` and is deleted when its last PR merges.
+
+## Writers at the same time
+
+Several writers may work at once ([decision 0062](docs/decisions/0062-several-writers-under-review.md)); these rules keep that safe.
+
+- **Each writer has its own issue, branch and worktree.** The owner reviews and merges; a writer does not merge its own PR.
+- **No second PR on files an open PR touches.** At most three writers' PRs are open at once (Dependabot's are not counted).
+- **A measurement or a real-app test runs alone on the Mac**, with no other build or test running. A number measured beside another run is not recorded.
+- **The `main` ruleset needs a PR, `check` and an up-to-date branch.** After another PR merges, bring your branch up to date and wait for `check` again before the owner merges.
 
 ## Starting or resuming
 
@@ -66,7 +75,7 @@ A new thread has no memory of the last one. Rebuild the state from Git and GitHu
 - Local edits, tests, builds and commits are allowed. Check concrete URLs, dependencies, migrations and external writes against the person's current instruction; what the task already allows need not be asked again.
 - Never: read credentials, a destructive `reset` or `clean`, `sudo`, turning the sandbox off, running an outside script. Do not use subagents as a habit; never give a child agent the whole conversation, the person's data or credentials.
 - Never push to `main`. Never sign, submit or publish an app without the owner's instruction. A new or changed dependency (SwiftSoup is pinned exactly) needs the owner's instruction. Dependabot opens update PRs every week for the Swift packages and the GitHub Actions (`.github/dependabot.yml`); they are changed dependencies, so do not merge one yourself. Read the change and its CI result, and leave the decision to the owner. Their titles ("Bump …") are exempt from the PR title rule.
-- Work as one supervised implementation writer ([decision 0002](docs/decisions/0002-single-supervised-writer.md)). No unattended workers, and do not resume the Keychain probe. A reviewer reading a fixed commit is not "read-only isolation" because a prompt says so.
+- No unattended workers, and do not resume the Keychain probe. Every writer keeps these boundaries; the sandbox of each agent is the owner's setting, and this file does not enforce it. A reviewer reading a fixed commit is not "read-only isolation" because a prompt says so.
 - `docs/vision.md` is the owner's words; change it only on the owner's instruction. Check every feature against its four questions.
 - Data: no compatibility between betas, saves within one version are kept, from 1.0 nothing is lost ([decision 0003](docs/decisions/0003-beta-data-compatibility.md), specification 7.1). Never delete an unreadable store automatically.
 
@@ -85,7 +94,7 @@ By risk:
 
 | Change | Also needed |
 |---|---|
-| Store or model, concurrency, external writes, retention or deletion | All tests; the release build when UI or packaging changes; a synthetic app run for UI; an independent review of a fixed commit (docs/review-checklist.md); the environment of each result |
+| Store or model, concurrency, external writes, retention or deletion | All tests; the release build when UI or packaging changes; a synthetic app run for UI; an independent review of a fixed commit by someone other than the writer (docs/review-checklist.md); the environment of each result |
 | UI polish, labels, small behavior | Tests for the changed logic; `git diff --check`; a synthetic run only when a test cannot show it |
 | Documents only | `git diff --check` and `python3 scripts/check_docs.py` |
 
