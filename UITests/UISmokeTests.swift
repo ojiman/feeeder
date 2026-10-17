@@ -15,7 +15,7 @@ import Carbon
             directory = FileManager.default.temporaryDirectory.appending(path: "unagi-ui-smoke-" + UUID().uuidString)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
             app = XCUIApplication(url: url)
-            app.launchArguments = ["--data-directory", directory.path, "--seed-demo", "-AppleLanguages", "(en)"]
+            app.launchArguments = ["--data-directory", directory.path, "--seed-demo"]
             app.launch()
             app.activate()
             inputSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
