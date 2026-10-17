@@ -495,7 +495,7 @@ struct ReaderView: View {
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
-                Text(String(localized: "Read with room to think.", bundle: ReaderLocalization.bundle)).font(.system(size: 24, weight: .medium, design: .serif))
+                Text(verbatim: "Read with room to think.").font(.system(size: 24, weight: .medium, design: .serif))
                 Text(String(localized: "Choose an article from the list.", bundle: ReaderLocalization.bundle))
                     .font(.callout).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
