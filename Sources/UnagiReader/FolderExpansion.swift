@@ -1,7 +1,7 @@
 import Foundation
 
 /// Which folders of the sidebar are open. A folder that receives a subscription is opened, so the person sees where it went.
-/// The open folders are kept in `UserDefaults` and come back at the next launch (specification 3.1.1); a first launch has none open.
+/// The open folders are kept in `UserDefaults` and come back at the next launch (specification 3.1.4); a first launch has none open.
 struct FolderExpansion {
     /// The `UserDefaults` key: a list of folder names.
     static let key = "openSidebarFolders"
