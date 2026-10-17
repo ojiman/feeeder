@@ -121,7 +121,7 @@ The system's download request; a real translation of a long article and how fast
 
 1. **T1. The core.** `TranslationPlan`, `ArticleTranslation`, `LanguageDecision`, the cache, with a fake translator and the unit tests. Decision record (next free number). No UI.
 2. **T2. The button.** The toolbar item, the key `t`, `TranslationHost` with `translationTask`, the status row, the display of translated paragraphs, the default language. First end-to-end use on a real Mac (the owner tries it).
-3. **T3. Language settings and UI localization.** The Settings choices and independent defaults of specification 3.6 and 3.7 (decision 0060); one article action.
+3. **T3. The translation target in Settings** (#154). The 「記事翻訳」 choice and its default of specification 3.6 and 3.7 (decision 0060); one article action. UI localization is separate (#271, #272) and not part of this design.
    T2 also adds the menu bar command and the accessibility labels (section 12).
 4. **Later, only if real use asks for it** (not planned): links kept through `AttributedString`; an "always translate" choice per subscription; showing the original and the translation together, paragraph by paragraph (useful for learning); translated titles in the article list; skipping code paragraphs; Foundation Models for "explain in simple words".
 
