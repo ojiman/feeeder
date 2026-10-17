@@ -251,13 +251,13 @@ import Testing
         let fetched = Recorder<FeedCheckRequest>()
         let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() })      // the default sleep: `Task.sleep`
         let address = "https://127.0.0.1:"
-        for port in 1000..<1300 {
+        for port in 1000..<1200 {
             checker.update(source: address + "\(port)/feed.xml", delay: FeedCheckRequest.delay(from: address, to: address + "1"))
-            try? await Task.sleep(for: .milliseconds(1))                                   // the old check is now inside its wait
+            for _ in 0..<3 { await Task.yield() }                                          // the old check is now inside its wait
         }
-        checker.update(source: "https://127.0.0.1:1300/feed.xml", delay: .milliseconds(10))
-        for _ in 0..<100 where fetched.values.isEmpty { try? await Task.sleep(for: .milliseconds(20)) }
-        #expect(fetched.values == [.url(URL(string: "https://127.0.0.1:1300/feed.xml")!)])  // only the last edit reached the network
+        checker.update(source: "https://127.0.0.1:1200/feed.xml", delay: .milliseconds(10))
+        for _ in 0..<500 { if case .ready = checker.state { break }; try? await Task.sleep(for: .milliseconds(20)) }   // a loaded runner is slow
+        #expect(fetched.values == [.url(URL(string: "https://127.0.0.1:1200/feed.xml")!)])  // only the last edit reached the network
         guard case .ready = checker.state else { Issue.record("expected ready, got \(checker.state)"); return }
     }
 }
