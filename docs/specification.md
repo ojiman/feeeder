@@ -77,7 +77,7 @@ These words mean the same thing in this specification, the user guide, the decis
 | 「Markdownをコピー」 (Copy Markdown) | Puts the note's text, unchanged, on the pasteboard (3.3) | `NotePanel`, `ReaderView.copyNote` |
 | list title | The scope's name and count above the list (3.1.4) | `ListHeader` |
 | ✕ | The button at the top left of the right column. It closes the original page, and the note | `OriginalPageView`, `NotePanel` |
-| Settings (設定) | The settings window: 「外観」, 「言語」, 「ショートカット」 and 「保存」 (3.7) | `ReaderSettingsView` |
+| Settings (設定) | The settings window: 「一般」, 「記事」 and 「ショートカット」 (3.7) [not built #292] | `ReaderSettingsView` |
 
 **Word use**
 
@@ -288,7 +288,8 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 | Star, title, URL | after the body expires too | — |
 | the note's text | until the person deletes the characters (also after an article expires, its body is deleted, or a subscription is removed) | — |
 
-- Shortening the period and deleting all bodies at once ask the person to confirm what will go.
+- Shortening the period asks the person to confirm what will go.
+- Nothing deletes all bodies and RSS summaries at once; the retention period removes them (decision 0061) [not built #292]
 - An expired body or summary is deleted; the article shows that it was, and keeps the link to the original page.
 - There is no way to delete the note itself.
 
@@ -359,7 +360,7 @@ A button translates the open article into another language, on the Mac, with the
 
 **Language**
 
-- The target is 「記事翻訳」 (Article Translation) in Settings ▸ 「言語」 (3.7). Its first item is 「システムに合わせる」 (Match System); then every target language the system reports, with localized names.
+- The target is 「記事翻訳」 (Article Translation) in Settings (3.7). Its first item is 「システムに合わせる」 (Match System); then every target language the system reports, with localized names.
 - Match System uses the first of the Mac's preferred languages that the system can translate into, compared by language and script (region ignored), or English if none can. It follows later changes of the Mac's preferences.
 - A manual choice is remembered across launches until Match System is chosen again; changing the display language never changes it.
 - The article button, `t` and the menu-bar command translate into that target or return to the original; the article button has no language menu.
@@ -382,16 +383,17 @@ Not built: translating the original page, an "always translate" choice per subsc
 
 ### 3.7 Settings
 
-The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has four panes. Settings stay few: what is used often sits beside the content it acts on, not here. A choice about the article that is made once, such as its text size or its translation target, is here; the action it serves (the size keys, the translate button) stays beside the article.
+The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has the panes below. Settings stay few: what is used often sits beside the content it acts on, not here. A choice about the article that is made once, such as its text size or its translation target, is here; the action it serves (the size keys, the translate button) stays beside the article.
 
-| Pane | Holds | Code |
+| Pane | Holds, in this order | Code |
 |---|---|---|
-| 「外観」 (Appearance) | the theme and the article's text size | `ReaderSettingsView`, `AppearancePicker` |
-| 「言語」 (Language) | the article's translation target (3.6) and the display language | `ReaderSettingsView` |
+| 「一般」 (General) | the theme, the article's text size, and the display language with its note (below) [not built #292] | `ReaderSettingsView`, `AppearancePicker` |
+| 「記事」 (Articles) | the article's translation target (3.6) and the retention period (3.3) [not built #292] | `ReaderSettingsView` |
 | 「ショートカット」 (Shortcuts) | the keys, to read | `ShortcutList`, `ReaderShortcuts` |
-| 「保存」 (Storage) | the retention period and deleting bodies (3.3) | `ReaderSettingsView` |
 
-- The window opens on the pane that was shown last. Every choice is kept across launches and applies at once, except the display language (below).
+- 「一般」 holds only how the app as a whole looks and speaks; a choice about articles goes to 「記事」. There is no 「保存」 (Storage) pane, and no 「ノート」 (Note) pane until the note has a setting of its own [not built #292]
+- The window opens on the pane that was shown last; a pane saved by an earlier version opens 「一般」 [not built #292]
+- Every choice is kept across launches and applies at once, except the display language (below).
 
 **Language**
 
@@ -422,7 +424,7 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has four panes. S
 
 **Text size**
 
-- 「文字サイズ」 in 「外観」 is a slider with five steps: 14, 16 (standard), 18, 20 and 22 pt.
+- 「文字サイズ」 is a slider with five steps: 14, 16 (standard), 18, 20 and 22 pt.
 - It sets the article's body. The title (26 pt at standard) and the source and date lines scale by the same ratio, so the text keeps its shape.
 - The list, the sidebar and the note keep their sizes (decision 0028).
 - A change shows at once in the open article; the paragraph at the top of the article stays at the top.

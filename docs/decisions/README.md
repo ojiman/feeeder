@@ -56,6 +56,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0058](0058-unagi-reader-defines-its-own-requirements.md) | Unagi Reader defines its own requirements | valid |
 | [0059](0059-send-the-article-to-the-note.md) | Send the article to the note: an insertion the person asks for; no AI summary | valid |
 | [0060](0060-language-settings-and-ui-localization.md) | Language settings, independent defaults and AI-prepared UI localization | valid (built; product acceptance is separate) |
+| [0061](0061-no-deleting-all-bodies-at-once.md) | No action deletes all article bodies at once | valid (not built, #292) |
 
 ## Removed from the working tree
 
