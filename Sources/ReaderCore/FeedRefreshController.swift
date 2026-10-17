@@ -6,13 +6,16 @@ import Observation
     public private(set) var errors: [UUID: String] = [:]
     private let store: ReaderStore
     private let client: FeedClient
-    public init(store: ReaderStore, client: FeedClient = FeedClient()) { self.store = store; self.client = client }
+    private let batchDelay: Duration
+    /// Tests pass a long `batchDelay` so that only the batch size and the end of the fetches decide the batches.
+    public init(store: ReaderStore, client: FeedClient = FeedClient(), batchDelay: Duration = .milliseconds(500)) {
+        self.store = store; self.client = client; self.batchDelay = batchDelay
+    }
     private struct Request: Sendable { let id: UUID; let url: URL; let etag: String?; let modified: String? }
     private enum Event: Sendable { case fetched(Request, Result<FeedFetchResult, any Error>), due }
     /// Fetched feeds are applied together (one save, one list reload) when this many are in, or when the first of them
     /// has waited this long, or when the last fetch ends (#131). A slow feed does not hold back the others.
     nonisolated static let batchSize = 4
-    nonisolated static let batchDelay = Duration.milliseconds(500)
     public func refresh(feedIDs: [UUID]? = nil, at: Date = .now) async {
         guard !refreshing else { return }
         refreshing = true; defer { refreshing = false }
@@ -53,7 +56,8 @@ import Observation
                     if pending.count >= Self.batchSize { applyPending() }
                     else if !pending.isEmpty && !waiting {
                         waiting = true
-                        group.addTask { try? await Task.sleep(for: Self.batchDelay); return .due }
+                        let delay = batchDelay
+                        group.addTask { try? await Task.sleep(for: delay); return .due }
                     }
                 case .due:
                     waiting = false

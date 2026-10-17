@@ -31,35 +31,38 @@ import Testing
         return Library(directory: directory, store: store, ids: ids)
     }
 
-    /// Full batches, one partial batch, and one more for a batch that waited out its delay.
-    private func batches(_ feeds: Int) -> Int { feeds / FeedRefreshController.batchSize + 2 }
+    /// Long enough that no batch is applied by its delay, so the batches do not depend on how busy the main actor is
+    /// (other main-actor tests of the same run can hold it for seconds).
+    private let longDelay = Duration.seconds(600)
+    /// Full batches and the rest when the last fetch ends.
+    private func batches(_ feeds: Int) -> Int { (feeds + FeedRefreshController.batchSize - 1) / FeedRefreshController.batchSize }
 
     @Test func manyFeedsAreSavedAndReloadedOncePerBatch() async throws {
         let counter = Counter()
         let library = try library(feeds: 25, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
-        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()))
+        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()), batchDelay: longDelay)
         counter.saves = 0; counter.reloads = 0
         await refresh.refresh(feedIDs: library.ids)
         #expect(library.store.articles.count == 25 * 3 && refresh.errors.isEmpty)
         #expect(library.store.feeds.allSatisfy { $0.lastFetchedAt != nil && $0.etag == "v1" && $0.title == "Feed \($0.sourceURL ?? "")" })
         // Before batching: two saves and two reloads for every feed (50 each).
-        #expect(counter.saves <= batches(25) && counter.reloads <= batches(25), "saves \(counter.saves), reloads \(counter.reloads)")
+        #expect(counter.saves == batches(25) && counter.reloads == batches(25), "saves \(counter.saves), reloads \(counter.reloads)")
     }
     @Test func unchangedFeedsAreRecordedInBatchesToo() async throws {
         let counter = Counter()
         let library = try library(feeds: 25, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
-        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()))
+        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()), batchDelay: longDelay)
         await refresh.refresh(feedIDs: library.ids)
         let first = Dictionary(uniqueKeysWithValues: library.store.feeds.map { ($0.id, $0.lastFetchedAt) })
         counter.saves = 0; counter.reloads = 0
         await refresh.refresh(feedIDs: library.ids, at: .now.addingTimeInterval(60))     // every feed answers 304
         #expect(library.store.feeds.allSatisfy { $0.lastFetchedAt != first[$0.id] } && library.store.articles.count == 75)
-        #expect(counter.saves <= batches(25) && counter.reloads <= batches(25), "saves \(counter.saves), reloads \(counter.reloads)")   // was 25 each
+        #expect(counter.saves == batches(25) && counter.reloads == batches(25), "saves \(counter.saves), reloads \(counter.reloads)")   // was 25 each
     }
     @Test func anArticleTwoFeedsCarryInOneBatchIsOneArticleInBoth() async throws {
         let counter = Counter()
         let library = try library(feeds: 2, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
-        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds(shared: true)))
+        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds(shared: true)), batchDelay: longDelay)
         await refresh.refresh(feedIDs: library.ids)
         #expect(library.store.articles.count == 2 * 3 + 1)
         let shared = try #require(library.store.articles.first { $0.originalURL == "https://shared.example/p" })
@@ -68,7 +71,7 @@ import Testing
     @Test func aBatchWhoseSaveFailsIsAppliedOneFeedAtATime() async throws {
         let counter = Counter()
         let library = try library(feeds: 4, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
-        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()))
+        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()), batchDelay: longDelay)
         counter.failingSaves = 1
         await refresh.refresh(feedIDs: library.ids)
         #expect(library.store.articles.count == 4 * 3 && refresh.errors.isEmpty)
@@ -77,7 +80,7 @@ import Testing
     @Test func aFeedThatCannotBeSavedAloneIsTheOnlyOneWithAnError() async throws {
         let counter = Counter()
         let library = try library(feeds: 3, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
-        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()))
+        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()), batchDelay: longDelay)
         counter.failingSaves = 2                                                   // the batch, then the first feed on its own
         await refresh.refresh(feedIDs: library.ids)
         #expect(refresh.errors.count == 1 && library.store.articles.count == 2 * 3)
@@ -85,7 +88,7 @@ import Testing
     @Test func aBatchSavedButNotReloadedShowsItsErrorAndTheNextRefreshWorks() async throws {
         let counter = Counter()
         let library = try library(feeds: 3, counter: counter); defer { try? FileManager.default.removeItem(at: library.directory) }
-        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()))
+        let refresh = FeedRefreshController(store: library.store, client: FeedClient(http: StubFeeds()), batchDelay: longDelay)
         counter.failingReloads = 1
         await refresh.refresh(feedIDs: library.ids)
         #expect(refresh.errors.count == 3)                                          // never reported as done
