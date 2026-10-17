@@ -49,9 +49,9 @@ import Testing
         #expect(Set(ReaderLocalization.languages).isSuperset(of: ["en", "ja"]))
         let japanese = try #require(ReaderLocalization.bundle.path(forResource: "ja", ofType: "lproj"))
         let bundle = try #require(Bundle(path: japanese))
-        #expect(bundle.localizedString(forKey: "Language", value: nil, table: nil) == "言語")
+        #expect(bundle.localizedString(forKey: "General", value: nil, table: nil) == "一般")
         #expect(bundle.localizedString(forKey: "An English fallback", value: nil, table: nil) == "An English fallback")
-        #expect(String(localized: "Language", bundle: ReaderLocalization.bundle) == "Language")
+        #expect(String(localized: "General", bundle: ReaderLocalization.bundle) == "General")
     }
 }
 

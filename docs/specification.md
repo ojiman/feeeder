@@ -77,7 +77,7 @@ These words mean the same thing in this specification, the user guide, the decis
 | 「Markdownをコピー」 (Copy Markdown) | Puts the note's text, unchanged, on the pasteboard (3.3) | `NotePanel`, `ReaderView.copyNote` |
 | list title | The scope's name and count above the list (3.1.4) | `ListHeader` |
 | ✕ | The button at the top left of the right column. It closes the original page, and the note | `OriginalPageView`, `NotePanel` |
-| Settings (設定) | The settings window: 「一般」, 「記事」 and 「ショートカット」 (3.7) [not built #292] | `ReaderSettingsView` |
+| Settings (設定) | The settings window: 「一般」, 「記事」 and 「ショートカット」 (3.7) | `ReaderSettingsView` |
 
 **Word use**
 
@@ -290,7 +290,7 @@ The **note** is the app's **one** plain-text Markdown document ([decision 0049](
 | the note's text | until the person deletes the characters (also after an article expires, its body is deleted, or a subscription is removed) | — |
 
 - Shortening the period asks the person to confirm what will go.
-- Nothing deletes all bodies and RSS summaries at once; the retention period removes them (decision 0061) [not built #292]
+- Nothing deletes all bodies and RSS summaries at once; the retention period removes them (decision 0061)
 - An expired body or summary is deleted; the article shows that it was, and keeps the link to the original page.
 - There is no way to delete the note itself.
 
@@ -388,12 +388,12 @@ The settings window (Unagi Reader ▸ 「設定…」, `⌘,`) has the panes bel
 
 | Pane | Holds, in this order | Code |
 |---|---|---|
-| 「一般」 (General) | the theme, the article's text size, and the display language with its note (below) [not built #292] | `ReaderSettingsView`, `AppearancePicker` |
-| 「記事」 (Articles) | the article's translation target (3.6) and the retention period (3.3) [not built #292] | `ReaderSettingsView` |
+| 「一般」 (General) | the theme, the article's text size, and the display language with its note (below) | `ReaderSettingsView`, `AppearancePicker` |
+| 「記事」 (Articles) | the article's translation target (3.6) and the retention period (3.3) | `ReaderSettingsView` |
 | 「ショートカット」 (Shortcuts) | the keys, to read | `ShortcutList`, `ReaderShortcuts` |
 
-- 「一般」 holds only how the app as a whole looks and speaks; a choice about articles goes to 「記事」. There is no 「保存」 (Storage) pane, and no 「ノート」 (Note) pane until the note has a setting of its own [not built #292]
-- The window opens on the pane that was shown last; a pane saved by an earlier version opens 「一般」 [not built #292]
+- 「一般」 holds only how the app as a whole looks and speaks; a choice about articles goes to 「記事」. There is no 「保存」 (Storage) pane, and no 「ノート」 (Note) pane until the note has a setting of its own
+- The window opens on the pane that was shown last; a pane saved by an earlier version opens 「一般」
 - Every choice is kept across launches and applies at once, except the display language (below).
 
 **Language**

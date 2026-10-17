@@ -1072,7 +1072,7 @@
       }
     },
     "App Language": {
-      "comment": "Settings Language pane",
+      "comment": "Settings General pane",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1118,55 +1118,8 @@
         }
       }
     },
-    "Appearance": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appearance"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外観"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外观"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外觀"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "모양"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apariencia"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aparência"
-          }
-        }
-      }
-    },
     "Applies at next launch.": {
-      "comment": "Settings Language pane",
+      "comment": "Settings General pane",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1255,53 +1208,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Artigo"
-          }
-        }
-      }
-    },
-    "Article Bodies and RSS Summaries": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Article Bodies and RSS Summaries"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "記事本文・RSS要約"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文章正文与 RSS 摘要"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文章內文與 RSS 摘要"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "기사 본문 및 RSS 요약"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Textos de artículos y resúmenes RSS"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Textos de artigos e resumos RSS"
           }
         }
       }
@@ -1631,6 +1537,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Textos de artigos: %lld. Resumos RSS: %lld. Cerca de %@ serão excluídos. A nota será mantida. Aumentar o prazo de retenção não restaura os textos excluídos."
+          }
+        }
+      }
+    },
+    "Articles": {
+      "comment": "Settings pane name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Articles"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文章"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文章"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "기사"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artículos"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artigos"
           }
         }
       }
@@ -2951,147 +2904,6 @@
         }
       }
     },
-    "Delete Bodies and RSS Summaries": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete Bodies and RSS Summaries"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本文・RSS要約を削除"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除正文与 RSS 摘要"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刪除內文與 RSS 摘要"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "본문 및 RSS 요약 삭제"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eliminar textos y resúmenes RSS"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Excluir textos e resumos RSS"
-          }
-        }
-      }
-    },
-    "Delete article bodies and RSS summaries?": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete article bodies and RSS summaries?"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本文・RSS要約を削除しますか？"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除文章正文与 RSS 摘要？"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刪除文章內文與 RSS 摘要？"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "기사 본문과 RSS 요약을 삭제할까요?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Eliminar textos de artículos y resúmenes RSS?"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Excluir os textos de artigos e os resumos RSS?"
-          }
-        }
-      }
-    },
-    "Delete…": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete…"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "削除…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除…"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刪除…"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "삭제…"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eliminar…"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Excluir…"
-          }
-        }
-      }
-    },
     "Destination Folder Name": {
       "comment": "Sources/UnagiReader/MoveToFolderView.swift",
       "localizations": {
@@ -4032,6 +3844,53 @@
         }
       }
     },
+    "General": {
+      "comment": "Settings pane name",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一般"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一般"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "일반"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geral"
+          }
+        }
+      }
+    },
     "HTTP connections are not supported. Enter an https:// URL.": {
       "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
       "localizations": {
@@ -4310,53 +4169,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Atalhos de teclado"
-          }
-        }
-      }
-    },
-    "Language": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Language"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "言語"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "语言"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "語言"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "언어"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Idioma"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Idioma"
           }
         }
       }
@@ -7040,53 +6852,6 @@
         }
       }
     },
-    "Storage": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Storage"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "存储"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "儲存空間"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "저장 공간"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Almacenamiento"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Armazenamento"
-          }
-        }
-      }
-    },
     "Subscription Folder": {
       "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
       "localizations": {
@@ -8070,53 +7835,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível encontrar a nota."
-          }
-        }
-      }
-    },
-    "The note is never deleted automatically.": {
-      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The note is never deleted automatically."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ノートは自動削除しません。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "笔记不会自动删除。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "筆記不會自動刪除。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "노트는 자동으로 삭제되지 않습니다."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La nota nunca se elimina automáticamente."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A nota nunca é excluída automaticamente."
           }
         }
       }

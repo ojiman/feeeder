@@ -1,6 +1,6 @@
 # 0061 No action deletes all article bodies at once
 
-- Status: valid (approved by the owner when the PR that adds this record is merged; not built, #292)
+- Status: valid (built; no action deletes all bodies at once)
 - Date: 2026-10-18
 - Decider: the owner (PdM), in the chat of 2026-10-18. The agent proposed removing the action; the owner agreed, and chose the new pane layout of Settings with it.
 
