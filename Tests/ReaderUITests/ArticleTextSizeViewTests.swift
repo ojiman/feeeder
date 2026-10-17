@@ -5,7 +5,7 @@ import ReaderCore
 @testable import UnagiReader
 
 // Specification 3.7: the article's text size.
-@Suite(.serialized) @MainActor struct ArticleTextSizeViewTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct ArticleTextSizeViewTests {
     private func fontSize(_ view: NSTextView, of text: String) -> CGFloat? {
         let location = (view.string as NSString).range(of: text).location
         guard location != NSNotFound else { return nil }

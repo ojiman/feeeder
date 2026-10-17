@@ -5,7 +5,7 @@ import ReaderCore
 @testable import UnagiReader
 
 // Checks PRD-19: putting text into the note at the caret, for 「記事をノートに送る」 (specification 3.3).
-@Suite(.serialized) @MainActor struct NoteInsertionTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct NoteInsertionTests {
     final class Sink {
         var changes: [String] = []
         var saves = true

@@ -112,16 +112,16 @@ struct TranslationEngine {
 
     /// One short sentence for the status row (specification 3.6).
     nonisolated static func describe(_ error: Error) -> String {
-        guard let error = error as? TranslationError else { return "翻訳できませんでした。" }
+        guard let error = error as? TranslationError else { return String(localized: "Could not translate.", bundle: ReaderLocalization.bundle) }
         switch error {
         case TranslationError.unsupportedLanguagePairing, TranslationError.unsupportedSourceLanguage, TranslationError.unsupportedTargetLanguage:
-            return "この言語の組み合わせは翻訳できません。"
+            return String(localized: "This language pair is not supported.", bundle: ReaderLocalization.bundle)
         case TranslationError.notInstalled:
-            return "言語データがありません。ダウンロードが許可されなかったか、オフラインです。"
+            return String(localized: "Language data is missing. The download may not have been allowed, or the Mac is offline.", bundle: ReaderLocalization.bundle)
         case TranslationError.unableToIdentifyLanguage:
-            return "記事の言語を判別できませんでした。"
+            return String(localized: "The article's language could not be identified.", bundle: ReaderLocalization.bundle)
         default:
-            return "翻訳できませんでした。"
+            return String(localized: "Could not translate.", bundle: ReaderLocalization.bundle)
         }
     }
 }
@@ -153,17 +153,17 @@ struct TranslationStatusRow: View {
     private var content: AnyView? {
         switch state {
         case .idle: nil
-        case .preparing: AnyView(Text("言語を準備しています…"))
-        case .translating(let done, let total): AnyView(Text("翻訳中 \(done)/\(total)").monospacedDigit())
+        case .preparing: AnyView(Text(String(localized: "Preparing languages…", bundle: ReaderLocalization.bundle)))
+        case .translating(let done, let total): AnyView(Text(String(localized: "Translating \(done)/\(total)", bundle: ReaderLocalization.bundle)).monospacedDigit())
         case .done(let failed, let source):
             AnyView(Group {
                 Text(Self.pair(source: source, target: target))
-                if failed > 0 { Text("\(failed)段落は原文のままです") }
-                Button("原文を表示", action: showOriginal).buttonStyle(.link)
+                if failed > 0 { Text(String(localized: "Untranslated paragraphs: \(failed)", bundle: ReaderLocalization.bundle)) }
+                Button(String(localized: "Show Original", bundle: ReaderLocalization.bundle), action: showOriginal).buttonStyle(.link)
             })
         case .failed(let message): AnyView(Text(message))
-        case .alreadyInTarget: AnyView(Text("すでに\(Self.name(target))です"))
-        case .unsupported: AnyView(Text("この言語の組み合わせは翻訳できません。"))
+        case .alreadyInTarget: AnyView(Text(String(localized: "Already in \(Self.name(target))", bundle: ReaderLocalization.bundle)))
+        case .unsupported: AnyView(Text(String(localized: "This language pair is not supported.", bundle: ReaderLocalization.bundle)))
         }
     }
 
@@ -198,7 +198,7 @@ struct TranslationCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
-            Button(command?.isOn == true ? "原文に戻す" : "翻訳") { command?.action() }
+            Button(command?.isOn == true ? String(localized: "Return to Original", bundle: ReaderLocalization.bundle) : String(localized: "Translate", bundle: ReaderLocalization.bundle)) { command?.action() }
                 .disabled(command?.enabled != true)
         }
     }

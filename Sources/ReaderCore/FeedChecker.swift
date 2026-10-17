@@ -72,7 +72,7 @@ public struct CheckedFeed: Sendable, Equatable, Identifiable {
         let plainHTTP = !manual && source.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().hasPrefix("http://")
         var hint: String?
         if request == nil {
-            hint = asked && manual && ArticleURL.validated(source) != nil ? "XMLを入れてください。" : FeedCheckRequest.hint(source: source, asked: asked)
+            hint = asked && manual && ArticleURL.validated(source) != nil ? String(localized: "Enter XML.", bundle: ReaderLocalization.bundle) : FeedCheckRequest.hint(source: source, asked: asked)
         }
         guard request != nil || hint != nil else { return }
         task = Task { [fetch, sleep] in

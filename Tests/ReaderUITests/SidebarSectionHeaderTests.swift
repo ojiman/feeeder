@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import UnagiReader
 
-@MainActor struct SidebarSectionHeaderTests {
+@Suite(EnglishLanguage()) @MainActor struct SidebarSectionHeaderTests {
     /// The x positions (in points) of pixels that are clearly orange (the accent), in a render of the header.
     private func accentColumns(forceVisible: Bool) throws -> [Int] {
         let host = NSHostingView(rootView: SidebarSectionHeader(title: "購読元", help: "購読元を追加", action: {}, forceVisible: forceVisible)

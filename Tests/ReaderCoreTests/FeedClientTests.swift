@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import ReaderCore
 
-@MainActor struct FeedClientTests {
+@Suite(EnglishLanguage()) @MainActor struct FeedClientTests {
     private func endpoint() -> URL { URL(string: "https://\(UUID().uuidString.lowercased()).example/rss")! }
     private var client: FeedClient { FeedClient(http: HTTPClient(protocolClasses: [StubURLProtocol.self])) }
 

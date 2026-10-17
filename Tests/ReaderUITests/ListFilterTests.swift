@@ -6,7 +6,7 @@ import Testing
 
 // Checks PRD-17 (specification 7).
 /// Specification 3.1.4: the filter narrows the list of the scope; `j` / `k` walk the filtered list; the field is the system's search field.
-@Suite(.serialized) @MainActor struct ListFilterTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct ListFilterTests {
     private struct Harness {
         let host: NSHostingView<ReaderView>
         let window: NSWindow

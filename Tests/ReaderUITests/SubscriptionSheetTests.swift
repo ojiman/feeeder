@@ -4,15 +4,15 @@ import Testing
 @testable import UnagiReader
 
 // Checks PRD-14 (specification 7).
-@MainActor struct SubscriptionSheetTests {
+@Suite(EnglishLanguage()) @MainActor struct SubscriptionSheetTests {
     @Test func theXMLInputIsOnlyOfferedWithTheOptionKey() {
         #expect(!SubscriptionSheet.offersXMLInput(modifiers: []))
         #expect(!SubscriptionSheet.offersXMLInput(modifiers: [.command, .shift]))
         #expect(SubscriptionSheet.offersXMLInput(modifiers: [.option]))
     }
     @Test func theHeadingNamesTheFolderTheSubscriptionGoesTo() {
-        #expect(SubscriptionSheet.heading(folder: "") == "購読を追加")
-        #expect(SubscriptionSheet.heading(folder: "Tech") == "「Tech」に購読を追加")
+        #expect(SubscriptionSheet.heading(folder: "") == "Add Subscription")
+        #expect(SubscriptionSheet.heading(folder: "Tech") == "Add Subscription to “Tech”")
     }
     @Test func aTargetIsIdentifiedByItsFolder() {
         #expect(SubscriptionTarget(folder: "Tech").id == "Tech" && SubscriptionTarget(folder: "").id == "")
@@ -20,7 +20,7 @@ import Testing
 }
 
 /// The count at the right end of a sidebar row becomes a + while the pointer is over a row that can take a new subscription.
-@MainActor struct SidebarRowTests {
+@Suite(EnglishLanguage()) @MainActor struct SidebarRowTests {
     private func accentColumns(count: Int, add: Bool, hovering: Bool) throws -> [Int] {
         let host = NSHostingView(rootView: SidebarRow(title: "Tech", symbol: "folder", count: count, addHelp: add ? "このフォルダに購読を追加" : nil, onAdd: {}, forceHover: hovering)
             .frame(width: 215, height: 30).background(Color(white: 0.15)))
@@ -47,7 +47,7 @@ import Testing
 }
 
 /// Dragging a subscription onto a folder row.
-@MainActor struct FeedDragTests {
+@Suite(EnglishLanguage()) @MainActor struct FeedDragTests {
     @Test func aDraggedSubscriptionIsJustItsIdentifierAndSurvivesEncoding() throws {
         let id = UUID()
         let data = try JSONEncoder().encode(FeedDrag(id: id))

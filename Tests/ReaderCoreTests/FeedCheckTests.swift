@@ -4,7 +4,7 @@ import Testing
 
 /// The add-subscription sheet checks the address while the person types (decision 0036).
 // Checks PRD-14 (specification 7).
-@MainActor struct FeedCheckTests {
+@Suite(EnglishLanguage()) @MainActor struct FeedCheckTests {
     // MARK: What is worth fetching
 
     @Test func onlyACompleteAddressIsChecked() {
@@ -52,14 +52,14 @@ import Testing
     @Test func aHintIsGivenOnlyWhenTheTextCannotBecomeAnAddress() {
         #expect(FeedCheckRequest.hint(source: "") == nil)
         #expect(FeedCheckRequest.hint(source: "https://exa") == nil)
-        #expect(FeedCheckRequest.hint(source: "example.com/feed") == "http:// か https:// で始まるURLを入れてください。")
+        #expect(FeedCheckRequest.hint(source: "example.com/feed") == "Enter a URL starting with http:// or https://.")
         for typingTheScheme in ["h", "http", "https:", "https:/", "HTTPS://"] { #expect(FeedCheckRequest.hint(source: typingTheScheme) == nil, "\(typingTheScheme)") }
-        #expect(FeedCheckRequest.hint(source: "ftp://example.com/feed") == "http:// か https:// で始まるURLを入れてください。")
+        #expect(FeedCheckRequest.hint(source: "ftp://example.com/feed") == "Enter a URL starting with http:// or https://.")
     }
     @Test func returnOnAnAddressThatCannotBeUsedSaysWhy() {
-        #expect(FeedCheckRequest.hint(source: "https://", asked: true) == "URLを最後まで入れてください。")
+        #expect(FeedCheckRequest.hint(source: "https://", asked: true) == "Enter the complete URL.")
         #expect(FeedCheckRequest.hint(source: "https://name:secret@example.com/feed", asked: true) == FeedImportError.invalidURL.localizedDescription)
-        #expect(FeedCheckRequest.hint(source: "ftp://example.com/feed", asked: true) == "http:// か https:// で始まるURLを入れてください。")
+        #expect(FeedCheckRequest.hint(source: "ftp://example.com/feed", asked: true) == "Enter a URL starting with http:// or https://.")
         #expect(FeedCheckRequest.hint(source: "", asked: true) == nil)
     }
     @Test func pastingChecksAtOnceAndTypingWaits() {
@@ -100,12 +100,12 @@ import Testing
     @Test func aFailureIsShownInPlainWordsAndTheButtonStaysOff() async {
         let checker = FeedChecker(fetch: { _ in throw HTTPError.status(404) }, sleep: { _ in })
         checker.update(source: "https://example.com/missing", delay: .zero); await settle(checker)
-        #expect(checker.state == .failed("ページが見つかりません（404）。URLを確認してください。"))
+        #expect(checker.state == .failed("Page not found (404). Check the URL."))
     }
     @Test func textWithoutASchemeGetsAHintAfterTheDelayAndEmptyTextIsQuiet() async {
         let checker = FeedChecker(fetch: { _ in Self.checked() }, sleep: { _ in })
         checker.update(source: "example.com/feed", delay: .zero); await settle(checker)
-        #expect(checker.state == .failed("http:// か https:// で始まるURLを入れてください。"))
+        #expect(checker.state == .failed("Enter a URL starting with http:// or https://."))
         checker.update(source: "", delay: .zero); await settle(checker)
         #expect(checker.state == .idle)
     }
@@ -139,7 +139,7 @@ import Testing
         let fetched = Recorder<FeedCheckRequest>()
         let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() }, sleep: { _ in })
         checker.update(source: "https://", delay: .zero, asked: true); await settle(checker)
-        #expect(checker.state == .failed("URLを最後まで入れてください。"))
+        #expect(checker.state == .failed("Enter the complete URL."))
         checker.update(source: "", delay: .zero, asked: true); await settle(checker)
         #expect(checker.state == .idle && fetched.values.isEmpty)
     }
@@ -184,46 +184,46 @@ import Testing
 
     @Test func eachCauseHasItsOwnPlainSentence() {
         func text(_ error: any Error) -> String { FeedCheckMessage.text(for: error) }
-        #expect(text(HTTPError.status(404)) == "ページが見つかりません（404）。URLを確認してください。")
-        #expect(text(HTTPError.status(403)) == "このURLは読めません（403）。ログインが必要かもしれません。")
-        #expect(text(HTTPError.status(503)) == "サーバーがエラーを返しました（503）。時間をおいて試してください。")
-        #expect(text(HTTPError.status(418)) == "サーバーがエラーを返しました（418）。")
-        #expect(text(URLError(.notConnectedToInternet)) == "ネットワークに接続できません。")
-        #expect(text(URLError(.timedOut)) == "サーバーから応答がありません。")
-        #expect(text(URLError(.cannotFindHost)) == "サーバーが見つかりません。URLを確認してください。")
-        #expect(text(URLError(.serverCertificateUntrusted)) == "安全な接続ができませんでした。")
-        #expect(text(URLError(.cannotConnectToHost)) == "接続できませんでした。")
-        #expect(text(URLError(.appTransportSecurityRequiresSecureConnection)) == "http:// には接続できません。https:// のURLを入れてください。")
-        #expect(text(HTTPError.tooLarge) == "データが大きすぎます（2MBまで）。")
-        #expect(text(FeedImportError.htmlPage) == "フィードではなくWebページです。フィードのURLを入れてください。")
-        #expect(text(FeedImportError.noFeedInPage) == "このページにはフィードが見つかりませんでした。フィードのURLを入れてください。")
-        #expect(text(FeedImportError.invalidXML) == "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。")
-        #expect(FeedCheckMessage.text(for: FeedImportError.invalidXML, pastedXML: true) == "貼り付けたXMLに誤りがあり、読めませんでした。")
+        #expect(text(HTTPError.status(404)) == "Page not found (404). Check the URL.")
+        #expect(text(HTTPError.status(403)) == "This URL could not be read (403). You may need to log in.")
+        #expect(text(HTTPError.status(503)) == "The server returned an error (503). Try again later.")
+        #expect(text(HTTPError.status(418)) == "The server returned an error (418).")
+        #expect(text(URLError(.notConnectedToInternet)) == "You are not connected to the network.")
+        #expect(text(URLError(.timedOut)) == "The server did not respond.")
+        #expect(text(URLError(.cannotFindHost)) == "The server could not be found. Check the URL.")
+        #expect(text(URLError(.serverCertificateUntrusted)) == "A secure connection could not be made.")
+        #expect(text(URLError(.cannotConnectToHost)) == "Could not connect.")
+        #expect(text(URLError(.appTransportSecurityRequiresSecureConnection)) == "HTTP connections are not supported. Enter an https:// URL.")
+        #expect(text(HTTPError.tooLarge) == "The data is too large (maximum 2 MB).")
+        #expect(text(FeedImportError.htmlPage) == "This is a web page, not a feed. Enter the feed URL.")
+        #expect(text(FeedImportError.noFeedInPage) == "No feed was found on this page. Enter the feed URL.")
+        #expect(text(FeedImportError.invalidXML) == "The feed XML could not be read. There may be a problem with the source.")
+        #expect(FeedCheckMessage.text(for: FeedImportError.invalidXML, pastedXML: true) == "The pasted XML could not be read because it contains errors.")
     }
 
     @Test func aFeedTypedWithHttpThatHttpsCannotLoadSaysThatHttpIsNotSupported() {
-        let httpOnly = "HTTPSでは読み込めませんでした。HTTPには対応していません。"
+        let httpOnly = "Could not load over HTTPS. HTTP is not supported."
         func text(_ error: any Error) -> String { FeedCheckMessage.text(for: error, plainHTTP: true) }
         for code: URLError.Code in [.cannotConnectToHost, .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate] {
             #expect(text(URLError(code)) == httpOnly)
         }
         // A cause that does not depend on the scheme keeps its own sentence.
-        #expect(text(URLError(.notConnectedToInternet)) == "ネットワークに接続できません。")
-        #expect(text(URLError(.timedOut)) == "サーバーから応答がありません。")
-        #expect(text(URLError(.cannotFindHost)) == "サーバーが見つかりません。URLを確認してください。")
-        #expect(text(HTTPError.status(404)) == "ページが見つかりません（404）。URLを確認してください。")
-        #expect(text(URLError(.appTransportSecurityRequiresSecureConnection)) == "http:// には接続できません。https:// のURLを入れてください。")   // a port: https was not tried
-        #expect(text(FeedImportError.htmlPage) == "フィードではなくWebページです。フィードのURLを入れてください。")
+        #expect(text(URLError(.notConnectedToInternet)) == "You are not connected to the network.")
+        #expect(text(URLError(.timedOut)) == "The server did not respond.")
+        #expect(text(URLError(.cannotFindHost)) == "The server could not be found. Check the URL.")
+        #expect(text(HTTPError.status(404)) == "Page not found (404). Check the URL.")
+        #expect(text(URLError(.appTransportSecurityRequiresSecureConnection)) == "HTTP connections are not supported. Enter an https:// URL.")   // a port: https was not tried
+        #expect(text(FeedImportError.htmlPage) == "This is a web page, not a feed. Enter the feed URL.")
         // An address typed with https is not blamed on http.
-        #expect(FeedCheckMessage.text(for: URLError(.cannotConnectToHost)) == "接続できませんでした。")
+        #expect(FeedCheckMessage.text(for: URLError(.cannotConnectToHost)) == "Could not connect.")
     }
     @Test func theCheckerTellsAnHttpAddressApartFromAnHttpsOne() async {
-        let httpOnly = "HTTPSでは読み込めませんでした。HTTPには対応していません。"
+        let httpOnly = "Could not load over HTTPS. HTTP is not supported."
         let checker = FeedChecker(fetch: { _ in throw URLError(.cannotConnectToHost) }, sleep: { _ in })
         checker.update(source: "http://example.com/feed.xml", delay: .zero); await settle(checker)
         #expect(checker.state == .failed(httpOnly))
         checker.update(source: "https://example.com/feed.xml", delay: .zero); await settle(checker)
-        #expect(checker.state == .failed("接続できませんでした。"))
+        #expect(checker.state == .failed("Could not connect."))
         checker.update(source: "  HTTP://example.com/feed.xml", delay: .zero); await settle(checker)      // pasted with spaces and capitals
         #expect(checker.state == .failed(httpOnly))
     }

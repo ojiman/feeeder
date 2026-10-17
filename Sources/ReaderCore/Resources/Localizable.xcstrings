@@ -1,0 +1,3605 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld articles": {
+      "comment": "Sources/UnagiReader/ListHeader.swift",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld article"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld articles"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld件の記事"
+          }
+        }
+      }
+    },
+    "%lld days": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld日"
+          }
+        }
+      }
+    },
+    "%lld pt": {
+      "comment": "Article text size in points.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pt"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pt"
+          }
+        }
+      }
+    },
+    "1 Year": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Year"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1年"
+          }
+        }
+      }
+    },
+    "A secure connection could not be made.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A secure connection could not be made."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安全な接続ができませんでした。"
+          }
+        }
+      }
+    },
+    "Aa": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aa"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あ"
+          }
+        }
+      }
+    },
+    "Add": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加"
+          }
+        }
+      }
+    },
+    "Add Star": {
+      "comment": "Sources/UnagiReader/ReaderMenuCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Star"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starを付ける"
+          }
+        }
+      }
+    },
+    "Add Subscription": {
+      "comment": "Sources/UnagiReader/SidebarTitlebarControls.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Subscription"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読を追加"
+          }
+        }
+      }
+    },
+    "Add Subscription from URL": {
+      "comment": "Sources/UnagiReader/SidebarTitlebarControls.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Subscription from URL"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URLから購読を追加"
+          }
+        }
+      }
+    },
+    "Add Subscription to “%@”": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Subscription to “%@”"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」に購読を追加"
+          }
+        }
+      }
+    },
+    "Add a Subscription": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a Subscription"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読元を追加"
+          }
+        }
+      }
+    },
+    "Add a subscription or choose another list.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a subscription or choose another list."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読を追加するか、ほかの一覧を選んでください。"
+          }
+        }
+      }
+    },
+    "Add or remove Star": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add or remove Star"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starを付ける・外す"
+          }
+        }
+      }
+    },
+    "All Articles": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Articles"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての記事"
+          }
+        }
+      }
+    },
+    "Already in %@": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already in %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すでに%@です"
+          }
+        }
+      }
+    },
+    "Already subscribed: %@": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already subscribed: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すでに購読しています：%@"
+          }
+        }
+      }
+    },
+    "Also available while the original page is open": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also available while the original page is open"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページを開いたままでも使えます"
+          }
+        }
+      }
+    },
+    "Always use a dark appearance": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always use a dark appearance"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常に暗い外観にします"
+          }
+        }
+      }
+    },
+    "Always use a light appearance": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always use a light appearance"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常に明るい外観にします"
+          }
+        }
+      }
+    },
+    "An existing name merges the folders. An empty name moves subscriptions to Unfiled.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An existing name merges the folders. An empty name moves subscriptions to Unfiled."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既存の名前を指定すると統合します。空欄は未分類に移します。"
+          }
+        }
+      }
+    },
+    "An unknown error occurred.": {
+      "comment": "Sources/UnagiReader/UnagiReaderApp.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unknown error occurred."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不明なエラーです。"
+          }
+        }
+      }
+    },
+    "App Language": {
+      "comment": "Settings Language pane",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Language"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示言語"
+          }
+        }
+      }
+    },
+    "Appearance": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外観"
+          }
+        }
+      }
+    },
+    "Applies at next launch.": {
+      "comment": "Settings Language pane",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies at next launch."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次回の起動から反映されます"
+          }
+        }
+      }
+    },
+    "Article": {
+      "comment": "Sources/UnagiReader/ReaderMenuCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事"
+          }
+        }
+      }
+    },
+    "Article Bodies and RSS Summaries": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article Bodies and RSS Summaries"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事本文・RSS要約"
+          }
+        }
+      }
+    },
+    "Article Body": {
+      "comment": "Sources/UnagiReader/NativeArticleText.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article Body"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事本文"
+          }
+        }
+      }
+    },
+    "Article Image": {
+      "comment": "Sources/UnagiReader/ArticleImageView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article Image"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事の画像"
+          }
+        }
+      }
+    },
+    "Article List": {
+      "comment": "Sources/UnagiReader/NativeArticleList.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article List"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事一覧"
+          }
+        }
+      }
+    },
+    "Article Publication Date": {
+      "comment": "Sources/UnagiReader/NativeArticleList.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article Publication Date"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事の公開日時"
+          }
+        }
+      }
+    },
+    "Article Thumbnail": {
+      "comment": "Sources/UnagiReader/NativeArticleList.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article Thumbnail"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事のサムネイル"
+          }
+        }
+      }
+    },
+    "Article Translation": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article Translation"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事翻訳"
+          }
+        }
+      }
+    },
+    "Article bodies: %lld. RSS summaries: %lld. About %@ will be deleted. The note is kept. Extending retention will not restore deleted bodies.": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Article bodies: %lld. RSS summaries: %lld. About %@ will be deleted. The note is kept. Extending retention will not restore deleted bodies."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本文%lld件・RSS要約%lld件、約%@が削除対象です。ノートは残ります。削除した本文は保持期間を延長しても復元されません。"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        }
+      }
+    },
+    "Change Retention": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Retention"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持期間を変更"
+          }
+        }
+      }
+    },
+    "Change retention to %lld days?": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change retention to %lld days?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持期間を%lld日に変更しますか？"
+          }
+        }
+      }
+    },
+    "Changes the article body and scales its headings. The list and note are unchanged.": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes the article body and scales its headings. The list and note are unchanged."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事の本文の大きさです。見出しも同じ割合で変わります。一覧とノートは変わりません。"
+          }
+        }
+      }
+    },
+    "Checking…": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認中…"
+          }
+        }
+      }
+    },
+    "Choose a retention period of 7, 30, 90 or 365 days.": {
+      "comment": "Sources/ReaderCore/ContentRetention.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a retention period of 7, 30, 90 or 365 days."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持期間は7・30・90・365日から選択してください。"
+          }
+        }
+      }
+    },
+    "Choose an OPML file to import.": {
+      "comment": "Sources/UnagiReader/OPMLCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an OPML file to import."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り込むOPMLファイルを選んでください。"
+          }
+        }
+      }
+    },
+    "Choose an article from the list.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an article from the list."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一覧から記事を選んでください。"
+          }
+        }
+      }
+    },
+    "Close": {
+      "comment": "Sources/UnagiReader/NoteEditor.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉じる"
+          }
+        }
+      }
+    },
+    "Close Note": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを閉じる"
+          }
+        }
+      }
+    },
+    "Close Note (Esc)": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Note (Esc)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを閉じる (Esc)"
+          }
+        }
+      }
+    },
+    "Close note and return to article": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close note and return to article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを閉じて記事に戻る"
+          }
+        }
+      }
+    },
+    "Close original page and return to article": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close original page and return to article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページを閉じて記事に戻る"
+          }
+        }
+      }
+    },
+    "Copy Markdown": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Markdown"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markdownをコピー"
+          }
+        }
+      }
+    },
+    "Could Not Apply Change": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Apply Change"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更できませんでした"
+          }
+        }
+      }
+    },
+    "Could Not Clean Up Saved Data": {
+      "comment": "Sources/UnagiReader/UnagiReaderApp.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Clean Up Saved Data"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存データを整理できませんでした"
+          }
+        }
+      }
+    },
+    "Could Not Open Library": {
+      "comment": "Sources/UnagiReader/UnagiReaderApp.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Open Library"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ライブラリを開けませんでした"
+          }
+        }
+      }
+    },
+    "Could Not Open Original Page": {
+      "comment": "Sources/UnagiReader/OriginalPageView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Open Original Page"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページを開けませんでした"
+          }
+        }
+      }
+    },
+    "Could Not Save": {
+      "comment": "Sources/UnagiReader/NoteEditor.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Save"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存できませんでした"
+          }
+        }
+      }
+    },
+    "Could not connect to the redirect destination.": {
+      "comment": "Sources/ReaderCore/HTTPClient.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not connect to the redirect destination."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この転送先には接続できませんでした。"
+          }
+        }
+      }
+    },
+    "Could not connect.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not connect."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続できませんでした。"
+          }
+        }
+      }
+    },
+    "Could not import the OPML file.": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not import the OPML file."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OPMLを取り込めませんでした。"
+          }
+        }
+      }
+    },
+    "Could not load over HTTPS. HTTP is not supported.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not load over HTTPS. HTTP is not supported."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTPSでは読み込めませんでした。HTTPには対応していません。"
+          }
+        }
+      }
+    },
+    "Could not translate.": {
+      "comment": "Sources/ReaderCore/ArticleTranslation.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not translate."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻訳できませんでした。"
+          }
+        }
+      }
+    },
+    "Count from first receipt for unread articles, or first reading for read articles. Fetching again does not extend retention.": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Count from first receipt for unread articles, or first reading for read articles. Fetching again does not extend retention."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。"
+          }
+        }
+      }
+    },
+    "Create “%@” and Add": {
+      "comment": "Create a folder and add the subscription",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create “%@” and Add"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」を作って追加"
+          }
+        }
+      }
+    },
+    "Create “%@” and Move": {
+      "comment": "Create a folder and move the subscription",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create “%@” and Move"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」を作って移動"
+          }
+        }
+      }
+    },
+    "Dark": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダーク"
+          }
+        }
+      }
+    },
+    "Delete Bodies and RSS Summaries": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Bodies and RSS Summaries"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本文・RSS要約を削除"
+          }
+        }
+      }
+    },
+    "Delete article bodies and RSS summaries?": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete article bodies and RSS summaries?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本文・RSS要約を削除しますか？"
+          }
+        }
+      }
+    },
+    "Delete…": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "削除…"
+          }
+        }
+      }
+    },
+    "Destination Folder Name": {
+      "comment": "Sources/UnagiReader/MoveToFolderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destination Folder Name"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移動先のフォルダ名"
+          }
+        }
+      }
+    },
+    "Enter XML.": {
+      "comment": "Sources/ReaderCore/FeedChecker.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter XML."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XMLを入れてください。"
+          }
+        }
+      }
+    },
+    "Enter a URL starting with http:// or https://.": {
+      "comment": "Sources/ReaderCore/FeedCheckRequest.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a URL starting with http:// or https://."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "http:// か https:// で始まるURLを入れてください。"
+          }
+        }
+      }
+    },
+    "Enter a subscription name.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a subscription name."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読名を入力してください。"
+          }
+        }
+      }
+    },
+    "Enter an HTTP(S) URL without a username or password.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an HTTP(S) URL without a username or password."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ユーザー名・パスワードを含まないHTTP(S)のURLを指定してください。"
+          }
+        }
+      }
+    },
+    "Enter an HTTP(S) URL without credentials.": {
+      "comment": "Sources/ReaderCore/HTTPClient.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an HTTP(S) URL without credentials."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP(S)のURLを指定してください。認証情報付きURLは使用できません。"
+          }
+        }
+      }
+    },
+    "Enter the complete URL.": {
+      "comment": "Sources/ReaderCore/FeedCheckRequest.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the complete URL."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URLを最後まで入れてください。"
+          }
+        }
+      }
+    },
+    "Entries without an identifier or article URL cannot be imported: %lld.": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entries without an identifier or article URL cannot be imported: %lld."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "識別子も記事URLもない%lld件は取り込めません。"
+          }
+        }
+      }
+    },
+    "Existing subscriptions skipped: %lld.": {
+      "comment": "OPML import report",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Existing subscriptions skipped: %lld."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すでに購読している%lld件は取り込みませんでした。"
+          }
+        }
+      }
+    },
+    "Feed": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feed"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィード"
+          }
+        }
+      }
+    },
+    "Feed URL": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feed URL"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィードのURL"
+          }
+        }
+      }
+    },
+    "Feed XML": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feed XML"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィードXML"
+          }
+        }
+      }
+    },
+    "Feeds": {
+      "comment": "Sidebar list section heading.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feeds"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feeds"
+          }
+        }
+      }
+    },
+    "Feeds must be within 2 MB, 64 levels and 5,000 articles.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feeds must be within 2 MB, 64 levels and 5,000 articles."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XMLは2MB以内、階層は64段以内、記事は5,000件以内にしてください。"
+          }
+        }
+      }
+    },
+    "Files containing custom entities cannot be imported.": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files containing custom entities cannot be imported."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "独自エンティティを含むファイルは取り込めません。"
+          }
+        }
+      }
+    },
+    "Filter": {
+      "comment": "Sources/UnagiReader/ListFilterBar.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "絞り込み"
+          }
+        }
+      }
+    },
+    "Filter Articles": {
+      "comment": "Sources/UnagiReader/ListFilterBar.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter Articles"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事を絞り込む"
+          }
+        }
+      }
+    },
+    "Filter Articles (/)": {
+      "comment": "Sources/UnagiReader/ListFilterBar.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter Articles (/)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事を絞り込む (/)"
+          }
+        }
+      }
+    },
+    "Filter the article list by keyword": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter the article list by keyword"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一覧をキーワードで絞り込む"
+          }
+        }
+      }
+    },
+    "Folder (Optional)": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder (Optional)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フォルダ（任意）"
+          }
+        }
+      }
+    },
+    "Folder Name": {
+      "comment": "Sources/UnagiReader/MoveToFolderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder Name"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フォルダ名"
+          }
+        }
+      }
+    },
+    "HTTP URLs changed to HTTPS: %lld.": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP URLs changed to HTTPS: %lld."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "http:// の%lld件は https:// に変えました。"
+          }
+        }
+      }
+    },
+    "HTTP connections are not supported. Enter an https:// URL.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP connections are not supported. Enter an https:// URL."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "http:// には接続できません。https:// のURLを入れてください。"
+          }
+        }
+      }
+    },
+    "Hide Article List": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide Article List"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事の一覧を隠す"
+          }
+        }
+      }
+    },
+    "Import": {
+      "comment": "Sources/UnagiReader/OPMLCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り込む"
+          }
+        }
+      }
+    },
+    "Import OPML…": {
+      "comment": "Sources/UnagiReader/OPMLCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import OPML…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OPMLを取り込む…"
+          }
+        }
+      }
+    },
+    "Insert Synthetic Sample": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert Synthetic Sample"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合成サンプルを入力"
+          }
+        }
+      }
+    },
+    "Keyboard Shortcuts": {
+      "comment": "Sources/UnagiReader/ReaderMenuCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyboard Shortcuts"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショートカット一覧"
+          }
+        }
+      }
+    },
+    "Language": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語"
+          }
+        }
+      }
+    },
+    "Language data is missing. The download may not have been allowed, or the Mac is offline.": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language data is missing. The download may not have been allowed, or the Mac is offline."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語データがありません。ダウンロードが許可されなかったか、オフラインです。"
+          }
+        }
+      }
+    },
+    "Light": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ライト"
+          }
+        }
+      }
+    },
+    "List": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一覧"
+          }
+        }
+      }
+    },
+    "Loading Original Page": {
+      "comment": "Sources/UnagiReader/OriginalPageView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading Original Page"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページを読み込み中"
+          }
+        }
+      }
+    },
+    "Match System": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match System"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムに合わせる"
+          }
+        }
+      }
+    },
+    "Move to Folder…": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Folder…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フォルダへ移動…"
+          }
+        }
+      }
+    },
+    "Name": {
+      "comment": "Sources/UnagiReader/InlineNameField.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前"
+          }
+        }
+      }
+    },
+    "Next Article": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次の記事"
+          }
+        }
+      }
+    },
+    "Next Article (⌥⌘↓)": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Article (⌥⌘↓)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次の記事 (⌥⌘↓)"
+          }
+        }
+      }
+    },
+    "Next or previous article": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next or previous article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次の記事・前の記事"
+          }
+        }
+      }
+    },
+    "No Articles": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Articles"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事はありません"
+          }
+        }
+      }
+    },
+    "No feed was found on this page. Enter the feed URL.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No feed was found on this page. Enter the feed URL."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このページにはフィードが見つかりませんでした。フィードのURLを入れてください。"
+          }
+        }
+      }
+    },
+    "No new subscriptions.": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No new subscriptions."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい購読はありませんでした。"
+          }
+        }
+      }
+    },
+    "No subscriptions were found in this file.": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No subscriptions were found in this file."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このファイルに購読は見つかりませんでした。"
+          }
+        }
+      }
+    },
+    "Note": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノート"
+          }
+        }
+      }
+    },
+    "Note Not Found": {
+      "comment": "Sources/UnagiReader/NoteEditor.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note Not Found"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートが見つかりません"
+          }
+        }
+      }
+    },
+    "Note copied": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note copied"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートをコピーしました"
+          }
+        }
+      }
+    },
+    "OK": {
+      "comment": "Dismisses the OPML import report.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Open Note": {
+      "comment": "Sources/UnagiReader/ReaderMenuCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを開く"
+          }
+        }
+      }
+    },
+    "Open Original Page in Browser (b)": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Original Page in Browser (b)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページをブラウザで開く (b)"
+          }
+        }
+      }
+    },
+    "Open or Close Note (⌥⌘I)": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open or Close Note (⌥⌘I)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを開く／閉じる (⌥⌘I)"
+          }
+        }
+      }
+    },
+    "Open or close note": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open or close note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを開く・閉じる"
+          }
+        }
+      }
+    },
+    "Open original page in browser": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open original page in browser"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページをブラウザで開く"
+          }
+        }
+      }
+    },
+    "Open original page in the app": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open original page in the app"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページをアプリの中で開く"
+          }
+        }
+      }
+    },
+    "Original Page": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original Page"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページ"
+          }
+        }
+      }
+    },
+    "Page not found (%lld). Check the URL.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page not found (%lld). Check the URL."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ページが見つかりません（%lld）。URLを確認してください。"
+          }
+        }
+      }
+    },
+    "Paste XML": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste XML"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XMLを直接入力"
+          }
+        }
+      }
+    },
+    "Preparing languages…": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing languages…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語を準備しています…"
+          }
+        }
+      }
+    },
+    "Previous Article": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous Article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前の記事"
+          }
+        }
+      }
+    },
+    "Previous Article (⌥⌘↑)": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous Article (⌥⌘↑)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前の記事 (⌥⌘↑)"
+          }
+        }
+      }
+    },
+    "Previous or next article with the note open": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous or next article with the note open"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートを開いたまま前・次の記事へ"
+          }
+        }
+      }
+    },
+    "Publication date unknown": {
+      "comment": "Sources/UnagiReader/ArticleDetailView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Publication date unknown"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開日時不明"
+          }
+        }
+      }
+    },
+    "Published: %@": {
+      "comment": "Article publication timestamp tooltip",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Published: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公開日時：%@"
+          }
+        }
+      }
+    },
+    "RSS 1.0 / RSS 2.0 / Atom · up to 2 MB": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RSS 1.0 / RSS 2.0 / Atom · up to 2 MB"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RSS 1.0 / RSS 2.0 / Atom · 2MBまで"
+          }
+        }
+      }
+    },
+    "Read with room to think.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read with room to think."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読むことに、余白を。"
+          }
+        }
+      }
+    },
+    "Reading": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読む"
+          }
+        }
+      }
+    },
+    "Refresh Subscriptions": {
+      "comment": "Sources/UnagiReader/SidebarTitlebarControls.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh Subscriptions"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読を更新"
+          }
+        }
+      }
+    },
+    "Refresh This Subscription": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh This Subscription"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この購読を更新"
+          }
+        }
+      }
+    },
+    "Refresh failed: %@": {
+      "comment": "Subscription refresh accessibility error",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh failed: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新失敗: %@"
+          }
+        }
+      }
+    },
+    "Refreshing": {
+      "comment": "Sources/UnagiReader/SidebarTitlebarControls.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refreshing"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新中"
+          }
+        }
+      }
+    },
+    "Remove Star": {
+      "comment": "Sources/UnagiReader/ReaderMenuCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove Star"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starを外す"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前を変更"
+          }
+        }
+      }
+    },
+    "Rename Folder": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Folder"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フォルダ名を変更"
+          }
+        }
+      }
+    },
+    "Rename…": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前を変更…"
+          }
+        }
+      }
+    },
+    "Retention": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retention"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持期間"
+          }
+        }
+      }
+    },
+    "Return to Article": {
+      "comment": "Sources/UnagiReader/ArticleBand.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to Article"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事に戻る"
+          }
+        }
+      }
+    },
+    "Return to Article (Esc)": {
+      "comment": "Sources/UnagiReader/ArticleBand.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to Article (Esc)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事に戻る (Esc)"
+          }
+        }
+      }
+    },
+    "Return to Original": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to Original"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原文に戻す"
+          }
+        }
+      }
+    },
+    "Save": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        }
+      }
+    },
+    "Send Article to Note": {
+      "comment": "Sources/UnagiReader/ReaderMenuCommands.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Article to Note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事をノートに送る"
+          }
+        }
+      }
+    },
+    "Send article to note (selected text becomes a quotation)": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send article to note (selected text becomes a quotation)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事をノートに送る（記事で選んだ文は引用になります）"
+          }
+        }
+      }
+    },
+    "Sent to note": {
+      "comment": "Sources/UnagiReader/NoteTextEditor.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sent to note"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートに送りました"
+          }
+        }
+      }
+    },
+    "Sepia": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sepia"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セピア"
+          }
+        }
+      }
+    },
+    "Shortcuts": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショートカット"
+          }
+        }
+      }
+    },
+    "Show Article List": {
+      "comment": "Sources/UnagiReader/NotePanel.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Article List"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事の一覧を出す"
+          }
+        }
+      }
+    },
+    "Show Original": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Original"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原文を表示"
+          }
+        }
+      }
+    },
+    "Show fetched body": {
+      "comment": "Sources/UnagiReader/ArticleDetailView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show fetched body"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取得した本文に切り替える"
+          }
+        }
+      }
+    },
+    "Star": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Star"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Star"
+          }
+        }
+      }
+    },
+    "Storage": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        }
+      }
+    },
+    "Subscription Folder": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription Folder"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加先のフォルダ"
+          }
+        }
+      }
+    },
+    "Subscription Icon": {
+      "comment": "Sources/UnagiReader/NativeArticleList.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription Icon"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読元のアイコン"
+          }
+        }
+      }
+    },
+    "Subscription URL: %@": {
+      "comment": "Sources/UnagiReader/SubscriptionSheet.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription URL: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読するURL：%@"
+          }
+        }
+      }
+    },
+    "Subscriptions": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscriptions"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読元"
+          }
+        }
+      }
+    },
+    "Subscriptions added: %lld.": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscriptions added: %lld."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld件の購読を追加しました。"
+          }
+        }
+      }
+    },
+    "System": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム"
+          }
+        }
+      }
+    },
+    "Text Size": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text Size"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字サイズ"
+          }
+        }
+      }
+    },
+    "The OPML file could not be read because its XML contains errors.": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The OPML file could not be read because its XML contains errors."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OPMLファイルのXMLに誤りがあり、読めませんでした。"
+          }
+        }
+      }
+    },
+    "The article body and RSS summary have been deleted.": {
+      "comment": "Sources/UnagiReader/ArticleDetailView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The article body and RSS summary have been deleted."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本文とRSS要約は削除済みです。"
+          }
+        }
+      }
+    },
+    "The article body is unavailable.": {
+      "comment": "Sources/UnagiReader/ArticleDetailView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The article body is unavailable."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本文を利用できません。"
+          }
+        }
+      }
+    },
+    "The article's language could not be identified.": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The article's language could not be identified."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事の言語を判別できませんでした。"
+          }
+        }
+      }
+    },
+    "The browser could not be opened.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The browser could not be opened."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラウザを開けませんでした。"
+          }
+        }
+      }
+    },
+    "The data is too large (maximum 2 MB).": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The data is too large (maximum 2 MB)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "データが大きすぎます（2MBまで）。"
+          }
+        }
+      }
+    },
+    "The downloaded data exceeds the size limit.": {
+      "comment": "Sources/ReaderCore/HTTPClient.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The downloaded data exceeds the size limit."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取得するデータが上限を超えました。"
+          }
+        }
+      }
+    },
+    "The feed XML could not be read. There may be a problem with the source.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The feed XML could not be read. There may be a problem with the source."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。"
+          }
+        }
+      }
+    },
+    "The file could not be opened.": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file could not be opened."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルを開けませんでした。"
+          }
+        }
+      }
+    },
+    "The file is nested too deeply (maximum %lld levels).": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is nested too deeply (maximum %lld levels)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "階層が深すぎます（%lld段まで）。"
+          }
+        }
+      }
+    },
+    "The file is too large (maximum 5 MB).": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is too large (maximum 5 MB)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルが大きすぎます（5MBまで）。"
+          }
+        }
+      }
+    },
+    "The list could not be refreshed. Reopen the app.": {
+      "comment": "Sources/ReaderCore/OPMLImporter.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The list could not be refreshed. Reopen the app."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一覧を更新できませんでした。アプリを開き直してください。"
+          }
+        }
+      }
+    },
+    "The note could not be copied to the clipboard.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The note could not be copied to the clipboard."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートをクリップボードへコピーできませんでした。"
+          }
+        }
+      }
+    },
+    "The note could not be found.": {
+      "comment": "Sources/ReaderCore/Notes.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The note could not be found."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートが見つかりません。"
+          }
+        }
+      }
+    },
+    "The note is never deleted automatically.": {
+      "comment": "Sources/UnagiReader/ReaderSettingsView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The note is never deleted automatically."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ノートは自動削除しません。"
+          }
+        }
+      }
+    },
+    "The pasted XML could not be read because it contains errors.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The pasted XML could not be read because it contains errors."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "貼り付けたXMLに誤りがあり、読めませんでした。"
+          }
+        }
+      }
+    },
+    "The server could not be found. Check the URL.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server could not be found. Check the URL."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーが見つかりません。URLを確認してください。"
+          }
+        }
+      }
+    },
+    "The server did not respond.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server did not respond."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーから応答がありません。"
+          }
+        }
+      }
+    },
+    "The server response could not be verified.": {
+      "comment": "Sources/ReaderCore/HTTPClient.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server response could not be verified."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーの応答を確認できませんでした。"
+          }
+        }
+      }
+    },
+    "The server returned an error (%lld).": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server returned an error (%lld)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーがエラーを返しました（%lld）。"
+          }
+        }
+      }
+    },
+    "The server returned an error (%lld). Saved articles are still available.": {
+      "comment": "Sources/ReaderCore/HTTPClient.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server returned an error (%lld). Saved articles are still available."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーがエラーを返しました（%lld）。保存済みの記事は引き続き読めます。"
+          }
+        }
+      }
+    },
+    "The server returned an error (%lld). Try again later.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server returned an error (%lld). Try again later."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーがエラーを返しました（%lld）。時間をおいて試してください。"
+          }
+        }
+      }
+    },
+    "There are too many subscriptions (maximum %lld). Split the file.": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are too many subscriptions (maximum %lld). Split the file."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読が多すぎます（%lld件まで）。ファイルを分けてください。"
+          }
+        }
+      }
+    },
+    "This URL could not be read (%lld). You may need to log in.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This URL could not be read (%lld). You may need to log in."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このURLは読めません（%lld）。ログインが必要かもしれません。"
+          }
+        }
+      }
+    },
+    "This is a web page, not a feed. Enter the feed URL.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a web page, not a feed. Enter the feed URL."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィードではなくWebページです。フィードのURLを入れてください。"
+          }
+        }
+      }
+    },
+    "This is not an OPML file.": {
+      "comment": "Sources/ReaderCore/OPMLParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not an OPML file."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OPMLファイルではありません。"
+          }
+        }
+      }
+    },
+    "This is not an RSS 1.0, RSS 2.0 or Atom feed.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not an RSS 1.0, RSS 2.0 or Atom feed."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RSS 1.0・RSS 2.0・Atomのフィードではありません。"
+          }
+        }
+      }
+    },
+    "This language pair is not supported.": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This language pair is not supported."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この言語の組み合わせは翻訳できません。"
+          }
+        }
+      }
+    },
+    "Toggle Star (s)": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle Star (s)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starを切り替える (s)"
+          }
+        }
+      }
+    },
+    "Toggle read or unread": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle read or unread"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既読・未読を切り替える"
+          }
+        }
+      }
+    },
+    "Translate": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translate"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻訳"
+          }
+        }
+      }
+    },
+    "Translate article or show original": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translate article or show original"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記事を翻訳する・原文に戻す"
+          }
+        }
+      }
+    },
+    "Translate into %@ or show original (t)": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translate into %@ or show original (t)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@に翻訳／原文に戻す (t)"
+          }
+        }
+      }
+    },
+    "Translating %lld/%lld": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translating %lld/%lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻訳中 %lld/%lld"
+          }
+        }
+      }
+    },
+    "Translation is unavailable while viewing the original page. Return to the article (Esc) to translate.": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translation is unavailable while viewing the original page. Return to the article (Esc) to translate."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "comment": "Sources/UnagiReader/UnagiReaderApp.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Again"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        }
+      }
+    },
+    "Unavailable while typing": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable while typing"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字の入力中は効きません"
+          }
+        }
+      }
+    },
+    "Unfiled": {
+      "comment": "Sources/ReaderCore/FolderPicker.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unfiled"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未分類"
+          }
+        }
+      }
+    },
+    "Unknown site": {
+      "comment": "Sources/ReaderCore/ReaderStore.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown site"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掲載サイト不明"
+          }
+        }
+      }
+    },
+    "Unread": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unread"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未読"
+          }
+        }
+      }
+    },
+    "Unreadable URLs skipped: %lld.": {
+      "comment": "OPML import report",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unreadable URLs skipped: %lld."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読めないアドレス%lld件は取り込みませんでした。"
+          }
+        }
+      }
+    },
+    "Unsubscribe…": {
+      "comment": "Sources/UnagiReader/ReaderView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsubscribe…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "購読を解除…"
+          }
+        }
+      }
+    },
+    "Untitled": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無題"
+          }
+        }
+      }
+    },
+    "Untranslated paragraphs: %lld": {
+      "comment": "Sources/UnagiReader/ArticleTranslationView.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untranslated paragraphs: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld段落は原文のままです"
+          }
+        }
+      }
+    },
+    "Use a light, paper-colored appearance": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a light, paper-colored appearance"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紙のような色の、明るい外観にします"
+          }
+        }
+      }
+    },
+    "Use the Mac's appearance setting": {
+      "comment": "Sources/UnagiReader/SettingsComponents.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the Mac's appearance setting"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Macの外観設定に従います"
+          }
+        }
+      }
+    },
+    "While composing text, cancel composition first": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "While composing text, cancel composition first"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日本語の変換中は、まず変換を取り消します"
+          }
+        }
+      }
+    },
+    "Write in your own words. Start a line with # for a heading.": {
+      "comment": "Sources/UnagiReader/NoteEditor.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write in your own words. Start a line with # for a heading."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自分の言葉で書きます。「#」で始まる行は見出しです。"
+          }
+        }
+      }
+    },
+    "XML containing a DTD or custom entities cannot be imported.": {
+      "comment": "Sources/ReaderCore/FeedParser.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XML containing a DTD or custom entities cannot be imported."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DTDや独自エンティティを含むXMLは取り込めません。"
+          }
+        }
+      }
+    },
+    "You are not connected to the network.": {
+      "comment": "Sources/ReaderCore/FeedCheckMessage.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are not connected to the network."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ネットワークに接続できません。"
+          }
+        }
+      }
+    },
+    "n is unavailable while typing": {
+      "comment": "Sources/ReaderCore/ReaderShortcuts.swift",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "n is unavailable while typing"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "n は文字の入力中は効きません"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

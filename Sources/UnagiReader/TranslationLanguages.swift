@@ -1,4 +1,5 @@
 import Foundation
+import ReaderCore
 @preconcurrency import Translation
 
 /// Article defaults read the Mac's language list, never the per-app AppleLanguages override.
@@ -11,6 +12,6 @@ enum TranslationLanguages {
         await LanguageAvailability().supportedLanguages.map(\.minimalIdentifier)
     }
     static func name(_ identifier: String) -> String {
-        Locale(identifier: "ja").localizedString(forIdentifier: identifier) ?? identifier
+        Locale(identifier: ReaderLocalization.bundle.preferredLocalizations.first ?? "en").localizedString(forIdentifier: identifier) ?? identifier
     }
 }

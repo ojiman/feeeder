@@ -25,19 +25,19 @@ struct ArticleDetailView: View {
     @AppStorage(ArticleTextSize.key) private var textSize = ArticleTextSize.standard
 
     private var available: Bool { content?.articleID == article.id && (expiry ?? .distantPast) > .now }
-    private var date: String { article.publishedAt == .distantPast ? "公開日時不明" : article.publishedAt.formatted(.dateTime.year().month().day()) }
+    private var date: String { article.publishedAt == .distantPast ? String(localized: "Publication date unknown", bundle: ReaderLocalization.bundle) : article.publishedAt.formatted(.dateTime.year().month().day()) }
     var body: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: ArticleBand.contentTop)              // the text starts where it did under the old toolbar
             if updateAvailable || error != nil {
                 HStack {
-                    if updateAvailable { Button("取得した本文に切り替える", action: onUpdate).buttonStyle(.link) }
+                    if updateAvailable { Button(String(localized: "Show fetched body", bundle: ReaderLocalization.bundle), action: onUpdate).buttonStyle(.link) }
                     if let error { Text(error) }
                 }.font(.caption).foregroundStyle(.secondary).padding(12)
             }
             NativeArticleText(articleID: article.id, title: translated?.title ?? article.title, publisher: article.publisher.uppercased(), date: date,
                 paragraphs: available ? (translated?.paragraphs.map(\.text) ?? content!.paragraphs) : [],
-                unavailable: available ? nil : (article.contentDeletedAt != nil ? "本文とRSS要約は削除済みです。" : "本文を利用できません。"),
+                unavailable: available ? nil : (article.contentDeletedAt != nil ? String(localized: "The article body and RSS summary have been deleted.", bundle: ReaderLocalization.bundle) : String(localized: "The article body is unavailable.", bundle: ReaderLocalization.bundle)),
                 initialAnchor: initialAnchor, initialOffset: initialOffset, reduceMotion: reduceMotion || !pageMotion, onScroll: onScroll, onInteraction: onInteraction, onDisplayBegin: onDisplayBegin, onDisplayed: onDisplayed,
                 imageLoader: imageLoader, heroURL: available ? article.imageURL.flatMap { ArticleURL.validated($0) } : nil,
                 bodyParagraphs: available ? (translated?.paragraphs ?? content!.bodyParagraphs) : nil, pageForward: pageForward,

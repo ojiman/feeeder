@@ -6,7 +6,7 @@ import ReaderCore
 
 /// The title of the article list must stay inside its column. (The system's navigation title ran along the whole toolbar, so a long feed
 /// name left the column and ran over the article pane.)
-@MainActor struct ListHeaderTests {
+@Suite(EnglishLanguage()) @MainActor struct ListHeaderTests {
     /// Draws the header on a dark surface in a column `width` points wide and returns the x range (points) that has any ink.
     private func inkRange(title: String, width: CGFloat) throws -> (min: CGFloat, max: CGFloat) {
         let host = NSHostingView(rootView: ListHeader(title: title, count: 367).environment(\.colorScheme, .dark).background(Color.black))
@@ -68,7 +68,7 @@ import ReaderCore
         cell.layoutSubtreeIfNeeded()
         func labels(in view: NSView) -> [NSTextField] { (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap(labels) }
         let title = try #require(labels(in: cell).first { $0.stringValue == "合成記事" })
-        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
+        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("Published: ") == true })
         func textRect(_ label: NSTextField) -> NSRect {                                          // the label's alignment rect: where its text really starts and ends
             table.convert(label.alignmentRect(forFrame: label.frame), from: label.superview)
         }

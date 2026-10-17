@@ -101,6 +101,12 @@ There is no backend, no account and no AI proxy. The app has no AI of its own ([
 - Each result is checked for the ID, the URL and cancellation. A late image never changes a row height, the selection or the reading position: image frames are fixed, and hosted views in the text have a fixed frame.
 - Image choice: enclosure, media, then images in the body. `hatena:imageurl` (checked by namespace) and HTML `entry-image` come first; images in `cite`, favicons, bookmark counters and images marked small are skipped.
 
+### 4.6 UI language
+
+`ReaderLocalization.bundle` holds the English-source catalog in ReaderCore. App-owned text uses `String(localized:bundle:)`; user content stays verbatim. English is the development language. `AppLanguage` reads only the app domain's `AppleLanguages`; an absent key means Match System. Choosing a language writes that same native key, and Match System removes it. The resource bundle and main app declare the same languages, so macOS chooses the localization at launch. The app does not change its locale or rebuild its menus while running. The article target reads the global preferences independently (3.2).
+
+The package build plugin compiles the catalog with Xcode's `xcstringstool`, including on native SwiftPM, which otherwise only copies it. The app build copies the resulting resource bundle into `Contents/Resources` and declares its languages in `CFBundleLocalizations`. `test-build-app.sh` checks the packaged keys and the ZIP/signature round-trip. Label-based tests use a volatile English argument domain; the real-app smoke suite launches with native Japanese language arguments.
+
 ## 5. Build and CI
 
 The toolchains, the CI jobs and when each one runs are in [AGENTS.md](../AGENTS.md#commands). The build and test contracts:

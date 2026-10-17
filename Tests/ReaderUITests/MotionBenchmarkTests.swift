@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import UnagiReader
 
-@MainActor struct MotionBenchmarkTests {
+@Suite(EnglishLanguage()) @MainActor struct MotionBenchmarkTests {
     @Test func recordsMeasuredWidthsIncludingAChangedNoteWidth() {
         let reader = NSSplitViewController()
         let inspector = NSSplitViewController()

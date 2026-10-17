@@ -19,12 +19,12 @@ public struct OPMLImportReport: Equatable, Sendable {
             let result = try store.importSubscriptions(document.feeds)
             if result.listRefreshFailed {
                 // Saved, so it is not a failure; the new rows show after the list loads again.
-                return OPMLImportReport(title: "\(result.addedFeedIDs.count)件の購読を追加しました。",
-                                        message: "一覧を更新できませんでした。アプリを開き直してください。", addedFeedIDs: [])
+                return OPMLImportReport(title: String(localized: "Subscriptions added: \(result.addedFeedIDs.count).", bundle: ReaderLocalization.bundle),
+                                        message: String(localized: "The list could not be refreshed. Reopen the app.", bundle: ReaderLocalization.bundle), addedFeedIDs: [])
             }
             return Self.report(added: result.addedFeedIDs, alreadySubscribed: result.alreadySubscribed, unusable: document.skipped + result.rejected, upgraded: document.upgraded)
         } catch {
-            return OPMLImportReport(title: "OPMLを取り込めませんでした。", message: error.localizedDescription, addedFeedIDs: [])
+            return OPMLImportReport(title: String(localized: "Could not import the OPML file.", bundle: ReaderLocalization.bundle), message: error.localizedDescription, addedFeedIDs: [])
         }
     }
 
@@ -49,16 +49,14 @@ public struct OPMLImportReport: Equatable, Sendable {
 
     /// The result is the title; the message says only what was not plain success (HIG: a short title, and a message only when it helps).
     static func report(added: [UUID], alreadySubscribed: Int, unusable: Int, upgraded: Int = 0) -> OPMLImportReport {
-        var left: [String] = []
-        if alreadySubscribed > 0 { left.append("すでに購読している\(alreadySubscribed)件") }
-        if unusable > 0 { left.append("読めないアドレス\(unusable)件") }
         var lines: [String] = []
-        if !left.isEmpty { lines.append(left.joined(separator: "と、") + "は取り込みませんでした。") }
-        if upgraded > 0 { lines.append("http:// の\(upgraded)件は https:// に変えました。") }
+        if alreadySubscribed > 0 { lines.append(String(localized: "Existing subscriptions skipped: \(alreadySubscribed).", bundle: ReaderLocalization.bundle)) }
+        if unusable > 0 { lines.append(String(localized: "Unreadable URLs skipped: \(unusable).", bundle: ReaderLocalization.bundle)) }
+        if upgraded > 0 { lines.append(String(localized: "HTTP URLs changed to HTTPS: \(upgraded).", bundle: ReaderLocalization.bundle)) }
         let title: String
-        if !added.isEmpty { title = "\(added.count)件の購読を追加しました。" }
-        else if !left.isEmpty { title = "新しい購読はありませんでした。" }
-        else { title = "このファイルに購読は見つかりませんでした。" }
+        if !added.isEmpty { title = String(localized: "Subscriptions added: \(added.count).", bundle: ReaderLocalization.bundle) }
+        else if alreadySubscribed > 0 || unusable > 0 { title = String(localized: "No new subscriptions.", bundle: ReaderLocalization.bundle) }
+        else { title = String(localized: "No subscriptions were found in this file.", bundle: ReaderLocalization.bundle) }
         return OPMLImportReport(title: title, message: lines.joined(separator: "\n"), addedFeedIDs: added)
     }
 }

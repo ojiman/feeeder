@@ -55,7 +55,7 @@ A decision record says who decided what, when and why. It is not where the curre
 | [0057](0057-each-column-has-its-own-band.md) | Each column has its own band; no system toolbar | valid |
 | [0058](0058-unagi-reader-defines-its-own-requirements.md) | Unagi Reader defines its own requirements | valid |
 | [0059](0059-send-the-article-to-the-note.md) | Send the article to the note: an insertion the person asks for; no AI summary | valid |
-| [0060](0060-language-settings-and-ui-localization.md) | Language settings, independent defaults and AI-prepared UI localization | valid (target built; UI not built, #271, #272) |
+| [0060](0060-language-settings-and-ui-localization.md) | Language settings, independent defaults and AI-prepared UI localization | valid (target and English/Japanese UI built; five languages not built, #272) |
 
 ## Removed from the working tree
 

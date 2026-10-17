@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import UnagiReader
 
-@MainActor struct SidebarTitlebarTests {
+@Suite(EnglishLanguage()) @MainActor struct SidebarTitlebarTests {
     @Test func controlsFollowSidebarWidthAndDetachWithSidebar() throws {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 600), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.toolbar = NSToolbar(identifier: "synthetic-sidebar")

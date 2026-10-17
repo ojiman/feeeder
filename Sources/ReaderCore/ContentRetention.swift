@@ -25,7 +25,7 @@ public struct DeletionPreview: Sendable {
 
 public enum RetentionError: LocalizedError {
     case invalidDays
-    public var errorDescription: String? { "保持期間は7・30・90・365日から選択してください。" }
+    public var errorDescription: String? { String(localized: "Choose a retention period of 7, 30, 90 or 365 days.", bundle: ReaderLocalization.bundle) }
 }
 
 extension ReaderStore {

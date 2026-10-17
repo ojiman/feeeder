@@ -14,11 +14,11 @@ public enum HTTPError: LocalizedError {
     case invalidURL, redirect, tooLarge, invalidResponse, status(Int)
     public var errorDescription: String? {
         switch self {
-        case .invalidURL: "HTTP(S)のURLを指定してください。認証情報付きURLは使用できません。"
-        case .redirect: "この転送先には接続できませんでした。"
-        case .tooLarge: "取得するデータが上限を超えました。"
-        case .invalidResponse: "サーバーの応答を確認できませんでした。"
-        case .status(let code): "サーバーがエラーを返しました（\(code)）。保存済みの記事は引き続き読めます。"
+        case .invalidURL: String(localized: "Enter an HTTP(S) URL without credentials.", bundle: ReaderLocalization.bundle)
+        case .redirect: String(localized: "Could not connect to the redirect destination.", bundle: ReaderLocalization.bundle)
+        case .tooLarge: String(localized: "The downloaded data exceeds the size limit.", bundle: ReaderLocalization.bundle)
+        case .invalidResponse: String(localized: "The server response could not be verified.", bundle: ReaderLocalization.bundle)
+        case .status(let code): String(localized: "The server returned an error (\(code)). Saved articles are still available.", bundle: ReaderLocalization.bundle)
         }
     }
 }

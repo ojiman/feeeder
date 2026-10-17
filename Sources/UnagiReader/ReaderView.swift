@@ -80,15 +80,15 @@ struct ReaderView: View {
         guard let note = store.note, !note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         let item = NSPasteboardItem()
         guard item.setString(note.text, forType: .string) else {
-            saveError = "ノートをクリップボードへコピーできませんでした。"
+            saveError = String(localized: "The note could not be copied to the clipboard.", bundle: ReaderLocalization.bundle)
             return false
         }
         notePasteboard.clearContents()
         guard notePasteboard.writeObjects([item]) else {
-            saveError = "ノートをクリップボードへコピーできませんでした。"
+            saveError = String(localized: "The note could not be copied to the clipboard.", bundle: ReaderLocalization.bundle)
             return false
         }
-        noteActionMessage = "ノートをコピーしました"
+        noteActionMessage = String(localized: "Note copied", bundle: ReaderLocalization.bundle)
         return true
     }
 
@@ -108,10 +108,10 @@ struct ReaderView: View {
     private var scopeTitle: String {
         switch scope ?? .all {
         case .folder(let name): name
-        case .all: "すべての記事"
-        case .unread: "未読"
-        case .starred: "Star"
-        case .feed(let id): store.feed(id: id)?.title ?? "記事"
+        case .all: String(localized: "All Articles", bundle: ReaderLocalization.bundle)
+        case .unread: String(localized: "Unread", bundle: ReaderLocalization.bundle)
+        case .starred: String(localized: "Star", bundle: ReaderLocalization.bundle)
+        case .feed(let id): store.feed(id: id)?.title ?? String(localized: "Article", bundle: ReaderLocalization.bundle)
         }
     }
 
@@ -214,12 +214,12 @@ struct ReaderView: View {
             guard !Task.isCancelled else { return }
             noteActionMessage = nil
         }
-        .alert("保存できませんでした", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
-            Button("閉じる") { saveError = nil }
+        .alert(String(localized: "Could Not Save", bundle: ReaderLocalization.bundle), isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
+            Button(String(localized: "Close", bundle: ReaderLocalization.bundle)) { saveError = nil }
         } message: { Text(saveError ?? "") }
-        .alert("フォルダ名を変更", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
-            TextField("フォルダ名", text: $folderName.singleLine())
-            Button("保存") {
+        .alert(String(localized: "Rename Folder", bundle: ReaderLocalization.bundle), isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
+            TextField(String(localized: "Folder Name", bundle: ReaderLocalization.bundle), text: $folderName.singleLine())
+            Button(String(localized: "Save", bundle: ReaderLocalization.bundle)) {
                 guard let old = renamingFolder else { return }
                 let name = folderName.trimmingCharacters(in: .whitespacesAndNewlines)
                 perform {
@@ -232,18 +232,18 @@ struct ReaderView: View {
                 }
                 renamingFolder = nil
             }
-            Button("キャンセル", role: .cancel) { renamingFolder = nil }
-        } message: { Text("既存の名前を指定すると統合します。空欄は未分類に移します。") }
+            Button(String(localized: "Cancel", bundle: ReaderLocalization.bundle), role: .cancel) { renamingFolder = nil }
+        } message: { Text(String(localized: "An existing name merges the folders. An empty name moves subscriptions to Unfiled.", bundle: ReaderLocalization.bundle)) }
     }
 
     private var sidebar: some View {
         let grouped = Dictionary(grouping: store.feeds, by: \.folder)
         let folders = grouped.keys.filter { !$0.isEmpty }.sorted()
         return List(selection: $scope) {
-            Section("Feeds") {
-                sidebarRow("すべての記事", symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
-                sidebarRow("未読", symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
-                sidebarRow("Star", symbol: "star", count: store.starCount).tag(LibraryScope.starred)
+            Section(String(localized: "Feeds", bundle: ReaderLocalization.bundle)) {
+                sidebarRow(String(localized: "All Articles", bundle: ReaderLocalization.bundle), symbol: "tray", count: store.articles.count).tag(LibraryScope.all)
+                sidebarRow(String(localized: "Unread", bundle: ReaderLocalization.bundle), symbol: "circle.dotted", count: store.unreadCount).tag(LibraryScope.unread)
+                sidebarRow(String(localized: "Star", bundle: ReaderLocalization.bundle), symbol: "star", count: store.starCount).tag(LibraryScope.starred)
             }
             Section {
                 ForEach(grouped[""] ?? []) { feed in subscriptionRow(feed, folders: folders) }
@@ -251,12 +251,12 @@ struct ReaderView: View {
                     DisclosureGroup(isExpanded: Binding(get: { folderExpansion.isExpanded(folder) }, set: { folderExpansion.set(folder, expanded: $0) })) {
                         ForEach(grouped[folder] ?? []) { feed in subscriptionRow(feed, folders: folders) }
                     } label: {
-                        sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: "「\(folder)」に購読を追加", onAdd: { addingTo = SubscriptionTarget(folder: folder) }, onDropFeeds: { dropFeeds($0, into: folder) }).tag(LibraryScope.folder(folder))
-                            .contextMenu { Button("名前を変更…") { folderName = folder; renamingFolder = folder } }
+                        sidebarRow(folder, symbol: "folder", count: store.folderUnreadCount(folder: folder), addHelp: String(localized: "Add Subscription to “\(folder)”", bundle: ReaderLocalization.bundle), onAdd: { addingTo = SubscriptionTarget(folder: folder) }, onDropFeeds: { dropFeeds($0, into: folder) }).tag(LibraryScope.folder(folder))
+                            .contextMenu { Button(String(localized: "Rename…", bundle: ReaderLocalization.bundle)) { folderName = folder; renamingFolder = folder } }
                     }
                 }
             } header: {
-                SidebarSectionHeader(title: "購読元", help: "購読元を追加", action: { addingTo = SubscriptionTarget(folder: "") }, onDropFeeds: { dropFeeds($0, into: "") })
+                SidebarSectionHeader(title: String(localized: "Subscriptions", bundle: ReaderLocalization.bundle), help: String(localized: "Add a Subscription", bundle: ReaderLocalization.bundle), action: { addingTo = SubscriptionTarget(folder: "") }, onDropFeeds: { dropFeeds($0, into: "") })
             }
         }
         .listStyle(.sidebar)
@@ -277,7 +277,7 @@ struct ReaderView: View {
             Text((store.feedUnreadCounts[feed.id] ?? 0).formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             if let error = refresh.errors[feed.id] {
                 Image(systemName: "exclamationmark.circle").foregroundStyle(.secondary).help(error)
-                    .accessibilityLabel("更新失敗: " + error)
+                    .accessibilityLabel(String(localized: "Refresh failed: \(error)", bundle: ReaderLocalization.bundle))
             }
         }.padding(.vertical, 4)
             .draggable(FeedDrag(id: feed.id))
@@ -286,10 +286,10 @@ struct ReaderView: View {
                 MoveToFolderView(folders: folders, current: feed.folder, onMove: { folder in movingFeedID = nil; moveFeeds([feed.id], to: folder) }, onClose: { movingFeedID = nil })
             }
             .contextMenu {
-                Button("この購読を更新") { Task { await refresh.refresh(feedIDs: [feed.id]) } }
-                Button("名前を変更") { renaming = .feed(feed.id) }
-                Button("フォルダへ移動…") { movingFeedID = feed.id }
-                Button("購読を解除…", role: .destructive) { removingFeed = feed }
+                Button(String(localized: "Refresh This Subscription", bundle: ReaderLocalization.bundle)) { Task { await refresh.refresh(feedIDs: [feed.id]) } }
+                Button(String(localized: "Rename", bundle: ReaderLocalization.bundle)) { renaming = .feed(feed.id) }
+                Button(String(localized: "Move to Folder…", bundle: ReaderLocalization.bundle)) { movingFeedID = feed.id }
+                Button(String(localized: "Unsubscribe…", bundle: ReaderLocalization.bundle), role: .destructive) { removingFeed = feed }
             }
     }
 
@@ -369,8 +369,8 @@ struct ReaderView: View {
         .navigationTitle("")                                           // the list draws its own title (ListHeader); the system one ran out of the column
         .overlay {
             if visibleArticleIDs.isEmpty {
-                ContentUnavailableView("記事はありません", systemImage: "tray",
-                    description: Text("購読を追加するか、ほかの一覧を選んでください。"))
+                ContentUnavailableView(String(localized: "No Articles", bundle: ReaderLocalization.bundle), systemImage: "tray",
+                    description: Text(String(localized: "Add a subscription or choose another list.", bundle: ReaderLocalization.bundle)))
             }
         }
         .overlay(alignment: .top) {
@@ -421,16 +421,16 @@ struct ReaderView: View {
             translationTarget: translation.target,
             showOriginal: { translation.reset() },
             buttons: [
-                BandButton(id: "note", symbol: "note.text", help: "ノートを開く／閉じる (⌥⌘I)",
-                           label: noteOpen ? "ノートを閉じる" : "ノートを開く", action: toggleNote),
-                BandButton(id: "star", symbol: article?.starredAt == nil ? "star" : "star.fill", help: "Starを切り替える (s)",
-                           label: article?.starredAt == nil ? "Starを付ける" : "Starを外す", enabled: article != nil) { perform(.toggleStar) },
+                BandButton(id: "note", symbol: "note.text", help: String(localized: "Open or Close Note (⌥⌘I)", bundle: ReaderLocalization.bundle),
+                           label: noteOpen ? String(localized: "Close Note", bundle: ReaderLocalization.bundle) : String(localized: "Open Note", bundle: ReaderLocalization.bundle), action: toggleNote),
+                BandButton(id: "star", symbol: article?.starredAt == nil ? "star" : "star.fill", help: String(localized: "Toggle Star (s)", bundle: ReaderLocalization.bundle),
+                           label: article?.starredAt == nil ? String(localized: "Add Star", bundle: ReaderLocalization.bundle) : String(localized: "Remove Star", bundle: ReaderLocalization.bundle), enabled: article != nil) { perform(.toggleStar) },
                 // `translate` has no filled form (specification 3.6).
                 BandButton(id: "translate", symbol: translated ? "character.bubble.fill" : "character.bubble",
-                           help: originalPage.url != nil ? "元ページの表示中は翻訳できません。記事の表示に戻る (Esc) と翻訳できます" : "\(TranslationLanguages.name(translation.target))に翻訳／原文に戻す (t)",
-                           label: translated ? "原文を表示" : "翻訳",
+                           help: originalPage.url != nil ? String(localized: "Translation is unavailable while viewing the original page. Return to the article (Esc) to translate.", bundle: ReaderLocalization.bundle) : String(localized: "Translate into \(TranslationLanguages.name(translation.target)) or show original (t)", bundle: ReaderLocalization.bundle),
+                           label: translated ? String(localized: "Show Original", bundle: ReaderLocalization.bundle) : String(localized: "Translate", bundle: ReaderLocalization.bundle),
                            enabled: translation.targetReady && article != nil && originalPage.url == nil && displayedContent?.articleID == article?.id, action: toggleTranslation),
-                BandButton(id: "browser", symbol: "globe", help: "元ページをブラウザで開く (b)", label: "元ページをブラウザで開く",
+                BandButton(id: "browser", symbol: "globe", help: String(localized: "Open Original Page in Browser (b)", bundle: ReaderLocalization.bundle), label: String(localized: "Open original page in browser", bundle: ReaderLocalization.bundle),
                            enabled: article?.originalURL.flatMap { ArticleURL.validated($0) } != nil, action: openExternal),
             ],
             // The sidebar and the list are folded: the note beside the article (decision 0049).
@@ -488,8 +488,8 @@ struct ReaderView: View {
         } else {
             VStack(spacing: 18) {
                 Image(systemName: "book.pages").font(.system(size: 45, weight: .ultraLight)).foregroundStyle(AppPalette.accentColor.opacity(0.8))
-                Text("読むことに、余白を。").font(.system(size: 24, weight: .medium, design: .serif))
-                Text("一覧から記事を選んでください。")
+                Text(String(localized: "Read with room to think.", bundle: ReaderLocalization.bundle)).font(.system(size: 24, weight: .medium, design: .serif))
+                Text(String(localized: "Choose an article from the list.", bundle: ReaderLocalization.bundle))
                     .font(.callout).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AppPalette.surfaceColor)
@@ -501,7 +501,7 @@ struct ReaderView: View {
     private var shortcutsEnabled: Bool { ReaderKeyboardCommands.permits(sheet: addingTo != nil || renaming != nil || renamingFolder != nil || movingFeedID != nil, originalPage: originalPage.url != nil) }
     private func openExternal() {
         guard let string = selectedArticle?.originalURL, let url = ArticleURL.validated(string) else { return }
-        if !NSWorkspace.shared.open(url) { saveError = "ブラウザを開けませんでした。" }
+        if !NSWorkspace.shared.open(url) { saveError = String(localized: "The browser could not be opened.", bundle: ReaderLocalization.bundle) }
     }
     private func openOriginal() {
         guard originalPage.url == nil, let article = selectedArticle, let url = article.originalURL else { return }

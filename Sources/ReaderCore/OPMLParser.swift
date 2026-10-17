@@ -26,13 +26,13 @@ public enum OPMLError: LocalizedError, Equatable {
     case notOPML, invalidXML, tooLarge, tooDeep, entities, tooMany, unreadable
     public var errorDescription: String? {
         switch self {
-        case .notOPML: "OPMLファイルではありません。"
-        case .invalidXML: "OPMLファイルのXMLに誤りがあり、読めませんでした。"
-        case .tooLarge: "ファイルが大きすぎます（5MBまで）。"
-        case .tooDeep: "階層が深すぎます（\(OPMLParser.maximumDepth)段まで）。"
-        case .unreadable: "ファイルを開けませんでした。"
-        case .entities: "独自エンティティを含むファイルは取り込めません。"
-        case .tooMany: "購読が多すぎます（\(OPMLParser.maximumFeeds)件まで）。ファイルを分けてください。"
+        case .notOPML: String(localized: "This is not an OPML file.", bundle: ReaderLocalization.bundle)
+        case .invalidXML: String(localized: "The OPML file could not be read because its XML contains errors.", bundle: ReaderLocalization.bundle)
+        case .tooLarge: String(localized: "The file is too large (maximum 5 MB).", bundle: ReaderLocalization.bundle)
+        case .tooDeep: String(localized: "The file is nested too deeply (maximum \(OPMLParser.maximumDepth) levels).", bundle: ReaderLocalization.bundle)
+        case .unreadable: String(localized: "The file could not be opened.", bundle: ReaderLocalization.bundle)
+        case .entities: String(localized: "Files containing custom entities cannot be imported.", bundle: ReaderLocalization.bundle)
+        case .tooMany: String(localized: "There are too many subscriptions (maximum \(OPMLParser.maximumFeeds)). Split the file.", bundle: ReaderLocalization.bundle)
         }
     }
 }
@@ -108,7 +108,7 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
         guard seen.insert(url.absoluteString).inserted else { repeated += 1; return }
         if url != found { upgraded += 1 }
         guard feeds.count < OPMLParser.maximumFeeds else { fail(.tooMany, parser); return }
-        let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? "フィード"
+        let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? String(localized: "Feed", bundle: ReaderLocalization.bundle)
         feeds.append(OPMLFeed(title: name, url: url,
                               siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }.map(ArticleURL.secured), folder: folder))
     }

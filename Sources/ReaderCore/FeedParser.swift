@@ -33,14 +33,14 @@ public enum FeedImportError: LocalizedError {
     case invalidURL, invalidXML, htmlPage, noFeedInPage, unsupported, tooLarge, entities, missingTitle
     public var errorDescription: String? {
         switch self {
-        case .invalidURL: "ユーザー名・パスワードを含まないHTTP(S)のURLを指定してください。"
-        case .invalidXML: "フィードのXMLに誤りがあり、読めませんでした。配信元の問題かもしれません。"
-        case .htmlPage: "フィードではなくWebページです。フィードのURLを入れてください。"
-        case .noFeedInPage: "このページにはフィードが見つかりませんでした。フィードのURLを入れてください。"
-        case .unsupported: "RSS 1.0・RSS 2.0・Atomのフィードではありません。"
-        case .tooLarge: "XMLは2MB以内、階層は64段以内、記事は5,000件以内にしてください。"
-        case .entities: "DTDや独自エンティティを含むXMLは取り込めません。"
-        case .missingTitle: "購読名を入力してください。"
+        case .invalidURL: String(localized: "Enter an HTTP(S) URL without a username or password.", bundle: ReaderLocalization.bundle)
+        case .invalidXML: String(localized: "The feed XML could not be read. There may be a problem with the source.", bundle: ReaderLocalization.bundle)
+        case .htmlPage: String(localized: "This is a web page, not a feed. Enter the feed URL.", bundle: ReaderLocalization.bundle)
+        case .noFeedInPage: String(localized: "No feed was found on this page. Enter the feed URL.", bundle: ReaderLocalization.bundle)
+        case .unsupported: String(localized: "This is not an RSS 1.0, RSS 2.0 or Atom feed.", bundle: ReaderLocalization.bundle)
+        case .tooLarge: String(localized: "Feeds must be within 2 MB, 64 levels and 5,000 articles.", bundle: ReaderLocalization.bundle)
+        case .entities: String(localized: "XML containing a DTD or custom entities cannot be imported.", bundle: ReaderLocalization.bundle)
+        case .missingTitle: String(localized: "Enter a subscription name.", bundle: ReaderLocalization.bundle)
         }
     }
 }
@@ -100,7 +100,7 @@ public enum FeedParser {
         parser.delegate = reader
         guard parser.parse(), reader.failure == nil else { throw reader.failure ?? FeedImportError.invalidXML }
         guard reader.format != nil, reader.sawContainer else { throw FeedImportError.unsupported }
-        return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? "フィード") : reader.title,
+        return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? String(localized: "Feed", bundle: ReaderLocalization.bundle)) : reader.title,
                           sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped, siteURL: reader.siteURL, iconURL: reader.iconURL ?? reader.logoURL)
     }
 
@@ -300,7 +300,7 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         let body = bodyParagraphs?.map(\.text).joined(separator: "\n\n") ?? values["body"] ?? summary
         if let html = values["bodyHTML"], let image = ImageMetadata.firstHTMLImage(html, base: bodyBase) { recordImage(image.absoluteString, base: bodyBase, priority: 3) }
         if let html = values["summaryHTML"], let image = ImageMetadata.firstHTMLImage(html, base: summaryBase) { recordImage(image.absoluteString, base: summaryBase, priority: 4) }
-        entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? "無題", url: entryURL,
+        entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? String(localized: "Untitled", bundle: ReaderLocalization.bundle), url: entryURL,
                                    summary: summary, body: body, coverage: values["body"] == nil ? .summaryOnly : .feedProvided,
                                    publishedAt: Self.date(values["date"] ?? values["updated"] ?? ""), imageURL: entryImages.sorted { $0.key < $1.key }.first?.value, bodyParagraphs: bodyParagraphs))
     }

@@ -16,17 +16,17 @@ struct NoteEditor: View {
             }, link: link)
             .overlay(alignment: .topLeading) {
                 if note.text.isEmpty {
-                    Text("自分の言葉で書きます。「#」で始まる行は見出しです。")
+                    Text(String(localized: "Write in your own words. Start a line with # for a heading.", bundle: ReaderLocalization.bundle))
                         .font(.body).foregroundStyle(.tertiary).padding(.horizontal, 21).padding(.vertical, 12).allowsHitTesting(false)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(AppPalette.surfaceColor)
-            .alert("保存できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-                Button("閉じる") { error = nil }
+            .alert(String(localized: "Could Not Save", bundle: ReaderLocalization.bundle), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                Button(String(localized: "Close", bundle: ReaderLocalization.bundle)) { error = nil }
             } message: { Text(error ?? "") }
         } else {
-            ContentUnavailableView("ノートが見つかりません", systemImage: "questionmark.folder")
+            ContentUnavailableView(String(localized: "Note Not Found", bundle: ReaderLocalization.bundle), systemImage: "questionmark.folder")
         }
     }
 }

@@ -5,7 +5,7 @@ public enum NoteError: LocalizedError {
     case missingNote
     public var errorDescription: String? {
         switch self {
-        case .missingNote: "ノートが見つかりません。"
+        case .missingNote: String(localized: "The note could not be found.", bundle: ReaderLocalization.bundle)
         }
     }
 }

@@ -44,7 +44,7 @@ struct NativeArticleList: NSViewRepresentable {
         Self.configure(table)
         table.delegate = context.coordinator
         table.dataSource = context.coordinator
-        table.setAccessibilityLabel("記事一覧")
+        table.setAccessibilityLabel(String(localized: "Article List", bundle: ReaderLocalization.bundle))
         table.keyHandler = { [weak coordinator = context.coordinator] key in
             guard let coordinator, coordinator.parent.shortcutsEnabled else { return false }
             coordinator.parent.onKey(key); return true
@@ -243,7 +243,7 @@ struct NativeArticleList: NSViewRepresentable {
             summary.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
             timestamp.font = .monospacedDigitSystemFont(ofSize: 10, weight: .regular)
             timestamp.alignment = .right
-            timestamp.setAccessibilityLabel("記事の公開日時")
+            timestamp.setAccessibilityLabel(String(localized: "Article Publication Date", bundle: ReaderLocalization.bundle))
             timestamp.setContentCompressionResistancePriority(.required, for: .horizontal)
             timestamp.setContentHuggingPriority(.required, for: .horizontal)
             source.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -260,7 +260,7 @@ struct NativeArticleList: NSViewRepresentable {
             stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = NativeArticleList.Metrics.headerGap
             stack.translatesAutoresizingMaskIntoConstraints = false
             favicon.imageScaling = .scaleProportionallyUpOrDown; thumbnail.imageScaling = .scaleProportionallyUpOrDown
-            favicon.setAccessibilityLabel("購読元のアイコン"); thumbnail.setAccessibilityLabel("記事のサムネイル")
+            favicon.setAccessibilityLabel(String(localized: "Subscription Icon", bundle: ReaderLocalization.bundle)); thumbnail.setAccessibilityLabel(String(localized: "Article Thumbnail", bundle: ReaderLocalization.bundle))
             addSubview(stack)
             NSLayoutConstraint.activate([
                 stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
@@ -284,13 +284,13 @@ struct NativeArticleList: NSViewRepresentable {
             summary.stringValue = article.summary
             let published = article.publishedAt
             if published == .distantPast {
-                timestamp.stringValue = "—"; timestamp.toolTip = "公開日時不明"
+                timestamp.stringValue = "—"; timestamp.toolTip = String(localized: "Publication date unknown", bundle: ReaderLocalization.bundle)
             } else {
                 var style: Date.FormatStyle = .dateTime.hour().minute()
                 if !Calendar.current.isDateInToday(published) { style = style.month().day() }
                 if !Calendar.current.isDate(published, equalTo: .now, toGranularity: .year) { style = style.year() }
                 timestamp.stringValue = published.formatted(style)
-                timestamp.toolTip = "公開日時：" + published.formatted(.dateTime.year().month().day().hour().minute().second().timeZone())
+                timestamp.toolTip = String(localized: "Published: \(published.formatted(.dateTime.year().month().day().hour().minute().second().timeZone()))", bundle: ReaderLocalization.bundle)
             }
             updatePalette()
             let imageURL = article.imageURL.flatMap { ArticleURL.validated($0) }

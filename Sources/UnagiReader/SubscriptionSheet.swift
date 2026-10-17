@@ -35,20 +35,20 @@ struct SubscriptionSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(SubscriptionSheet.heading(folder: folder)).font(.title3.bold())
             TextField("https://example.com/feed.xml", text: $source.singleLine(address: true))
-                .accessibilityLabel("フィードのURL").onSubmit(submit)
-            if xmlOffered { Toggle("XMLを直接入力", isOn: $manualXML).font(.caption) }
+                .accessibilityLabel(String(localized: "Feed URL", bundle: ReaderLocalization.bundle)).onSubmit(submit)
+            if xmlOffered { Toggle(String(localized: "Paste XML", bundle: ReaderLocalization.bundle), isOn: $manualXML).font(.caption) }
             if manualXML {
                 TextEditor(text: $xml).font(.system(.caption, design: .monospaced))
                     .frame(minHeight: 240).border(.quaternary)
-                    .accessibilityLabel("フィードXML")
+                    .accessibilityLabel(String(localized: "Feed XML", bundle: ReaderLocalization.bundle))
                 HStack {
-                    Menu("合成サンプルを入力") {
+                    Menu(String(localized: "Insert Synthetic Sample", bundle: ReaderLocalization.bundle)) {
                         ForEach(FeedExample.allCases, id: \.self) { example in
                             Button(example.rawValue) { source = example.url; xml = example.xml }
                         }
                     }
                     Spacer()
-                    Text("RSS 1.0 / RSS 2.0 / Atom · 2MBまで").font(.caption).foregroundStyle(.secondary)
+                    Text(String(localized: "RSS 1.0 / RSS 2.0 / Atom · up to 2 MB", bundle: ReaderLocalization.bundle)).font(.caption).foregroundStyle(.secondary)
                 }
             }
             status
@@ -56,8 +56,8 @@ struct SubscriptionSheet: View {
             if let error { Text(error).foregroundStyle(.red).font(.callout).textSelection(.enabled) }
             HStack {
                 Spacer()
-                Button("キャンセル") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("追加", action: submit)
+                Button(String(localized: "Cancel", bundle: ReaderLocalization.bundle)) { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(String(localized: "Add", bundle: ReaderLocalization.bundle), action: submit)
                     .keyboardShortcut(.defaultAction).disabled(addableFeed == nil)
             }
         }
@@ -83,20 +83,20 @@ struct SubscriptionSheet: View {
             switch checker.state {
             case .idle: Color.clear
             case .checking:
-                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("確認中…") }.foregroundStyle(.secondary)
+                HStack(spacing: 6) { ProgressView().controlSize(.small); Text(String(localized: "Checking…", bundle: ReaderLocalization.bundle)) }.foregroundStyle(.secondary)
             case .ready(let checked):
                 VStack(alignment: .leading, spacing: 2) {
                     if isSubscribed(checked) {
-                        Label { Text("すでに購読しています：\(checked.parsed.title)").lineLimit(1) } icon: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
+                        Label { Text(String(localized: "Already subscribed: \(checked.parsed.title)", bundle: ReaderLocalization.bundle)).lineLimit(1) } icon: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
                     } else {
                         Label { Text(checked.parsed.title).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
                     }
                     if let address = checked.subscribedAddress(whenTyped: source) {
-                        Text("購読するURL：\(address)")
+                        Text(String(localized: "Subscription URL: \(address)", bundle: ReaderLocalization.bundle))
                             .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     }
                     if checked.parsed.skippedEntries > 0 {
-                        Text("識別子も記事URLもない\(checked.parsed.skippedEntries)件は取り込めません。")
+                        Text(String(localized: "Entries without an identifier or article URL cannot be imported: \(checked.parsed.skippedEntries).", bundle: ReaderLocalization.bundle))
                             .font(.caption).foregroundStyle(.orange)
                     }
                 }
@@ -116,11 +116,11 @@ struct SubscriptionSheet: View {
 
     private var folderChooser: some View {
         VStack(alignment: .leading, spacing: 6) {
-            TextField("フォルダ（任意）", text: $folderQuery.singleLine())
-                .accessibilityLabel("追加先のフォルダ").onSubmit(submit)
+            TextField(String(localized: "Folder (Optional)", bundle: ReaderLocalization.bundle), text: $folderQuery.singleLine())
+                .accessibilityLabel(String(localized: "Subscription Folder", bundle: ReaderLocalization.bundle)).onSubmit(submit)
                 .onKeyPress(.upArrow) { moveFolderHighlight(.up); return .handled }
                 .onKeyPress(.downArrow) { moveFolderHighlight(.down); return .handled }
-            FolderCandidateList(entries: folderEntries, highlighted: folderHighlight, createSuffix: "を作って追加", onChoose: chooseFolder)
+            FolderCandidateList(entries: folderEntries, highlighted: folderHighlight, createTitle: { name in String(localized: "Create “\(name)” and Add", bundle: ReaderLocalization.bundle) }, onChoose: chooseFolder)
         }
     }
     private func moveFolderHighlight(_ step: FolderPicker.Step) {
@@ -140,7 +140,7 @@ struct SubscriptionSheet: View {
 
     private func isSubscribed(_ checked: CheckedFeed) -> Bool { store.isSubscribed(to: checked.parsed.sourceURL) }
 
-    static func heading(folder: String) -> String { folder.isEmpty ? "購読を追加" : "「\(folder)」に購読を追加" }
+    static func heading(folder: String) -> String { folder.isEmpty ? String(localized: "Add Subscription", bundle: ReaderLocalization.bundle) : String(localized: "Add Subscription to “\(folder)”", bundle: ReaderLocalization.bundle) }
 
     /// Whether the XML input is offered: only with the Option key (a trouble-shooting tool, not part of everyday adding).
     static func offersXMLInput(modifiers: NSEvent.ModifierFlags) -> Bool { modifiers.contains(.option) }

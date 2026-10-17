@@ -1,7 +1,7 @@
 import Testing
 @testable import UnagiReader
 
-struct FolderExpansionTests {
+@Suite(EnglishLanguage()) struct FolderExpansionTests {
     @Test func aFolderThatReceivesASubscriptionIsOpenedAndRenamingKeepsItsState() {
         var expansion = FolderExpansion()
         #expect(!expansion.isExpanded("Tech"))                                                  // folders start closed, as before
