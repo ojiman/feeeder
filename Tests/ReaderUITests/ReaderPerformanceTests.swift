@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import UnagiReader
 
-@MainActor struct ReaderPerformanceTests {
+@Suite(EnglishLanguage()) @MainActor struct ReaderPerformanceTests {
     @Test func launchNeedsVisibleRowsAndKeepsTheFirstDraw() {
         var launch = ReaderPerformance.Launch()
         let start = Date(timeIntervalSince1970: 100)

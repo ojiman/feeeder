@@ -2,7 +2,7 @@ import Testing
 @testable import UnagiReader
 
 /// Issue #218: the web view stays hidden behind the app's dark surface until the page has painted.
-struct OriginalPageRevealTests {
+@Suite(EnglishLanguage()) struct OriginalPageRevealTests {
     @Test func theSurfaceAndTheSpinnerShowUntilThePageHasPainted() {
         var reveal = OriginalPageReveal()
         #expect(reveal.showsPlaceholder && !reveal.showsPage)

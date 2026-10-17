@@ -6,10 +6,10 @@ struct AppearancePicker: View {
     @Binding var selection: String
 
     private static let choices: [(tag: String, title: String, hint: String)] = [
-        ("system", "システム", "Macの外観設定に従います"),
-        ("light", "ライト", "常に明るい外観にします"),
-        ("dark", "ダーク", "常に暗い外観にします"),
-        ("sepia", "セピア", "紙のような色の、明るい外観にします"),
+        ("system", String(localized: "System", bundle: ReaderLocalization.bundle), String(localized: "Use the Mac's appearance setting", bundle: ReaderLocalization.bundle)),
+        ("light", String(localized: "Light", bundle: ReaderLocalization.bundle), String(localized: "Always use a light appearance", bundle: ReaderLocalization.bundle)),
+        ("dark", String(localized: "Dark", bundle: ReaderLocalization.bundle), String(localized: "Always use a dark appearance", bundle: ReaderLocalization.bundle)),
+        ("sepia", String(localized: "Sepia", bundle: ReaderLocalization.bundle), String(localized: "Use a light, paper-colored appearance", bundle: ReaderLocalization.bundle)),
     ]
 
     var body: some View {
@@ -42,20 +42,20 @@ struct ArticleTextSizeSlider: View {
 
     var body: some View {
         let step = Binding(get: { ArticleTextSize.step(size) }, set: { size = ArticleTextSize.step($0) })
-        LabeledContent("文字サイズ") {
+        LabeledContent(String(localized: "Text Size", bundle: ReaderLocalization.bundle)) {
             HStack(spacing: 10) {
                 Slider(value: step, in: ArticleTextSize.steps.first!...ArticleTextSize.steps.last!, step: 2) {
-                    Text("文字サイズ")
+                    Text(String(localized: "Text Size", bundle: ReaderLocalization.bundle))
                 } minimumValueLabel: {
-                    Text("あ").font(.system(size: 11))
+                    Text(String(localized: "Aa", bundle: ReaderLocalization.bundle)).font(.system(size: 11))
                 } maximumValueLabel: {
-                    Text("あ").font(.system(size: 17))
+                    Text(String(localized: "Aa", bundle: ReaderLocalization.bundle)).font(.system(size: 17))
                 }
                 .labelsHidden()
-                Text("\(Int(step.wrappedValue)) pt").monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .trailing)
+                Text(String(localized: "\(Int(step.wrappedValue)) pt", bundle: ReaderLocalization.bundle)).monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .trailing)
             }
         }
-        .help("記事の本文の大きさです。見出しも同じ割合で変わります。一覧とノートは変わりません。")
+        .help(String(localized: "Changes the article body and scales its headings. The list and note are unchanged.", bundle: ReaderLocalization.bundle))
     }
 }
 
@@ -64,7 +64,7 @@ struct ShortcutList: View {
     var body: some View {
         Form {
             ForEach(ReaderShortcuts.Group.allCases, id: \.self) { group in
-                Section(group.rawValue) {
+                Section(group.title) {
                     ForEach(ReaderShortcuts.rows(in: group)) { row in ShortcutRow(row: row) }
                 }
             }

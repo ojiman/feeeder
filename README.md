@@ -49,7 +49,7 @@ The app is ad hoc signed, not notarized. macOS blocks a copy that carries a quar
 
 - Final product acceptance on a real Mac is not complete.
 - CI covers only the build floor (macOS 26.6). The support floor (macOS 27.0) is exercised only on the maintainer's machine. Input methods, VoiceOver, Reduce Motion and long-running use are not yet verified. See the [verification records](docs/verification/).
-- Language settings and UI localization are planned for V1 ([specification 3.6 and 3.7](docs/specification.md#36-translation); #154, #271, #272).
+- Settings has separate app-language and article-translation choices. The UI is available in English and Japanese; five more UI languages are planned in #272 ([specification 3.7](docs/specification.md#37-settings)).
 
 ## Documentation
 

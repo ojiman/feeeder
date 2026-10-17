@@ -5,7 +5,7 @@ import ReaderCore
 @testable import UnagiReader
 
 // Checks PRD-11 (specification 7).
-@MainActor struct NativeArticleListTests {
+@Suite(EnglishLanguage()) @MainActor struct NativeArticleListTests {
     @Test func selectedFolderListReceivesKeyboardFocusAfterMount() {
         var selection: UUID?
         let parent = NativeArticleList(ids: [], article: { _ in nil }, feedTitle: { _ in "" }, selection: Binding(get: { selection }, set: { selection = $0 }), initialTop: nil, focus: true, shortcutsEnabled: true, onTop: { _ in }, onKey: { _ in })
@@ -30,7 +30,7 @@ import ReaderCore
         let cell = NativeArticleList.Cell()
         let article = Article(feedID: UUID(), title: "合成記事", summary: "要約", publisher: "合成", publishedAt: .now, receivedAt: .now.addingTimeInterval(-3600))
         cell.configure(article, feed: "合成購読")
-        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
+        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("Published: ") == true })
         let expected = article.publishedAt.formatted(.dateTime.hour().minute())
         #expect(time.stringValue == expected)
         #expect(labels(in: cell).contains { $0.stringValue == "合成購読" })
@@ -39,7 +39,7 @@ import ReaderCore
         #expect(time.stringValue == article.publishedAt.formatted(.dateTime.year().month().day().hour().minute()))
         article.publishedAt = .distantPast
         cell.configure(article, feed: "合成購読")
-        #expect(time.stringValue == "—" && time.toolTip == "公開日時不明")
+        #expect(time.stringValue == "—" && time.toolTip == "Publication date unknown")
     }
     @Test func readPaletteAndSelectionResetWhenCellIsReused() throws {
         let cell = NativeArticleList.Cell()
@@ -69,7 +69,7 @@ import ReaderCore
         let thumbnail = cell.convert(cell.thumbnail.bounds, from: cell.thumbnail)
         #expect(abs(thumbnail.maxX - (cell.bounds.width - 12)) < 1)
         #expect(thumbnail.width == 52)
-        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("公開日時：") == true })
+        let time = try #require(labels(in: cell).first { $0.toolTip?.hasPrefix("Published: ") == true })
         let title = try #require(labels(in: cell).first { $0.stringValue == article.title })
         let timeRect = cell.convert(time.bounds, from: time)
         let titleRect = cell.convert(title.bounds, from: title)

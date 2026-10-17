@@ -1,4 +1,5 @@
 import SwiftUI
+import ReaderCore
 
 /// The title of the article list: the name of the feed, folder or note, and how many articles it holds, at the top of the middle column,
 /// below the toolbar band.
@@ -30,7 +31,7 @@ struct ListHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.system(size: 17, weight: .semibold)).lineLimit(1).truncationMode(.tail)
-            Text("\(count)件の記事").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+            Text(String(localized: "\(count) articles", bundle: ReaderLocalization.bundle)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, Self.sideMargin)

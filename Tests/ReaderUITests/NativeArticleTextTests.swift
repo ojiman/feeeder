@@ -5,7 +5,7 @@ import Testing
 import ReaderCore
 @testable import UnagiReader
 
-@MainActor struct NativeArticleTextTests {
+@Suite(EnglishLanguage()) @MainActor struct NativeArticleTextTests {
     @Test func pageMotionFollowsDirectionWithoutReplayingForContentUpdates() throws {
         let coordinator = NativeArticleText.Coordinator()
         let a = UUID(), b = UUID()

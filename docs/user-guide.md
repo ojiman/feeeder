@@ -88,6 +88,12 @@ There is one note and nothing to manage: no list, no names, no delete.
 - `c` (or 記事 ▸ 記事をノートに送る) puts the article into the note where you left the caret: its title and link as `[Title](URL)`, or the text you selected in the article as a quotation with that link. Each one is a paragraph of its own, and a short highlight shows where it went. A closed note opens and takes it at its end. One undo removes it. Nothing else ever writes into the note.
 - 「Markdownをコピー」 (Copy Markdown) at the top of the note copies its exact text. It is disabled for an empty note.
 
+### Language settings
+
+Settings ▸ Language (「言語」) has two independent choices. App Language (「表示言語」) offers Match System, English and Japanese. It shares macOS's per-app choice in System Settings ▸ General ▸ Language & Region ▸ Applications. It applies at the next launch; quit and open the app when ready. Match System follows your Mac's preferred languages, with English as the fallback. It never translates your subscriptions, articles or note. Labels quoted in this guide are the Japanese labels.
+
+Choose 「システムに合わせる」 in 「記事翻訳」 to follow the Mac's preferred languages, or choose a fixed target. A change returns the open article to its original; press `t` to translate into the new target. An article already in the target language stays in its original with a short status message.
+
 ## 4. AI
 
 The app has no AI of its own. It does not summarize, suggest or write, and it never talks to an AI service.
@@ -105,5 +111,3 @@ The app has no AI of its own. It does not summarize, suggest or write, and it ne
 ## 6. For developers
 
 Commands, tests, CI and the rules for contributors are in [AGENTS.md](../AGENTS.md); how the app is built is in the [architecture](architecture.md).
-
-Choose 「システムに合わせる」 in 「記事翻訳」 to follow the Mac's preferred languages, or choose a fixed target. A change returns the open article to its original; press `t` to translate into the new target. An article already in the target language stays in its original with a short status message.

@@ -35,7 +35,7 @@ struct OriginalPageView: View {
                 if reveal.showsPlaceholder {
                     // The ✕ and the host name are in the article band (decision 0057); the column says that it is loading.
                     ProgressView().controlSize(.regular)
-                        .accessibilityLabel("元ページを読み込み中")
+                        .accessibilityLabel(String(localized: "Loading Original Page", bundle: ReaderLocalization.bundle))
                 }
             }
         }
@@ -64,7 +64,7 @@ private struct OriginalFailureView: NSViewRepresentable {
     let message: String
     let onCommand: (ReaderCommand) -> Void
     private var content: AnyView {
-        AnyView(ContentUnavailableView("元ページを開けませんでした", systemImage: "wifi.exclamationmark", description: Text(message)))
+        AnyView(ContentUnavailableView(String(localized: "Could Not Open Original Page", bundle: ReaderLocalization.bundle), systemImage: "wifi.exclamationmark", description: Text(message)))
     }
     func makeNSView(context: Context) -> OriginalFailureHostingView<AnyView> {
         let view = OriginalFailureHostingView(rootView: content)

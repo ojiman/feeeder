@@ -17,14 +17,14 @@ struct MoveToFolderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("フォルダ名", text: $query.singleLine())
+            TextField(String(localized: "Folder Name", bundle: ReaderLocalization.bundle), text: $query.singleLine())
                 .textFieldStyle(.roundedBorder).focused($focused)
-                .accessibilityLabel("移動先のフォルダ名")
+                .accessibilityLabel(String(localized: "Destination Folder Name", bundle: ReaderLocalization.bundle))
                 .onSubmit { choose(highlighted) }
                 .onKeyPress(.upArrow) { highlighted = max(0, highlighted - 1); return .handled }
                 .onKeyPress(.downArrow) { highlighted = min(max(0, entries.count - 1), highlighted + 1); return .handled }
                 .onKeyPress(.escape) { onClose(); return .handled }
-            FolderCandidateList(entries: entries, highlighted: highlighted, createSuffix: "を作って移動", onChoose: choose)
+            FolderCandidateList(entries: entries, highlighted: highlighted, createTitle: { name in String(localized: "Create “\(name)” and Move", bundle: ReaderLocalization.bundle) }, onChoose: choose)
         }
         .padding(12).frame(width: 260)
         .onAppear { query = initialQuery; focused = true }

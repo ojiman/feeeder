@@ -7,11 +7,11 @@ import Testing
 
 /// The tests that fold the split view's columns in a hosted window. Two windows that fold at the same time disturb each other (the
 /// sidebar of one stays open), so the suites in this one run one after the other.
-@Suite(.serialized) enum SplitViewFoldTests {}
+@Suite(EnglishLanguage(), .serialized) enum SplitViewFoldTests {}
 
 extension SplitViewFoldTests {
     // Checks PRD-01 (specification 7).
-    @Suite(.serialized) @MainActor struct ReaderLayoutTests {
+    @Suite(EnglishLanguage(), .serialized) @MainActor struct ReaderLayoutTests {
         private func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
             if let result = view as? T { return result }
             return view.subviews.lazy.compactMap { find(type, in: $0) }.first

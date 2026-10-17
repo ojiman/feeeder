@@ -7,8 +7,11 @@ source_app=${1:-"$PWD/.build/Unagi Reader.app"}
 [ -f "$source_app/Contents/Info.plist" ] || { echo "Build the app first: bash scripts/build-app.sh" >&2; exit 1; }
 run=$(mktemp -d "${TMPDIR:-/private/tmp}/unagi-ui-smoke.XXXXXX")
 server_pid=''
+smoke_domain=xyz.ojima.UnagiReader.Synthetic.UISmoke
+language_set=false
 cleanup() {
     if [ -n "$server_pid" ]; then kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true; fi
+    if "$language_set"; then /usr/bin/defaults delete "$smoke_domain" AppleLanguages; fi
 }
 trap cleanup EXIT
 # Use the checked helper; never launch the normal app or the person's library.
@@ -16,7 +19,7 @@ copy_output=$(bash scripts/make-synthetic-copy.sh "$source_app" "$run/data")
 app=$(printf '%s\n' "$copy_output" | sed -n 's/^Ready: \(.*\) (synthetic bundle identifier, ad hoc signed)$/\1/p')
 [ -n "$app" ] && [ "$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")" = xyz.ojima.UnagiReader.Synthetic ]
 # Separate from manual synthetic runs too. Only this temporary copy runs on the CI build floor.
-plutil -replace CFBundleIdentifier -string xyz.ojima.UnagiReader.Synthetic.UISmoke "$app/Contents/Info.plist"
+plutil -replace CFBundleIdentifier -string "$smoke_domain" "$app/Contents/Info.plist"
 plutil -replace LSMinimumSystemVersion -string 26.6 "$app/Contents/Info.plist"
 plutil -insert NSAppTransportSecurity -json '{"NSAllowsLocalNetworking":true}' "$app/Contents/Info.plist"
 codesign --force --sign - "$app"
@@ -33,6 +36,11 @@ feed=$(cat "$run/feed-url")
 results=${CI_RESULTS:-$run/results}
 mkdir -p "$results"
 echo "UI smoke logs and result bundle: $results"
+# Keep label-based checks in English without changing the app's launch arguments.
+[ "$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")" = "$smoke_domain" ]
+/usr/bin/defaults write "$smoke_domain" AppleLanguages -array en
+language_set=true
+[ "$(/usr/bin/defaults export "$smoke_domain" - | plutil -extract AppleLanguages.0 raw -o - -)" = en ]
 started=$SECONDS
 xcodebuild test -project UITests/UISmoke.xcodeproj -scheme UISmoke \
     -destination 'platform=macOS' -parallel-testing-enabled NO \

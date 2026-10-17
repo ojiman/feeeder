@@ -1,6 +1,6 @@
 # 0060 Language settings and UI localization
 
-- Status: valid (approved by the owner; target built; UI not built, #271, #272)
+- Status: valid (approved by the owner; target and English/Japanese UI built; five languages not built, #272)
 - Date: 2026-10-17
 - Decider: the owner (PdM), in the chat about #154. The owner left the open points of the review of PR #269 (the target change while a translation is shown, when the display language applies, how languages are matched, Match System, how the work is split, disclosure) to the agent, to be decided by the vision; they are confirmed when that PR is merged.
 - Replaces in part: [0005](0005-v1-product-decisions-2026-10-04.md), point 1's exclusion of an in-app display-language setting. Time zones are unchanged.

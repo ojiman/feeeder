@@ -2,7 +2,7 @@ import Testing
 @testable import ReaderCore
 
 // Checks PRD-16 (specification 7).
-struct FolderPickerTests {
+@Suite(EnglishLanguage()) struct FolderPickerTests {
     private let folders = ["技術", "ニュース", "Tech", "趣味"]
 
     @Test func withNothingTypedTheCandidatesAreUnfiledAndTheOtherFolders() {
@@ -11,6 +11,11 @@ struct FolderPickerTests {
         let inTech = FolderPicker.entries(query: "  ", folders: folders, current: "Tech")
         #expect(inTech.first == .unfiled && !inTech.contains(.existing("Tech")))                   // not the folder it is in; unfiled first
     }
+    @Test func aUserFolderThatMatchesTheLocalizedUnfiledLabelKeepsItsIdentity() {
+        #expect(FolderPicker.entries(query: "Unfiled", folders: ["Unfiled", "Mine"], current: "Mine") == [.existing("Unfiled")])
+        #expect(FolderPicker.entries(query: "Unfiled", folders: ["Unfiled"], current: "Unfiled") == [])
+    }
+
     @Test func typingNarrowsTheCandidatesAndOffersToCreateTheTypedName() {
         let narrowed = FolderPicker.entries(query: "tec", folders: folders, current: "")
         #expect(narrowed == [.existing("Tech"), .create("tec")])                                   // a match, then "make it"
@@ -19,9 +24,9 @@ struct FolderPickerTests {
         #expect(FolderPicker.entries(query: "　新しい 名前 ", folders: folders, current: "") == [.create("新しい 名前")])   // trimmed like every folder name
     }
     @Test func unfiledCanBeTypedAndAFolderCannotBeNamedLikeIt() {
-        #expect(FolderPicker.entries(query: "未分", folders: folders, current: "Tech").first == .unfiled)
-        #expect(FolderPicker.entries(query: "未分類", folders: folders, current: "Tech") == [.unfiled])
-        #expect(FolderPicker.entries(query: "未分類", folders: folders, current: "") == [])           // already unfiled: nothing to do
+        #expect(FolderPicker.entries(query: "Unfi", folders: folders, current: "Tech").first == .unfiled)
+        #expect(FolderPicker.entries(query: "Unfiled", folders: folders, current: "Tech") == [.unfiled])
+        #expect(FolderPicker.entries(query: "Unfiled", folders: folders, current: "") == [])           // already unfiled: nothing to do
     }
     @Test func theFolderItIsInIsNeverACandidateAndNotCreatedAgain() {
         #expect(FolderPicker.entries(query: "Tech", folders: folders, current: "Tech") == [])

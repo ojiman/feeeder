@@ -151,6 +151,7 @@ jobs:
       - name: Build and verify ad hoc Release app
         run: |
           { time bash scripts/build-app.sh release; } 2>&1 | tee "$CI_RESULTS/build.log"
+          bash scripts/test-build-app.sh
           package_dir=$(mktemp -d "$RUNNER_TEMP/unagi-reader-adhoc.XXXXXX")
           ditto -c -k --sequesterRsrc --keepParent ".build/Unagi Reader.app" "$CI_RESULTS/UnagiReader-adhoc.zip"
           ditto -x -k "$CI_RESULTS/UnagiReader-adhoc.zip" "$package_dir"

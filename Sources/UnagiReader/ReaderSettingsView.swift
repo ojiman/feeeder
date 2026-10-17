@@ -18,10 +18,10 @@ struct ReaderSettingsView: View {
 
     var body: some View {
         TabView(selection: Binding(get: { Pane(rawValue: pane) ?? .appearance }, set: { pane = $0.rawValue })) {
-            Tab("外観", systemImage: "circle.lefthalf.filled", value: Pane.appearance) { appearancePane }
-            Tab("言語", systemImage: "globe", value: Pane.language) { TranslationLanguageSettings() }
-            Tab("ショートカット", systemImage: "keyboard", value: Pane.shortcuts) { ShortcutList() }
-            Tab("保存", systemImage: "externaldrive", value: Pane.storage) { storage }
+            Tab(String(localized: "Appearance", bundle: ReaderLocalization.bundle), systemImage: "circle.lefthalf.filled", value: Pane.appearance) { appearancePane }
+            Tab(String(localized: "Language", bundle: ReaderLocalization.bundle), systemImage: "globe", value: Pane.language) { TranslationLanguageSettings() }
+            Tab(String(localized: "Shortcuts", bundle: ReaderLocalization.bundle), systemImage: "keyboard", value: Pane.shortcuts) { ShortcutList() }
+            Tab(String(localized: "Storage", bundle: ReaderLocalization.bundle), systemImage: "externaldrive", value: Pane.storage) { storage }
         }
         .tint(AppPalette.accentColor)
         .frame(width: 540)
@@ -33,9 +33,9 @@ struct ReaderSettingsView: View {
                 perform { preview = try store.previewDeletion(days: value, allContent: false, at: .now); pendingDays = value }
             } else { perform { try store.applyRetention(days: value, at: .now) } }
         }
-        .confirmationDialog(deletingAll ? "本文・RSS要約を削除しますか？" : "保持期間を\(pendingDays ?? days)日に変更しますか？",
+        .confirmationDialog(deletingAll ? String(localized: "Delete article bodies and RSS summaries?", bundle: ReaderLocalization.bundle) : String(localized: "Change retention to \(pendingDays ?? days) days?", bundle: ReaderLocalization.bundle),
                             isPresented: Binding(get: { preview != nil }, set: { if !$0 { cancel() } })) {
-            Button(deletingAll ? "本文・RSS要約を削除" : "保持期間を変更", role: .destructive) {
+            Button(deletingAll ? String(localized: "Delete Bodies and RSS Summaries", bundle: ReaderLocalization.bundle) : String(localized: "Change Retention", bundle: ReaderLocalization.bundle), role: .destructive) {
                 perform {
                     if deletingAll {
                         let current = try store.previewDeletion(days: nil, allContent: true, at: .now)
@@ -44,14 +44,14 @@ struct ReaderSettingsView: View {
                 }
                 cancel()
             }
-            Button("キャンセル", role: .cancel) { cancel() }
+            Button(String(localized: "Cancel", bundle: ReaderLocalization.bundle), role: .cancel) { cancel() }
         } message: {
             if let preview {
-                Text("本文\(preview.bodyCount)件・RSS要約\(preview.summaryCount)件、約\(byteCount(preview.estimatedBytes))が削除対象です。ノートは残ります。削除した本文は保持期間を延長しても復元されません。")
+                Text(String(localized: "Article bodies: \(preview.bodyCount). RSS summaries: \(preview.summaryCount). About \(byteCount(preview.estimatedBytes)) will be deleted. The note is kept. Extending retention will not restore deleted bodies.", bundle: ReaderLocalization.bundle))
             }
         }
-        .alert("変更できませんでした", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("閉じる") { error = nil }
+        .alert(String(localized: "Could Not Apply Change", bundle: ReaderLocalization.bundle), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+            Button(String(localized: "Close", bundle: ReaderLocalization.bundle)) { error = nil }
         } message: { Text(error ?? "") }
     }
     private var appearancePane: some View {
@@ -64,19 +64,19 @@ struct ReaderSettingsView: View {
     private var storage: some View {
         Form {
             Section {
-                Picker("保持期間", selection: $days) {
-                    ForEach(RetentionPolicy.choices, id: \.self) { Text($0 == 365 ? "1年" : "\($0)日").tag($0) }
+                Picker(String(localized: "Retention", bundle: ReaderLocalization.bundle), selection: $days) {
+                    ForEach(RetentionPolicy.choices, id: \.self) { Text($0 == 365 ? String(localized: "1 Year", bundle: ReaderLocalization.bundle) : String(localized: "\($0) days", bundle: ReaderLocalization.bundle)).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                .help("未読は初回受信、読んだ記事は初回既読から数えます。再取り込みで期限を延長しません。")
+                .help(String(localized: "Count from first receipt for unread articles, or first reading for read articles. Fetching again does not extend retention.", bundle: ReaderLocalization.bundle))
             }
             Section {
-                LabeledContent("記事本文・RSS要約") {
-                    Button("削除…", role: .destructive) {
+                LabeledContent(String(localized: "Article Bodies and RSS Summaries", bundle: ReaderLocalization.bundle)) {
+                    Button(String(localized: "Delete…", bundle: ReaderLocalization.bundle), role: .destructive) {
                         perform { preview = try store.previewDeletion(days: nil, allContent: true, at: .now); deletingAll = true }
                     }
                 }
-                .help("ノートは自動削除しません。")
+                .help(String(localized: "The note is never deleted automatically.", bundle: ReaderLocalization.bundle))
             }
         }
         .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
@@ -95,11 +95,24 @@ struct ReaderSettingsView: View {
 struct TranslationLanguageSettings: View {
     @AppStorage(TranslationTarget.key) private var target = ""
     @State private var languages: [String] = []
+    @State private var appLanguage = AppLanguage.selection()
 
     var body: some View {
         Form {
-            Picker("記事翻訳", selection: $target) {
-                Text("システムに合わせる").tag("")
+            Section {
+                Picker(String(localized: "App Language", bundle: ReaderLocalization.bundle), selection: Binding(get: { appLanguage }, set: { value in
+                    AppLanguage.set(value); appLanguage = value
+                })) {
+                    Text(String(localized: "Match System", bundle: ReaderLocalization.bundle)).tag("")
+                    ForEach(ReaderLocalization.languages, id: \.self) { language in
+                        Text(TranslationLanguages.name(language)).tag(language)
+                    }
+                }
+                Text(String(localized: "Applies at next launch.", bundle: ReaderLocalization.bundle))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Picker(String(localized: "Article Translation", bundle: ReaderLocalization.bundle), selection: $target) {
+                Text(String(localized: "Match System", bundle: ReaderLocalization.bundle)).tag("")
                 ForEach(languages.sorted { TranslationLanguages.name($0).localizedStandardCompare(TranslationLanguages.name($1)) == .orderedAscending }, id: \.self) {
                     Text(TranslationLanguages.name($0)).tag($0)
                 }
@@ -108,5 +121,7 @@ struct TranslationLanguageSettings: View {
         }
         .formStyle(.grouped).scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
         .task { languages = await TranslationLanguages.available() }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in appLanguage = AppLanguage.selection() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in appLanguage = AppLanguage.selection() }
     }
 }

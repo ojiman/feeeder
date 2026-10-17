@@ -48,7 +48,7 @@ final class NoteTextView: NSTextView {
     var showInserted: (NSTextView, NSRange) -> Void = { view, range in
         view.showFindIndicator(for: range)
         NSAccessibility.post(element: view, notification: .announcementRequested,
-                             userInfo: [.announcement: "ノートに送りました", .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+                             userInfo: [.announcement: String(localized: "Sent to note", bundle: ReaderLocalization.bundle), .priority: NSAccessibilityPriorityLevel.medium.rawValue])
     }
 
     /// False while no editor is shown or text is being composed in it.
@@ -135,7 +135,7 @@ struct NoteTextEditor: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.isVerticallyResizable = true; textView.isHorizontallyResizable = false
         textView.textContainer?.widthTracksTextView = true
-        textView.setAccessibilityLabel("ノート")
+        textView.setAccessibilityLabel(String(localized: "Note", bundle: ReaderLocalization.bundle))
         textView.string = text
         if let storage = textView.textStorage {
             NoteEditorStyle.apply(to: storage, around: NSRange(location: 0, length: storage.length))

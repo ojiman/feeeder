@@ -12,7 +12,7 @@ public enum FolderPicker {
             switch self { case .unfiled: ""; case .existing(let name), .create(let name): name }
         }
     }
-    static let unfiledName = "未分類"
+    static let unfiledName = String(localized: "Unfiled", bundle: ReaderLocalization.bundle)
 
     /// `current` is the folder the subscription is in (empty: unfiled). It is never a candidate, since moving there changes nothing.
     public static func entries(query: String, folders: [String], current: String) -> [Entry] {
@@ -23,6 +23,8 @@ public enum FolderPicker {
         }
         var result: [Entry] = []
         if typed == unfiledName {
+            // A folder named in another UI language is still the person's data.
+            if folders.contains(typed) { return typed == current ? [] : [.existing(typed)] }
             return current.isEmpty ? [] : [.unfiled]
         }
         if !current.isEmpty, unfiledName.localizedStandardContains(typed) { result.append(.unfiled) }

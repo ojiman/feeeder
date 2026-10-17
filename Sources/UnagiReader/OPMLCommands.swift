@@ -9,7 +9,7 @@ struct OPMLCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .importExport) {
-            Button("OPMLを取り込む…") { importOPML?() }.disabled(importOPML == nil)
+            Button(String(localized: "Import OPML…", bundle: ReaderLocalization.bundle)) { importOPML?() }.disabled(importOPML == nil)
         }
     }
 }
@@ -30,8 +30,8 @@ enum OPMLFilePanel {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [UTType(filenameExtension: "opml"), .xml].compactMap { $0 }
-        panel.message = "取り込むOPMLファイルを選んでください。"
-        panel.prompt = "取り込む"
+        panel.message = String(localized: "Choose an OPML file to import.", bundle: ReaderLocalization.bundle)
+        panel.prompt = String(localized: "Import", bundle: ReaderLocalization.bundle)
         guard let window = NSApp.keyWindow else { return panel.runModal() == .OK ? panel.url : nil }
         return await withCheckedContinuation { continuation in
             panel.beginSheetModal(for: window) { response in continuation.resume(returning: response == .OK ? panel.url : nil) }
@@ -48,7 +48,7 @@ struct OPMLImportPresentation: ViewModifier {
         content
             .focusedSceneValue(\.importOPML, { Task { await flow.start() } })
             .alert(flow.report?.title ?? "", isPresented: Binding(get: { flow.report != nil }, set: { if !$0 { flow.dismissReport() } })) {
-                Button("OK") { flow.dismissReport() }
+                Button(String(localized: "OK", bundle: ReaderLocalization.bundle)) { flow.dismissReport() }
             } message: {
                 if let message = flow.report?.message, !message.isEmpty { Text(message) }
             }

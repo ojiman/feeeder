@@ -9,7 +9,7 @@ import Testing
 /// dogfooding, 2026-10-13). The sidebar may be moved by `v` (the original page) and by `n` (the note), and a person can press them
 /// again before the move has ended.
 extension SplitViewFoldTests {
-    @Suite(.serialized) @MainActor struct SidebarButtonsTests {
+    @Suite(EnglishLanguage(), .serialized) @MainActor struct SidebarButtonsTests {
         private struct Harness {
             let host: NSHostingView<ReaderView>
             let window: NSWindow

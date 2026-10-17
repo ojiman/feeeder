@@ -3,7 +3,7 @@ import ReaderCore
 import Testing
 @testable import UnagiReader
 
-@MainActor struct ReadingBenchmarkTests {
+@Suite(EnglishLanguage()) @MainActor struct ReadingBenchmarkTests {
     @Test func automationRefusesAnUnmarkedLibraryAndAnImplicitDirectory() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

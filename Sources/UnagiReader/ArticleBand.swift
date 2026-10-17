@@ -30,7 +30,7 @@ struct ArticleBand: View {
     var body: some View {
         HStack(spacing: 2) {
             if let originalHost {
-                BandButton(id: "close-original", symbol: "xmark", help: "記事に戻る (Esc)", label: "記事に戻る", action: closeOriginal)
+                BandButton(id: "close-original", symbol: "xmark", help: String(localized: "Return to Article (Esc)", bundle: ReaderLocalization.bundle), label: String(localized: "Return to Article", bundle: ReaderLocalization.bundle), action: closeOriginal)
                 Text(originalHost).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             } else {
                 TranslationStatusRow(state: status, target: translationTarget, showOriginal: showOriginal)

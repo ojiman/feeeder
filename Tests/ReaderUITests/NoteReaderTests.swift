@@ -5,7 +5,7 @@ import Testing
 @testable import UnagiReader
 
 // Checks PRD-04, PRD-05 (specification 7).
-@Suite(.serialized) @MainActor struct NoteReaderTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct NoteReaderTests {
     fileprivate func find<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
         if let result = view as? T { return result }
         return view.subviews.lazy.compactMap { find(type, in: $0) }.first
@@ -129,7 +129,7 @@ import Testing
 }
 
 /// The note panel beside the article (L1). A suite of its own: see the N4 verification record for why. Run each test alone.
-@Suite(.serialized) @MainActor struct NotePanelTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct NotePanelTests {
     private let t = NoteReaderTests()
 
     fileprivate func openHarness() throws -> NoteReaderTests.Harness {
@@ -195,7 +195,7 @@ import Testing
 @MainActor func pumpRunLoop(_ seconds: Double) { RunLoop.main.run(until: Date().addingTimeInterval(seconds)) }
 
 /// Decision 0049: the one thing left of the hand-off to another AI is 「Markdownをコピー」, which copies the note's text as it is.
-@Suite(.serialized) @MainActor struct MarkdownCopyTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct MarkdownCopyTests {
     private let t = NoteReaderTests()
 
     @Test func theCopyButtonExistsAndAnEmptyNoteCannotBeCopied() async throws {
@@ -217,7 +217,7 @@ import Testing
 }
 
 /// 「記事をノートに送る」 from the list's key handler, as the app's `c` reaches it (specification 3.3). Checks PRD-19.
-@Suite(.serialized) @MainActor struct SendToNoteTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct SendToNoteTests {
     private let t = NoteReaderTests()
 
     private func table(_ h: NoteReaderTests.Harness) throws -> NativeArticleList.Table {

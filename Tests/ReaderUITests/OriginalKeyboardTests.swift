@@ -5,7 +5,7 @@ import ReaderCore
 import Testing
 @testable import UnagiReader
 
-@Suite(.serialized) @MainActor struct OriginalKeyboardTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct OriginalKeyboardTests {
     @Test func failedOriginalKeepsEscapeAndNavigation() throws {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 320), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
@@ -151,7 +151,7 @@ import Testing
     }
 }
 
-@MainActor struct ShortcutResponderTests {
+@Suite(EnglishLanguage()) @MainActor struct ShortcutResponderTests {
     @Test func onlyAnEditableTextViewOrAFieldCountsAsTextInput() {
         let note = NSTextView(); note.isEditable = true
         let reader = NSTextView(); reader.isEditable = false; reader.isSelectable = true

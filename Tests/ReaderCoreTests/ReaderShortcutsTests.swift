@@ -2,7 +2,7 @@ import Testing
 @testable import ReaderCore
 
 // Specification 3.7: the shortcut list is made from the keys the reader handles.
-struct ReaderShortcutsTests {
+@Suite(EnglishLanguage()) struct ReaderShortcutsTests {
     @Test func everyReadingLetterIsInTheList() {
         let listed = Set(ReaderShortcuts.rows.flatMap(\.keys))
         for letter in ReaderShortcuts.readingLetters { #expect(listed.contains(letter), "\(letter) is not in the shortcut list") }
@@ -14,7 +14,7 @@ struct ReaderShortcutsTests {
     }
 
     @Test func theGroupsAreInTheOrderOfTheSpecification() {
-        #expect(ReaderShortcuts.Group.allCases.map(\.rawValue) == ["読む", "一覧", "元ページ", "ノート"])
+        #expect(ReaderShortcuts.Group.allCases.map(\.title) == ["Reading", "List", "Original Page", "Note"])
         for group in ReaderShortcuts.Group.allCases { #expect(!ReaderShortcuts.rows(in: group).isEmpty) }
         #expect(Set(ReaderShortcuts.rows.map(\.id)).count == ReaderShortcuts.rows.count)
     }

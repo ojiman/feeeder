@@ -21,7 +21,7 @@ import Carbon
             inputSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
             let ascii = TISCopyCurrentASCIICapableKeyboardLayoutInputSource().takeRetainedValue()
             XCTAssertEqual(TISSelectInputSource(ascii), noErr)
-            XCTAssertTrue(app.tables["記事一覧"].waitForExistence(timeout: 15), app.windows.debugDescription)
+            XCTAssertTrue(app.tables["Article List"].waitForExistence(timeout: 15), app.windows.debugDescription)
             XCTAssertTrue(app.outlines.staticTexts["開発ノート"].exists)
         }
     }
@@ -36,11 +36,11 @@ import Carbon
 
     // Checks PRD-01: a real click and j/k must select and display the corresponding article.
     func testLaunchSelectionAndReadingKeys() {
-        let table = app.tables["記事一覧"]
+        let table = app.tables["Article List"]
         XCTAssertEqual(table.tableRows.count, 6)
         // Native cell accessibility clicks can select without giving the table the keyboard.
         table.tableRows.element(boundBy: 1).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
-        let body = app.textViews["記事本文"]
+        let body = app.textViews["Article Body"]
         XCTAssertTrue(body.waitForExistence(timeout: 5))
         waitForValue(body, containing: "毎日届く情報")
         let ascii = TISCopyCurrentASCIICapableKeyboardLayoutInputSource().takeRetainedValue()
@@ -55,32 +55,32 @@ import Carbon
     func testNoteCloseButtonAndEscape() {
         selectFirst()
         app.windows.firstMatch.typeKey("n", modifierFlags: [])
-        let editor = app.textViews["ノート"]
+        let editor = app.textViews["Note"]
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
-        app.groups["ノート"].buttons["ノートを閉じる"].click()
+        app.groups["Note"].buttons["Close Note"].click()
         XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
         app.windows.firstMatch.typeKey("n", modifierFlags: [])
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         editor.click()
         app.windows.firstMatch.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.tables["記事一覧"].tableRows.firstMatch.isHittable)
+        XCTAssertTrue(app.tables["Article List"].tableRows.firstMatch.isHittable)
     }
 
     // Checks PRD-04: layout changes keep the note, and committed typing survives a restart.
     func testNoteLayoutKeepsEditing() {
         selectFirst()
         app.windows.firstMatch.typeKey("n", modifierFlags: [])
-        let editor = app.textViews["ノート"]
+        let editor = app.textViews["Note"]
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         editor.click()
         for key in ["j", "k", "n"] { editor.typeText(key) }
-        app.buttons["記事の一覧を出す"].click()
-        XCTAssertTrue(app.buttons["記事の一覧を隠す"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.tables["記事一覧"].tableRows.firstMatch.isHittable)
+        app.buttons["Show Article List"].click()
+        XCTAssertTrue(app.buttons["Hide Article List"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.tables["Article List"].tableRows.firstMatch.isHittable)
         XCTAssertEqual(editor.value as? String, "jkn")
-        app.buttons["記事の一覧を隠す"].click()
-        XCTAssertTrue(app.buttons["記事の一覧を出す"].waitForExistence(timeout: 5))
+        app.buttons["Hide Article List"].click()
+        XCTAssertTrue(app.buttons["Show Article List"].waitForExistence(timeout: 5))
         XCTAssertEqual(editor.value as? String, "jkn")
         app.terminate()
         app.launch()
@@ -96,13 +96,13 @@ import Carbon
     func testLocalFeedAndOriginalPage() throws {
         try addLocalFeed()
         selectFirst()
-        let body = app.textViews["記事本文"]
+        let body = app.textViews["Article Body"]
         waitForValue(body, containing: "Smoke local article body.")
         app.windows.firstMatch.typeKey("v", modifierFlags: [])
-        XCTAssertTrue(app.buttons["記事に戻る"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Return to Article"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.webViews.staticTexts["Smoke original page"].waitForExistence(timeout: 10))
         app.windows.firstMatch.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(app.buttons["記事に戻る"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Return to Article"].waitForNonExistence(timeout: 5))
         waitForValue(body, containing: "Smoke local article body.")
         XCTAssertTrue(app.outlines.staticTexts["Smoke local feed"].exists)
     }
@@ -117,8 +117,8 @@ import Carbon
             XCTAssertTrue(row.waitForExistence(timeout: 5))
             if round > 2 { row.click() }                                       // rounds 3 and 4: the subscription is selected first
             row.rightClick()
-            app.menuItems["名前を変更"].click()
-            let name = app.textFields["名前"]
+            app.menuItems["Rename"].click()
+            let name = app.textFields["Name"]
             XCTAssertTrue(name.waitForExistence(timeout: 5))
             let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: name)
             XCTAssertEqual(XCTWaiter.wait(for: [focused], timeout: 5), .completed, "round \(round): the name field has no keyboard focus")
@@ -129,19 +129,17 @@ import Carbon
             XCTAssertFalse(app.outlines.staticTexts[current].exists)
             current = renamed
         }
-        let englishFile = app.menuBars.menuBarItems["File"]
-        let file = englishFile.exists ? englishFile : app.menuBars.menuBarItems["ファイル"]
-        file.click()
-        XCTAssertTrue(app.menuItems["OPMLを取り込む…"].exists)
-        XCTAssertTrue(app.menuItems["OPMLを取り込む…"].isEnabled)
+        app.menuBars.menuBarItems["File"].click()
+        XCTAssertTrue(app.menuItems["Import OPML…"].exists)
+        XCTAssertTrue(app.menuItems["Import OPML…"].isEnabled)
         app.windows.firstMatch.typeKey(.escape, modifierFlags: [])
     }
 
     private func selectFirst() {
-        let table = app.tables["記事一覧"]
+        let table = app.tables["Article List"]
         XCTAssertTrue(table.waitForExistence(timeout: 5))
         table.tableRows.element(boundBy: 0).click()
-        app.textViews["記事本文"].click()
+        app.textViews["Article Body"].click()
     }
 
     private func waitForValue(_ element: XCUIElement, containing text: String) {
@@ -152,12 +150,12 @@ import Carbon
     private func addLocalFeed() throws {
         let address = try XCTUnwrap(ProcessInfo.processInfo.environment["UNAGI_UI_SMOKE_FEED"])
         XCTAssertTrue(address.hasPrefix("http://127.0.0.1:"))
-        app.buttons["購読を追加"].click()
-        let field = app.textFields["フィードのURL"]
+        app.buttons["Add Subscription"].click()
+        let field = app.textFields["Feed URL"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.click()
         field.typeText(address)
-        let add = app.buttons["追加"]
+        let add = app.buttons["Add"]
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: add)
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
         add.click()

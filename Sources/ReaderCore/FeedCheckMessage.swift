@@ -7,16 +7,16 @@ public enum FeedCheckMessage {
     /// so a failure to connect there is the person's feed being on http only, which the app does not support (decision 0053).
     public static func text(for error: any Error, pastedXML: Bool = false, plainHTTP: Bool = false) -> String {
         switch error {
-        case FeedImportError.invalidXML where pastedXML: return "貼り付けたXMLに誤りがあり、読めませんでした。"
+        case FeedImportError.invalidXML where pastedXML: return String(localized: "The pasted XML could not be read because it contains errors.", bundle: ReaderLocalization.bundle)
         case HTTPError.status(let code):
             switch code {
-            case 404, 410: return "ページが見つかりません（\(code)）。URLを確認してください。"
-            case 401, 403: return "このURLは読めません（\(code)）。ログインが必要かもしれません。"
-            case 429, 500...: return "サーバーがエラーを返しました（\(code)）。時間をおいて試してください。"
-            default: return "サーバーがエラーを返しました（\(code)）。"
+            case 404, 410: return String(localized: "Page not found (\(code)). Check the URL.", bundle: ReaderLocalization.bundle)
+            case 401, 403: return String(localized: "This URL could not be read (\(code)). You may need to log in.", bundle: ReaderLocalization.bundle)
+            case 429, 500...: return String(localized: "The server returned an error (\(code)). Try again later.", bundle: ReaderLocalization.bundle)
+            default: return String(localized: "The server returned an error (\(code)).", bundle: ReaderLocalization.bundle)
             }
-        case HTTPError.tooLarge: return "データが大きすぎます（2MBまで）。"
-        case let error as URLError: return plainHTTP && failsOverHTTPS(error.code) ? "HTTPSでは読み込めませんでした。HTTPには対応していません。" : text(for: error.code)
+        case HTTPError.tooLarge: return String(localized: "The data is too large (maximum 2 MB).", bundle: ReaderLocalization.bundle)
+        case let error as URLError: return plainHTTP && failsOverHTTPS(error.code) ? String(localized: "Could not load over HTTPS. HTTP is not supported.", bundle: ReaderLocalization.bundle) : text(for: error.code)
         default: return error.localizedDescription
         }
     }
@@ -31,13 +31,13 @@ public enum FeedCheckMessage {
 
     private static func text(for code: URLError.Code) -> String {
         switch code {
-        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .internationalRoamingOff: "ネットワークに接続できません。"
-        case .timedOut: "サーバーから応答がありません。"
-        case .cannotFindHost, .dnsLookupFailed: "サーバーが見つかりません。URLを確認してください。"
+        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed, .internationalRoamingOff: String(localized: "You are not connected to the network.", bundle: ReaderLocalization.bundle)
+        case .timedOut: String(localized: "The server did not respond.", bundle: ReaderLocalization.bundle)
+        case .cannotFindHost, .dnsLookupFailed: String(localized: "The server could not be found. Check the URL.", bundle: ReaderLocalization.bundle)
         case .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateNotYetValid,
-             .serverCertificateHasUnknownRoot, .clientCertificateRejected, .clientCertificateRequired: "安全な接続ができませんでした。"
-        case .appTransportSecurityRequiresSecureConnection: "http:// には接続できません。https:// のURLを入れてください。"
-        default: "接続できませんでした。"
+             .serverCertificateHasUnknownRoot, .clientCertificateRejected, .clientCertificateRequired: String(localized: "A secure connection could not be made.", bundle: ReaderLocalization.bundle)
+        case .appTransportSecurityRequiresSecureConnection: String(localized: "HTTP connections are not supported. Enter an https:// URL.", bundle: ReaderLocalization.bundle)
+        default: String(localized: "Could not connect.", bundle: ReaderLocalization.bundle)
         }
     }
 }

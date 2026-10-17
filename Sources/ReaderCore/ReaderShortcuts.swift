@@ -4,7 +4,15 @@ import Foundation
 /// shortcut list in Settings shows these rows, so the list shows what the app does. Read only: keys cannot be changed.
 public enum ReaderShortcuts {
     public enum Group: String, CaseIterable, Sendable {
-        case reading = "読む", list = "一覧", original = "元ページ", note = "ノート"
+        case reading, list, original, note
+        public var title: String {
+            switch self {
+            case .reading: String(localized: "Reading", bundle: ReaderLocalization.bundle)
+            case .list: String(localized: "List", bundle: ReaderLocalization.bundle)
+            case .original: String(localized: "Original Page", bundle: ReaderLocalization.bundle)
+            case .note: String(localized: "Note", bundle: ReaderLocalization.bundle)
+            }
+        }
     }
 
     public struct Row: Sendable, Equatable, Identifiable {
@@ -20,22 +28,22 @@ public enum ReaderShortcuts {
     /// The single letters the reader handles without a modifier key, from the list or the article, when no text is being typed.
     public static let readingLetters: [String] = ["j", "k", "m", "s", "t", "b", "v", "n", "c", "/"]
 
-    static let whileTyping = "文字の入力中は効きません"
+    static let whileTyping = String(localized: "Unavailable while typing", bundle: ReaderLocalization.bundle)
 
     public static let rows: [Row] = [
-        Row(group: .reading, keys: ["j", "k"], action: "次の記事・前の記事", limit: whileTyping),
-        Row(group: .reading, keys: ["m"], action: "既読・未読を切り替える", limit: whileTyping),
-        Row(group: .reading, keys: ["s"], action: "Starを付ける・外す", limit: whileTyping),
-        Row(group: .reading, keys: ["t"], action: "記事を翻訳する・原文に戻す", limit: whileTyping),
-        Row(group: .reading, keys: ["b"], action: "元ページをブラウザで開く", limit: whileTyping),
-        Row(group: .list, keys: ["/"], action: "一覧をキーワードで絞り込む", limit: whileTyping),
-        Row(group: .original, keys: ["v"], action: "元ページをアプリの中で開く", limit: whileTyping),
-        Row(group: .original, keys: ["Esc"], action: "元ページを閉じて記事に戻る", limit: nil),
-        Row(group: .original, keys: ["j", "k", "s", "n"], action: "元ページを開いたままでも使えます", limit: nil),
-        Row(group: .note, keys: ["n", "⌥⌘I"], action: "ノートを開く・閉じる", limit: "n は文字の入力中は効きません"),
-        Row(group: .note, keys: ["c"], action: "記事をノートに送る（記事で選んだ文は引用になります）", limit: whileTyping),
-        Row(group: .note, keys: ["⌥⌘↑", "⌥⌘↓"], action: "ノートを開いたまま前・次の記事へ", limit: nil),
-        Row(group: .note, keys: ["Esc"], action: "ノートを閉じて記事に戻る", limit: "日本語の変換中は、まず変換を取り消します"),
+        Row(group: .reading, keys: ["j", "k"], action: String(localized: "Next or previous article", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .reading, keys: ["m"], action: String(localized: "Toggle read or unread", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .reading, keys: ["s"], action: String(localized: "Add or remove Star", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .reading, keys: ["t"], action: String(localized: "Translate article or show original", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .reading, keys: ["b"], action: String(localized: "Open original page in browser", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .list, keys: ["/"], action: String(localized: "Filter the article list by keyword", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .original, keys: ["v"], action: String(localized: "Open original page in the app", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .original, keys: ["Esc"], action: String(localized: "Close original page and return to article", bundle: ReaderLocalization.bundle), limit: nil),
+        Row(group: .original, keys: ["j", "k", "s", "n"], action: String(localized: "Also available while the original page is open", bundle: ReaderLocalization.bundle), limit: nil),
+        Row(group: .note, keys: ["n", "⌥⌘I"], action: String(localized: "Open or close note", bundle: ReaderLocalization.bundle), limit: String(localized: "n is unavailable while typing", bundle: ReaderLocalization.bundle)),
+        Row(group: .note, keys: ["c"], action: String(localized: "Send article to note (selected text becomes a quotation)", bundle: ReaderLocalization.bundle), limit: whileTyping),
+        Row(group: .note, keys: ["⌥⌘↑", "⌥⌘↓"], action: String(localized: "Previous or next article with the note open", bundle: ReaderLocalization.bundle), limit: nil),
+        Row(group: .note, keys: ["Esc"], action: String(localized: "Close note and return to article", bundle: ReaderLocalization.bundle), limit: String(localized: "While composing text, cancel composition first", bundle: ReaderLocalization.bundle)),
     ]
 
     public static func rows(in group: Group) -> [Row] { rows.filter { $0.group == group } }

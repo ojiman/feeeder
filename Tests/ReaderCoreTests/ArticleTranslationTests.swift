@@ -3,7 +3,7 @@ import Testing
 @testable import ReaderCore
 
 /// Specification 3.6 (core rules). The translator is a fake: the system's session exists only in the app.
-@MainActor struct ArticleTranslationTests {
+@Suite(EnglishLanguage()) @MainActor struct ArticleTranslationTests {
     private func content(_ paragraphs: [BodyParagraph], id: UUID = UUID()) -> ArticleContent {
         ArticleContent(articleID: id, text: paragraphs.map(\.text).joined(separator: "\n\n"), summary: "", coverage: .feedProvided,
                        originalURL: nil, bodyParagraphs: paragraphs)
@@ -28,6 +28,12 @@ import Testing
     private enum FakeError: Error { case broken }
 
     // MARK: the plan
+
+    @Test func anAbsentTitleIsNotSentToTheTranslator() {
+        let plan = TranslationPlan(title: "", content: content(english), target: "ja")
+        #expect(plan.items.map(\.index) == [0, 2, 3])
+        #expect(plan.apply([:]).title.isEmpty)
+    }
 
     @Test func thePlanHasTheTitleAndTheParagraphsWithTextInOrder() {
         let plan = TranslationPlan(title: "Title", content: content(english), target: "ja")
@@ -82,8 +88,8 @@ import Testing
     @Test func aBatchThatBreaksBeforeAnyAnswerFailsAndShowsTheOriginal() async throws {
         let translation = ArticleTranslation()
         let job = try #require(translation.press(title: "Title", content: content(english), target: "ja", decision: .translate(source: "en")))
-        await translation.run(job, translate: fake(throwingAfter: 0), describe: { _ in "翻訳できませんでした。" })
-        #expect(translation.state == .failed("翻訳できませんでした。"))
+        await translation.run(job, translate: fake(throwingAfter: 0), describe: { _ in "Could not translate." })
+        #expect(translation.state == .failed("Could not translate."))
         #expect(translation.shown == nil)
     }
 
@@ -221,7 +227,7 @@ import Testing
 }
 
 /// Specification 3.6: translate, "already in the target language", or "unsupported pair".
-struct LanguageDecisionTests {
+@Suite(EnglishLanguage()) struct LanguageDecisionTests {
     @Test func theSameLanguageNeedsNoTranslation() async {
         let outcome = await LanguageDecision.decide(sample: "日本語の記事", target: "ja", detect: { _ in "ja" }, supported: { _, _ in true })
         #expect(outcome == .alreadyInTarget)

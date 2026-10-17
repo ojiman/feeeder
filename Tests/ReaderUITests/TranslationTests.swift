@@ -21,7 +21,7 @@ import Testing
 // Checks PRD-18 (specification 7).
 /// Specification 3.6: a press translates the open article in place, a second press shows the original, another article shows its
 /// original, and nothing is translated that the person did not ask for.
-@Suite(.serialized) @MainActor struct TranslationTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct TranslationTests {
     private struct Harness {
         let host: NSHostingView<ReaderView>
         let window: NSWindow
@@ -114,7 +114,7 @@ import Testing
 }
 
 /// The controller's own rules, without a window.
-@MainActor struct TranslationControllerTests {
+@Suite(EnglishLanguage()) @MainActor struct TranslationControllerTests {
     private let content = ArticleContent(articleID: UUID(), text: "One.\n\nTwo.", summary: "", coverage: .feedProvided, originalURL: nil)
 
     @Test func aPressTranslatesAndASecondPressShowsTheOriginal() async throws {
@@ -130,13 +130,13 @@ import Testing
     }
 
     @Test func theStatusRowNamesTheLanguagesInJapanese() {
-        #expect(TranslationStatusRow.pair(source: "en", target: "ja") == "英語 → 日本語")
-        #expect(TranslationStatusRow.pair(source: nil, target: "ja") == "→ 日本語")
+        #expect(TranslationStatusRow.pair(source: "en", target: "ja") == "English → Japanese")
+        #expect(TranslationStatusRow.pair(source: nil, target: "ja") == "→ Japanese")
     }
 }
 
 // Checks PRD-18: the chosen target, not the UI language, controls translation.
-@MainActor struct TranslationTargetControllerTests {
+@Suite(EnglishLanguage()) @MainActor struct TranslationTargetControllerTests {
     private let content = ArticleContent(articleID: UUID(), text: "One. Two.", summary: "", coverage: .feedProvided, originalURL: nil)
     @Test func changingTargetReturnsToOriginalWithoutStartingAnotherTranslation() async throws {
         let controller = TranslationController(engine: fakeEngine())
@@ -173,7 +173,7 @@ import Testing
     }
 }
 
-@MainActor struct TranslationDetectionCancellationTests {
+@Suite(EnglishLanguage()) @MainActor struct TranslationDetectionCancellationTests {
     @Test func aTargetChangeDiscardsTheOldLanguageDecision() async throws {
         let gate = AsyncStream<Void>.makeStream()
         let engine = TranslationEngine(decide: { _, _ in
@@ -193,7 +193,7 @@ import Testing
     }
 }
 
-@MainActor struct TranslationAvailabilityTests {
+@Suite(EnglishLanguage()) @MainActor struct TranslationAvailabilityTests {
     @Test func aPressBeforeTheSavedTargetIsResolvedCannotUsePlaceholderEnglish() async throws {
         let controller = TranslationController(engine: fakeEngine())
         let content = ArticleContent(articleID: UUID(), text: "Synthetic.", summary: "", coverage: .feedProvided, originalURL: nil)

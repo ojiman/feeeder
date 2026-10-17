@@ -34,7 +34,7 @@ import ReaderCore
         autoresizingMask = [.width]
         drawsBackground = true; backgroundColor = AppPalette.surface
         textContainerInset = NSSize(width: 42, height: 44)
-        setAccessibilityLabel("記事本文")
+        setAccessibilityLabel(String(localized: "Article Body", bundle: ReaderLocalization.bundle))
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 

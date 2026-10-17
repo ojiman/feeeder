@@ -43,8 +43,8 @@ struct UnagiReaderApp: App {
             Group {
                 if let store, let refresh, let imageLoader { ReaderView(store: store, refresh: refresh, imageLoader: imageLoader) }
                 else {
-                    ContentUnavailableView("ライブラリを開けませんでした", systemImage: "externaldrive.badge.exclamationmark",
-                        description: Text(startupError ?? "不明なエラーです。"))
+                    ContentUnavailableView(String(localized: "Could Not Open Library", bundle: ReaderLocalization.bundle), systemImage: "externaldrive.badge.exclamationmark",
+                        description: Text(startupError ?? String(localized: "An unknown error occurred.", bundle: ReaderLocalization.bundle)))
                         .frame(width: 600, height: 400)
                 }
             }
@@ -69,9 +69,9 @@ struct UnagiReaderApp: App {
                 }
                 ReaderPerformance.write()
             }
-            .alert("保存データを整理できませんでした", isPresented: Binding(get: { lifecycleError != nil }, set: { if !$0 { lifecycleError = nil } })) {
-                Button("再試行") { lifecycleError = nil; purgeContent() }
-                Button("閉じる") { lifecycleError = nil }
+            .alert(String(localized: "Could Not Clean Up Saved Data", bundle: ReaderLocalization.bundle), isPresented: Binding(get: { lifecycleError != nil }, set: { if !$0 { lifecycleError = nil } })) {
+                Button(String(localized: "Try Again", bundle: ReaderLocalization.bundle)) { lifecycleError = nil; purgeContent() }
+                Button(String(localized: "Close", bundle: ReaderLocalization.bundle)) { lifecycleError = nil }
             } message: { Text(lifecycleError ?? "") }
 
         }

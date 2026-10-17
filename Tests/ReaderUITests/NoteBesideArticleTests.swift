@@ -9,7 +9,7 @@ import Testing
 /// in a hosted window.
 extension SplitViewFoldTests {
     // Checks PRD-04 (specification 7).
-    @Suite(.serialized) @MainActor struct NoteBesideArticleTests {
+    @Suite(EnglishLanguage(), .serialized) @MainActor struct NoteBesideArticleTests {
         private let noteText = "既存のノート"
 
         private struct Harness {

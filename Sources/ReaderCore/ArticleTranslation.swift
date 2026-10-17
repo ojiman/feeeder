@@ -30,7 +30,7 @@ public struct TranslationPlan: Sendable, Equatable {
         let body = content.bodyParagraphs.enumerated().compactMap { index, paragraph in
             paragraph.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : Item(index: index, text: paragraph.text)
         }
-        items = [Item(index: Self.titleIndex, text: title)] + body
+        items = (title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? [] : [Item(index: Self.titleIndex, text: title)]) + body
     }
 
     /// The title and paragraphs to show: the translated text where there is one, the original elsewhere. Links are not kept in
@@ -119,7 +119,7 @@ public typealias TranslationBatch = @Sendable ([TranslationPlan.Item]) -> AsyncT
 
     /// Runs a job. Each answer is applied as it arrives; answers for a dropped job change nothing. `describe` turns a failure of
     /// the whole batch into the sentence of the status row.
-    public func run(_ job: Job, translate: TranslationBatch, describe: (Error) -> String = { _ in "翻訳できませんでした。" },
+    public func run(_ job: Job, translate: TranslationBatch, describe: (Error) -> String = { _ in String(localized: "Could not translate.", bundle: ReaderLocalization.bundle) },
                     onProgress: (State) -> Void = { _ in }) async {
         guard job.generation == generation else { return }
         var translated: [Int: String] = [:]

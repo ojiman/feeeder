@@ -5,7 +5,7 @@ import Testing
 @testable import UnagiReader
 
 /// Decision 0057: the article's buttons sit in the article column's own band at the top of the window, at its right end.
-@Suite(.serialized) @MainActor struct ArticleBandTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct ArticleBandTests {
     @Test func theArticleButtonsSitInTheArticleBand() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

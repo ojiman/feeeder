@@ -1,4 +1,5 @@
 import SwiftUI
+import ReaderCore
 import AppKit
 
 /// The list filter in the list's band (specification 3.1.4, decision 0057): a magnifier at the right; clicking it, or `/`, grows the
@@ -28,7 +29,7 @@ struct ListFilterBar: View {
                         .frame(height: ArticleBand.controlLine)
                         .transition(.opacity)
                 } else {
-                    BandButton(id: "filter", symbol: "magnifyingglass", help: "記事を絞り込む (/)", label: "記事を絞り込む", action: open)
+                    BandButton(id: "filter", symbol: "magnifyingglass", help: String(localized: "Filter Articles (/)", bundle: ReaderLocalization.bundle), label: String(localized: "Filter Articles", bundle: ReaderLocalization.bundle), action: open)
                         .transition(.opacity)
                 }
             }
@@ -57,13 +58,13 @@ struct ListFilterField: NSViewRepresentable {
     func makeNSView(context: Context) -> NSSearchField {
         let field = NSSearchField()
         field.controlSize = .large                                         // as high as the band's buttons
-        field.placeholderString = "絞り込み"
+        field.placeholderString = String(localized: "Filter", bundle: ReaderLocalization.bundle)
         field.sendsSearchStringImmediately = true
         field.delegate = context.coordinator
         // The ✕ clears the field through its action, with no text-change notice.
         field.target = context.coordinator; field.action = #selector(Coordinator.searched(_:))
         field.stringValue = text
-        field.setAccessibilityLabel("記事を絞り込む")
+        field.setAccessibilityLabel(String(localized: "Filter Articles", bundle: ReaderLocalization.bundle))
         // Take the keyboard when the field appears (`/` or the magnifier).
         DispatchQueue.main.async { [weak field] in field?.window?.makeFirstResponder(field) }
         return field

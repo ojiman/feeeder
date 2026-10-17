@@ -1,4 +1,5 @@
 import SwiftUI
+import ReaderCore
 
 /// The band's actions in the menu bar (decision 0057: nothing is only in a band; Apple's guideline for toolbar items). The library window
 /// publishes them; with no such window the items are off.
@@ -28,17 +29,17 @@ struct ReaderMenuCommands: Commands {
 
     var body: some Commands {
         CommandGroup(before: .toolbar) {
-            Button(actions?.noteOpen == true ? "ノートを閉じる" : "ノートを開く") { actions?.toggleNote() }
+            Button(actions?.noteOpen == true ? String(localized: "Close Note", bundle: ReaderLocalization.bundle) : String(localized: "Open Note", bundle: ReaderLocalization.bundle)) { actions?.toggleNote() }
                 .keyboardShortcut("i", modifiers: [.option, .command])
                 .disabled(actions == nil)
         }
-        CommandMenu("記事") {
-            Button(actions?.starred == true ? "Starを外す" : "Starを付ける") { actions?.toggleStar() }
+        CommandMenu(String(localized: "Article", bundle: ReaderLocalization.bundle)) {
+            Button(actions?.starred == true ? String(localized: "Remove Star", bundle: ReaderLocalization.bundle) : String(localized: "Add Star", bundle: ReaderLocalization.bundle)) { actions?.toggleStar() }
                 .disabled(actions?.canStar != true)
             // 「記事をノートに送る」 (specification 3.3); its key `c` is a reading key, not shown here, as with the others in this menu.
-            Button("記事をノートに送る") { actions?.sendToNote() }
+            Button(String(localized: "Send Article to Note", bundle: ReaderLocalization.bundle)) { actions?.sendToNote() }
                 .disabled(actions?.canSendToNote != true)
-            Button("元ページをブラウザで開く") { actions?.openBrowser() }
+            Button(String(localized: "Open original page in browser", bundle: ReaderLocalization.bundle)) { actions?.openBrowser() }
                 .disabled(actions?.canOpenBrowser != true)
         }
     }
@@ -50,7 +51,7 @@ struct ShortcutHelpCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .help) {
-            Button("ショートカット一覧") {
+            Button(String(localized: "Keyboard Shortcuts", bundle: ReaderLocalization.bundle)) {
                 UserDefaults.standard.set(ReaderSettingsView.Pane.shortcuts.rawValue, forKey: ReaderSettingsView.paneKey)
                 openSettings()
             }

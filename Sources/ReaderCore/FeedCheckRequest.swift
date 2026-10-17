@@ -7,7 +7,7 @@ public enum FeedCheckRequest: Sendable, Equatable {
     /// Parse pasted XML; nothing is fetched. The address names the subscription.
     case xml(Data, URL)
 
-    private static let schemeHint = "http:// か https:// で始まるURLを入れてください。"
+    private static let schemeHint = String(localized: "Enter a URL starting with http:// or https://.", bundle: ReaderLocalization.bundle)
 
     /// The request for what is typed now, or nil while the text cannot be used yet.
     /// While typing, an address is sent only when its host looks complete (see `looksComplete`).
@@ -41,7 +41,7 @@ public enum FeedCheckRequest: Sendable, Equatable {
         if lower.hasPrefix("http://") || lower.hasPrefix("https://") {
             guard asked else { return nil }
             if URLComponents(string: text)?.user != nil { return FeedImportError.invalidURL.localizedDescription }
-            return "URLを最後まで入れてください。"
+            return String(localized: "Enter the complete URL.", bundle: ReaderLocalization.bundle)
         }
         if !asked, "http://".hasPrefix(lower) || "https://".hasPrefix(lower) { return nil }      // still typing the scheme
         return schemeHint

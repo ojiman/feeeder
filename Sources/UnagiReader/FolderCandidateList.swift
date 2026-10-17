@@ -7,7 +7,7 @@ struct FolderCandidateList: View {
     let entries: [FolderPicker.Entry]
     let highlighted: Int?
     /// What follows the name on the row that makes a new folder: 「を作って移動」 or 「を作って追加」.
-    let createSuffix: String
+    let createTitle: (String) -> String
     var maxRows = 6
     let onChoose: (Int) -> Void
 
@@ -33,6 +33,6 @@ struct FolderCandidateList: View {
         switch entry { case .unfiled: "tray"; case .existing: "folder"; case .create: "folder.badge.plus" }
     }
     private func title(_ entry: FolderPicker.Entry) -> String {
-        switch entry { case .unfiled: "未分類"; case .existing(let name): name; case .create(let name): "「\(name)」\(createSuffix)" }
+        switch entry { case .unfiled: String(localized: "Unfiled", bundle: ReaderLocalization.bundle); case .existing(let name): name; case .create(let name): createTitle(name) }
     }
 }

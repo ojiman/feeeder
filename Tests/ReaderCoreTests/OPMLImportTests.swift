@@ -5,7 +5,7 @@ import Testing
 
 /// Reading subscriptions from an OPML file (decision 0041).
 // Checks PRD-15 (specification 7).
-@MainActor struct OPMLImportTests {
+@Suite(EnglishLanguage()) @MainActor struct OPMLImportTests {
     private func parse(_ opml: String) throws -> OPMLDocument { try OPMLParser.parse(Data(opml.utf8)) }
     private func wrap(_ body: String) -> String { #"<?xml version="1.0"?><opml version="2.0"><head><title>Subscriptions</title></head><body>\#(body)</body></opml>"# }
 
@@ -72,7 +72,7 @@ import Testing
     @Test func nestingBeyondTheLimitHasItsOwnSentence() throws {
         let deep = String(repeating: #"<outline text="f">"#, count: OPMLParser.maximumDepth + 1) + String(repeating: "</outline>", count: OPMLParser.maximumDepth + 1)
         #expect(throws: OPMLError.tooDeep) { try parse(wrap(deep)) }
-        #expect(OPMLError.tooDeep.localizedDescription == "階層が深すぎます（64段まで）。")
+        #expect(OPMLError.tooDeep.localizedDescription == "The file is nested too deeply (maximum 64 levels).")
     }
     @Test func entitiesAreRefusedWhateverTheEncodingAndNamesAreCapped() throws {
         // UTF-7 hides "<!ENTITY" from a scan of the text, but the parser reports every declaration it meets.
@@ -173,7 +173,7 @@ import Testing
         defer { try? FileManager.default.removeItem(at: opml) }
         reloadSwitch.failing = true
         let report = await OPMLImporter(store: store).importFile(at: opml)
-        #expect(report.title == "1件の購読を追加しました" && report.message == "一覧を更新できませんでした。アプリを開き直してください。" && report.addedFeedIDs.isEmpty)
+        #expect(report.title == "Subscriptions added: 1" && report.message == "The list could not be refreshed. Reopen the app." && report.addedFeedIDs.isEmpty)
     }
     @Test func importingNothingChangesNothing() throws {
         let library = try TestLibrary(); defer { library.cleanup() }
@@ -199,12 +199,12 @@ import Testing
         """))
         defer { try? FileManager.default.removeItem(at: url) }
         let report = await OPMLImporter(store: store).importFile(at: url)
-        #expect(report.title == "2件の購読を追加しました" && report.addedFeedIDs.count == 2)                   // the result is the title
-        #expect(report.message == "・失敗: 1件")                                                              // only what is not plain success; the repeated A is one feed, not "already subscribed"
+        #expect(report.title == "Subscriptions added: 2" && report.addedFeedIDs.count == 2)                   // the result is the title
+        #expect(report.message == "• Failed: 1")                                // only what is not plain success; the repeated A is one feed, not "already subscribed"
         let clean = OPMLImporter.report(added: [UUID()], alreadySubscribed: 0, unusable: 0)
-        #expect(clean.title == "1件の購読を追加しました" && clean.message.isEmpty)                            // all well: nothing more to say
+        #expect(clean.title == "Subscriptions added: 1" && clean.message.isEmpty)                            // all well: nothing more to say
         let mixed = OPMLImporter.report(added: [UUID()], alreadySubscribed: 2, unusable: 1, upgraded: 9)
-        #expect(mixed.message == "・登録済み: 2件\n・通信安全化: 9件\n・失敗: 1件")                                 // one line each, a count of zero is left out
+        #expect(mixed.message == "• Already subscribed: 2\n• Changed to HTTPS: 9\n• Failed: 1")
         #expect(store.feeds.count == 2 && Set(store.feeds.map(\.folder)) == ["Tech"])
     }
     @Test func theReportSaysWhatHappenedWhenNothingWasAdded() async throws {
@@ -215,9 +215,9 @@ import Testing
         defer { try? FileManager.default.removeItem(at: first); try? FileManager.default.removeItem(at: empty) }
         _ = await OPMLImporter(store: store).importFile(at: first)
         let again = await OPMLImporter(store: store).importFile(at: first)
-        #expect(again.addedFeedIDs.isEmpty && again.title == "新しい購読はありませんでした" && again.message == "・登録済み: 1件")
+        #expect(again.addedFeedIDs.isEmpty && again.title == "No new subscriptions" && again.message == "• Already subscribed: 1")
         let none = await OPMLImporter(store: store).importFile(at: empty)
-        #expect(none.addedFeedIDs.isEmpty && none.title == "このファイルに購読は見つかりませんでした" && none.message.isEmpty)
+        #expect(none.addedFeedIDs.isEmpty && none.title == "No subscriptions were found in this file" && none.message.isEmpty)
     }
     @Test func onlyARegularFileIsReadAndAtMostTheLimit() async throws {
         let library = try TestLibrary(); defer { library.cleanup() }
@@ -228,13 +228,13 @@ import Testing
         defer { try? FileManager.default.removeItem(at: directory) }
         let pipe = directory.appending(path: "pipe.opml")
         #expect(mkfifo(pipe.path, 0o600) == 0)
-        #expect(await importer.importFile(at: pipe).message == "ファイルを開けませんでした。")             // a pipe would wait for ever
-        #expect(await importer.importFile(at: URL(fileURLWithPath: "/dev/zero")).message == "ファイルを開けませんでした。")
-        #expect(await importer.importFile(at: directory).message == "ファイルを開けませんでした。")
+        #expect(await importer.importFile(at: pipe).message == "The file could not be opened.")             // a pipe would wait for ever
+        #expect(await importer.importFile(at: URL(fileURLWithPath: "/dev/zero")).message == "The file could not be opened.")
+        #expect(await importer.importFile(at: directory).message == "The file could not be opened.")
         let big = directory.appending(path: "big.opml"), link = directory.appending(path: "link.opml")
         try Data(repeating: 32, count: OPMLParser.maximumBytes + 10).write(to: big)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: big)
-        #expect(await importer.importFile(at: link).message == "ファイルが大きすぎます（5MBまで）。")       // the size of the link is not the size of the file
+        #expect(await importer.importFile(at: link).message == "The file is too large (maximum 5 MB).")       // the size of the link is not the size of the file
         let small = directory.appending(path: "small.opml"), smallLink = directory.appending(path: "small-link.opml")
         try Data(wrap(#"<outline text="A" xmlUrl="https://a.example/f"/>"#).utf8).write(to: small)
         try FileManager.default.createSymbolicLink(at: smallLink, withDestinationURL: small)
@@ -247,13 +247,13 @@ import Testing
         let rss = try file("<rss><channel><title>x</title></channel></rss>")
         defer { try? FileManager.default.removeItem(at: rss) }
         let notOPML = await importer.importFile(at: rss)
-        #expect(notOPML.title == "OPMLを取り込めませんでした" && notOPML.message == "OPMLファイルではありません。" && notOPML.addedFeedIDs.isEmpty)
+        #expect(notOPML.title == "Could not import the OPML file" && notOPML.message == "This is not an OPML file." && notOPML.addedFeedIDs.isEmpty)
         let missing = await importer.importFile(at: FileManager.default.temporaryDirectory.appending(path: "no-such-" + UUID().uuidString + ".opml"))
-        #expect(missing.title == "OPMLを取り込めませんでした" && !missing.message.isEmpty)
+        #expect(missing.title == "Could not import the OPML file" && !missing.message.isEmpty)
         let huge = FileManager.default.temporaryDirectory.appending(path: "opml-huge-" + UUID().uuidString + ".opml")
         try Data(repeating: 32, count: OPMLParser.maximumBytes + 1).write(to: huge)
         defer { try? FileManager.default.removeItem(at: huge) }
-        #expect(await importer.importFile(at: huge).message == "ファイルが大きすぎます（5MBまで）。")
+        #expect(await importer.importFile(at: huge).message == "The file is too large (maximum 5 MB).")
         #expect(store.feeds.isEmpty)
     }
 
@@ -273,7 +273,7 @@ import Testing
         defer { try? FileManager.default.removeItem(at: opml) }
         let flow = flow(store, urls: [URL(string: address)!], choose: { opml })
         await flow.start()
-        #expect(flow.report?.title == "1件の購読を追加しました")
+        #expect(flow.report?.title == "Subscriptions added: 1")
         let added = try #require(store.feeds.first)
         #expect(added.folder == "Tech" && added.lastFetchedAt != nil && !store.articles.isEmpty)       // the articles came, so the person is not left with empty rows
         flow.dismissReport()

@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import UnagiReader
 
-@MainActor struct AppPaletteTests {
+@Suite(EnglishLanguage()) @MainActor struct AppPaletteTests {
     private func rgb(_ color: NSColor, _ name: NSAppearance.Name) -> (r: CGFloat, g: CGFloat, b: CGFloat, saturation: CGFloat) {
         var result = (r: CGFloat(0), g: CGFloat(0), b: CGFloat(0), saturation: CGFloat(0))
         NSAppearance(named: name)!.performAsCurrentDrawingAppearance {

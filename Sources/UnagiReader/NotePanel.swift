@@ -23,25 +23,25 @@ struct NotePanel: View {
             NoteEditor(store: store, link: link)
         }
         .ignoresSafeArea(.container, edges: .top)                          // the band is at the top of the window, like the others
-        .accessibilityElement(children: .contain).accessibilityLabel("ノート")
+        .accessibilityElement(children: .contain).accessibilityLabel(String(localized: "Note", bundle: ReaderLocalization.bundle))
     }
 
     /// The note's band (decision 0057): the ✕ and the layout button at the left, the article arrows and copy at the right.
     private var header: some View {
         HStack(spacing: 2) {
             // The ✕ at the top left of the right column, where the original page has its own (decision 0050).
-            BandButton(id: "close", symbol: "xmark", help: "ノートを閉じる (Esc)", label: "ノートを閉じる", action: onClose)
+            BandButton(id: "close", symbol: "xmark", help: String(localized: "Close Note (Esc)", bundle: ReaderLocalization.bundle), label: String(localized: "Close Note", bundle: ReaderLocalization.bundle), action: onClose)
             // The two layouts of the open note (decision 0050).
             BandButton(id: "layout", symbol: listShown ? "rectangle.split.3x1" : "rectangle.split.2x1",
-                       help: listShown ? "記事の一覧を隠す" : "記事の一覧を出す", label: listShown ? "記事の一覧を隠す" : "記事の一覧を出す",
+                       help: listShown ? String(localized: "Hide Article List", bundle: ReaderLocalization.bundle) : String(localized: "Show Article List", bundle: ReaderLocalization.bundle), label: listShown ? String(localized: "Hide Article List", bundle: ReaderLocalization.bundle) : String(localized: "Show Article List", bundle: ReaderLocalization.bundle),
                        action: onSwitchLayout)
             Spacer(minLength: 8)
-            BandButton(id: "previous", symbol: "chevron.up", help: "前の記事 (⌥⌘↑)", label: "前の記事", enabled: canPrevious,
+            BandButton(id: "previous", symbol: "chevron.up", help: String(localized: "Previous Article (⌥⌘↑)", bundle: ReaderLocalization.bundle), label: String(localized: "Previous Article", bundle: ReaderLocalization.bundle), enabled: canPrevious,
                        shortcut: KeyboardShortcut(.upArrow, modifiers: [.option, .command]), action: onPrevious)
-            BandButton(id: "next", symbol: "chevron.down", help: "次の記事 (⌥⌘↓)", label: "次の記事", enabled: canNext,
+            BandButton(id: "next", symbol: "chevron.down", help: String(localized: "Next Article (⌥⌘↓)", bundle: ReaderLocalization.bundle), label: String(localized: "Next Article", bundle: ReaderLocalization.bundle), enabled: canNext,
                        shortcut: KeyboardShortcut(.downArrow, modifiers: [.option, .command]), action: onNext)
             // The text is copied as it is; the person pastes it into any AI they like (decision 0049).
-            BandButton(id: "copy", symbol: "doc.on.doc", help: "Markdownをコピー", label: "Markdownをコピー", enabled: hasText, action: onCopy)
+            BandButton(id: "copy", symbol: "doc.on.doc", help: String(localized: "Copy Markdown", bundle: ReaderLocalization.bundle), label: String(localized: "Copy Markdown", bundle: ReaderLocalization.bundle), enabled: hasText, action: onCopy)
         }
         .bandLayout()
     }

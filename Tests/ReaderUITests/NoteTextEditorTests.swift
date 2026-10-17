@@ -4,7 +4,7 @@ import Testing
 import ReaderCore
 @testable import UnagiReader
 
-@Suite(.serialized) @MainActor struct NoteTextEditorTests {
+@Suite(EnglishLanguage(), .serialized) @MainActor struct NoteTextEditorTests {
     final class Sink {
         var changes: [String] = []
         var saves = true
@@ -205,7 +205,7 @@ import ReaderCore
     }
     @Test func theViewIsLabelledAndDoesNotTakeFocusByItself() throws {
         let r = try rig("本文"); defer { r.window.close() }
-        #expect(r.view.accessibilityLabel() == "ノート")
+        #expect(r.view.accessibilityLabel() == "Note")
         #expect(r.window.firstResponder !== r.view)
     }
 

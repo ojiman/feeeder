@@ -12,6 +12,9 @@ mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 find "$app_dir/Contents/MacOS" -type f ! -name UnagiReader -delete
 cp Assets/AppIcon.icns "$app_dir/Contents/Resources/AppIcon.icns"
 cp ThirdPartyNotices.md "$app_dir/Contents/Resources/ThirdPartyNotices.md"
+resource_bundle=UnagiReader_ReaderCore.bundle
+rm -rf "$app_dir/Contents/Resources/$resource_bundle"
+ditto "$binary_dir/$resource_bundle" "$app_dir/Contents/Resources/$resource_bundle"
 # Replace the inode: overwriting an executable previously launched on macOS
 # can retain stale kernel code-signature cache entries and terminate it with SIGKILL.
 task_binary=$(mktemp "$app_dir/Contents/MacOS/UnagiReader.XXXXXX")
@@ -22,6 +25,7 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
 <key>CFBundleExecutable</key><string>UnagiReader</string>
 <key>CFBundleIdentifier</key><string>xyz.ojima.UnagiReader</string>
 <key>CFBundleName</key><string>Unagi Reader</string>
@@ -34,6 +38,19 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+# macOS must know the app's languages, not just the package resource bundle's languages.
+python3 - "$app_dir/Contents/Info.plist" Sources/ReaderCore/Resources/Localizable.xcstrings <<'PYTHON'
+import json, plistlib, sys
+from pathlib import Path
+info = Path(sys.argv[1])
+catalog = json.loads(Path(sys.argv[2]).read_text())
+languages = {catalog["sourceLanguage"]}
+for entry in catalog["strings"].values():
+    languages.update(entry.get("localizations", {}))
+plist = plistlib.loads(info.read_bytes())
+plist["CFBundleLocalizations"] = sorted(languages)
+info.write_bytes(plistlib.dumps(plist))
+PYTHON
 codesign --force --sign - "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 # Retire the old build only after its replacement has a valid signature.

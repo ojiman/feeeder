@@ -166,7 +166,7 @@ import SwiftData
             let identity = entry.url?.absoluteString ?? (parsed.sourceURL.absoluteString + "|" + entry.sourceID)
             let existing = index.article(identity: identity, feedID: feed.id, sourceID: entry.sourceID)
             let article = existing ?? Article(feedID: feed.id, title: entry.title, summary: entry.summary,
-                                              publisher: entry.url?.host ?? "掲載サイト不明", publishedAt: entry.publishedAt ?? .distantPast, receivedAt: receivedAt)
+                                              publisher: entry.url?.host ?? "", publishedAt: entry.publishedAt ?? .distantPast, receivedAt: receivedAt)
             if existing == nil { context.insert(article); index.add(article) }
             let oldIdentity = article.identityKey
             if let url = entry.url {

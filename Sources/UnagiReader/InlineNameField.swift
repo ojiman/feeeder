@@ -18,9 +18,9 @@ struct InlineNameField: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        TextField("名前", text: $text.singleLine())
+        TextField(String(localized: "Name", bundle: ReaderLocalization.bundle), text: $text.singleLine())
             .textFieldStyle(.plain).focused($focused)
-            .accessibilityLabel("名前")
+            .accessibilityLabel(String(localized: "Name", bundle: ReaderLocalization.bundle))
             .onAppear { text = initial }
             // The context menu that started the edit may still be closing, and AppKit then gives the keyboard back to the sidebar.
             // One request on appearance could lose to that, leaving the field without the keyboard (#265): ask again until it has it.

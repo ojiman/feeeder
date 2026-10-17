@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import UnagiReader
 
-struct FolderExpansionTests {
+@Suite(EnglishLanguage()) struct FolderExpansionTests {
     @Test func aFolderThatReceivesASubscriptionIsOpenedAndRenamingKeepsItsState() {
         let name = "unagi-reader-test-\(UUID().uuidString)"
         let store = UserDefaults(suiteName: name)!; defer { store.removePersistentDomain(forName: name) }

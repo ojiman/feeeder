@@ -15,7 +15,7 @@ struct ArticleImageView: View {
             if let loaded, loaded.key == key { Image(nsImage: loaded.image).resizable().scaledToFit() }
             else { Image(systemName: "photo").foregroundStyle(.tertiary) }
         }.frame(width: size.width > 0 ? size.width : nil, height: size.height).frame(maxWidth: .infinity).clipped()
-        .accessibilityLabel("記事の画像")
+        .accessibilityLabel(String(localized: "Article Image", bundle: ReaderLocalization.bundle))
         .task(id: key) {
             loaded = nil
             do {
