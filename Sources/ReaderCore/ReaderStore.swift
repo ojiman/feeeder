@@ -152,19 +152,33 @@ import SwiftData
         if !feed.customTitle { feed.title = parsed.title }
         do {
             if let folder { feed.folder = SingleLineText.name(folder) }
-            var allArticles = articles
-            var allMemberships = memberships
+            // Looked up once per call, not scanned per entry (#131): the first refresh after an OPML import adds many feeds to a growing library.
+            // The first article with an identity wins, as the scans did; the maps follow every change made below.
+            var articleByID: [UUID: Article] = [:], articleByIdentity: [String: Article] = [:]
+            for article in articles {
+                articleByID[article.id] = article
+                if let key = article.identityKey, articleByIdentity[key] == nil { articleByIdentity[key] = article }
+            }
+            var priorArticleID: [String: UUID] = [:], memberOf: Set<UUID> = []
+            for membership in memberships where membership.feedID == feed.id {
+                if priorArticleID[membership.sourceID] == nil { priorArticleID[membership.sourceID] = membership.articleID }
+                memberOf.insert(membership.articleID)
+            }
             for entry in parsed.entries {
                 let identity = entry.url?.absoluteString ?? (parsed.sourceURL.absoluteString + "|" + entry.sourceID)
-                let priorID = allMemberships.first { $0.feedID == feed.id && $0.sourceID == entry.sourceID }?.articleID
-                let existing = allArticles.first { $0.identityKey == identity } ?? allArticles.first { $0.id == priorID }
+                let existing = articleByIdentity[identity] ?? priorArticleID[entry.sourceID].flatMap { articleByID[$0] }
                 let article = existing ?? Article(feedID: feed.id, title: entry.title, summary: entry.summary,
                                                   publisher: entry.url?.host ?? "掲載サイト不明", publishedAt: entry.publishedAt ?? .distantPast, receivedAt: receivedAt)
-                if existing == nil { context.insert(article); allArticles.append(article) }
+                if existing == nil { context.insert(article); articleByID[article.id] = article }
+                let oldIdentity = article.identityKey
                 if let url = entry.url {
                     article.identityKey = identity
                     article.originalURL = url.absoluteString
                 } else if article.identityKey == nil { article.identityKey = identity }
+                if article.identityKey != oldIdentity {
+                    if let oldIdentity, articleByIdentity[oldIdentity]?.id == article.id { articleByIdentity[oldIdentity] = nil }
+                    if let key = article.identityKey, articleByIdentity[key] == nil { articleByIdentity[key] = article }
+                }
                 article.title = entry.title
                 let available = isContentAvailable(article, at: receivedAt)
                 if available { article.summary = entry.summary; article.imageURL = entry.imageURL?.absoluteString ?? article.imageURL }
@@ -180,9 +194,9 @@ import SwiftData
                         snapshot.bodyFormatData = BodyParagraph.encode(entry.bodyParagraphs)
                     }
                 } else if available && !entry.body.isEmpty { context.insert(ContentSnapshot(articleID: id, text: entry.body, coverage: entry.coverage, bodyParagraphs: entry.bodyParagraphs)) }
-                if !allMemberships.contains(where: { $0.feedID == feed.id && $0.articleID == id }) {
-                    let membership = FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID)
-                    context.insert(membership); allMemberships.append(membership)
+                if memberOf.insert(id).inserted {
+                    context.insert(FeedMembership(feedID: feed.id, articleID: id, sourceID: entry.sourceID))
+                    if priorArticleID[entry.sourceID] == nil { priorArticleID[entry.sourceID] = id }
                 }
             }
             try save()
