@@ -1,6 +1,6 @@
 # Unagi Reader user guide
 
-How to start Unagi Reader, how it keeps your data, and how to use it. The app is Japanese only; a label is shown here in Japanese with its meaning, for example 「Markdownをコピー」 (Copy Markdown). If this guide and the app differ, the [specification](specification.md) decides; please tell us.
+How to start Unagi Reader, how it keeps your data, and how to use it. This guide shows labels in Japanese with their meaning, for example 「Markdownをコピー」 (Copy Markdown). If this guide and the app differ, the [specification](specification.md) decides; please tell us.
 
 ## 1. Start the app
 
