@@ -30,7 +30,7 @@ public struct TranslationPlan: Sendable, Equatable {
         let body = content.bodyParagraphs.enumerated().compactMap { index, paragraph in
             paragraph.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : Item(index: index, text: paragraph.text)
         }
-        items = [Item(index: Self.titleIndex, text: title)] + body
+        items = (title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? [] : [Item(index: Self.titleIndex, text: title)]) + body
     }
 
     /// The title and paragraphs to show: the translated text where there is one, the original elsewhere. Links are not kept in

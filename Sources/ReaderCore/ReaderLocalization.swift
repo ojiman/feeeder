@@ -20,3 +20,15 @@ public enum AppLanguage {
         else { defaults.set([language], forKey: "AppleLanguages") }
     }
 }
+
+// Missing source metadata is data, not a translated string saved to the library.
+extension Article {
+    public var displayTitle: String { title.isEmpty ? String(localized: "Untitled", bundle: ReaderLocalization.bundle) : title }
+    public var displayPublisher: String { publisher.isEmpty ? String(localized: "Unknown site", bundle: ReaderLocalization.bundle) : publisher }
+}
+extension Feed {
+    public var displayTitle: String { title.isEmpty ? String(localized: "Feed", bundle: ReaderLocalization.bundle) : title }
+}
+extension ParsedFeed {
+    public var displayTitle: String { title.isEmpty ? String(localized: "Feed", bundle: ReaderLocalization.bundle) : title }
+}

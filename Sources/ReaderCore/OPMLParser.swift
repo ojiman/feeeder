@@ -108,7 +108,7 @@ private final class OPMLReader: NSObject, XMLParserDelegate {
         guard seen.insert(url.absoluteString).inserted else { repeated += 1; return }
         if url != found { upgraded += 1 }
         guard feeds.count < OPMLParser.maximumFeeds else { fail(.tooMany, parser); return }
-        let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? String(localized: "Feed", bundle: ReaderLocalization.bundle)
+        let name = Self.firstName(attributes, keys: ["title", "text"]) ?? url.host ?? ""
         feeds.append(OPMLFeed(title: name, url: url,
                               siteURL: attributes["htmlurl"].flatMap { ArticleURL.validated($0) }.map(ArticleURL.secured), folder: folder))
     }

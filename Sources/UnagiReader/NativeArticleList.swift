@@ -280,7 +280,7 @@ struct NativeArticleList: NSViewRepresentable {
         func configure(_ article: Article, feed: String, iconURL: URL? = nil, loader: ReaderImageLoader? = nil) {
             isRead = article.isRead
             source.stringValue = (article.starredAt == nil ? "" : "★ ") + feed
-            title.stringValue = article.title; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
+            title.stringValue = article.displayTitle; title.font = .systemFont(ofSize: 14, weight: article.isRead ? .medium : .semibold)
             summary.stringValue = article.summary
             let published = article.publishedAt
             if published == .distantPast {

@@ -100,7 +100,7 @@ public enum FeedParser {
         parser.delegate = reader
         guard parser.parse(), reader.failure == nil else { throw reader.failure ?? FeedImportError.invalidXML }
         guard reader.format != nil, reader.sawContainer else { throw FeedImportError.unsupported }
-        return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? String(localized: "Feed", bundle: ReaderLocalization.bundle)) : reader.title,
+        return ParsedFeed(title: reader.title.isEmpty ? (source.host ?? "") : reader.title,
                           sourceURL: source, entries: reader.entries, skippedEntries: reader.skipped, siteURL: reader.siteURL, iconURL: reader.iconURL ?? reader.logoURL)
     }
 
@@ -300,7 +300,7 @@ private final class FeedXMLReader: NSObject, XMLParserDelegate {
         let body = bodyParagraphs?.map(\.text).joined(separator: "\n\n") ?? values["body"] ?? summary
         if let html = values["bodyHTML"], let image = ImageMetadata.firstHTMLImage(html, base: bodyBase) { recordImage(image.absoluteString, base: bodyBase, priority: 3) }
         if let html = values["summaryHTML"], let image = ImageMetadata.firstHTMLImage(html, base: summaryBase) { recordImage(image.absoluteString, base: summaryBase, priority: 4) }
-        entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? String(localized: "Untitled", bundle: ReaderLocalization.bundle), url: entryURL,
+        entries.append(ParsedEntry(sourceID: identity, title: values["title"] ?? "", url: entryURL,
                                    summary: summary, body: body, coverage: values["body"] == nil ? .summaryOnly : .feedProvided,
                                    publishedAt: Self.date(values["date"] ?? values["updated"] ?? ""), imageURL: entryImages.sorted { $0.key < $1.key }.first?.value, bodyParagraphs: bodyParagraphs))
     }

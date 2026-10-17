@@ -21,6 +21,30 @@ import Testing
         #expect(AppLanguage.selection(in: defaults, domain: domain, supported: ["en", "ja"]) == "")
     }
 
+    @Test func missingSourceMetadataStaysAbsentAcrossImportRefreshAndReopening() throws {
+        let library = try TestLibrary(); defer { library.cleanup() }
+        let url = URL(string: "https://metadata.example/feed")!
+        let xml = Data("<rss><channel><title>Source</title><item><guid>synthetic-no-title</guid><description>Body.</description></item></channel></rss>".utf8)
+        let parsed = try FeedParser.parse(xml, sourceURL: url)
+        #expect(parsed.entries.first?.title == "")
+        let store = try ReaderStore(url: library.url)
+        let feed = try store.importFeed(parsed)
+        let article = try #require(store.articles.first)
+        #expect(article.title.isEmpty && article.publisher.isEmpty)
+        _ = try store.importFeed(FeedParser.parse(xml, sourceURL: url))
+        #expect(store.feed(id: feed.id)?.title == "Source" && article.title.isEmpty && article.publisher.isEmpty)
+        let reopened = try ReaderStore(url: library.url)
+        #expect(reopened.articles.first?.title == "" && reopened.articles.first?.publisher == "")
+    }
+
+    @Test func presentationFallbacksNeverReplaceActualSourceWordsOrModifyTheModel() {
+        let article = Article(feedID: UUID(), title: "", summary: "", publisher: "", publishedAt: .now)
+        #expect(article.displayTitle == "Untitled" && article.displayPublisher == "Unknown site")
+        #expect(article.title.isEmpty && article.publisher.isEmpty)
+        article.title = "無題"; article.publisher = "掲載サイト不明"
+        #expect(article.displayTitle == "無題" && article.displayPublisher == "掲載サイト不明")
+    }
+
     @Test func bundledLocalizationsHaveEnglishSourceAndJapaneseResources() throws {
         #expect(Set(ReaderLocalization.languages).isSuperset(of: ["en", "ja"]))
         let japanese = try #require(ReaderLocalization.bundle.path(forResource: "ja", ofType: "lproj"))

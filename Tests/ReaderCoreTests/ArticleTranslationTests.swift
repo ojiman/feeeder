@@ -29,6 +29,12 @@ import Testing
 
     // MARK: the plan
 
+    @Test func anAbsentTitleIsNotSentToTheTranslator() {
+        let plan = TranslationPlan(title: "", content: content(english), target: "ja")
+        #expect(plan.items.map(\.index) == [0, 2, 3])
+        #expect(plan.apply([:]).title.isEmpty)
+    }
+
     @Test func thePlanHasTheTitleAndTheParagraphsWithTextInOrder() {
         let plan = TranslationPlan(title: "Title", content: content(english), target: "ja")
         #expect(plan.items.map(\.text) == ["Title", "First.", "Quoted.", "Last."])

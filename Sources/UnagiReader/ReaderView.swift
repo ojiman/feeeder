@@ -111,7 +111,7 @@ struct ReaderView: View {
         case .all: String(localized: "All Articles", bundle: ReaderLocalization.bundle)
         case .unread: String(localized: "Unread", bundle: ReaderLocalization.bundle)
         case .starred: String(localized: "Star", bundle: ReaderLocalization.bundle)
-        case .feed(let id): store.feed(id: id)?.title ?? String(localized: "Article", bundle: ReaderLocalization.bundle)
+        case .feed(let id): store.feed(id: id)?.displayTitle ?? String(localized: "Article", bundle: ReaderLocalization.bundle)
         }
     }
 
@@ -272,7 +272,7 @@ struct ReaderView: View {
         HStack {
             SubscriptionIconView(feed: feed, loader: imageLoader)
             if let edit = inlineEdit(for: .feed(feed.id), initial: feed.title) { InlineNameField(initial: edit.initial, onFinish: edit.finish) }
-            else { Text(feed.title).lineLimit(1) }
+            else { Text(feed.displayTitle).lineLimit(1) }
             Spacer()
             Text((store.feedUnreadCounts[feed.id] ?? 0).formatted()).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             if let error = refresh.errors[feed.id] {
@@ -340,7 +340,7 @@ struct ReaderView: View {
 
     private var articleList: some View {
         // Swift 6.3 crashes compiling an actor-isolated method reference as the setter.
-        NativeArticleList(ids: visibleArticleIDs, article: { store.article(id: $0) }, feedTitle: { store.feed(id: $0.feedID)?.title ?? $0.publisher },
+        NativeArticleList(ids: visibleArticleIDs, article: { store.article(id: $0) }, feedTitle: { store.feed(id: $0.feedID)?.displayTitle ?? $0.displayPublisher },
             selection: Binding(get: { selection }, set: { selectArticle($0) }), initialTop: scrollMemory.state.listScrollAnchor, focus: listFocused && originalPage.url == nil,
             shortcutsEnabled: shortcutsEnabled, onTop: { scrollMemory.state.listScrollAnchor = $0 },
             onKey: { key in
@@ -585,7 +585,7 @@ struct ReaderView: View {
         guard originalPage.url == nil, let article = selectedArticle else { return }
         let selected = translation.isOn(for: article.id) ? nil : ArticleTextView.selectedText(in: NSApp.keyWindow)
         let url = article.originalURL.flatMap { ArticleURL.link($0) }?.absoluteString
-        guard let text = NoteClip.text(title: article.title, url: url, selection: selected) else { return }
+        guard let text = NoteClip.text(title: article.displayTitle, url: url, selection: selected) else { return }
         if noteOpen, noteLink.insert(text) != .noEditor { return }
         if !noteOpen { toggleNote() }
         noteLink.insertWhenShown(text)

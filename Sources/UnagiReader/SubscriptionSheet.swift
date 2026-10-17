@@ -87,9 +87,9 @@ struct SubscriptionSheet: View {
             case .ready(let checked):
                 VStack(alignment: .leading, spacing: 2) {
                     if isSubscribed(checked) {
-                        Label { Text(String(localized: "Already subscribed: \(checked.parsed.title)", bundle: ReaderLocalization.bundle)).lineLimit(1) } icon: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
+                        Label { Text(String(localized: "Already subscribed: \(checked.parsed.displayTitle)", bundle: ReaderLocalization.bundle)).lineLimit(1) } icon: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
                     } else {
-                        Label { Text(checked.parsed.title).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                        Label { Text(checked.parsed.displayTitle).lineLimit(1) } icon: { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
                     }
                     if let address = checked.subscribedAddress(whenTyped: source) {
                         Text(String(localized: "Subscription URL: \(address)", bundle: ReaderLocalization.bundle))
