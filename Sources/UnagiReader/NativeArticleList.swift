@@ -142,8 +142,8 @@ struct NativeArticleList: NSViewRepresentable {
         var priorSelection: UUID?
         var priorFocus = false
         var synchronizing = false
-        /// Whether the last update put new articles in with the slide-in animation (for tests).
-        private(set) var lastUpdateAnimated = false
+        /// How the last update put new articles in (for tests): nil when it did not insert, `[]` when nothing visible moved.
+        private(set) var lastInsertion: NSTableView.AnimationOptions?
         var reduceMotion: () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
         init(_ parent: NativeArticleList) { self.parent = parent }
         func update(_ parent: NativeArticleList) {
@@ -157,17 +157,29 @@ struct NativeArticleList: NSViewRepresentable {
             self.parent = parent
             let nextIDs = parent.ids
             let idsChanged = ids != nextIDs
-            // New articles at the top, while the list is at the top: they slide in and push the old rows down (like a feed reader
-            // should). In any other case the rows are reloaded and the article the person is looking at stays where it is.
+            // New articles go in where they land, with the system's table motion (specification 3.2). Any other change reloads the rows.
+            let inserted = idsChanged && !firstLoad && !selectionChanged ? ListInsertion.insertedIndexes(old: ids, new: nextIDs) : nil
             let atTop = scroll.map { $0.contentView.bounds.minY <= -$0.contentView.contentInsets.top + 1 } ?? false
-            let slideIn = idsChanged && !firstLoad && !selectionChanged && atTop && !reduceMotion()
-                ? ListInsertion.leadingCount(old: ids, new: nextIDs) : nil
-            lastUpdateAnimated = slideIn != nil
-            if let slideIn {
+            lastInsertion = nil
+            if let inserted, atTop {
+                // At the top they slide in and push the rows below them down; with Reduce Motion they fade in.
                 ids = nextIDs
-                table.beginUpdates()
-                table.insertRows(at: IndexSet(integersIn: 0..<slideIn), withAnimation: [.slideDown, .effectFade])
-                table.endUpdates()
+                let motion: NSTableView.AnimationOptions = reduceMotion() ? .effectFade : [.slideDown, .effectFade]
+                table.beginUpdates(); table.insertRows(at: inserted, withAnimation: motion); table.endUpdates()
+                lastInsertion = motion
+            } else if let inserted {
+                // Further down, the article being read does not move: rows above it go in at once and the list is put back where it
+                // was; rows from it down fade in.
+                ids = nextIDs
+                let anchor = topID.flatMap { nextIDs.firstIndex(of: $0) } ?? 0
+                let above = inserted.filteredIndexSet { $0 < anchor }, rest = inserted.subtracting(above)
+                table.insertRows(at: above, withAnimation: [])
+                if let scroll {
+                    scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: anchor).minY + topOffset))
+                    scroll.reflectScrolledClipView(scroll.contentView)
+                }
+                table.insertRows(at: rest, withAnimation: .effectFade)
+                lastInsertion = rest.isEmpty ? [] : .effectFade
             } else if idsChanged {
                 ids = nextIDs; table.reloadData()
             } else {
@@ -180,7 +192,7 @@ struct NativeArticleList: NSViewRepresentable {
                     if selectionChanged { table.scrollRowToVisible(row) }
                 } else { table.deselectAll(nil) }
             }
-            if idsChanged && slideIn == nil && (!selectionChanged || firstLoad), let top = firstLoad ? parent.initialTop : topID ?? parent.initialTop,
+            if idsChanged && inserted == nil && (!selectionChanged || firstLoad), let top = firstLoad ? parent.initialTop : topID ?? parent.initialTop,
                let row = ids.firstIndex(of: top), let scroll {
                 scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: row).minY + (firstLoad ? parent.initialTopOffset : topOffset)))
                 scroll.reflectScrolledClipView(scroll.contentView)

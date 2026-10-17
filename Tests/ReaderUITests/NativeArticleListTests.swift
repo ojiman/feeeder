@@ -302,7 +302,7 @@ import ReaderCore
         #expect(abs(scroll.contentView.bounds.minY - table.rect(ofRow: 8).minY - 17) < 1)
     }
 
-    // MARK: New articles at the top slide in
+    // MARK: New articles slide in where they land (specification 3.2, #284)
 
     private struct ListRig {
         let coordinator: NativeArticleList.Coordinator
@@ -341,43 +341,72 @@ import ReaderCore
         return (ListRig(coordinator: coordinator, table: table, scroll: scroll, parent: parent, selected: { selected }), ids)
     }
 
+    private let slide: NSTableView.AnimationOptions = [.slideDown, .effectFade]
+
     @Test func newArticlesAtTheTopSlideInAndTheListStaysAtTheTop() {
         let (rig, ids) = listRig(count: 40, select: 10)
         let added = [UUID(), UUID()]
         rig.coordinator.update(rig.parent(added + ids))
-        #expect(rig.coordinator.lastUpdateAnimated)
+        #expect(rig.coordinator.lastInsertion == slide)
         #expect(rig.table.numberOfRows == 42)
         #expect(rig.scroll.contentView.bounds.minY == 0)                                       // still at the top: the new rows are in view
         #expect(rig.table.rows(in: rig.table.visibleRect).location == 0)
         #expect(rig.selected() == ids[10] && rig.table.selectedRow == 12)                      // the selected article is the same one
     }
+    @Test func newArticlesInTheMiddleSlideInWhereTheyLand() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        let added = [UUID(), UUID()]
+        rig.coordinator.update(rig.parent([ids[0], added[0]] + ids[1..<5] + [added[1]] + ids[5...]))
+        #expect(rig.coordinator.lastInsertion == slide)
+        #expect(rig.table.numberOfRows == 42 && rig.scroll.contentView.bounds.minY == 0)
+        #expect(rig.selected() == ids[10] && rig.table.selectedRow == 12)
+    }
+    @Test func manyNewArticlesAtOnceStillSlideIn() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        rig.coordinator.update(rig.parent((0..<60).map { _ in UUID() } + ids))
+        #expect(rig.coordinator.lastInsertion == slide)
+        #expect(rig.table.numberOfRows == 100 && rig.selected() == ids[10] && rig.table.selectedRow == 70)
+    }
     @Test func whenTheReaderHasScrolledDownNewArticlesDoNotMoveWhatTheyAreReading() {
         let (rig, ids) = listRig(count: 40, select: 10)
         rig.scroll.contentView.scroll(to: NSPoint(x: 0, y: rig.table.rect(ofRow: 8).minY + 17))
         rig.scroll.reflectScrolledClipView(rig.scroll.contentView)
-        rig.coordinator.update(rig.parent([UUID(), UUID()] + ids))
-        #expect(!rig.coordinator.lastUpdateAnimated)
+        rig.coordinator.update(rig.parent([UUID(), UUID()] + ids[0..<9] + [UUID()] + ids[9...]))   // two above the reader, one in view
+        #expect(rig.coordinator.lastInsertion == .effectFade)
         let top = rig.table.rows(in: rig.table.visibleRect).location
         #expect(top == 10)                                                                     // row 8 before, two rows added above
         #expect(abs(rig.scroll.contentView.bounds.minY - rig.table.rect(ofRow: top).minY - 17) < 1)
+        #expect(rig.selected() == ids[10] && rig.table.selectedRow == 13)
     }
-    @Test func reduceMotionPutsNewArticlesInWithoutAnimation() {
+    @Test func reduceMotionFadesNewArticlesInWithoutSliding() {
         let (rig, ids) = listRig(count: 40, select: 10)
         rig.coordinator.reduceMotion = { true }
         rig.coordinator.update(rig.parent([UUID()] + ids))
-        #expect(!rig.coordinator.lastUpdateAnimated)
+        #expect(rig.coordinator.lastInsertion == .effectFade)
         #expect(rig.table.numberOfRows == 41 && rig.selected() == ids[10] && rig.table.selectedRow == 11)
     }
-    @Test func onlyNewArticlesInFrontAreAnimated() {
+    @Test func onlyInsertionsAreAnimated() {
         let (rig, ids) = listRig(count: 40, select: 10)
         rig.coordinator.update(rig.parent(ids))                                                // no change
-        #expect(!rig.coordinator.lastUpdateAnimated)
+        #expect(rig.coordinator.lastInsertion == nil)
         rig.coordinator.update(rig.parent(Array(ids.dropFirst())))                             // an article left
-        #expect(!rig.coordinator.lastUpdateAnimated && rig.table.numberOfRows == 39)
+        #expect(rig.coordinator.lastInsertion == nil && rig.table.numberOfRows == 39)
         rig.coordinator.update(rig.parent((0..<30).map { _ in UUID() }))                       // another list
-        #expect(!rig.coordinator.lastUpdateAnimated && rig.table.numberOfRows == 30)
-        let before = rig.table.numberOfRows
-        rig.coordinator.update(rig.parent((0..<25).map { _ in UUID() } + (0..<before).map { rig.coordinator.ids[$0] }))   // too many at once
-        #expect(!rig.coordinator.lastUpdateAnimated && rig.table.numberOfRows == before + 25)
+        #expect(rig.coordinator.lastInsertion == nil && rig.table.numberOfRows == 30)
+    }
+    /// The list in the window starts below the band and the title block (`headerInset`), so its top is below zero. The rig above has no
+    /// insets; this checks the "at the top" test where the insets are real.
+    @Test func theTopOfTheListIsFoundBelowTheWindowsInsets() {
+        let (rig, ids) = listRig(count: 40, select: 10)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 280, height: 400), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+        window.contentView = rig.scroll
+        rig.scroll.additionalSafeAreaInsets = NSEdgeInsets(top: 60, left: 0, bottom: 0, right: 0)
+        window.layoutIfNeeded()
+        let top = -rig.scroll.contentView.contentInsets.top                                    // the title bar and the 60 pt above the rows
+        #expect(top < -59)
+        rig.scroll.contentView.scroll(to: NSPoint(x: 0, y: top)); rig.scroll.reflectScrolledClipView(rig.scroll.contentView)
+        rig.coordinator.update(rig.parent([UUID()] + ids))
+        #expect(rig.coordinator.lastInsertion == slide)
+        #expect(abs(rig.scroll.contentView.bounds.minY - top) < 1)                             // still at the top
     }
 }
