@@ -244,6 +244,22 @@ import Testing
         let manual = try await FeedChecker.fetch(.xml(Data(FeedParserTests.rss.utf8), url), client: client)
         #expect(!manual.fetched && manual.etag == nil)
     }
+
+    /// #266: typing an address cancels the check that is still waiting for the person to pause. The real wait (not a stub)
+    /// is cancelled again and again, as in the sheet; the app aborted in `swift_task_dealloc` on the CI toolchain in Debug.
+    @Test func typingCancelsTheRealWaitManyTimesWithoutEndingTheApp() async {
+        let fetched = Recorder<FeedCheckRequest>()
+        let checker = FeedChecker(fetch: { fetched.add($0); return Self.checked() })      // the default sleep: `Task.sleep`
+        let address = "https://127.0.0.1:"
+        for port in 1000..<1300 {
+            checker.update(source: address + "\(port)/feed.xml", delay: FeedCheckRequest.delay(from: address, to: address + "1"))
+            try? await Task.sleep(for: .milliseconds(1))                                   // the old check is now inside its wait
+        }
+        checker.update(source: "https://127.0.0.1:1300/feed.xml", delay: .milliseconds(10))
+        for _ in 0..<100 where fetched.values.isEmpty { try? await Task.sleep(for: .milliseconds(20)) }
+        #expect(fetched.values == [.url(URL(string: "https://127.0.0.1:1300/feed.xml")!)])  // only the last edit reached the network
+        guard case .ready = checker.state else { Issue.record("expected ready, got \(checker.state)"); return }
+    }
 }
 
 /// Collects values from `@Sendable` closures.
